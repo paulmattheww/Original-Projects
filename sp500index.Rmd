@@ -1,0 +1,47 @@
+---
+title: "S&P 500"
+author: "Paul Washburn"
+date: "Friday, June 19, 2015"
+output: html_document
+---
+The data used for this inquiry are from Yale's [Robert Schiller Dataset](http://www.econ.yale.edu/~shiller/data.htm) as well as the [Homepage for S&P 500 Indexdata](http://data.okfn.org/data/core/s-and-p-500). 
+
+The efforts put forth here are my own and do not reflect any specific trading strategy. The analysis is inspired by Benjamin Graham's book the Intelligent Investor. The primary goal is to determine what valuations look like right now, in 2015. 
+
+Both equity markets and bond markets have been elevated due to liquidity provisions instituted from the Federal Reserve. At first blush, I tend to think the market is elevated right now. However this opinion is prior to conducting an analysis of the underlying "book value" of these listed companies. 
+
+This analysis will not take into account quality of management as a predictive variable. 
+
+Acquire the data.
+```{r}
+download.file("http://data.okfn.org/data/core/s-and-p-500/r/data.csv",destfile="spIndex.csv")
+sp500<-read.csv("spIndex.csv")
+```
+Explore the data a bit.
+```{r}
+dim(sp500)
+head(sp500)
+str(sp500)
+names(sp500)
+```
+Format dates to standard format.
+```{r}
+sp500$Date<-as.POSIXct(strptime(sp500$Date,format="%Y-%M-%D"))
+```
+Quick sanity check.
+```{r}
+plot(sp500$Real.Price,type="l")
+```
+Create Price to Earnings ratio in frame.
+```{r}
+sp500$PE.Ratio<-(sp500$Real.Price/sp500$Real.Earnings)
+```
+
+
+
+
+
+
+
+
+
