@@ -1,4 +1,9 @@
-## Standard and Poor's (S&P) 500 Index Data including Dividend, Earnings and P/E Ratio
+The efforts put forth here are my own and do not reflect any specific trading strategy. The analysis is inspired by Benjamin Graham's book the Intelligent Investor. The primary goal is to determine what valuations look like right now, in 2015. 
+
+Both equity markets and bond markets have been elevated due to liquidity provisions instituted from the Federal Reserve. At first blush, I tend to think the market is elevated right now. However this opinion is prior to conducting an analysis of the underlying "book value" of these listed companies.
+
+# Data
+#### Standard and Poor's (S&P) 500 Index Data including Dividend, Earnings and P/E Ratio
 S&P 500 index data including level, dividend, earnings and P/E ratio on a monthly basis since 1870. The S&P 500 (Standard and Poor's 500) is a free-float, capitalization-weighted index of the top 500 publicly listed stocks in the US (top 500 by market cap). Data — Read more
 
 ### README
@@ -25,5 +30,5 @@ No exact statement on license of original data but given size and factual nature
 
 That said, it would be natural to credit Robert Shiller for preparing this dataset and kindly making it publicly available.
 
-** Copyright © 2015 Open Knowledge **
+* Copyright © 2015 Open Knowledge *
 Terms of Use – IP Policy of Data
