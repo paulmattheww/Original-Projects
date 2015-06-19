@@ -1,3 +1,5 @@
+## Motivation
+
 The efforts put forth here are my own and do not reflect any specific trading strategy. The analysis is inspired by Benjamin Graham's book the Intelligent Investor. The primary goal is to determine what valuations look like right now, in 2015. 
 
 Both equity markets and bond markets have been elevated due to liquidity provisions instituted from the Federal Reserve. At first blush, I tend to think the market is elevated right now. However this opinion is prior to conducting an analysis of the underlying "book value" of these listed companies.
