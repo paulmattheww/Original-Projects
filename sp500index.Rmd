@@ -39,9 +39,3 @@ sp500$PE.Ratio<-(sp500$Real.Price/sp500$Real.Earnings)
 
 
 
-
-
-
-
-
-
