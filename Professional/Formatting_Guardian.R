@@ -82,7 +82,12 @@ Guardian$Basic.Life.Eff.Date<-ifelse(Guardian$Basic.Employee.Life.Elected=="Y",d
 Guardian$Voluntary.Child.Life.Elected<-ifelse(type=="VOLUNTARY CHILD LIFE","Y","N")
 Guardian$Vol.Child.Life.Eff.Date<-ifelse(Guardian$Voluntary.Child.Life.Elected=="Y",dat," ")
 
+
+Guardian$Vision.Elected<-ifelse(type=="VISION","Y","N")
+Guardian$Vision.Eff.Date<-ifelse(Guardian$Vision.Elected=="Y",dat," ")
+
 # Change Time.Status..No.Codes. column A=Active, T=Terminated, R=Retired
+print("Swapping codes for Time Status per Guardian's specs.")
 Guardian$Time.Status..No.Codes.<-ifelse(Guardian$Time.Status..No.Codes.=="FULL TIME SALARY","A",
        ifelse(Guardian$Time.Status..No.Codes.=="PART TIME","A",
               ifelse(Guardian$Time.Status..No.Codes.=="TERMINATED","T","R")))
@@ -90,22 +95,26 @@ Guardian$Time.Status..No.Codes.<-ifelse(Guardian$Time.Status..No.Codes.=="FULL T
 
 # Create new data frame from Guardian object
 # Drop all columns that are not necessary 
+print("Dropping unnecessary columns and saving to new data frame.")
 GuardianDf<-data.frame(Guardian)
 keeps<-names(GuardianDf) %in% c("Employee.SSN","Last.Name","First.Name","Middle.Initial","Relationship..No.Codes.",
                                 "Date.of.Birth","Gender","Marital.Status","Fill.1","Fill.2","Home.Address.1","City","State",
                                 "Zip","Work.Email","Work.Phone","Hire.Date","Hours.Per.Week","Employment.Status..No.Codes.",
                                 "Termination.Date","Reason.for.Change","Fill.3","Salary","Fill.9","Fill.10","Location","Tobacco.User..No.Codes.",
-                                "Fill.4","Fill.5","Fill.6","Fill.7","Fill.8","Dental.Elected","Dental.Eff.Date","Fill.11",
+                                "Fill.4","Fill.5","Fill.6","Fill.7","Fill.8","Dental.Elected","Dental.Eff.Date","Fill.11","Vision.Elected","Vision.Eff.Date",
                                 "Basic.Employee.Life.Elected","Basic.Life.Eff.Date","Voluntary.Child.Life.Elected",
                                 "Vol.Child.Life.Eff.Date","Benefit.Plan.Type","Coverage.Effective.Date","Benefit.Class.Name")      ##ARE THERE ANYMORE WE NEED TO KEEP?
 GuardianDf<-GuardianDf[keeps]
 
 # Put columns in same order as the Guardian spreadsheet
+print("Ordering the columns per Guardian's specifications")
 orderColumns <- c("Employee.SSN","Last.Name","First.Name","Middle.Initial","Relationship..No.Codes.",
                   "Date.of.Birth","Gender","Marital.Status","Fill.1","Fill.2","Home.Address.1","City","State",
                   "Zip","Work.Email","Work.Phone","Hire.Date","Hours.Per.Week","Employment.Status..No.Codes.",
                   "Termination.Date","Reason.for.Change","Fill.3","Salary","Fill.9","Fill.10","Location","Tobacco.User..No.Codes.",
                   "Fill.4","Fill.5","Fill.6","Fill.7","Fill.8","Dental.Elected","Dental.Eff.Date","Fill.11",
+                  "Fill.1","Fill.2","Fill.3","Vision.Elected","Vision.Eff.Date",
+                  "Fill.4","Fill.5","Fill.6","Fill.7","Fill.8","Fill.9","Fill.10","Fill.11",
                   "Basic.Employee.Life.Elected","Basic.Life.Eff.Date","Voluntary.Child.Life.Elected",
                   "Vol.Child.Life.Eff.Date","Benefit.Plan.Type","Coverage.Effective.Date","Benefit.Class.Name") 
 GuardianDf <- GuardianDf[, orderColumns]
@@ -116,6 +125,7 @@ GuardianDf$Employment.Status..No.Codes.<- ifelse(GuardianDf$Employment.Status..N
        ifelse(GuardianDf$Employment.Status..No.Codes.=="RETIRED","R","T"))
 
 # Marital status codes don't matter for Guardian
+print("Getting rid of NA values in Marital Status.")
 dat<-GuardianDf$Marital.Status
 for(i in dat)
     GuardianDf$Marital.Status<- NA
