@@ -11,7 +11,7 @@ setwd("C:/Users/pwashburn/Desktop/Input")
 
 # Read in data
 print("Reading in the File.")
-Guardian<-read.csv("Guardian_SLUC_05182015-06282015_Export.csv",
+Guardian<-read.csv("06012015-06282015_IWDG_ChangeReport.csv",
                    header=TRUE,stringsAsFactors=FALSE,na.strings="NA")
 
 
@@ -85,12 +85,12 @@ print("Adding columns to match Guardian spreadsheet.")
 dat<-Guardian$Coverage.Effective.Date
 dat<-as.character(dat)
 type<-Guardian$Benefit.Plan.Type
-amt<-Guardian$Coverage.Amount.1
+amt<-as.character(Guardian$Coverage.Amount.1)
 
 Guardian$Dental.Elected<-ifelse(type=="DENTAL","Y","N")
 Guardian$Dental.Eff.Date<-ifelse(Guardian$Dental.Elected=="Y",dat," ")
 
-Guardian$Basic.Employee.Life.Elected<-ifelse(type=="BASIC EMPLOYEE LIFE","Y","N")
+Guardian$Basic.Employee.Life.Elected<-ifelse(type=="BASIC EMPLOYEE LIFE" | type=="ACCIDENT TIER BASED","Y","N")
 Guardian$Basic.Life.Eff.Date<-ifelse(Guardian$Basic.Employee.Life.Elected=="Y",dat," ")
 Guardian$Basic.Life.Coverage.Amount<-ifelse(Guardian$Basic.Employee.Life.Elected=="Y",amt," ")
 
@@ -148,15 +148,17 @@ orderColumns <- c("Employee.SSN","Last.Name","First.Name","Middle.Initial","Rela
                   "Termination.Date","Reason.for.Change","Fill.3","Salary",
                   "Fill.9","Fill.10","Location","Tobacco.User..No.Codes.",
                   "Fill.4","Fill.5","Fill.6","Fill.7","Fill.8","Dental.Elected","Dental.Eff.Date","Fill.11",
-                  "Fill.1","Fill.2","Fill.3","Vision.Elected","Vision.Eff.Date",
-                  "Fill.4","Fill.5","Fill.6","Fill.7","Fill.8","Fill.9","Fill.10","Fill.11",
-                  "Basic.Employee.Life.Elected","Basic.Life.Coverage.Amount",
-                  "Basic.Life.Eff.Date","Voluntary.Child.Life.Elected",
-                  "Vol.Child.Life.Eff.Date","Voluntary.Child.Life.Coverage.Amount",
-                  "Benefit.Plan.Type","Coverage.Effective.Date","Benefit.Class.Name",
-                  "Cancer.Elected","Cancer.Eff.Date","Voluntary.Spousal.Life.Elected","Voluntary.Spousal.Life.Coverage.Amount",
-                  "Voluntary.Spousal.Life.Eff.Date","Voluntary.Employee.Life.Elected","Voluntary.Employee.Life.Coverage.Amount",
-                  "Voluntary.Employee.Life.Eff.Date","Benefit.Plan.Type","Coverage.Effective.Date","Benefit.Class.Name") 
+                  "Fill.1","Fill.2","Vision.Elected","Vision.Eff.Date","Fill.3",
+                  "Fill.4","Basic.Employee.Life.Elected","Fill.5","Basic.Life.Coverage.Amount","Fill.6","Fill.6",
+                  "Voluntary.Employee.Life.Elected","Voluntary.Employee.Life.Coverage.Amount",
+                  "Voluntary.Employee.Life.Eff.Date","Voluntary.Child.Life.Elected","Fill.7","Voluntary.Spousal.Life.Elected",
+                  "Voluntary.Spousal.Life.Coverage.Amount","Voluntary.Child.Life.Coverage.Amount",
+                  "Voluntary.Spousal.Life.Eff.Date","Vol.Child.Life.Eff.Date","Fill.7",
+                  "Fill.8","Fill.9","Fill.10","Fill.11","Fill.1","Fill.2","Fill.3","Fill.4",
+                  "Fill.5","Basic.Life.Eff.Date","Fill.6","Fill.7","Fill.8","Fill.9",
+                  "Fill.10","Fill.11","Fill.1","Fill.2","Fill.3","Fill.4","Fill.5","Fill.6","Fill.7",
+                  "Cancer.Elected","Fill.8","Cancer.Eff.Date","Benefit.Plan.Type","Coverage.Effective.Date","Benefit.Class.Name",
+                  "Benefit.Plan.Type","Coverage.Effective.Date","Benefit.Class.Name") 
 GuardianDf <- GuardianDf[, orderColumns]
 
 # Change Employment.Status..No.Codes. to format that Guardian wants 
