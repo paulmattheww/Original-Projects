@@ -52,6 +52,11 @@ dat<-Coventry$Re.Hire.Date
 dat<-as.Date(dat,"%m/%d/%Y")
 Coventry$Re.Hire.Date<-format(dat,format="%m%d%Y")
 
+dat<-Coventry$Cost.Tier.Effective.Date
+dat<-as.Date(dat,"%m/%d/%Y")
+Coventry$Cost.Tier.Effective.Date<-format(dat,format="%m%d%Y")
+
+
 # Create new blank columns for filler 
 print("Creating filler columns.")
 col<-Coventry$Middle.Initial
