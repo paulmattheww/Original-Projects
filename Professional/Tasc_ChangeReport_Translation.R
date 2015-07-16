@@ -12,11 +12,11 @@ setwd("C:/Users/pwashburn/Desktop/Input")
 
 # Read in data
 print("Reading in the File.") 
-Tasc<-read.csv("06282015_Tasc_WestBros_Export.csv",
+Tasc<-read.csv("07142015_Tasc_WestBros_Export.csv",
                    header=TRUE,stringsAsFactors=FALSE,na.strings="NA")
 
 # Sort the data by SSN and dependent SSN
-Tasc <- Tasc[order(Tasc$Employee.SSN,Tasc$Social.Security.Number),]
+#Tasc <- Tasc[order(Tasc$Employee.SSN,Tasc$Social.Security.Number),]
 
 # Change "Employee" to "Self" under Relationship column
 print("Changing 'Employee' to 'Self' per Tasc's requirements.")
