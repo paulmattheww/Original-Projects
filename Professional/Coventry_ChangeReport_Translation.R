@@ -3,6 +3,8 @@ setwd("C:/Users/pwashburn/Desktop/Input")
 Coventry<-read.csv("07142015_Coventry_WestBros_Export.csv",
                    header=TRUE,stringsAsFactors=FALSE)
 
+print("Make sure that the sub group number is added to the end of the group no.")
+
 # Make all characters in Coventry object upper case
 Coventry<-data.frame(lapply(Coventry, function(v) {
   if (is.character(v)) return(toupper(v))
@@ -93,7 +95,7 @@ orderColumns <- c("Proc.Dt","Client.Name","FILLER","FILLER","Last.Name",
                   "Home.Address.1","FILLER","City","State","Zip",
                   "FILLER","FILLER","FILLER","FILLER",
                   "FILLER","FILLER","FILLER","FILLER",
-                  "FILLER","FILLER","Cost.Tier.Effective.Date",
+                  "FILLER","Cost.Tier.Effective.Date",
                   "Coverage.Termination.Date","Reason.for.Change",
                   "Medical.Group.Number","FILLER","Employment.Status",
                   "Relationship..No.Codes.","FILLER","FILLER","FILLER",
