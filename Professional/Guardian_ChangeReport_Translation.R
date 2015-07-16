@@ -11,7 +11,7 @@ setwd("C:/Users/pwashburn/Desktop/Input")
 
 # Read in data
 print("Reading in the File.") 
-Guardian<-read.csv("06282015_Guardian_Broadway_Export.csv",
+Guardian<-read.csv("07142015_Guardian_Intox_Export.csv",
                    header=TRUE,stringsAsFactors=FALSE,na.strings="NA")
 
 
@@ -99,6 +99,10 @@ Guardian$Cancer.Elected<-ifelse(type=="CANCER","Y","N")
 Guardian$Cancer.Eff.Date<-ifelse(Guardian$Cancer.Elected=="Y",dat," ")
 Guardian$Cancer.Descriptor<-ifelse(Guardian$Cancer.Elected =="Y",desc," ")
 
+Guardian$STD.Elected<-ifelse(type=="SHORT TERM DISABILITY","Y","N")
+Guardian$STD.Eff.Date<-ifelse(Guardian$STD.Elected=="Y",dat," ")
+Guardian$STD.Coverage.Amount<-ifelse(Guardian$STD.Elected =="Y",amt," ")
+
 # Combine spouse and child voluntary selections
 spouse<-Guardian$Voluntary.Spousal.Life.Elected
 kid<-Guardian$Voluntary.Child.Life.Elected
@@ -151,7 +155,8 @@ keeps<-names(GuardianDf) %in% c("Employee.SSN","Last.Name","First.Name","Middle.
                                 "Voluntary.Child.Life.Coverage.Amount","Basic.Life.Coverage.Amount","Benefit.Class.SubCode1",
                                 "Group.Suffix.4","Dental.Description","Benefit.Class.SubCode1","Benefit.Class.Code",
                                 "Vision.Description","Basic.Life.Description","Dep.Life.Selected",
-                                "Dep.Life.Eff.Date","Cancer.Descriptor","Cobra.Enrollment.Date")      ##ARE THERE ANYMORE WE NEED TO KEEP?
+                                "Dep.Life.Eff.Date","Cancer.Descriptor","Cobra.Enrollment.Date",
+                                "STD.Elected","STD.Eff.Date","STD.Coverage.Amount")      ##ARE THERE ANYMORE WE NEED TO KEEP?
 GuardianDf<-GuardianDf[keeps]
 
 # Put columns in same order as the Guardian spreadsheet
@@ -180,7 +185,8 @@ orderColumns <- c("Employee.SSN","Last.Name","First.Name","Middle.Initial",
                   "Cancer.Elected","Cancer.Descriptor","Cancer.Eff.Date",
                   "Benefit.Plan.Type","Coverage.Effective.Date","Benefit.Class.Name",
                   "Benefit.Class.SubCode1","Group.Suffix.4","Vision.Description",
-                  "Dep.Life.Selected","Cobra.Enrollment.Date") 
+                  "Dep.Life.Selected","Cobra.Enrollment.Date",
+                  "STD.Elected","STD.Coverage.Amount","STD.Eff.Date") 
 GuardianDf <- GuardianDf[, orderColumns]
 
 # Change Employment.Status..No.Codes. to format that Guardian wants 
@@ -214,7 +220,7 @@ GuardianDf$Gender<-ifelse(GuardianDf$Gender == "FALSE" & GuardianDf$Gender != "F
 
 # Write to CSV
 print("Writing file to CSV.")
-write.csv(GuardianDf,file="OUTPUT-GUARDIAN-CHANGEREPORT.csv")
+write.csv(GuardianDf,file="output_Guardian.csv")
 
 
 
