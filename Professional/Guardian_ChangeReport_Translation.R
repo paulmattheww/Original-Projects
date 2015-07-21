@@ -11,7 +11,7 @@ setwd("C:/Users/pwashburn/Desktop/Input")
 
 # Read in data
 print("Reading in the File.") 
-Guardian<-read.csv("07142015_Guardian_Intox_Export.csv",
+Guardian<-read.csv("07142015_Guardian_Pepsi_Export.csv",
                    header=TRUE,stringsAsFactors=FALSE,na.strings="NA")
 
 
@@ -54,12 +54,13 @@ Guardian$Hours.Per.Week<-ifelse(!is.na(Guardian$Hours.Per.Week),Guardian$Hours.P
 
 # Transform Reason.for.Change column into Guardian codes; 
 # LA=Leave of Absence, MD=Member Death, TE=Terminated, AD=Adoption, BR=Birth, MR=Marriage, DI=Divorce, OT=Other, CB=Cobra, ST=State
-print("Coding reason per Guardian specs.")
+print("Coding reason per Guardian specs. Saving Reason for Change long version for downstream code.")
+reasons<-as.character(Guardian$Reason.for.Change)
 Guardian$Reason.for.Change<-ifelse(Guardian$Reason.for.Change=="TERMINATION","TE",
                                    ifelse(Guardian$Reason.for.Change=="BIRTH","BR",
                                           ifelse(Guardian$Reason.for.Change=="MARRIAGE","MR",
                                                  ifelse(Guardian$Reason.for.Change=="DIVORCE","DI",
-                                                        ifelse(Guardian$Reason.for.Change=="COBRA ACTIVATION","CO","OT")))))
+                                                        ifelse(grepl("COBRA",Guardian$Reason.for.Change),"CO","OT")))))
 
 # Add columns necessary
 print("Adding columns to match Guardian spreadsheet.")
@@ -68,48 +69,57 @@ dat<-as.character(dat)
 type<-Guardian$Benefit.Plan.Type
 amt<-as.character(Guardian$Coverage.Amount.1)
 desc<-as.character(Guardian$Group.Suffix.4)
+term<-as.character(Guardian$Coverage.Termination.Date)
+term<-ifelse(grepl("9999",term),"",term)
 
-Guardian$Dental.Elected<-ifelse(type=="DENTAL","Y","N")
-Guardian$Dental.Eff.Date<-ifelse(Guardian$Dental.Elected=="Y",dat," ")
-Guardian$Dental.Description<-ifelse(Guardian$Dental.Elected=="Y",desc," ")
+Guardian$Dental.Elected<-ifelse(type=="DENTAL","Y","")
+Guardian$Dental.Eff.Date<-ifelse(Guardian$Dental.Elected=="Y",dat,"")
+Guardian$Dental.Description<-ifelse(Guardian$Dental.Elected=="Y",desc,"")
+Guardian$Dental.Term.Eff.Date<-ifelse(term != is.null(term) & Guardian$Dental.Elected=="Y",term, "")
 
-Guardian$Basic.Employee.Life.Elected<-ifelse(type=="BASIC EMPLOYEE LIFE" | type=="ACCIDENT TIER BASED","Y","N")
-Guardian$Basic.Life.Eff.Date<-ifelse(Guardian$Basic.Employee.Life.Elected=="Y",dat," ")
-Guardian$Basic.Life.Coverage.Amount<-ifelse(Guardian$Basic.Employee.Life.Elected=="Y",amt," ")
-Guardian$Basic.Life.Description<-ifelse(Guardian$Basic.Employee.Life.Elected=="Y",desc," ")
+Guardian$Basic.Employee.Life.Elected<-ifelse(type=="BASIC EMPLOYEE LIFE" | type=="ACCIDENT TIER BASED","Y","")
+Guardian$Basic.Life.Eff.Date<-ifelse(Guardian$Basic.Employee.Life.Elected=="Y",dat,"")
+Guardian$Basic.Life.Coverage.Amount<-ifelse(Guardian$Basic.Employee.Life.Elected=="Y",amt,"")
+Guardian$Basic.Life.Description<-ifelse(Guardian$Basic.Employee.Life.Elected=="Y",desc,"")
+Guardian$Basic.Life.Term.Date<-ifelse(term != is.null(term) & Guardian$Basic.Employee.Life.Elected=="Y",term, "")
 
-Guardian$Voluntary.Employee.Life.Elected<-ifelse(type=="VOLUNTARY EMPLOYEE LIFE" | type=="VOLUNTARY SPOUSAL LIFE (INDIVIDUAL)","Y","N")
-Guardian$Voluntary.Employee.Life.Eff.Date<-ifelse(Guardian$Voluntary.Employee.Life.Elected=="Y",dat," ")
-Guardian$Voluntary.Employee.Life.Coverage.Amount<-ifelse(Guardian$Voluntary.Employee.Life.Elected=="Y",amt," ")
+Guardian$Voluntary.Employee.Life.Elected<-ifelse(type=="VOLUNTARY EMPLOYEE LIFE" | type=="VOLUNTARY SPOUSAL LIFE (INDIVIDUAL)","Y","")
+Guardian$Voluntary.Employee.Life.Eff.Date<-ifelse(Guardian$Voluntary.Employee.Life.Elected=="Y",dat,"")
+Guardian$Voluntary.Employee.Life.Coverage.Amount<-ifelse(Guardian$Voluntary.Employee.Life.Elected=="Y",amt,"")
+Guardian$Voluntary.Employee.Life.Term.Eff.Date<-ifelse(term != is.null(term) & Guardian$Voluntary.Employee.Life.Elected=="Y",term, "")
 
+Guardian$Voluntary.Spousal.Life.Elected<-ifelse(type=="VOLUNTARY SPOUSAL LIFE","Y","")
+Guardian$Voluntary.Spousal.Life.Eff.Date<-ifelse(Guardian$Voluntary.Spousal.Life.Elected=="Y",dat,"")
+Guardian$Voluntary.Spousal.Life.Coverage.Amount<-ifelse(Guardian$Voluntary.Spousal.Life.Elected=="Y",amt,"")
+Guardian$Voluntary.Spousal.Life.Term.Date<-ifelse(term != is.null(term) & Guardian$Voluntary.Spousal.Life.Elected=="Y",term, "")
 
-Guardian$Voluntary.Spousal.Life.Elected<-ifelse(type=="VOLUNTARY SPOUSAL LIFE","Y","N")
-Guardian$Voluntary.Spousal.Life.Eff.Date<-ifelse(Guardian$Voluntary.Spousal.Life.Elected=="Y",dat," ")
-Guardian$Voluntary.Spousal.Life.Coverage.Amount<-ifelse(Guardian$Voluntary.Spousal.Life.Elected=="Y",amt," ")
+Guardian$Voluntary.Child.Life.Elected<-ifelse(type=="VOLUNTARY CHILD LIFE","Y","")
+Guardian$Vol.Child.Life.Eff.Date<-ifelse(Guardian$Voluntary.Child.Life.Elected=="Y",dat,"")
+Guardian$Voluntary.Child.Life.Coverage.Amount<-ifelse(Guardian$Voluntary.Child.Life.Elected=="Y",amt,"")
+Guardian$Voluntary.Child.Life.Term.Date<-ifelse(term != is.null(term) & Guardian$Voluntary.Child.Life.Elected=="Y",term, "")
 
-Guardian$Voluntary.Child.Life.Elected<-ifelse(type=="VOLUNTARY CHILD LIFE","Y","N")
-Guardian$Vol.Child.Life.Eff.Date<-ifelse(Guardian$Voluntary.Child.Life.Elected=="Y",dat," ")
-Guardian$Voluntary.Child.Life.Coverage.Amount<-ifelse(Guardian$Voluntary.Child.Life.Elected=="Y",amt," ")
+Guardian$Vision.Elected<-ifelse(type=="VISION","Y","")
+Guardian$Vision.Eff.Date<-ifelse(Guardian$Vision.Elected=="Y",dat,"")
+Guardian$Vision.Description<-ifelse(Guardian$Vision.Elected=="Y",desc,"")
+Guardian$Vision.Term.Date<-ifelse(term != is.null(term) & Guardian$Vision.Elected=="Y",term, "")
 
-Guardian$Vision.Elected<-ifelse(type=="VISION","Y","N")
-Guardian$Vision.Eff.Date<-ifelse(Guardian$Vision.Elected=="Y",dat," ")
-Guardian$Vision.Description<-ifelse(Guardian$Vision.Elected=="Y",desc," ")
+Guardian$Cancer.Elected<-ifelse(type=="CANCER","Y","")
+Guardian$Cancer.Eff.Date<-ifelse(Guardian$Cancer.Elected=="Y",dat,"")
+Guardian$Cancer.Descriptor<-ifelse(Guardian$Cancer.Elected =="Y",desc,"")
+Guardian$Cancer.Term.Date<-ifelse(term != is.null(term) & Guardian$Cancer.Elected=="Y",term, "")
 
-Guardian$Cancer.Elected<-ifelse(type=="CANCER","Y","N")
-Guardian$Cancer.Eff.Date<-ifelse(Guardian$Cancer.Elected=="Y",dat," ")
-Guardian$Cancer.Descriptor<-ifelse(Guardian$Cancer.Elected =="Y",desc," ")
-
-Guardian$STD.Elected<-ifelse(type=="SHORT TERM DISABILITY","Y","N")
-Guardian$STD.Eff.Date<-ifelse(Guardian$STD.Elected=="Y",dat," ")
-Guardian$STD.Coverage.Amount<-ifelse(Guardian$STD.Elected =="Y",amt," ")
+Guardian$STD.Elected<-ifelse(type=="SHORT TERM DISABILITY","Y","")
+Guardian$STD.Eff.Date<-ifelse(Guardian$STD.Elected=="Y",dat,"")
+Guardian$STD.Coverage.Amount<-ifelse(Guardian$STD.Elected =="Y",amt,"")
+Guardian$STD.Term.Date<-ifelse(term != is.null(term) & Guardian$STD.Elected=="Y",term, "")
 
 # Combine spouse and child voluntary selections
+dat<-Guardian$Coverage.Effective.Date
+dat<-as.character(dat)
 spouse<-Guardian$Voluntary.Spousal.Life.Elected
 kid<-Guardian$Voluntary.Child.Life.Elected
-Guardian$Dep.Life.Selected<-ifelse(spouse == "Y" | kid == "Y", "Y", "N")
-
-# Combine Dependent and Spouse effective dates using an or statement
-Guardian$Dep.Life.Eff.Date<-ifelse(spouse == "Y" | kid == "Y",dat," ")
+Guardian$Dep.Life.Selected<-ifelse(spouse == "Y" | kid == "Y", "Y", "")
+Guardian$Dep.Life.Eff.Date<-ifelse(spouse == "Y" | kid == "Y",dat,"")
 
 
 # Get rid of dates far in future 
@@ -132,10 +142,19 @@ ben<-as.character(Guardian$Benefit.Class.Date)
 Cobra.Enrollment.Date<-ifelse(Guardian$Reason.for.Change=="CO",ben," ")
 Guardian<-cbind(Guardian,Cobra.Enrollment.Date)
 
+# Put Y or N in Coverage Extension column
+Guardian$Coverage.Extension<-ifelse(Guardian$Reason.for.Change=="CO","Y","")
+
+# Replace Hire.Date column with Re.Hire.Date if it exists, if not then keep as is
+print("Replace hire date with rehire date if it exists. Print of rehire date to be sure.")
+dat<-as.character(Guardian$Hire.Date)
+redat<-as.character(Guardian$Re.Hire.Date)
+redat
+Guardian$Hire.Date<-ifelse(is.na(redat),dat,redat)
 
 
 
-### Data manipulation done above this line, below is formatting etc
+print("Creating a new data frame filtering out and arranging columns.")
 # Create new data frame from Guardian object
 # Drop all columns that are not necessary 
 print("Dropping unnecessary columns and saving to new data frame.")
@@ -148,7 +167,7 @@ keeps<-names(GuardianDf) %in% c("Employee.SSN","Last.Name","First.Name","Middle.
                                 "Dental.Elected","Dental.Eff.Date","Vision.Elected","Vision.Eff.Date",
                                 "Basic.Employee.Life.Elected","Basic.Life.Eff.Date","Voluntary.Child.Life.Elected",
                                 "Vol.Child.Life.Eff.Date","Benefit.Plan.Type","Coverage.Effective.Date","Benefit.Class.Name",
-                                "Cancer.Elected","Cancer.Eff.Date","Voluntary.Spousal.Life.Elected",
+                                "Cancer.Elected","Cancer.Eff.Date","Cancer.Term.Date","Voluntary.Spousal.Life.Elected",
                                 "Voluntary.Spousal.Life.Eff.Date","Voluntary.Spousal.Life.Coverage.Amount",
                                 "Voluntary.Employee.Life.Elected","Voluntary.Employee.Life.Eff.Date",
                                 "Voluntary.Employee.Life.Coverage.Amount","Voluntary.Spousal.Life.Coverage.Amount",
@@ -156,7 +175,10 @@ keeps<-names(GuardianDf) %in% c("Employee.SSN","Last.Name","First.Name","Middle.
                                 "Group.Suffix.4","Dental.Description","Benefit.Class.SubCode1","Benefit.Class.Code",
                                 "Vision.Description","Basic.Life.Description","Dep.Life.Selected",
                                 "Dep.Life.Eff.Date","Cancer.Descriptor","Cobra.Enrollment.Date",
-                                "STD.Elected","STD.Eff.Date","STD.Coverage.Amount")      ##ARE THERE ANYMORE WE NEED TO KEEP?
+                                "STD.Elected","STD.Eff.Date","STD.Coverage.Amount","Coverage.Extension",
+                                "Dental.Term.Eff.Date","Basic.Life.Term.Date","Voluntary.Employee.Life.Term.Eff.Date",
+                                "Voluntary.Spousal.Life.Term.Date","Voluntary.Child.Life.Term.Date",
+                                "Vision.Term.Date","Cancer.Term.Date","STD.Term.Date")      ##ARE THERE ANYMORE WE NEED TO KEEP?
 GuardianDf<-GuardianDf[keeps]
 
 # Put columns in same order as the Guardian spreadsheet
@@ -167,17 +189,18 @@ orderColumns <- c("Employee.SSN","Last.Name","First.Name","Middle.Initial",
                   "Home.Address.1","City","State",
                   "Zip","Work.Email","Work.Phone","Hire.Date",
                   "Hours.Per.Week","Employment.Status..No.Codes.",
-                  "Coverage.Termination.Date","Reason.for.Change","FILLER","Salary",
+                  "Coverage.Termination.Date","Reason.for.Change","Coverage.Extension","Salary",
                   "FILLER","Benefit.Class.Code","Location",
                   "Tobacco.User..No.Codes.",
                   "FILLER","FILLER","FILLER","FILLER","FILLER",
                   "Dental.Elected","Dental.Eff.Date","Dental.Description",
-                  "FILLER","FILLER","Vision.Elected","Vision.Eff.Date","Vision.Description",
-                  "FILLER","Basic.Employee.Life.Elected","Basic.Life.Description",
-                  "Basic.Life.Coverage.Amount","Basic.Life.Eff.Date","FILLER","FILLER",
+                  "Dental.Term.Eff.Date","FILLER","Vision.Elected","Vision.Eff.Date","Vision.Description",
+                  "Vision.Term.Date","Basic.Employee.Life.Elected","Basic.Life.Description",
+                  "Basic.Life.Coverage.Amount","Basic.Life.Eff.Date","Basic.Life.Term.Date","FILLER",
                   "Voluntary.Employee.Life.Elected","Voluntary.Employee.Life.Coverage.Amount",
-                  "Voluntary.Employee.Life.Eff.Date","FILLER","Dep.Life.Selected","FILLER",
-                  "Voluntary.Spousal.Life.Coverage.Amount","Voluntary.Child.Life.Coverage.Amount","Dep.Life.Eff.Date",
+                  "Voluntary.Employee.Life.Eff.Date","Voluntary.Employee.Life.Term.Eff.Date","Dep.Life.Selected","FILLER",
+                  "Voluntary.Spousal.Life.Coverage.Amount","Voluntary.Child.Life.Coverage.Amount",
+                  "Voluntary.Child.Life.Term.Date","Dep.Life.Eff.Date",
                   "FILLER","FILLER","FILLER","FILLER","FILLER","FILLER",
                   "FILLER","FILLER","FILLER",
                   "FILLER","FILLER","FILLER","FILLER","FILLER","FILLER",
@@ -186,7 +209,8 @@ orderColumns <- c("Employee.SSN","Last.Name","First.Name","Middle.Initial",
                   "Benefit.Plan.Type","Coverage.Effective.Date","Benefit.Class.Name",
                   "Benefit.Class.SubCode1","Group.Suffix.4","Vision.Description",
                   "Dep.Life.Selected","Cobra.Enrollment.Date",
-                  "STD.Elected","STD.Coverage.Amount","STD.Eff.Date") 
+                  "STD.Elected","STD.Coverage.Amount","STD.Eff.Date","STD.Term.Date",
+                  "Voluntary.Spousal.Life.Term.Date") 
 GuardianDf <- GuardianDf[, orderColumns]
 
 # Change Employment.Status..No.Codes. to format that Guardian wants 
@@ -211,7 +235,25 @@ print("Creating an index for the dataset.")
 GuardianDf$Index<-paste(GuardianDf$Relationship..No.Codes.,GuardianDf$First.Name,GuardianDf$Last.Name,GuardianDf$Date.of.Birth,sep="_")
 
 # Fix gender if it was all female it will all show up as False now
-GuardianDf$Gender<-ifelse(GuardianDf$Gender == "FALSE" & GuardianDf$Gender != "F", "F","M")
+print("Only use this code if there are some weird false records in Gender; printed to help.")
+GuardianDf$Gender
+#GuardianDf$Gender<-ifelse(GuardianDf$Gender == "FALSE" & GuardianDf$Gender != "F", "F","M")
+
+# If Reason is Other (OT) populate FILLER 1 column
+print("Print 'reasons' object then append to FILLER1 to end of table.")
+changeType<-as.character(Guardian$Change.Type)
+changeType
+reasons
+changeReasons<-c(changeType,reasons)
+GuardianDf$FILLERGUARDIAN<-ifelse(GuardianDf$Reason.for.Change=="OT",changeReasons,"")
+GuardianDf$FILLERGUARDIAN<-ifelse(GuardianDf$Reason.for.Change=="OT",reasons,"")
+
+
+# Replace 12/31/9999 in Coverage Termination Date with nothing
+print("Removing 9999 from Coverage Termination Date.")
+dat<-as.character(GuardianDf$Coverage.Termination.Date)
+GuardianDf$Coverage.Termination.Date<-ifelse(grepl("9999",dat)," ",dat)
+
 
 
 
