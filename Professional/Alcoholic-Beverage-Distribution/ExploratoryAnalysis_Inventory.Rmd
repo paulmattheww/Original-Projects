@@ -1,0 +1,369 @@
+---
+title: 'Exploratory Analysis: Inventory'
+author: "Paul M. Washburn"
+date: "August 26, 2015"
+output: html_document
+---
+
+# Overview
+Inventory carrying cost is a huge component of the firm's profitability. Ideally, we will minimize inventory while still never running out of SKUs demanded. 
+
+This analysis is intended to highlight issues and/or opportunities, and is not meant to be conclusive.
+
+The data utilized is from the inventory history file maintained by Marissa Arlin, which tracks daily inventory by product type and warehouse. 
+
+### Staging the Data
+The code below reads in the data (csv format) and converts the data to the classes necessary. It is of interest to characterize inventory levels since the start of this decade in both the Saint Louis and Kansas City warehouses. Before generating any summaries, a subset of the original dataset will need to be segregated. 
+```{r}
+setwd("C:/Users/pmwash/Desktop/R_Files")
+inventory <- read.csv("InventoryHistory.csv", header=TRUE)
+thisDecade <- inventory[which(inventory$Year >= 2010),]
+```
+
+
+# Summary Graphics
+
+### *** *** Warehouse
+This graph shows a time-series of inventory levels for the *** *** warehouse, and uses a boxplot to characterize the distribution by Year.
+```{r}
+suppressWarnings(library(ggplot2))
+suppressWarnings(library(scales))
+stl <- ggplot(data=thisDecade, aes(Month, y=stli.Total))
+stl <- stl + geom_boxplot(fill="pink",aes(x=Month, y=stli.Total)) + 
+  geom_jitter(aes(colour=factor(Year),size=stli.Total)) +
+  facet_wrap(~Year,nrow=1) + theme(axis.text.x=element_text(angle=90,
+                                                            hjust=1)) +
+  geom_smooth(size=1,colour="black") + theme(legend.position="right") +
+  labs(title="Saint Louis Overall Inventory Levels ($)",
+       y="Dollars ($)",x="Month") +
+  scale_y_continuous(labels=dollar) 
+stl
+```
+
+### *** *** Warehouse
+This plot is of the same theme as above, but for the *** *** warehouse.
+```{r}
+kc <- ggplot(data=thisDecade, aes(Month, y=kci.Total))
+kc <- kc + geom_boxplot(fill="lightblue",aes(x=Month, y=kci.Total)) + 
+  geom_jitter(aes(colour=factor(Year),size=kci.Total)) +
+  facet_wrap(~Year,nrow=1) + theme(axis.text.x=element_text(angle=90,
+                                                            hjust=1)) +
+  geom_smooth(size=1,colour="black") + theme(legend.position="right") +
+  labs(title="Kansas City Overall Inventory Levels ($)",
+       y="Dollars ($)",x="Month") +
+  scale_y_continuous(labels=dollar) 
+kc
+```
+
+### Both Warehouses
+This plot is of the same theme as above,  for both warehouses together.
+```{r}
+both <- ggplot(data=thisDecade, aes(Month, y=Total))
+both <- both + geom_boxplot(fill="darkgray",
+                            aes(x=Month, y=Total)) + 
+  geom_jitter(aes(colour=factor(Year),size=Total)) +
+  facet_wrap(~Year,nrow=1) + theme(axis.text.x=element_text(angle=90,                                                      hjust=1)) +
+  geom_smooth(size=1,colour="black") + theme(legend.position="right") +
+  labs(title="Overall Inventory Levels ($) for KC & STL Warehouses",
+       y="Dollars ($)",x="Month") +
+  scale_y_continuous(labels=dollar) 
+both
+```
+
+### Both Warehouses
+Let's view the graphs we just created on the same pain.
+```{r}
+library(gridExtra)
+warehouseInventory <- grid.arrange(stl,kc,ncol=1)
+warehouseInventory
+```
+
+## Inventory by Product Class
+To characterize the aggregate inventory levels by product type we will look at similar graphs for Beer, Wine, Spirits and Non-Alcoholic beverages. 
+
+### Beer Inventory
+```{r}
+thisDecade$Total.Beer <-
+  as.numeric(levels(thisDecade$Total.Beer))[thisDecade$Total.Beer]
+beer <- ggplot(data=thisDecade, aes(x=Month, y=Total.Beer))
+beer <- beer + geom_boxplot(fill="red") + 
+  geom_jitter(aes(colour=factor(Year),size=Total.Beer)) +
+  facet_wrap(~Year,nrow=1) + theme(axis.text.x=element_text(angle=90,                                                         hjust=1), legend.position="right") +
+  geom_smooth(size=1,colour="black") + theme(legend.position="right") +
+  labs(title="Beer Inventory Levels ($), KC & STL",
+       y="Dollars ($)",x="Month") +
+  scale_y_continuous(labels=dollar) 
+beer
+```
+
+### Wine Inventory
+```{r}
+wine <- ggplot(data=thisDecade, aes(x=Month, y=Total.Wine))
+wine <- wine + geom_boxplot(fill="purple") + 
+  geom_jitter(aes(colour=factor(Year),size=Total.Wine)) +
+  facet_wrap(~Year,nrow=1) + theme(axis.text.x=element_text(angle=90,                                                 hjust=1)) +
+  geom_smooth(size=1,colour="black") + theme(legend.position="right") +
+  labs(title="Wine Inventory Levels ($), KC & STL",
+       y="Dollars ($)",x="Month") +
+  scale_y_continuous(labels=dollar) 
+wine
+```
+
+### Liquor Inventory
+```{r}
+liquor <- ggplot(data=thisDecade, aes(x=Month, y=Total.Liquor))
+liquor <- liquor + geom_boxplot(fill="orange") + 
+  geom_jitter(aes(colour=factor(Year),size=Total.Liquor)) +
+  facet_wrap(~Year,nrow=1) + theme(axis.text.x=element_text(angle=90,                                                 hjust=1)) +
+  geom_smooth(size=1,colour="black") + theme(legend.position="right") +
+  labs(title="Liquor Inventory Levels ($), KC & STL",
+       y="Dollars ($)",x="Month") +
+  scale_y_continuous(labels=dollar) 
+liquor
+```
+
+### Non-Alcoholic
+```{r}
+nonAlc <- ggplot(data=thisDecade, aes(x=Month, y=Total.NA))
+nonAlc <- nonAlc + geom_boxplot(fill="yellow") + 
+  geom_jitter(aes(colour=factor(Year),size=Total.NA)) +
+  facet_wrap(~Year,nrow=1) + theme(axis.text.x=element_text(angle=90,                                                 hjust=1)) +
+  geom_smooth(size=1,colour="black") + theme(legend.position="right") +
+  labs(title="Non-Alcoholic Inventory Levels ($), KC & STL",
+       y="Dollars ($)",x="Month") +
+  scale_y_continuous(labels=dollar) 
+nonAlc
+```
+
+### All Product Classes
+Let's view the graphs we just created on the same pain.
+```{r}
+library(gridExtra)
+productTypes <- grid.arrange(liquor, wine, beer, nonAlc, ncol=2)
+productTypes
+```
+
+
+
+# Active SKUs
+SKU data exists for 2015 and forward, so first we will have to subset the data to include only this year.
+
+### *** SKU Diversity
+```{r}
+thisYear <- inventory[which(inventory$Year >= 2015),]
+stlSku <- ggplot(data=thisYear, aes(x=factor(Month), y=ActiveSKUs.STL))
+stlSku <- stlSku + geom_boxplot(colour="black", fill="lightgreen") + 
+  geom_jitter(aes(colour=ActiveSKUs.STL, size=ActiveSKUs.STL)) +
+  facet_wrap(~Year,nrow=1) + theme(axis.text.x=element_text(angle=90,                                                 hjust=1)) +
+  geom_smooth(size=1,colour="black", aes(group=1)) + 
+  theme(legend.position="bottom") +
+  labs(title="Active SKUs for Saint Louis",
+       y="Number of SKUs",x="Month")
+  scale_y_continuous() 
+stlSku
+```
+
+### *** SKU Diversity
+```{r}
+kcSku <- ggplot(data=thisYear, aes(x=factor(Month), y=Active.SKUs.KC))
+kcSku <- kcSku + geom_boxplot(colour="black", fill="coral") + 
+  geom_jitter(aes(colour=Active.SKUs.KC, size=Active.SKUs.KC)) +
+  facet_wrap(~Year,nrow=1) + theme(axis.text.x=element_text(angle=90,                                                 hjust=1)) +
+  geom_smooth(size=1,colour="black", aes(group=1)) + 
+  theme(legend.position="bottom") +
+  labs(title="Active SKUs for Kansas City",
+       y="Number of SKUs",x="Month")
+  scale_y_continuous() 
+kcSku
+```
+
+
+
+
+
+# Lot Tracking & Spoilage of Beer
+The amount of beer spoilage ***. The data will be sorted by Remaining.Shelf.Life so that the oldest beers are on top.
+```{r}
+setwd("C:/Users/pmwash/Desktop/R_Files")
+lots <- read.csv("LotTracking.csv",header=TRUE)
+lots <- lots[order(lots$Remaining.Shelf.Life),]
+```
+
+First we categorize beer lots by Remaining.Shelf.Life and then view the first two rows of the data. We are also interested in whether or the Days.to.Deplete.by.Lot is greater than the Remaining.Shelf.Life of a particular lot. Both columns will be added to this dataframe by using "if else" logic. 
+```{r}
+shelf <- lots$Remaining.Shelf.Life
+lotCategories <- lots$Remaining.Shelf.Category <-
+  ifelse(shelf < 0, "Expired",
+         ifelse(0 <= shelf & shelf < 15, "Less Than 15 Days",
+                ifelse(15 <= shelf & shelf < 30, "15 - 29 Days",
+                       ifelse(30 <= shelf & shelf < 45, "30 - 44 Days",
+                              ifelse(45 <= shelf & shelf < 60, "45 - 59 Days",
+                                     ifelse(shelf > 60, "Greater Than 60 Days", ""))))))
+
+daysToDeplete <- lots$Days.to.Deplete.by.Lot
+tooMuch <- lots$Too.Much <- 
+  ifelse(daysToDeplete > shelf, "Too Much On Hand", 
+         "Adequate Supply On Hand")
+head(lots,2)
+```
+
+Here we characterize the inventory levels in each category.
+```{r}
+suppressWarnings(library(ggplot2))
+suppressWarnings(library(scales))
+
+cat <- ggplot(data=lots, aes(x=factor(Remaining.Shelf.Category),
+                             y=Remaining.Lot.Value, fill=factor(Too.Much)))
+cat + geom_bar(stat="identity",
+               aes(x=Remaining.Shelf.Category, y=Remaining.Lot.Qty,
+                   fill=factor(Too.Much))) +
+  scale_x_discrete(limits=c("Expired", "Less Than 15 Days",
+                            "15 - 29 Days", "30 - 44 Days",
+                            "45 - 59 Days")) +
+  theme(legend.position="bottom",axis.text.x=
+          element_text(angle=90, hjust=1)) +
+  labs(title="Beer Lots: Quantity Remaining by Remaining Shelf Life",
+       x="Remaining Shelf Life", y="Dollar ($) Value Remaining") +
+  facet_wrap(~ Warehouse) + scale_y_continuous(labels=dollar)  +
+  scale_fill_manual(values=c("forestgreen","orangered1"))
+
+# Isolate brands that are "too much" (red)
+```
+
+Taking categories out of the equation, here we will explore the distribution of lots and their remaining shelf life. 
+```{r}
+dist <- ggplot(data=lots, aes(x=Remaining.Shelf.Life, group=Too.Much))
+dist + geom_histogram(binwidth=30, colour="black",
+                      aes(y = ..count.., fill=Too.Much)) +
+  geom_density(aes(group=Warehouse)) + facet_wrap(~ Warehouse, ncol=1) + 
+  coord_cartesian(xlim=c(-500, 400)) +
+  scale_fill_manual(values=c("forestgreen","orangered1")) +
+  theme(legend.position="bottom") +
+  scale_x_continuous(breaks=round(seq(-500,
+                                      max(lots$Remaining.Shelf.Life),
+                                      by=50),1)) +
+  labs(title=
+         "Distribution of Remaining Shelf Life (Beer Lots) by Warehouse",
+       x="Remaining Shelf Life (Bin Width = 30)", y="Count")
+```
+
+
+
+
+
+# Beer Sales by SKU
+This data comes from the marker in Diver and includes data from the last three years. 
+
+We will remove data where there were no sales. 
+
+```{r}
+dailyBeer <- read.csv("DailyBeerSales.csv",header=TRUE)
+dailyBeer <- dailyBeer[which(dailyBeer$Keg.Adjust.Dollars > 0
+                             & dailyBeer$Keg.Adjust.GP > 0),]
+dailyBeer$Keg.Adjust.GP <- as.numeric(dailyBeer$Keg.Adjust.GP)
+suppressWarnings(library(dplyr))
+dailyBeer <- filter(dailyBeer, Keg.Adjust.GP < 100)
+dailyBeer <- filter(dailyBeer, Keg.Adjust.GP > 20)
+dailyBeer <- filter(dailyBeer, Product.Category != "OTHER")
+dailyBeer$Product.Size <- as.factor(dailyBeer$Product.Size)
+```
+
+
+Distribution of mark-up by Product Category. 
+```{r}
+suppressWarnings(library(dplyr))
+suppressWarnings(library(ggplot2))
+g <- ggplot(data=dailyBeer, aes(x=Keg.Adjust.GP))
+g + geom_histogram(colour="black",aes(fill=Product.Category)) +
+  theme(legend.position="bottom") + facet_wrap(~Product.Category) +
+  geom_density() + labs(title="Gross Profit (% Markup on Cost) by Category",
+                        x="Keg Adjusted GP (%) Bins", y="Count",
+                        sub="Taken from daily sales data 2013-2015")
+```
+
+
+Distribution of mark-up for *** by Brand 
+```{r}
+suppressWarnings(library(dplyr))
+schlafly <- filter(dailyBeer, Supplier == "ST. LOUIS BREWING 803933/803934 (218)")
+g <- ggplot(data=schlafly, aes(x=Keg.Adjust.GP))
+g + geom_histogram(colour="black", aes(fill=Brand)) +
+  theme(legend.position="bottom") + facet_wrap(~Brand) +
+  geom_density() + labs(title="Schlafly: Gross Profit (% Markup on Cost) by Brand",
+                        x="Keg Adjusted GP (%) Bins", y="Count")
+```
+
+*** is our number 1 best selling beer. Let's look at it a bit more closely. 
+```{r}
+paleAle <- filter(schlafly, Brand == "SCHLAFLY PALE (218-637)")
+s <- ggplot(data=paleAle, aes(x=factor(Month), y=Keg.Adjust.Dollars))
+paleAleSales <- s + geom_boxplot(aes(x=factor(Month), fill=factor(Year),
+                                     outliers="red")) + 
+  geom_jitter(size=0.1) +
+  theme(legend.position="bottom", axis.text.x=element_text(angle=90,hjust=1)) +
+  geom_smooth(colour="black", size=1, aes(group=1)) +
+  labs(title="Sales by Month of Schlafly Pale Ale") + facet_wrap(~Year)
+
+# Time series of *** (Mark Up)
+s <- ggplot(data=paleAle, aes(x=factor(Month), y=Keg.Adjust.GP))
+paleAlePricing <- s + geom_boxplot(aes(x=factor(Month), fill=factor(Year),
+                                       outliers="red")) + 
+  geom_point(size=0.1) +
+  theme(legend.position="bottom", axis.text.x=element_text(angle=90,hjust=1)) +
+  geom_smooth(colour="red", size=1, aes(group=1)) +
+  labs(title="Percent Mark-Up of Schlafly Pale Ale") + 
+  scale_y_continuous(limits=c(min(paleAle$Keg.Adjust.GP), 40)) +
+  facet_wrap(~Year) 
+
+suppressWarnings(library(gridExtra))
+grid.arrange(paleAleSales, paleAlePricing, ncol=1)
+```
+
+
+Now that we have noticed a *** both sales and margin we should dig deeper and look at product sizes.
+```{r}
+paleAle <- filter(schlafly, Brand == "SCHLAFLY PALE (218-637)")
+s <- ggplot(data=paleAle, aes(x=Year.Month, y=Keg.Adjust.Dollars))
+paleAleSizes <- s + geom_boxplot(aes(x=factor(Year.Month), fill=factor(Year))) + 
+  theme(legend.position="bottom", axis.text.x=element_text(angle=90,hjust=1)) +
+  geom_smooth(colour="black", size=1, aes(group=1)) +
+  labs(title="Sales by Month of Schlafly Pale Ale by Product Size") + 
+  scale_y_continuous(limits=c(0, 7500)) + geom_jitter(size=0.05) +
+  facet_wrap(~Product.Size, ncol=3)
+paleAleSizes
+```
+
+We see the biggest decline is in Product.Size = 12Z. Let us subset further to dive into the types of packaging. This information lives in the "Product" field. 
+```{r}
+paleAleBottles <- paleAle
+size <- paleAleBottles$Product.Size
+paleAleBottles$Is.12Z <- ifelse(grepl("12Z", size), "Y", "N")
+paleAleBottles <- filter(paleAleBottles, Is.12Z == "Y")
+
+s <- ggplot(data=paleAleBottles, aes(x=Year.Month, y=Keg.Adjust.Dollars))
+paleAleSizes <- s + geom_boxplot(aes(x=factor(Year.Month), fill=factor(Year))) + 
+  theme(legend.position="bottom", axis.text.x=element_text(angle=90,hjust=1)) +
+  geom_smooth(colour="black", size=1, aes(group=1)) +
+  labs(title="Sales by Month of Schlafly Pale Ale by Product Size") + 
+  scale_y_continuous(limits=c(0, 7500)) + geom_jitter(size=0.05) +
+  facet_wrap(~Product, ncol=2)
+paleAleSizes
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
