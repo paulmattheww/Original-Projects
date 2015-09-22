@@ -7,7 +7,7 @@ output: pdf_document
 
 
 ## Gather Data 
-Each month's data was compiled from the daily reports filled out by Paul Cunningham. The actual code to compile this data is not included in this document due to its lack of relevance. 
+Each month's data was compiled from the daily reports filled out by *** ***. The actual code to compile this data is not included in this document due to its lack of relevance. 
 
 The code below compiles all the data, manipulates variable classes, and purges Driver names that are not relevant to this inquiry.
 
@@ -39,7 +39,7 @@ paste("The average number of stops per driver per day is",
 
 
 
-After backing out all routes that are not attributed to drivers we see there was an increase of 1147 cases delivered YTD through August, which is an increase of 0.87%. These figures are consistent with Hogan's claims that stops have increased by ~1,000, but it does not appear to be a significant increase.
+After backing out all routes that are not attributed to drivers we see there was an increase of **** cases delivered YTD through August, which is an increase of ***%. These figures are consistent with Hogan's claims that stops have increased by ~1,000, but it does not appear to be a significant increase.
 ```{r}
 library(dplyr)
 stops2014 <- productionHistory %>% 
@@ -117,7 +117,7 @@ paste("This is an increase of", round(casePercentIncrease, 4), "%")
 
 
 
-Below is information on driver collections. From Hogan's own data, supplied by this years and last year's invoices under the metrics section, there was only a 0.86% increase in collections. 
+Below is information on driver collections. From Hogan's own data, supplied by this years and last year's invoices under the metrics section, there was only a ***% increase in collections. 
 ```{r}
 byMonth <- aggregate(DRIVER.COLLECTS ~ MONTH + YEAR, hoganData, sum)
 library(scales)
@@ -168,7 +168,7 @@ byYear
 
 
 
-From internal data we see that the average cases per driver per day is 318.79 and the average number of stops per driver per day is 20.97. The average number of cases per stop is 40.6.
+From internal data we see that the average cases per driver per day is *** and the average number of stops per driver per day is ***. The average number of cases per stop is ***.
 ```{r}
 totalCases <- as.numeric(ifelse(productionHistory$total.cases > 0,
                      productionHistory$total.cases, ""))
