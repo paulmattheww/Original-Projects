@@ -1,0 +1,329 @@
+---
+title: "Hogan KPI Validation"
+author: "Paul M. Washburn"
+date: "September 2015"
+output: pdf_document
+---
+
+
+## Gather Data 
+Each month's data was compiled from the daily reports filled out by Paul Cunningham. The actual code to compile this data is not included in this document due to its lack of relevance. 
+
+The code below compiles all the data, manipulates variable classes, and purges Driver names that are not relevant to this inquiry.
+
+```{r echo=FALSE, results='hide', message=FALSE}
+setwd("C:/Users/pmwash/Desktop/R_Files")
+productionHistory <- read.csv("ProductionHistory.csv", header=TRUE)
+```
+
+
+
+
+## Key Performance Indicators 
+Using a boxplot to chart a time-series of the number of daily stops (per driver) we can see that daily stops have not changed much since January 2014. 
+```{r}
+library(ggplot2)
+g <- ggplot(data=productionHistory, aes(x=Month, y=Stops))
+g + geom_boxplot(colour="black", fill="lightgreen", aes(fill=Year)) + 
+  geom_smooth(colour="black", size=1, aes(group=1)) +
+  theme(legend.position="none", 
+        axis.text.x=element_text(angle=90,hjust=1)) +
+  labs(title="Internal Data: Daily Stops Per Driver", 
+       x="Month & Year", y="Number of Daily Stops") +
+  facet_wrap(~Year)
+avgStopsPerDriverPerDay <- mean(productionHistory$Stops)
+paste("The average number of stops per driver per day is",
+      avgStopsPerDriverPerDay)
+```
+
+
+
+
+After backing out all routes that are not attributed to drivers we see there was an increase of 1147 cases delivered YTD through August, which is an increase of 0.87%. These figures are consistent with Hogan's claims that stops have increased by ~1,000, but it does not appear to be a significant increase.
+```{r}
+library(dplyr)
+stops2014 <- productionHistory %>% 
+  filter(Year == 2014 & Month != 12 & Month != 11 & 
+           Month != 10 & Month != "09") %>% 
+  select(c(Month, Year, Stops))
+stops2015 <- productionHistory %>% 
+  filter(Year == 2015 & Month != 12 & Month != 11 & 
+           Month != 10 & Month != "09") %>% 
+  select(c(Month, Year, Stops))
+stops14 <- sum(stops2014$Stops)
+stops15 <- sum(stops2015$Stops)
+paste(c("2014 Stops YTD Through August:", stops14, "...  ...",
+        "2015 Stops YTD Through August:", stops15))
+yoyChange <- (stops15-stops14)
+yoyPercentChg <- yoyChange/stops14
+paste(c("The total number of stops increased by:", yoyChange,
+        "Which is a percent change of:", round(yoyPercentChg*100, 4)))
+```
+
+
+
+
+The number of total cases delivered is an important KPI for Hogan as well. Below, case production is aggregated by month in order to see a time-series of monthly production going back to Jan. 2014. To verify Hogan's figures, both their numbers and ours are utilized and shown side-by-side.
+```{r}
+byMonth <- aggregate(total.cases ~ Month + Year, productionHistory, sum)
+
+# make first graph from our data
+g <- ggplot(data=byMonth, aes(x=Month, y=total.cases))
+internal <- g + geom_point(colour="blue", aes(size=total.cases)) + 
+  theme(legend.position="none", 
+        axis.text.x=element_text(angle=90,hjust=1)) +
+  scale_y_continuous(labels=comma) +
+  labs(title="Internal Data: Total Monthly Cases Delivered",
+       x="Month & Year", y="Total Cases") + 
+  geom_smooth(colour="black", size=1, aes(group=1)) +
+  facet_wrap(~Year) 
+
+# make second graph from Hogan's data
+hoganData <- read.csv("HoganKPI.csv", header=TRUE)
+byMonth <- aggregate(X..225.CASES ~ MONTH + YEAR, hoganData, sum)
+
+G <- ggplot(data=byMonth, aes(x=factor(MONTH), y=X..225.CASES))
+hogan<- G + geom_point(colour="forestgreen", aes(size=X..225.CASES)) +
+  theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) +
+  scale_y_continuous(labels=comma) +
+  labs(title="Hogan Data: Total Monthly $.225 Cases",
+       x="Month & Year", y="Stops") + 
+  geom_smooth(colour="black", size=1, aes(group=1)) +
+  facet_wrap(~YEAR)
+
+library(gridExtra)
+grid.arrange(internal, hogan, ncol=1)
+
+
+byYear <- aggregate(total.cases ~ Year + Month, byMonth, sum)
+byYear <- byYear %>% 
+  filter(Month != 12 & Month != 11 & 
+           Month != 10 & Month != "09") 
+byYear <- aggregate(total.cases ~ Year, byYear, sum)
+cases2014 <- byYear %>% 
+  filter(Year == 2014) %>% 
+  select(c(total.cases))
+cases2015 <- byYear %>% 
+  filter(Year == 2015) %>% 
+  select(c(total.cases))
+paste("YTD (2014 through August) Cases",
+      cases2014,
+      "YTD (2015 through August) Cases",
+      cases2015)
+casePercentIncrease <- (cases2015 - cases2014)/cases2014
+paste("This is an increase of", round(casePercentIncrease, 4), "%")
+```
+
+
+
+
+Below is information on driver collections. From Hogan's own data, supplied by this years and last year's invoices under the metrics section, there was only a 0.86% increase in collections. 
+```{r}
+byMonth <- aggregate(DRIVER.COLLECTS ~ MONTH + YEAR, hoganData, sum)
+library(scales)
+# Monthly data
+G <- ggplot(data=byMonth, aes(x=factor(MONTH), y=DRIVER.COLLECTS))
+monthly <- G + geom_point(colour="black", aes(size=DRIVER.COLLECTS)) +
+  theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) +
+  scale_y_continuous(labels=comma) +
+  labs(title="Hogan Data: Monthly Driver Collections",
+       x="Month & Year", y="Stops") + 
+  geom_smooth(colour="black", size=1, aes(group=1)) +
+  facet_wrap(~YEAR)
+
+# YTD data
+byYear <- filter(byMonth, MONTH != 9 & MONTH != 10 &
+                   MONTH != 11 & MONTH != 12)
+byYear <- aggregate(DRIVER.COLLECTS ~ YEAR, byYear, sum)
+byYear
+increase <- (5178 - 5134) / 5134
+paste("There was a ", round(increase, 4), " increase in driver collections YTD as compared with the first 8 months of last year.")
+monthly
+```
+
+
+
+
+
+Number of stops by year.
+```{r}
+hoganData$DATE <- as.Date(hoganData$DATE, format="%m/%d/%Y")
+
+G <- ggplot(data=hoganData, aes(x=factor(MONTH), y=STOPS))
+G + geom_point(fill="lightyellow") +
+  theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) +
+  scale_y_continuous(labels=comma) +
+  labs(title="Hogan Data: Total Stops Per Week",
+       x="Month & Year", y="Stops") + 
+  geom_smooth(colour="black", size=1, aes(group=1)) + facet_wrap(~YEAR)
+
+byMonth <- aggregate(STOPS ~ MONTH + YEAR, hoganData, sum)
+byYear <- filter(byMonth, MONTH != 9 & MONTH != 10 &
+                   MONTH != 11 & MONTH != 12)
+byYear <- aggregate(STOPS ~ YEAR, byYear, sum)
+byYear
+(83094 - 86689) / 86689
+```
+
+
+
+
+From internal data we see that the average cases per driver per day is 318.79 and the average number of stops per driver per day is 20.97. The average number of cases per stop is 40.6.
+```{r}
+totalCases <- as.numeric(ifelse(productionHistory$total.cases > 0,
+                     productionHistory$total.cases, ""))
+totalStops <- as.numeric(ifelse(productionHistory$Stops > 0,
+                     productionHistory$Stops, ""))
+avgCasesDriverDay <- mean(as.numeric(totalCases), na.rm=T)
+avgStopsDriverDay <- mean(as.numeric(totalStops), na.rm=T)
+casesPerStop <- totalCases / totalStops
+avgCasesPerStop <- mean(casesPerStop, na.rm=T)
+internal <- matrix(c("Avg. Cases Per Stop ... ", 
+                     round(avgCasesPerStop, 2), 
+         "Avg. Cases Per Driver Per Day ... ", 
+         round(avgCasesDriverDay, 2),
+         "Avg. Stops Per Driver Per Day ... ", 
+         round(avgStopsDriverDay, 2)), ncol=2,
+       byrow=TRUE)
+internal
+```
+
+
+
+
+Driver breakage is also a key metric. Here we see it is decreasing steadily year over year. 
+```{r}
+setwd("C:/Users/pmwash/Desktop/R_Files")
+breaks<-read.csv("Breakage_2013-2015.csv",header=TRUE)
+p <- ggplot(breaks, aes(Month, Driver.Breakage))
+p + geom_point(aes(colour=Driver.Breakage, size=Driver.Breakage)) + 
+  theme(legend.position="bottom") + geom_smooth(aes(group=1),
+                                                colour="black") +
+  labs(title="Monthly Driver Breakage",
+       x="Month", y="Dollars ($)") + facet_wrap(~Year, nrow=1) +
+  scale_colour_gradient(low="green", high="red")
+
+# 3 Graphs Faceted, PERCENT OF SALES Monthly DRIVER BREAKAGE STL
+library(scales)
+library(ggplot2)
+p <- ggplot(breaks, aes(Month, Driver.Brk.Percent.Sales))
+p + geom_point(aes(colour=Driver.Brk.Percent.Sales, 
+                   size=Driver.Brk.Percent.Sales)) + 
+  theme(legend.position="bottom") + geom_smooth(aes(group=1),
+                                                colour="black") +
+  labs(title="Monthly STL Driver Breakage (% of Sales)",
+       x="Month", y="Percent of Sales") + facet_wrap(~Year, nrow=1) +
+  scale_colour_gradient(low="green", high="red") +
+  scale_y_continuous(labels=percent)
+
+byYear <- aggregate(Driver.Brk.Percent.Sales ~ Year, breaks, mean)
+byYear
+g <- ggplot(data=byYear, aes(x=factor(Year), y=Driver.Brk.Percent.Sales))
+g + geom_bar(stat="identity", fill="lightgreen") +
+  labs(title="AVERAGE Driver Breakage as % of Sales", x="Year",
+       y="Percent of Sales") + 
+  scale_y_continuous(labels=percent) + theme(legend.position="none")
+```
+
+
+
+
+
+Bonus information.
+```{r}
+g <- ggplot(data=hoganData, aes(x=factor(MONTH), y=BONUS))
+g + geom_boxplot() + facet_wrap(~YEAR) + geom_smooth(aes(group=1)) +
+  labs(title="Hogan Data: Bonus", x="Month", y="Bonuses Allowed")
+```
+
+
+
+
+Overtime activity.
+```{r}
+byMonth <- aggregate(TOTAL.O.T.HOURS ~ MONTH + YEAR, hoganData, sum)
+g <- ggplot(data=byMonth, aes(x=factor(MONTH), y=TOTAL.O.T.HOURS))
+g + geom_point(aes(size=TOTAL.O.T.HOURS)) + facet_wrap(~YEAR) + 
+  geom_smooth(aes(group=YEAR)) +
+  labs(title="Total Overtime Activity by Month (STL, Keg, Cape)",
+       x="Month", y="Total OT Hours") +
+  theme(legend.position="none")
+
+byMonth <- filter(byMonth, MONTH != 9 & MONTH != 10 
+                  & MONTH != 11 & MONTH != 12)
+ytdOvertime <- aggregate(TOTAL.O.T.HOURS ~ YEAR, byMonth, sum)
+ot2014 <- ytdOvertime$TOTAL.O.T.HOURS[1]
+ot2015 <- ytdOvertime$TOTAL.O.T.HOURS[2]
+chg <- ot2015 - ot2014
+percChgOT <- chg / ot2014
+percChgOT
+
+
+
+
+byMonth <- aggregate(STL.O.T.ACTIVITY.PAY ~ MONTH + YEAR, hoganData, sum)
+g <- ggplot(data=byMonth, aes(x=factor(MONTH), y=STL.O.T.ACTIVITY.PAY))
+g + geom_point(aes(size=STL.O.T.ACTIVITY.PAY)) + facet_wrap(~YEAR) + 
+  geom_smooth(aes(group=YEAR)) +
+  labs(title="STL Overtime Activity",
+       x="Month", y="Total OT Hours") +
+  theme(legend.position="none")
+
+
+
+byMonth <- aggregate(STL.KEG.O.T.HOURS ~ MONTH + YEAR, hoganData, sum)
+g <- ggplot(data=byMonth, aes(x=factor(MONTH), y=STL.KEG.O.T.HOURS))
+g + geom_point(aes(size=STL.KEG.O.T.HOURS)) + facet_wrap(~YEAR) + 
+  geom_smooth(aes(group=YEAR)) +
+  labs(title="STL KEG Overtime Activity",
+       x="Month", y="Total OT Hours") +
+  theme(legend.position="none")
+
+
+
+byMonth <- aggregate(CAPE.O.T.HOURS ~ MONTH + YEAR, hoganData, sum)
+g <- ggplot(data=byMonth, aes(x=factor(MONTH), y=CAPE.O.T.HOURS))
+g + geom_point(aes(size=CAPE.O.T.HOURS)) + facet_wrap(~YEAR) + 
+  geom_smooth(aes(group=YEAR)) +
+  labs(title="Cape Overtime Activity",
+       x="Month", y="Total OT Hours") +
+  theme(legend.position="none")
+```
+
+
+
+
+Look at mileage. 
+```{r}
+ttlMi <- productionHistory$Ttl.Mi <- as.numeric(productionHistory$Ttl.Mi)
+avgMi <- mean(ttlMi, na.rm=T)
+sdMi <- sd(ttlMi, na.rm=T)
+cutoff <- avgMi + 60 * sdMi
+prodHist <- filter(productionHistory, Ttl.Mi < cutoff)
+byMonth <- aggregate(Ttl.Mi ~ Month + Year, prodHist, sum)
+g <- ggplot(data=byMonth, aes(x=Month, y=Ttl.Mi))
+g + geom_point() + facet_wrap(~Year) + geom_smooth(aes(group=Year)) +
+  scale_y_continuous(labels=comma, limits=c(0, max(byMonth$Ttl.Mi))) +
+  labs(title="Total Miles Per Month", x="Month", y="Total Miles")
+
+
+miles <- productionHistory$Ttl.Mi
+miles2014 <- as.numeric(ifelse(productionHistory$Year == 2014, 
+                    miles, ""))
+meanTtlMi <- mean(miles2014, na.rm=T)
+TtlMi2014 <- sum(miles2014, na.rm=T)
+paste("For 2014 the average miles per day is", round(meanTtlMi))
+paste("2014 saw a total of", TtlMi2014, "in 2014.")
+```
+
+
+Under construction below:
+Look at employee turnover.
+```{r}
+within(productionHistory, {
+  count <- ave(Driver, Month, FUN=function(x) length(unique(x)))
+})
+```
+
+
+
