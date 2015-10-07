@@ -95,10 +95,3 @@ thisMonth <- month(octBeg, label=TRUE, abbr=FALSE)
 paste("This month is", thisMonth)
 paste("The number of production days this month is", numberProductionDays)
 
-
-
-
-
-
-
-
