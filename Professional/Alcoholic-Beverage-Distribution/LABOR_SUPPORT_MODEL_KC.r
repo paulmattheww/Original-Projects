@@ -1457,7 +1457,7 @@ february <- rbind(february1, february2, february3,
                  february10, february11, february12,
                  february13, february14, february15,
                  february16)
-compiled <- rbind(february)
+compiled <- rbind(compiled, february)
 head(compiled)
 tail(compiled)
 swd
@@ -1921,7 +1921,7 @@ march <- rbind(march1, march2, march3,
                   march10, march11, march12,
                   march13, march14, march15,
                   march16, march17, march18)
-compiled <- rbind(march)
+compiled <- rbind(compiled, march)
 head(compiled)
 tail(compiled)
 swd
@@ -1977,10 +1977,10 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april1 <- rbind(hoursSeniorapril, hoursCasualapril)
 april1$DATE <- 
-  as.character(strptime(april1$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april1
+head(april1)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2000,10 +2000,10 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april2 <- rbind(hoursSeniorapril, hoursCasualapril)
 april2$DATE <- 
-  as.character(strptime(april2$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april2
+head(april2)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2023,10 +2023,10 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april3 <- rbind(hoursSeniorapril, hoursCasualapril)
 april3$DATE <- 
-  as.character(strptime(april3$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april3
+head(april3)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2046,10 +2046,10 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april4 <- rbind(hoursSeniorapril, hoursCasualapril)
 april4$DATE <- 
-  as.character(strptime(april4$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april4
+head(april4)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2069,10 +2069,10 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april5 <- rbind(hoursSeniorapril, hoursCasualapril)
 april5$DATE <- 
-  as.character(strptime(april5$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april5
+head(april5)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2092,10 +2092,10 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april6 <- rbind(hoursSeniorapril, hoursCasualapril)
 april6$DATE <- 
-  as.character(strptime(april6$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april6
+head(april6)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2115,10 +2115,10 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april7 <- rbind(hoursSeniorapril, hoursCasualapril)
 april7$DATE <- 
-  as.character(strptime(april7$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april7
+head(april7)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2138,10 +2138,10 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april8 <- rbind(hoursSeniorapril, hoursCasualapril)
 april8$DATE <- 
-  as.character(strptime(april8$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april8
+head(april8)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2161,10 +2161,10 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april9 <- rbind(hoursSeniorapril, hoursCasualapril)
 april9$DATE <- 
-  as.character(strptime(april9$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april9
+head(april9)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2184,10 +2184,10 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april10 <- rbind(hoursSeniorapril, hoursCasualapril)
 april10$DATE <- 
-  as.character(strptime(april10$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april10
+head(april10)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2207,10 +2207,10 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april11 <- rbind(hoursSeniorapril, hoursCasualapril)
 april11$DATE <- 
-  as.character(strptime(april11$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april11
+head(april11)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2230,10 +2230,10 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april12 <- rbind(hoursSeniorapril, hoursCasualapril)
 april12$DATE <- 
-  as.character(strptime(april12$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april12
+head(april12)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2253,10 +2253,10 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april13 <- rbind(hoursSeniorapril, hoursCasualapril)
 april13$DATE <- 
-  as.character(strptime(april13$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april13
+head(april13)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2276,10 +2276,10 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april14 <- rbind(hoursSeniorapril, hoursCasualapril)
 april14$DATE <- 
-  as.character(strptime(april14$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april14
+head(april14)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2299,10 +2299,10 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april15 <- rbind(hoursSeniorapril, hoursCasualapril)
 april15$DATE <- 
-  as.character(strptime(april15$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april15
+head(april15)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2322,10 +2322,56 @@ head(hoursCasualapril, 3)
 # Combine the two datasets and format the date
 april16 <- rbind(hoursSeniorapril, hoursCasualapril)
 april16$DATE <- 
-  as.character(strptime(april16$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-april16
+head(april16)
+#############################
+#############################
+# Gather Casual & Senior hours
+file <- file_list[17]
+file
+hoursSeniorapril <- readWorksheetFromFile(file, sheet=5, 
+                                          startRow=7, endRow=29, 
+                                          startCol=1, endCol=7)
+hoursSeniorapril$DATE <- file
+head(hoursSeniorapril, 3)
+
+hoursCasualapril <- readWorksheetFromFile(file, sheet=5, 
+                                          startRow=33, endRow=63, 
+                                          startCol=1, endCol=7)
+hoursCasualapril$DATE <- file
+head(hoursCasualapril, 3)
+# Combine the two datasets and format the date
+april17 <- rbind(hoursSeniorapril, hoursCasualapril)
+april17$DATE <- 
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
+
+print("Combined dataset for this day is below.")
+head(april17)
+#############################
+#############################
+# Gather Casual & Senior hours
+file <- file_list[18]
+file
+hoursSeniorapril <- readWorksheetFromFile(file, sheet=5, 
+                                          startRow=7, endRow=29, 
+                                          startCol=1, endCol=7)
+hoursSeniorapril$DATE <- file
+head(hoursSeniorapril, 3)
+
+hoursCasualapril <- readWorksheetFromFile(file, sheet=5, 
+                                          startRow=33, endRow=63, 
+                                          startCol=1, endCol=7)
+hoursCasualapril$DATE <- file
+head(hoursCasualapril, 3)
+# Combine the two datasets and format the date
+april18 <- rbind(hoursSeniorapril, hoursCasualapril)
+april18$DATE <- 
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
+
+print("Combined dataset for this day is below.")
+head(april18)
 #############################
 ##########################################################
 ##########################################################
@@ -2337,10 +2383,11 @@ april <- rbind(april1, april2, april3,
                   april7, april8, april9,
                   april10, april11, april12,
                   april13, april14, april15,
-                  april16)
-compiled <- rbind(april)
+                  april16, april17, april18)
+compiled <- rbind(comiplied, april)
 head(compiled)
 tail(compiled)
+swd
 #write.csv(compiled, "compiled_KC_backup_april.csv")
 
 
@@ -2394,10 +2441,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may1 <- rbind(hoursSeniormay, hoursCasualmay)
 may1$DATE <- 
-  as.character(strptime(may1$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may1
+head(may1)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2417,10 +2464,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may2 <- rbind(hoursSeniormay, hoursCasualmay)
 may2$DATE <- 
-  as.character(strptime(may2$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may2
+head(may2)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2440,10 +2487,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may3 <- rbind(hoursSeniormay, hoursCasualmay)
 may3$DATE <- 
-  as.character(strptime(may3$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may3
+head(may3)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2463,10 +2510,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may4 <- rbind(hoursSeniormay, hoursCasualmay)
 may4$DATE <- 
-  as.character(strptime(may4$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may4
+head(may4)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2486,10 +2533,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may5 <- rbind(hoursSeniormay, hoursCasualmay)
 may5$DATE <- 
-  as.character(strptime(may5$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may5
+head(may5)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2509,10 +2556,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may6 <- rbind(hoursSeniormay, hoursCasualmay)
 may6$DATE <- 
-  as.character(strptime(may6$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may6
+head(may6)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2532,10 +2579,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may7 <- rbind(hoursSeniormay, hoursCasualmay)
 may7$DATE <- 
-  as.character(strptime(may7$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may7
+head(may7)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2555,10 +2602,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may8 <- rbind(hoursSeniormay, hoursCasualmay)
 may8$DATE <- 
-  as.character(strptime(may8$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may8
+head(may8)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2578,10 +2625,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may9 <- rbind(hoursSeniormay, hoursCasualmay)
 may9$DATE <- 
-  as.character(strptime(may9$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may9
+head(may9)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2601,10 +2648,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may10 <- rbind(hoursSeniormay, hoursCasualmay)
 may10$DATE <- 
-  as.character(strptime(may10$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may10
+head(may10)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2624,10 +2671,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may11 <- rbind(hoursSeniormay, hoursCasualmay)
 may11$DATE <- 
-  as.character(strptime(may11$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may11
+head(may11)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2647,10 +2694,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may12 <- rbind(hoursSeniormay, hoursCasualmay)
 may12$DATE <- 
-  as.character(strptime(may12$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may12
+head(may12)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2670,10 +2717,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may13 <- rbind(hoursSeniormay, hoursCasualmay)
 may13$DATE <- 
-  as.character(strptime(may13$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may13
+head(may13)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2693,10 +2740,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may14 <- rbind(hoursSeniormay, hoursCasualmay)
 may14$DATE <- 
-  as.character(strptime(may14$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may14
+head(may14)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2716,10 +2763,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may15 <- rbind(hoursSeniormay, hoursCasualmay)
 may15$DATE <- 
-  as.character(strptime(may15$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may15
+head(may15)
 #############################
 #############################
 # Gather Casual & Senior hours
@@ -2739,10 +2786,10 @@ head(hoursCasualmay, 3)
 # Combine the two datasets and format the date
 may16 <- rbind(hoursSeniormay, hoursCasualmay)
 may16$DATE <- 
-  as.character(strptime(may16$DATE, "%m-%d"))
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
 
 print("Combined dataset for this day is below.")
-may16
+head(may16)
 #############################
 ##########################################################
 ##########################################################
@@ -2755,7 +2802,7 @@ may <- rbind(may1, may2, may3,
                   may10, may11, may12,
                   may13, may14, may15,
                   may16)
-compiled <- rbind(may)
+compiled <- rbind(compiled, may)
 head(compiled)
 tail(compiled)
 #write.csv(compiled, "compiled_KC_backup_may.csv")
@@ -3172,7 +3219,7 @@ june <- rbind(june1, june2, june3,
                   june10, june11, june12,
                   june13, june14, june15,
                   june16)
-compiled <- rbind(june)
+compiled <- rbind(compiled, june)
 head(compiled)
 tail(compiled)
 #write.csv(compiled, "compiled_KC_backup_june.csv")
@@ -3590,7 +3637,7 @@ july <- rbind(july1, july2, july3,
                   july10, july11, july12,
                   july13, july14, july15,
                   july16)
-compiled <- rbind(july)
+compiled <- rbind(compiled, july)
 head(compiled)
 tail(compiled)
 #write.csv(compiled, "compiled_KC_backup_july.csv")
@@ -4008,7 +4055,7 @@ august <- rbind(august1, august2, august3,
                   august10, august11, august12,
                   august13, august14, august15,
                   august16)
-compiled <- rbind(august)
+compiled <- rbind(compiled, august)
 head(compiled)
 tail(compiled)
 #write.csv(compiled, "compiled_KC_backup_august.csv")
