@@ -72,16 +72,7 @@ file_list
 length(file_list)
 
 
-strsplit(file_list[1], " ")
-grep(pattern = "\\s\\d", x = file_list[1])
-as.numeric(grepl(("[0-9]+"), file_list[1]))
-
-library(stringr)
-str_replace_all(file_list[1], "[^[:alnum:]]", " ")
-
-unlist(strsplit(unlist(strsplit(file_list[1], split=" "))[3], split=".xls"))
-
-january1 <- readWorksheetFromFile(file_list[1], sheet=2, startCol=3, colTypes='numeric')
+january1 <- readWorksheetFromFile(file_list[1], sheet=2, startCol=3)
 january2 <- readWorksheetFromFile(file_list[2], sheet=2, startCol=3)
 january3 <- readWorksheetFromFile(file_list[3], sheet=2, startCol=3)
 january4 <- readWorksheetFromFile(file_list[4], sheet=2, startCol=3)
@@ -90,7 +81,7 @@ january6 <- readWorksheetFromFile(file_list[6], sheet=2, startCol=3)
 january7 <- readWorksheetFromFile(file_list[7], sheet=2, startCol=3)
 january8 <- readWorksheetFromFile(file_list[8], sheet=2, startCol=3)
 january9 <- readWorksheetFromFile(file_list[9], sheet=2, startCol=3)
-january10 <- readWorksheetFromFile(file_list[10], sheet=2, startCol=3, colTypes='numeric')
+january10 <- readWorksheetFromFile(file_list[10], sheet=2, startCol=3)
 january11 <- readWorksheetFromFile(file_list[11], sheet=2, startCol=3)
 january12 <- readWorksheetFromFile(file_list[12], sheet=2, startCol=3)
 january13 <- readWorksheetFromFile(file_list[13], sheet=2, startCol=3)
@@ -99,31 +90,33 @@ january15 <- readWorksheetFromFile(file_list[15], sheet=2, startCol=3)
 january16 <- readWorksheetFromFile(file_list[16], sheet=2, startCol=3)
 january17 <- readWorksheetFromFile(file_list[17], sheet=2, startCol=3)
 
-january1$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[1], split=" "))[3], split=".xls")), "%m-%d"))
-january2$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[2], split=" "))[3], split=".xls")), "%m-%d"))
-january3$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[3], split=" "))[3], split=".xls")), "%m-%d"))
-january4$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[4], split=" "))[3], split=".xls")), "%m-%d")) 
-january5$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[5], split=" "))[3], split=".xls")), "%m-%d"))
-january6$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[6], split=" "))[3], split=".xls")), "%m-%d"))
-january7$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[7], split=" "))[3], split=".xls")), "%m-%d")) 
-january8$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[8], split=" "))[3], split=".xls")), "%m-%d")) 
-january9$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[9], split=" "))[3], split=".xls")), "%m-%d"))
-january10$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[10], split=" "))[3], split=".xls")), "%m-%d"))
-january11$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[11], split=" "))[3], split=".xls")), "%m-%d"))
-january12$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[12], split=" "))[3], split=".xls")), "%m-%d"))
-january13$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[13], split=" "))[3], split=".xls")), "%m-%d"))
-january14$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[14], split=" "))[3], split=".xls")), "%m-%d")) 
-january15$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[15], split=" "))[3], split=".xls")), "%m-%d")) 
-january16$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[16], split=" "))[3], split=".xls")), "%m-%d")) 
-january17$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[17], split=" "))[3], split=".xls")), "%m-%d")) 
+january1$DATE <- as.character(strptime(str_extract(file_list[1], "(\\d+)-(\\d+)"), "%m-%d"))
+january2$DATE <- as.character(strptime(str_extract(file_list[2], "(\\d+)-(\\d+)"), "%m-%d"))
+january3$DATE <- as.character(strptime(str_extract(file_list[3], "(\\d+)-(\\d+)"), "%m-%d"))
+january4$DATE <- as.character(strptime(str_extract(file_list[4], "(\\d+)-(\\d+)"), "%m-%d"))
+january5$DATE <- as.character(strptime(str_extract(file_list[5], "(\\d+)-(\\d+)"), "%m-%d"))
+january6$DATE <- as.character(strptime(str_extract(file_list[6], "(\\d+)-(\\d+)"), "%m-%d"))
+january7$DATE <- as.character(strptime(str_extract(file_list[7], "(\\d+)-(\\d+)"), "%m-%d"))
+january8$DATE <- as.character(strptime(str_extract(file_list[8], "(\\d+)-(\\d+)"), "%m-%d"))
+january9$DATE <- as.character(strptime(str_extract(file_list[9], "(\\d+)-(\\d+)"), "%m-%d"))
+january10$DATE <- as.character(strptime(str_extract(file_list[10], "(\\d+)-(\\d+)"), "%m-%d"))
+january11$DATE <- as.character(strptime(str_extract(file_list[11], "(\\d+)-(\\d+)"), "%m-%d"))
+january12$DATE <- as.character(strptime(str_extract(file_list[12], "(\\d+)-(\\d+)"), "%m-%d"))
+january13$DATE <- as.character(strptime(str_extract(file_list[13], "(\\d+)-(\\d+)"), "%m-%d"))
+january14$DATE <- as.character(strptime(str_extract(file_list[14], "(\\d+)-(\\d+)"), "%m-%d"))
+january15$DATE <- as.character(strptime(str_extract(file_list[15], "(\\d+)-(\\d+)"), "%m-%d"))
+january16$DATE <- as.character(strptime(str_extract(file_list[16], "(\\d+)-(\\d+)"), "%m-%d"))
+january17$DATE <- as.character(strptime(str_extract(file_list[17], "(\\d+)-(\\d+)"), "%m-%d"))
 
 january2015 <- rbind(january1, january2, january3, january4, january5, january6, january7, january8, 
                      january9, january10, january11, january12, january13, january14, january15, january16,
                      january17)
 january2015 <- filter(january2015, Driver != "Totals:")
 january2015$Month.Year <- "01-2015"
-View(january1)
-# write.csv(january2015, "kc_january_backup.csv")
+View(january2015)
+
+setwd("C:/Users/pmwash/Desktop/R_Files")
+# write.csv(january2015, "kc_january_backup_cases.csv")
 
 rm(january1, january2, january3, january4, january5, january6, january7, january8, 
 january9, january10, january11, january12, january13, january14, january15, january16,
@@ -163,28 +156,31 @@ february14 <- readWorksheetFromFile(file_list[14], sheet=2, startCol=3)
 february15 <- readWorksheetFromFile(file_list[15], sheet=2, startCol=3)
 february16 <- readWorksheetFromFile(file_list[16], sheet=2, startCol=3)
 
-february1$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[1], split=" "))[3], split=".xls")), "%m-%d"))
-february2$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[2], split=" "))[3], split=".xls")), "%m-%d"))
-february3$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[3], split=" "))[3], split=".xls")), "%m-%d"))
-february4$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[4], split=" "))[3], split=".xls")), "%m-%d")) 
-february5$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[5], split=" "))[3], split=".xls")), "%m-%d"))
-february6$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[6], split=" "))[3], split=".xls")), "%m-%d"))
-february7$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[7], split=" "))[3], split=".xls")), "%m-%d")) 
-february8$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[8], split=" "))[3], split=".xls")), "%m-%d")) 
-february9$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[9], split=" "))[3], split=".xls")), "%m-%d"))
-february10$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[10], split=" "))[3], split=".xls")), "%m-%d"))
-february11$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[11], split=" "))[3], split=".xls")), "%m-%d"))
-february12$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[12], split=" "))[3], split=".xls")), "%m-%d"))
-february13$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[13], split=" "))[3], split=".xls")), "%m-%d"))
-february14$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[14], split=" "))[3], split=".xls")), "%m-%d")) 
-february15$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[15], split=" "))[3], split=".xls")), "%m-%d")) 
-february16$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[16], split=" "))[3], split=".xls")), "%m-%d")) 
+february1$DATE <- as.character(strptime(str_extract(file_list[1], "(\\d+)-(\\d+)"), "%m-%d"))
+february2$DATE <- as.character(strptime(str_extract(file_list[2], "(\\d+)-(\\d+)"), "%m-%d"))
+february3$DATE <- as.character(strptime(str_extract(file_list[3], "(\\d+)-(\\d+)"), "%m-%d"))
+february4$DATE <- as.character(strptime(str_extract(file_list[4], "(\\d+)-(\\d+)"), "%m-%d"))
+february5$DATE <- as.character(strptime(str_extract(file_list[5], "(\\d+)-(\\d+)"), "%m-%d"))
+february6$DATE <- as.character(strptime(str_extract(file_list[6], "(\\d+)-(\\d+)"), "%m-%d"))
+february7$DATE <- as.character(strptime(str_extract(file_list[7], "(\\d+)-(\\d+)"), "%m-%d"))
+february8$DATE <- as.character(strptime(str_extract(file_list[8], "(\\d+)-(\\d+)"), "%m-%d"))
+february9$DATE <- as.character(strptime(str_extract(file_list[9], "(\\d+)-(\\d+)"), "%m-%d"))
+february10$DATE <- as.character(strptime(str_extract(file_list[10], "(\\d+)-(\\d+)"), "%m-%d"))
+february11$DATE <- as.character(strptime(str_extract(file_list[11], "(\\d+)-(\\d+)"), "%m-%d"))
+february12$DATE <- as.character(strptime(str_extract(file_list[12], "(\\d+)-(\\d+)"), "%m-%d"))
+february13$DATE <- as.character(strptime(str_extract(file_list[13], "(\\d+)-(\\d+)"), "%m-%d"))
+february14$DATE <- as.character(strptime(str_extract(file_list[14], "(\\d+)-(\\d+)"), "%m-%d"))
+february15$DATE <- as.character(strptime(str_extract(file_list[15], "(\\d+)-(\\d+)"), "%m-%d"))
+february16$DATE <- as.character(strptime(str_extract(file_list[16], "(\\d+)-(\\d+)"), "%m-%d"))
 
 february2015 <- rbind(february1, february2, february3, february4, february5, february6, february7, february8, 
                       february9, february10, february11, february12, february13, february14, february15, february16)
 february2015 <- filter(february2015, Driver != "Totals:")
 february2015$Month.Year <- "02-2015"
 View(february2015)
+
+setwd("C:/Users/pmwash/Desktop/R_Files")
+# write.csv(february2015, "kc_februar_backup_cases.csv")
 
 rm(february1, february2, february3, february4, february5, february6, february7, february8, 
       february9, february10, february11, february12, february13, february14, february15, february16)
@@ -222,24 +218,24 @@ march17 <- readWorksheetFromFile(file_list[17], sheet=2, startCol=3)
 march18 <- readWorksheetFromFile(file_list[18], sheet=2, startCol=3)
 
 
-march1$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[1], split=" "))[3], split=".xls")), "%m-%d"))
-march2$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[2], split=" "))[3], split=".xls")), "%m-%d"))
-march3$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[3], split=" "))[3], split=".xls")), "%m-%d"))
-march4$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[4], split=" "))[3], split=".xls")), "%m-%d")) 
-march5$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[5], split=" "))[3], split=".xls")), "%m-%d"))
-march6$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[6], split=" "))[3], split=".xls")), "%m-%d"))
-march7$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[7], split=" "))[3], split=".xls")), "%m-%d")) 
-march8$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[8], split=" "))[3], split=".xls")), "%m-%d")) 
-march9$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[9], split=" "))[3], split=".xls")), "%m-%d"))
-march10$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[10], split=" "))[3], split=".xls")), "%m-%d"))
-march11$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[11], split=" "))[3], split=".xls")), "%m-%d"))
-march12$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[12], split=" "))[3], split=".xls")), "%m-%d"))
-march13$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[13], split=" "))[3], split=".xls")), "%m-%d"))
-march14$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[14], split=" "))[3], split=".xls")), "%m-%d")) 
-march15$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[15], split=" "))[3], split=".xls")), "%m-%d")) 
-march16$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[16], split=" "))[3], split=".xls")), "%m-%d")) 
-march17$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[17], split=" "))[3], split=".xls")), "%m-%d")) 
-march18$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[18], split=" "))[3], split=".xls")), "%m-%d")) 
+march1$DATE <- as.character(strptime(str_extract(file_list[1], "(\\d+)-(\\d+)"), "%m-%d"))
+march2$DATE <- as.character(strptime(str_extract(file_list[2], "(\\d+)-(\\d+)"), "%m-%d"))
+march3$DATE <- as.character(strptime(str_extract(file_list[3], "(\\d+)-(\\d+)"), "%m-%d"))
+march4$DATE <- as.character(strptime(str_extract(file_list[4], "(\\d+)-(\\d+)"), "%m-%d"))
+march5$DATE <- as.character(strptime(str_extract(file_list[5], "(\\d+)-(\\d+)"), "%m-%d"))
+march6$DATE <- as.character(strptime(str_extract(file_list[6], "(\\d+)-(\\d+)"), "%m-%d"))
+march7$DATE <- as.character(strptime(str_extract(file_list[7], "(\\d+)-(\\d+)"), "%m-%d"))
+march8$DATE <- as.character(strptime(str_extract(file_list[8], "(\\d+)-(\\d+)"), "%m-%d"))
+march9$DATE <- as.character(strptime(str_extract(file_list[9], "(\\d+)-(\\d+)"), "%m-%d"))
+march10$DATE <- as.character(strptime(str_extract(file_list[10], "(\\d+)-(\\d+)"), "%m-%d"))
+march11$DATE <- as.character(strptime(str_extract(file_list[11], "(\\d+)-(\\d+)"), "%m-%d"))
+march12$DATE <- as.character(strptime(str_extract(file_list[12], "(\\d+)-(\\d+)"), "%m-%d"))
+march13$DATE <- as.character(strptime(str_extract(file_list[13], "(\\d+)-(\\d+)"), "%m-%d"))
+march14$DATE <- as.character(strptime(str_extract(file_list[14], "(\\d+)-(\\d+)"), "%m-%d"))
+march15$DATE <- as.character(strptime(str_extract(file_list[15], "(\\d+)-(\\d+)"), "%m-%d"))
+march16$DATE <- as.character(strptime(str_extract(file_list[16], "(\\d+)-(\\d+)"), "%m-%d"))
+march17$DATE <- as.character(strptime(str_extract(file_list[17], "(\\d+)-(\\d+)"), "%m-%d"))
+march18$DATE <- as.character(strptime(str_extract(file_list[18], "(\\d+)-(\\d+)"), "%m-%d"))
 
 march2015 <- rbind(march1, march2, march3, march4, march5, march6, march7, march8, 
                    march9, march10, march11, march12, march13, march14, march15, march16,
@@ -247,6 +243,9 @@ march2015 <- rbind(march1, march2, march3, march4, march5, march6, march7, march
 march2015 <- filter(march2015, Driver != "Totals:")
 march2015$Month.Year <- "03-2015"
 View(march2015)
+
+setwd("C:/Users/pmwash/Desktop/R_Files")
+# write.csv(march2015, "kc_march_backup_cases.csv")
 
 rm(march1, march2, march3, march4, march5, march6, march7, march8, 
       march9, march10, march11, march12, march13, march14, march15, march16,
@@ -285,24 +284,27 @@ april14 <- readWorksheetFromFile(file_list[14], sheet=2, startCol=3)
 april15 <- readWorksheetFromFile(file_list[15], sheet=2, startCol=3)
 april16 <- readWorksheetFromFile(file_list[16], sheet=2, startCol=3)
 april17 <- readWorksheetFromFile(file_list[17], sheet=2, startCol=3)
+april18 <- readWorksheetFromFile(file_list[18], sheet=2, startCol=3)
 
-april1$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[1], split=" "))[3], split=".xls")), "%m-%d"))
-april2$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[2], split=" "))[3], split=".xls")), "%m-%d"))
-april3$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[3], split=" "))[3], split=".xls")), "%m-%d"))
-april4$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[4], split=" "))[3], split=".xls")), "%m-%d")) 
-april5$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[5], split=" "))[3], split=".xls")), "%m-%d"))
-april6$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[6], split=" "))[3], split=".xls")), "%m-%d"))
-april7$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[7], split=" "))[3], split=".xls")), "%m-%d")) 
-april8$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[8], split=" "))[3], split=".xls")), "%m-%d")) 
-april9$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[9], split=" "))[3], split=".xls")), "%m-%d"))
-april10$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[10], split=" "))[3], split=".xls")), "%m-%d"))
-april11$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[11], split=" "))[3], split=".xls")), "%m-%d"))
-april12$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[12], split=" "))[3], split=".xls")), "%m-%d"))
-april13$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[13], split=" "))[3], split=".xls")), "%m-%d"))
-april14$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[14], split=" "))[3], split=".xls")), "%m-%d")) 
-april15$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[15], split=" "))[3], split=".xls")), "%m-%d")) 
-april16$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[16], split=" "))[3], split=".xls")), "%m-%d")) 
-april17$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[17], split=" "))[3], split=".xls")), "%m-%d")) 
+
+april1$DATE <- as.character(strptime(str_extract(file_list[1], "(\\d+)-(\\d+)"), "%m-%d"))
+april2$DATE <- as.character(strptime(str_extract(file_list[2], "(\\d+)-(\\d+)"), "%m-%d"))
+april3$DATE <- as.character(strptime(str_extract(file_list[3], "(\\d+)-(\\d+)"), "%m-%d"))
+april4$DATE <- as.character(strptime(str_extract(file_list[4], "(\\d+)-(\\d+)"), "%m-%d"))
+april5$DATE <- as.character(strptime(str_extract(file_list[5], "(\\d+)-(\\d+)"), "%m-%d"))
+april6$DATE <- as.character(strptime(str_extract(file_list[6], "(\\d+)-(\\d+)"), "%m-%d"))
+april7$DATE <- as.character(strptime(str_extract(file_list[7], "(\\d+)-(\\d+)"), "%m-%d"))
+april8$DATE <- as.character(strptime(str_extract(file_list[8], "(\\d+)-(\\d+)"), "%m-%d"))
+april9$DATE <- as.character(strptime(str_extract(file_list[9], "(\\d+)-(\\d+)"), "%m-%d"))
+april10$DATE <- as.character(strptime(str_extract(file_list[10], "(\\d+)-(\\d+)"), "%m-%d"))
+april11$DATE <- as.character(strptime(str_extract(file_list[11], "(\\d+)-(\\d+)"), "%m-%d"))
+april12$DATE <- as.character(strptime(str_extract(file_list[12], "(\\d+)-(\\d+)"), "%m-%d"))
+april13$DATE <- as.character(strptime(str_extract(file_list[13], "(\\d+)-(\\d+)"), "%m-%d"))
+april14$DATE <- as.character(strptime(str_extract(file_list[14], "(\\d+)-(\\d+)"), "%m-%d"))
+april15$DATE <- as.character(strptime(str_extract(file_list[15], "(\\d+)-(\\d+)"), "%m-%d"))
+april16$DATE <- as.character(strptime(str_extract(file_list[16], "(\\d+)-(\\d+)"), "%m-%d"))
+april17$DATE <- as.character(strptime(str_extract(file_list[17], "(\\d+)-(\\d+)"), "%m-%d"))
+april18$DATE <- as.character(strptime(str_extract(file_list[18], "(\\d+)-(\\d+)"), "%m-%d"))
 
 april2015 <- rbind(april1, april2, april3, april4, april5, april6, april7, april8, 
                    april9, april10, april11, april12, april13, april14, april15, april16,
@@ -311,9 +313,12 @@ april2015 <- filter(april2015, Driver != "Totals:")
 april2015$Month.Year <- "04-2015"
 View(april2015)
 
+setwd("C:/Users/pmwash/Desktop/R_Files")
+# write.csv(april2015, "kc_april_backup_cases.csv")
+
 rm(april1, april2, april3, april4, april5, april6, april7, april8, 
       april9, april10, april11, april12, april13, april14, april15, april16,
-      april17)
+      april17, april18)
 
 #############################################################################
 #############################################################################
@@ -322,10 +327,6 @@ print("THIS PART IS FOR may 2015")
 path <- "N:/Daily Report/2015/KC/May 2015"
 setwd(path)
 
-
-file_list <- list.files() 
-file_list
-length(file_list)
 
 file_list <- list.files() 
 file_list
@@ -349,23 +350,24 @@ may15 <- readWorksheetFromFile(file_list[15], sheet=2, startCol=3)
 may16 <- readWorksheetFromFile(file_list[16], sheet=2, startCol=3)
 may17 <- readWorksheetFromFile(file_list[17], sheet=2, startCol=3)
 
-may1$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[1], split=" "))[3], split=".xls")), "%m-%d"))
-may2$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[2], split=" "))[3], split=".xls")), "%m-%d"))
-may3$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[3], split=" "))[3], split=".xls")), "%m-%d"))
-may4$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[4], split=" "))[3], split=".xls")), "%m-%d")) 
-may5$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[5], split=" "))[3], split=".xls")), "%m-%d"))
-may6$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[6], split=" "))[3], split=".xls")), "%m-%d"))
-may7$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[7], split=" "))[3], split=".xls")), "%m-%d")) 
-may8$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[8], split=" "))[3], split=".xls")), "%m-%d")) 
-may9$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[9], split=" "))[3], split=".xls")), "%m-%d"))
-may10$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[10], split=" "))[3], split=".xls")), "%m-%d"))
-may11$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[11], split=" "))[3], split=".xls")), "%m-%d"))
-may12$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[12], split=" "))[3], split=".xls")), "%m-%d"))
-may13$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[13], split=" "))[3], split=".xls")), "%m-%d"))
-may14$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[14], split=" "))[3], split=".xls")), "%m-%d")) 
-may15$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[15], split=" "))[3], split=".xls")), "%m-%d")) 
-may16$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[16], split=" "))[3], split=".xls")), "%m-%d")) 
-may17$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[17], split=" "))[3], split=".xls")), "%m-%d")) 
+
+may1$DATE <- as.character(strptime(str_extract(file_list[1], "(\\d+)-(\\d+)"), "%m-%d"))
+may2$DATE <- as.character(strptime(str_extract(file_list[2], "(\\d+)-(\\d+)"), "%m-%d"))
+may3$DATE <- as.character(strptime(str_extract(file_list[3], "(\\d+)-(\\d+)"), "%m-%d"))
+may4$DATE <- as.character(strptime(str_extract(file_list[4], "(\\d+)-(\\d+)"), "%m-%d"))
+may5$DATE <- as.character(strptime(str_extract(file_list[5], "(\\d+)-(\\d+)"), "%m-%d"))
+may6$DATE <- as.character(strptime(str_extract(file_list[6], "(\\d+)-(\\d+)"), "%m-%d"))
+may7$DATE <- as.character(strptime(str_extract(file_list[7], "(\\d+)-(\\d+)"), "%m-%d"))
+may8$DATE <- as.character(strptime(str_extract(file_list[8], "(\\d+)-(\\d+)"), "%m-%d"))
+may9$DATE <- as.character(strptime(str_extract(file_list[9], "(\\d+)-(\\d+)"), "%m-%d"))
+may10$DATE <- as.character(strptime(str_extract(file_list[10], "(\\d+)-(\\d+)"), "%m-%d"))
+may11$DATE <- as.character(strptime(str_extract(file_list[11], "(\\d+)-(\\d+)"), "%m-%d"))
+may12$DATE <- as.character(strptime(str_extract(file_list[12], "(\\d+)-(\\d+)"), "%m-%d"))
+may13$DATE <- as.character(strptime(str_extract(file_list[13], "(\\d+)-(\\d+)"), "%m-%d"))
+may14$DATE <- as.character(strptime(str_extract(file_list[14], "(\\d+)-(\\d+)"), "%m-%d"))
+may15$DATE <- as.character(strptime(str_extract(file_list[15], "(\\d+)-(\\d+)"), "%m-%d"))
+may16$DATE <- as.character(strptime(str_extract(file_list[16], "(\\d+)-(\\d+)"), "%m-%d"))
+may17$DATE <- as.character(strptime(str_extract(file_list[17], "(\\d+)-(\\d+)"), "%m-%d"))
 
 may2015 <- rbind(may1, may2, may3, may4, may5, may6, may7, may8, 
                  may9, may10, may11, may12, may13, may14, may15, may16,
@@ -373,6 +375,9 @@ may2015 <- rbind(may1, may2, may3, may4, may5, may6, may7, may8,
 may2015 <- filter(may2015, Driver != "Totals:")
 may2015$Month.Year <- "05-2015"
 View(may2015)
+
+setwd("C:/Users/pmwash/Desktop/R_Files")
+# write.csv(may2015, "kc_may_backup_cases.csv")
 
 rm(may1, may2, may3, may4, may5, may6, may7, may8, 
       may9, may10, may11, may12, may13, may14, may15, may16,
@@ -408,24 +413,25 @@ june16 <- readWorksheetFromFile(file_list[16], sheet=2, startCol=3)
 june17 <- readWorksheetFromFile(file_list[17], sheet=2, startCol=3)
 june18 <- readWorksheetFromFile(file_list[18], sheet=2, startCol=3)
 
-june1$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[1], split=" "))[3], split=".xls")), "%m-%d"))
-june2$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[2], split=" "))[3], split=".xls")), "%m-%d"))
-june3$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[3], split=" "))[3], split=".xls")), "%m-%d"))
-june4$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[4], split=" "))[3], split=".xls")), "%m-%d")) 
-june5$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[5], split=" "))[3], split=".xls")), "%m-%d"))
-june6$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[6], split=" "))[3], split=".xls")), "%m-%d"))
-june7$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[7], split=" "))[3], split=".xls")), "%m-%d")) 
-june8$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[8], split=" "))[3], split=".xls")), "%m-%d")) 
-june9$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[9], split=" "))[3], split=".xls")), "%m-%d"))
-june10$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[10], split=" "))[3], split=".xls")), "%m-%d"))
-june11$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[11], split=" "))[3], split=".xls")), "%m-%d"))
-june12$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[12], split=" "))[3], split=".xls")), "%m-%d"))
-june13$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[13], split=" "))[3], split=".xls")), "%m-%d"))
-june14$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[14], split=" "))[3], split=".xls")), "%m-%d")) 
-june15$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[15], split=" "))[3], split=".xls")), "%m-%d")) 
-june16$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[16], split=" "))[3], split=".xls")), "%m-%d")) 
-june17$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[17], split=" "))[3], split=".xls")), "%m-%d")) 
-june18$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[18], split=" "))[3], split=".xls")), "%m-%d")) 
+
+june1$DATE <- as.character(strptime(str_extract(file_list[1], "(\\d+)-(\\d+)"), "%m-%d"))
+june2$DATE <- as.character(strptime(str_extract(file_list[2], "(\\d+)-(\\d+)"), "%m-%d"))
+june3$DATE <- as.character(strptime(str_extract(file_list[3], "(\\d+)-(\\d+)"), "%m-%d"))
+june4$DATE <- as.character(strptime(str_extract(file_list[4], "(\\d+)-(\\d+)"), "%m-%d"))
+june5$DATE <- as.character(strptime(str_extract(file_list[5], "(\\d+)-(\\d+)"), "%m-%d"))
+june6$DATE <- as.character(strptime(str_extract(file_list[6], "(\\d+)-(\\d+)"), "%m-%d"))
+june7$DATE <- as.character(strptime(str_extract(file_list[7], "(\\d+)-(\\d+)"), "%m-%d"))
+june8$DATE <- as.character(strptime(str_extract(file_list[8], "(\\d+)-(\\d+)"), "%m-%d"))
+june9$DATE <- as.character(strptime(str_extract(file_list[9], "(\\d+)-(\\d+)"), "%m-%d"))
+june10$DATE <- as.character(strptime(str_extract(file_list[10], "(\\d+)-(\\d+)"), "%m-%d"))
+june11$DATE <- as.character(strptime(str_extract(file_list[11], "(\\d+)-(\\d+)"), "%m-%d"))
+june12$DATE <- as.character(strptime(str_extract(file_list[12], "(\\d+)-(\\d+)"), "%m-%d"))
+june13$DATE <- as.character(strptime(str_extract(file_list[13], "(\\d+)-(\\d+)"), "%m-%d"))
+june14$DATE <- as.character(strptime(str_extract(file_list[14], "(\\d+)-(\\d+)"), "%m-%d"))
+june15$DATE <- as.character(strptime(str_extract(file_list[15], "(\\d+)-(\\d+)"), "%m-%d"))
+june16$DATE <- as.character(strptime(str_extract(file_list[16], "(\\d+)-(\\d+)"), "%m-%d"))
+june17$DATE <- as.character(strptime(str_extract(file_list[17], "(\\d+)-(\\d+)"), "%m-%d"))
+june18$DATE <- as.character(strptime(str_extract(file_list[18], "(\\d+)-(\\d+)"), "%m-%d"))
 
 june2015 <- rbind(june1, june2, june3, june4, june5, june6, june7, june8, 
                   june9, june10, june11, june12, june13, june14, june15, june16,
@@ -433,6 +439,9 @@ june2015 <- rbind(june1, june2, june3, june4, june5, june6, june7, june8,
 june2015 <- filter(june2015, Driver != "Totals:")
 june2015$Month.Year <- "06-2015"
 View(june2015)
+
+setwd("C:/Users/pmwash/Desktop/R_Files")
+# write.csv(june2015, "kc_june_backup_cases.csv")
 
 rm(june1, june2, june3, june4, june5, june6, june7, june8, 
       june9, june10, june11, june12, june13, june14, june15, june16,
@@ -469,38 +478,45 @@ july17 <- readWorksheetFromFile(file_list[17], sheet=2, startCol=3)
 july18 <- readWorksheetFromFile(file_list[18], sheet=2, startCol=3)
 july19 <- readWorksheetFromFile(file_list[19], sheet=2, startCol=3)
 july20 <- readWorksheetFromFile(file_list[20], sheet=2, startCol=3)
+july21 <- readWorksheetFromFile(file_list[21], sheet=2, startCol=3)
 
-july1$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[1], split=" "))[3], split=".xls")), "%m-%d"))
-july2$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[2], split=" "))[3], split=".xls")), "%m-%d"))
-july3$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[3], split=" "))[3], split=".xls")), "%m-%d"))
-july4$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[4], split=" "))[3], split=".xls")), "%m-%d")) 
-july5$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[5], split=" "))[3], split=".xls")), "%m-%d"))
-july6$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[6], split=" "))[3], split=".xls")), "%m-%d"))
-july7$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[7], split=" "))[3], split=".xls")), "%m-%d")) 
-july8$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[8], split=" "))[3], split=".xls")), "%m-%d")) 
-july9$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[9], split=" "))[3], split=".xls")), "%m-%d"))
-july10$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[10], split=" "))[3], split=".xls")), "%m-%d"))
-july11$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[11], split=" "))[3], split=".xls")), "%m-%d"))
-july12$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[12], split=" "))[3], split=".xls")), "%m-%d"))
-july13$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[13], split=" "))[3], split=".xls")), "%m-%d"))
-july14$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[14], split=" "))[3], split=".xls")), "%m-%d")) 
-july15$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[15], split=" "))[3], split=".xls")), "%m-%d")) 
-july16$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[16], split=" "))[3], split=".xls")), "%m-%d")) 
-july17$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[17], split=" "))[3], split=".xls")), "%m-%d")) 
-july18$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[18], split=" "))[3], split=".xls")), "%m-%d")) 
-july19$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[19], split=" "))[3], split=".xls")), "%m-%d")) 
-july20$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[20], split=" "))[3], split=".xls")), "%m-%d")) 
+july1$DATE <- as.character(strptime(str_extract(file_list[1], "(\\d+)-(\\d+)"), "%m-%d"))
+july2$DATE <- as.character(strptime(str_extract(file_list[2], "(\\d+)-(\\d+)"), "%m-%d"))
+july3$DATE <- as.character(strptime(str_extract(file_list[3], "(\\d+)-(\\d+)"), "%m-%d"))
+july4$DATE <- as.character(strptime(str_extract(file_list[4], "(\\d+)-(\\d+)"), "%m-%d"))
+july5$DATE <- as.character(strptime(str_extract(file_list[5], "(\\d+)-(\\d+)"), "%m-%d"))
+july6$DATE <- as.character(strptime(str_extract(file_list[6], "(\\d+)-(\\d+)"), "%m-%d"))
+july7$DATE <- as.character(strptime(str_extract(file_list[7], "(\\d+)-(\\d+)"), "%m-%d"))
+july8$DATE <- as.character(strptime(str_extract(file_list[8], "(\\d+)-(\\d+)"), "%m-%d"))
+july9$DATE <- as.character(strptime(str_extract(file_list[9], "(\\d+)-(\\d+)"), "%m-%d"))
+july10$DATE <- as.character(strptime(str_extract(file_list[10], "(\\d+)-(\\d+)"), "%m-%d"))
+july11$DATE <- as.character(strptime(str_extract(file_list[11], "(\\d+)-(\\d+)"), "%m-%d"))
+july12$DATE <- as.character(strptime(str_extract(file_list[12], "(\\d+)-(\\d+)"), "%m-%d"))
+july13$DATE <- as.character(strptime(str_extract(file_list[13], "(\\d+)-(\\d+)"), "%m-%d"))
+july14$DATE <- as.character(strptime(str_extract(file_list[14], "(\\d+)-(\\d+)"), "%m-%d"))
+july15$DATE <- as.character(strptime(str_extract(file_list[15], "(\\d+)-(\\d+)"), "%m-%d"))
+july16$DATE <- as.character(strptime(str_extract(file_list[16], "(\\d+)-(\\d+)"), "%m-%d"))
+july17$DATE <- as.character(strptime(str_extract(file_list[17], "(\\d+)-(\\d+)"), "%m-%d"))
+july18$DATE <- as.character(strptime(str_extract(file_list[18], "(\\d+)-(\\d+)"), "%m-%d"))
+july19$DATE <- as.character(strptime(str_extract(file_list[19], "(\\d+)-(\\d+)"), "%m-%d"))
+july20$DATE <- as.character(strptime(str_extract(file_list[20], "(\\d+)-(\\d+)"), "%m-%d"))
+july21$DATE <- as.character(strptime(str_extract(file_list[21], "(\\d+)-(\\d+)"), "%m-%d"))
 
 july2015 <- rbind(july1, july2, july3, july4, july5, july6, july7, july8, 
                   july9, july10, july11, july12, july13, july14, july15, july16,
-                  july17, july18, july19, july20)
+                  july17, july18, july19, july20, july21)
 july2015 <- filter(july2015, Driver != "Totals:")
 july2015$Month.Year <- "07-2015"
 View(july2015)
 
+
+setwd("C:/Users/pmwash/Desktop/R_Files")
+# write.csv(july2015, "kc_july_backup_cases.csv")
+
+
 rm(july1, july2, july3, july4, july5, july6, july7, july8, 
       july9, july10, july11, july12, july13, july14, july15, july16,
-      july17, july18, july19, july20)
+      july17, july18, july19, july20, july21)
 
 #############################################################################
 #############################################################################
@@ -527,39 +543,44 @@ august11 <- readWorksheetFromFile(file_list[11], sheet=2, startCol=3)
 august12 <- readWorksheetFromFile(file_list[12], sheet=2, startCol=3)
 august13 <- readWorksheetFromFile(file_list[13], sheet=2, startCol=3)
 august14 <- readWorksheetFromFile(file_list[14], sheet=2, startCol=3)
-august15 <- readWorksheetFromFile(file_list[15], sheet=2, startCol=3)
+#august15 <- readWorksheetFromFile(file_list[15], sheet=2, startCol=3)
 august16 <- readWorksheetFromFile(file_list[16], sheet=2, startCol=3)
 august17 <- readWorksheetFromFile(file_list[17], sheet=2, startCol=3)
 
-august1$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[1], split=" "))[3], split=".xls")), "%m-%d"))
-august2$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[2], split=" "))[3], split=".xls")), "%m-%d"))
-august3$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[3], split=" "))[3], split=".xls")), "%m-%d"))
-august4$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[4], split=" "))[3], split=".xls")), "%m-%d")) 
-august5$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[5], split=" "))[3], split=".xls")), "%m-%d"))
-august6$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[6], split=" "))[3], split=".xls")), "%m-%d"))
-august7$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[7], split=" "))[3], split=".xls")), "%m-%d")) 
-august8$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[8], split=" "))[3], split=".xls")), "%m-%d")) 
-august9$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[9], split=" "))[3], split=".xls")), "%m-%d"))
-august10$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[10], split=" "))[3], split=".xls")), "%m-%d"))
-august11$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[11], split=" "))[3], split=".xls")), "%m-%d"))
-august12$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[12], split=" "))[3], split=".xls")), "%m-%d"))
-august13$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[13], split=" "))[3], split=".xls")), "%m-%d"))
-august14$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[14], split=" "))[3], split=".xls")), "%m-%d")) 
-august15$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[15], split=" "))[3], split=".xls")), "%m-%d")) 
-august16$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[16], split=" "))[3], split=".xls")), "%m-%d")) 
-august17$DATE <- as.character(strptime(unlist(strsplit(unlist(strsplit(file_list[17], split=" "))[3], split=".xls")), "%m-%d")) 
+august1$DATE <- as.character(strptime(str_extract(file_list[1], "(\\d+)-(\\d+)"), "%m-%d"))
+august2$DATE <- as.character(strptime(str_extract(file_list[2], "(\\d+)-(\\d+)"), "%m-%d"))
+august3$DATE <- as.character(strptime(str_extract(file_list[3], "(\\d+)-(\\d+)"), "%m-%d"))
+august4$DATE <- as.character(strptime(str_extract(file_list[4], "(\\d+)-(\\d+)"), "%m-%d"))
+august5$DATE <- as.character(strptime(str_extract(file_list[5], "(\\d+)-(\\d+)"), "%m-%d"))
+august6$DATE <- as.character(strptime(str_extract(file_list[6], "(\\d+)-(\\d+)"), "%m-%d"))
+august7$DATE <- as.character(strptime(str_extract(file_list[7], "(\\d+)-(\\d+)"), "%m-%d"))
+august8$DATE <- as.character(strptime(str_extract(file_list[8], "(\\d+)-(\\d+)"), "%m-%d"))
+august9$DATE <- as.character(strptime(str_extract(file_list[9], "(\\d+)-(\\d+)"), "%m-%d"))
+august10$DATE <- as.character(strptime(str_extract(file_list[10], "(\\d+)-(\\d+)"), "%m-%d"))
+august11$DATE <- as.character(strptime(str_extract(file_list[11], "(\\d+)-(\\d+)"), "%m-%d"))
+august12$DATE <- as.character(strptime(str_extract(file_list[12], "(\\d+)-(\\d+)"), "%m-%d"))
+august13$DATE <- as.character(strptime(str_extract(file_list[13], "(\\d+)-(\\d+)"), "%m-%d"))
+august14$DATE <- as.character(strptime(str_extract(file_list[14], "(\\d+)-(\\d+)"), "%m-%d"))
+#august15$DATE <- as.character(strptime(str_extract(file_list[15], "(\\d+)-(\\d+)"), "%m-%d"))
+august16$DATE <- as.character(strptime(str_extract(file_list[16], "(\\d+)-(\\d+)"), "%m-%d"))
+august17$DATE <- as.character(strptime(str_extract(file_list[17], "(\\d+)-(\\d+)"), "%m-%d"))
 
 
 august2015 <- rbind(august1, august2, august3, august4, august5, 
                     august6, august7, august8, august9, august10, 
-                    august11, august12, august13, august14, august15, august16, august17)
+                    august11, august12, august13, august14, august16, august17)
 august2015 <- filter(august2015, Driver != "Totals:")
 august2015$Month.Year <- "08-2015"
 View(august2015)
 
+
+setwd("C:/Users/pmwash/Desktop/R_Files")
+# write.csv(august2015, "kc_august_backup_cases.csv")
+
+
 rm(august1, august2, august3, august4, august5, 
       august6, august7, august8, august9, august10, 
-      august11, august12, august13, august14, august15, august16, august17)
+      august11, august12, august13, august14, august16, august17)
 
 ####################################################################################
 ####################################################################################
@@ -569,13 +590,22 @@ kcProduction2015 <- rbind(january2015, february2015, march2015,
                         april2015, may2015, june2015,
                         july2015, august2015)
 
+View(kcProduction2015)
+
+rm(january2015, february2015, march2015,
+      april2015, may2015, june2015,
+      july2015, august2015)
+
+
+
+
 # Sort data frame by date
-kcProduction2015 <- kcProduction2015[order(kcProduction2015), ]
+kcProduction2015 <- kcProduction2015[order(kcProduction2015$DATE), ]
 
 kcProduction2015$Month.Year <- as.factor(kcProduction2015$Month.Year)
-levels(kcProduction2015$Month.Year)
+#levels(kcProduction2015$Month.Year)
 
-kcProduction2015 <- kcProduction2015[,c(42,1:41)]
+kcProduction2015 <- kcProduction2015[,c(48:49,1:47)]
 
 kcProduction2015$Year <- 
   substr(kcProduction2015$Month.Year, 4, 7)
@@ -583,8 +613,26 @@ kcProduction2015$Month <-
   substr(kcProduction2015$Month.Year, 0, 2)
 
 
+
+#avg <- mean(kcProduction2015$TTL.Cs.splt, na.rm=T)
+#sd <- sd(kcProduction2015$TTL.Cs.splt, na.rm=T)
+#cutoff <- avg + 5*sd
+#kcProduction2015 <- filter(kcProduction2015, TTL.Cs.splt > cutoff)
+
+
+kcProduction2015$INDEX <- paste(kcProduction2015$DATE, kcProduction2015$Driver, 
+                                kcProduction2015$TTL.Cs.splt, sep="_")
+test1 <- kcProduction2015[!duplicated(kcProduction2015$INDEX),]
+
+
+
+
+
+
 View(kcProduction2015)
-write.csv(kcProduction2015, file="kcProduction2015_01-08_DAILYREPORT.csv")
+
+setwd("C:/Users/pmwash/Desktop/R_Files")
+# write.csv(kcProduction2015, "kcProduction2015_backup_labormodel.csv")
 
 
 
@@ -1045,6 +1093,13 @@ tail(compiled)
 swd <- setwd("C:/Users/pmwash/Desktop/R_Files")
 #write.csv(compiled, "compiled_KC_backup_january.csv")
 
+rm(January1, January2, January3,
+      January4, January5, January6,
+      January7, January8, January9,
+      January10, January11, January12,
+      January13, January14, January15,
+      January16, January17)
+
 
 ##########################################################
 # february ################################################
@@ -1460,6 +1515,14 @@ february <- rbind(february1, february2, february3,
 compiled <- rbind(compiled, february)
 head(compiled)
 tail(compiled)
+
+rm(february1, february2, february3,
+      february4, february5, february6,
+      february7, february8, february9,
+      february10, february11, february12,
+      february13, february14, february15,
+      february16)
+
 swd
 #write.csv(compiled, "compiled_KC_backup_february.csv")
 
@@ -1927,6 +1990,13 @@ tail(compiled)
 swd
 #write.csv(compiled, "compiled_KC_backup_march.csv")
 
+rm(march1, march2, march3,
+      march4, march5, march6,
+      march7, march8, march9,
+      march10, march11, march12,
+      march13, march14, march15,
+      march16, march17, march18)
+
 ##########################################################
 # april ################################################
 ##########################################################
@@ -2390,6 +2460,12 @@ tail(compiled)
 swd
 #write.csv(compiled, "compiled_KC_backup_april.csv")
 
+rm(april1, april2, april3,
+      april4, april5, april6,
+      april7, april8, april9,
+      april10, april11, april12,
+      april13, april14, april15,
+      april16, april17, april18)
 
 ##########################################################
 # may ################################################
@@ -2831,6 +2907,12 @@ tail(compiled)
 swd
 #write.csv(compiled, "compiled_KC_backup_may.csv")
 
+rm(may1, may2, may3,
+      may4, may5, may6,
+      may7, may8, may9,
+      may10, may11, may12,
+      may13, may14, may15,
+      may16, may17)
 
 ##########################################################
 # june ################################################
@@ -3295,7 +3377,12 @@ tail(compiled)
 swd
 #write.csv(compiled, "compiled_KC_backup_june.csv")
 
-
+rm(june1, june2, june3,
+      june4, june5, june6,
+      june7, june8, june9,
+      june10, june11, june12,
+      june13, june14, june15,
+      june16, june17, june18)
 
 ##########################################################
 # july ################################################
@@ -3824,11 +3911,19 @@ july <- rbind(july1, july2, july3,
                   july13, july14, july15,
                   july16, july17, july18,
                   july19, july20, july21)
+
 compiled <- rbind(compiled, july)
 head(compiled)
 tail(compiled)
 #write.csv(compiled, "compiled_KC_backup_july.csv")
 
+rm(july1, july2, july3,
+      july4, july5, july6,
+      july7, july8, july9,
+      july10, july11, july12,
+      july13, july14, july15,
+      july16, july17, july18,
+      july19, july20, july21)
 
 
 ##########################################################
@@ -4231,6 +4326,29 @@ august16$DATE <-
 print("Combined dataset for this day is below.")
 head(august16)
 #############################
+#############################
+# Gather Casual & Senior hours
+file <- file_list[17]
+file
+hoursSenioraugust <- readWorksheetFromFile(file, sheet=5, 
+                                           startRow=7, endRow=29, 
+                                           startCol=1, endCol=7)
+hoursSenioraugust$DATE <- file
+head(hoursSenioraugust, 3)
+
+hoursCasualaugust <- readWorksheetFromFile(file, sheet=5, 
+                                           startRow=33, endRow=63, 
+                                           startCol=1, endCol=7)
+hoursCasualaugust$DATE <- file
+head(hoursCasualaugust, 3)
+# Combine the two datasets and format the date
+august17 <- rbind(hoursSenioraugust, hoursCasualaugust)
+august17$DATE <- 
+  as.character(strptime(str_extract(file, "(\\d+)-(\\d+)"), "%m-%d"))
+
+print("Combined dataset for this day is below.")
+head(august17)
+#############################
 ##########################################################
 ##########################################################
 ##########################################################
@@ -4241,11 +4359,29 @@ august <- rbind(august1, august2, august3,
                   august7, august8, august9,
                   august10, august11, august12,
                   august13, august14, august15,
-                  august16)
+                  august16, august17)
+head(august)
+tail(august)
 compiled <- rbind(compiled, august)
 head(compiled)
 tail(compiled)
-#write.csv(compiled, "compiled_KC_backup_august.csv")
+swd
+#write.csv(compiled, "MAIN_BACKUP_kc_LABOR_MODEL.csv")
+
+rm(august1, august2, august3,
+      august4, august5, august6,
+      august7, august8, august9,
+      august10, august11, august12,
+      august13, august14, august15,
+      august16, august17)
+
+# compiled remove dduplicates
+compiled$INDEX <- as.character(paste(compiled$NAME, compiled$DATE, sep="_"))
+duplicated(compiled$INDEX)
+test <- compiled[!duplicated(compiled$INDEX),]
+
+
+
 
 
 
@@ -4292,26 +4428,224 @@ tail(compiled)
 ########################################################################################################
 ############################################################ Gather Inflow of Cases to Inventory #######
 
-library(xlsx)
-path = "N:/Pending Shipments"
-setwd(path)
-wb <- loadWorkbook("Pending Shipments.xlsx")
-sheets <- getSheets(wb)
+
+
+setwd("C:/Users/pmwash/Desktop/R_Files")
+kc.inflows <- read.csv('inventory_inflow_kc.csv', header=TRUE)
+kc.inflows$DATE <- as.character(strptime(kc.inflows$DATE, format="%m/%d/%y"))
 
 
 
-list.files(path, pattern="\\.xlsx$", full.names=TRUE)
+#### CLEAN UP & AGGREGATE THE DATA ##################################
+#####################################################################
+#####################################################################
+#####################################################################
+#####################################################################
+#### CLEAN UP & AGGREGATE THE DATA ##################################
+#####################################################################
+#####################################################################
+#####################################################################
+#####################################################################
+#### CLEAN UP & AGGREGATE THE DATA ##################################
+#####################################################################
+#####################################################################
+#####################################################################
+#####################################################################
+#### CLEAN UP & AGGREGATE THE DATA ##################################
+#####################################################################
+#####################################################################
+#####################################################################
+#####################################################################
+#### CLEAN UP & AGGREGATE THE DATA ##################################
+#####################################################################
+#####################################################################
+#####################################################################
+#####################################################################
+#### CLEAN UP & AGGREGATE THE DATA ##################################
+#####################################################################
+#####################################################################
+#####################################################################
+#####################################################################
 
-for(i in 1:length(file.names)){
-  file <- read.table(file.names[i],header=TRUE, sep=";", stringsAsFactors=FALSE)
-  out.file <- rbind(out.file, file)
-}
+# filter out bad values
+library(dplyr)
+compiled <- filter(compiled, HRS.WORKED.1 > 0)
+compiled <- filter(compiled, !is.na(DATE))
+
+# manipulate dates
+library(lubridate)
+compiled$MONTH <- month(compiled$DATE)
+compiled <- compiled[order(compiled$DATE),]
+
+# gather hourly information & NUMBER OF EMPLOYEES
+kc.night.hours <- aggregate(HRS.WORKED.1 ~ DATE, test, FUN=sum)
+names(kc.night.hours) <- c("DATE", "TOTAL.HOURS.WORKED")
+kc.avg.night.hours <- aggregate(HRS.WORKED.1 ~ DATE, test, FUN=mean)
+names(kc.avg.night.hours) <- c("DATE", "AVG.HOURS.WORKED")
+kc.employees.per.night <- aggregate(HRS.WORKED.1 ~ DATE, test, FUN=length)
+
+# cases of std cases produced per day at kc
+cases.produced.kc <- kcProduction2015
+cases.produced.kc <- aggregate(TTL.Cs.splt ~ DATE, data=test1, FUN=sum)
+
+# quick check 
+max(cases.produced.kc$TTL.Cs.splt)
 
 
-for (i in 1:length(filenames)){
-  tmp<-loadWorkbook(file.path(filenames[i],sep=""))
-  lst<- readWorksheet(tmp, 
-                      sheet = getSheets(tmp), startRow=5, startCol=1, header=TRUE)}
+# Read in data on production by type of case (kc and stl, be sure to segregate)
+setwd("C:/Users/pmwash/Desktop/R_Files")
+cases.file <- "labor_model_cases_produced_KC_STL_by_type.xlsx"
+
+#
+beerCases <- readWorksheetFromFile(cases.file, sheet=1, 
+                                   startRow=1, startCol=1)
+beer.cases.kc <- filter(beerCases, WAREHOUSE == "KANSAS CITY")
+###
+
+wineCases <- readWorksheetFromFile(cases.file, sheet=3, 
+                                   startRow=1, startCol=1)
+wine.cases.kc <- filter(wineCases, WAREHOUSE == "KANSAS CITY")
+###
+
+liquorCases <- readWorksheetFromFile(cases.file, sheet=2, 
+                                     startRow=1, startCol=1)
+liquor.cases.kc <- filter(liquorCases, WAREHOUSE == "KANSAS CITY")
+#
+naCases <- readWorksheetFromFile(cases.file, sheet=4, 
+                                 startRow=1, startCol=1)
+na.cases.kc <- filter(naCases, WAREHOUSE == "KANSAS CITY")
+###
+all.cases.kc <- merge(beer.cases.kc, wine.cases.kc, by=c("DATE", "WAREHOUSE"))
+all.cases.kc <- merge(all.cases.kc, liquor.cases.kc, by=c("DATE", "WAREHOUSE"))
+all.cases.kc <- merge(all.cases.kc, na.cases.kc, by=c("DATE", "WAREHOUSE"))
+all.cases.kc$DATE <- as.character(strptime(all.cases.kc$DATE, "%Y-%m-%d"))
+
+
+#setwd(home)
+#write.csv(compiled, "compiled_labormodel_kc.csv")
+
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+############################################################ MERGE DATA IN DAY OBSERVATION UNITS #######
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+############################################################ MERGE DATA IN DAY OBSERVATION UNITS #######
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+############################################################ MERGE DATA IN DAY OBSERVATION UNITS #######
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+############################################################ MERGE DATA IN DAY OBSERVATION UNITS #######
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+############################################################ MERGE DATA IN DAY OBSERVATION UNITS #######
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+############################################################ MERGE DATA IN DAY OBSERVATION UNITS #######
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+############################################################ MERGE DATA IN DAY OBSERVATION UNITS #######
+
+
+omega.kc <- kc.night.hours
+omega.kc <- merge(omega.kc, kc.avg.night.hours, by="DATE")
+omega.kc <- merge(omega.kc, kc.inflows, by="DATE")
+omega.kc <- merge(omega.kc, cases.produced.kc, by="DATE") 
+omega.kc <- merge(omega.kc, kc.employees.per.night, by="DATE")
+omega.kc <- merge(omega.kc, all.cases.kc, by="DATE")
+
+#names(omega.kc) <- c("DATE", "TOTAL.HOURS.WORKED", "AVG.HOURS.WORKED", "INVENTORY.INFLOWS",
+                     #"TOTAL.CASES.PRODUCED.KC", "NUMBER.OF.EMPLOYEES")
+
+View(omega.kc)
+head(omega.kc)
+tail(omega.kc)
+str(omega.kc)
+
+#setwd("C:/Users/pmwash/Desktop/R_Files")
+#write.csv(omega.kc, "OMEGA_BACKUP_KC.csv")
+
+omega.kc$WEEKDAY <- wday(omega.kc$DATE, label=TRUE)
+omega.kc <- filter(omega.kc, TOTAL.CASES.PRODUCED.KC > 6000)
+
+
+omega.kc$MONTH <- month(omega.kc$DATE, label=F)
+month <- omega.kc$MONTH
+
+# Derive seasons from months
+library(lubridate)
+omega.kc$SEASON <- ifelse(month==1 | month==2 |month==3, "Winter", 
+                       ifelse(month==4 | month==5 | month==6, "Spring",
+                              ifelse(month==7 | month==8 | month==9, "Summer",
+                                     ifelse(month==10 | month==11 | month==12, "Fall", ""))))
+
+
+# If needed only!
+#omega.kc <- read.csv("OMEGA_BACKUP_KC.csv", header=TRUE)
+head(omega.kc)
+
+
+
+
+########################################################################################################
+########################################################################################################
+############################################## FIT A MODEL #############################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+############################################## FIT A MODEL #############################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+############################################## FIT A MODEL #############################################
+########################################################################################################
+########################################################################################################
+
+
+
+
+fit <- lm(TOTAL.HOURS.WORKED ~ TOTAL.CASES.PRODUCED.KC, data=omega.kc)
+summary(fit)
+
+
+fit <- lm(TOTAL.HOURS.WORKED ~ BEER.STD.CASES + WINE.STD.CASES + LIQUOR.STD.CASES + NA.STD.CAESS, data=omega.kc)
+summary(fit)
+
+
+plot(omega.kc$TOTAL.HOURS.WORKED ~ omega.kc$TOTAL.CASES.PRODUCED.KC)
+plot(omega.kc$INVENTORY.INFLOWS ~ omega.kc$TOTAL.CASES.PRODUCED.KC)
+g <- ggplot(data=omega.kc, aes(x=TOTAL.CASES.PRODUCED.KC, y=TOTAL.HOURS.WORKED))
+g + geom_point() + geom_smooth(aes(group=1), method="lm", se=T)
 
 
 
@@ -4321,9 +4655,38 @@ for (i in 1:length(filenames)){
 
 
 
+outliers <- filter(omega.kc, TOTAL.CASES.PRODUCED.KC > 15000)
 
 
 
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+############################################################ GRAPHICS ##################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+############################################################ GRAPHICS ##################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+############################################################ GRAPHICS ##################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+########################################################################################################
+############################################################ GRAPHICS ##################################
 
 
 
