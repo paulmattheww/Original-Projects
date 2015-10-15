@@ -516,7 +516,7 @@ production2015$Month <-
 
 
 View(production2015)
-write.csv(production2015, file="PRODUCTION2015_01-08_DAILYREPORT.csv")
+#write.csv(production2015, file="PRODUCTION2015_01-08_DAILYREPORT.csv")
 
 
 #######################################################################################
@@ -4426,12 +4426,96 @@ breakage2015 <- aggregate(CASES.BROKEN ~ DATE, data=breakage2015, FUN=sum)
 
 
 # Read in INVENTORY INFLOWS PER DAY data for STL from Tina's; pre-compiled
+swd
 inflows <- read.csv("STL_InventoryInflows.csv", header=TRUE)
 inflows$DATE <- as.character(strptime(inflows$DATE, "%m/%d/%Y"))
 
 
 
+# read in cases of beer wine liquor na from diver
+# Read in data on production by type of case (kc and stl, be sure to segregate)
+# Read in data on production by type of case (kc and stl, be sure to segregate)
+setwd("C:/Users/pmwash/Desktop/R_Files")
+cases.file <- "labor_model_cases_produced_KC_STL_by_type.xlsx"
 
+#
+beerCases <- readWorksheetFromFile(cases.file, sheet=1, 
+                                   startRow=1, startCol=1)
+beer.cases.stl <- filter(beerCases, WAREHOUSE == "ST LOUIS")
+###
+
+wineCases <- readWorksheetFromFile(cases.file, sheet=3, 
+                                   startRow=1, startCol=1)
+wine.cases.stl <- filter(wineCases, WAREHOUSE == "ST LOUIS")
+###
+
+liquorCases <- readWorksheetFromFile(cases.file, sheet=2, 
+                                     startRow=1, startCol=1)
+liquor.cases.stl <- filter(liquorCases, WAREHOUSE == "ST LOUIS")
+#
+naCases <- readWorksheetFromFile(cases.file, sheet=4, 
+                                 startRow=1, startCol=1)
+na.cases.stl <- filter(naCases, WAREHOUSE == "ST LOUIS")
+###
+all.cases.stl <- merge(beer.cases.stl, wine.cases.stl, by=c("DATE", "WAREHOUSE"))
+all.cases.stl <- merge(all.cases.stl, liquor.cases.stl, by=c("DATE", "WAREHOUSE"))
+all.cases.stl <- merge(all.cases.stl, na.cases.stl, by=c("DATE", "WAREHOUSE"))
+all.cases.stl$DATE <- as.character(strptime(all.cases.stl$DATE, "%Y-%m-%d"))
+### ### ### ###
+
+
+# AGGREGATE total bottles 
+stlProduction2015 <- read.csv("PRODUCTION2015_01-08_DAILYREPORT.csv", header=TRUE)
+total.bottles.stl <- aggregate(Btls ~ DATE, data=stlProduction2015, FUN=sum)
+names(total.bottles.stl) <- c("DATE", "BOTTLES.STL")
+
+
+
+
+
+# READ IN DAY AND NIGHT HOURS, ACQUIRE DAY HOURS AND SEPARATE OUT KC AND STL 
+substrRight <- function(x, n){
+  substr(x, nchar(x)-n+1, nchar(x))
+}
+substrLeft <- function(x, n){
+  substr(x, 1, n)
+}
+
+setwd("C:/Users/pmwash/Desktop/R_Files")
+file <- "day_night_hours_KC_STL.csv"
+hours <- read.csv(file, header=T)
+
+hours$START <- strptime(hours$START, "%m/%d/%Y %H:%M")
+hours$START <- substrLeft(substrRight(as.character(hours$START), 8), 5)
+hours$START <- round(as.difftime(hours$START, "%H:%M", units="hour"), 2)
+
+hours$STOP <- strptime(hours$STOP, "%m/%d/%Y %H:%M")
+hours$STOP <- substrLeft(substrRight(as.character(hours$STOP), 8), 5)
+hours$STOP <- round(as.difftime(hours$STOP, "%H:%M", units="hour"), 2)
+
+hours$MONTH <- month(strptime(hours$DATE, format="%m/%d/%Y"))
+
+
+library(dplyr)
+rule1 <- hours$WORK.RULE.NAME
+stlWarehouseDayHours <- filter(hours, rule1 == "STL Warehouse Wages" | rule1 == "STL Shipping Casual" |
+                                 rule1 == "STL Shipping Wages" | rule1 == "STL Shipping Wages RS")
+
+
+personHours <- aggregate(HOURS ~ DATE + PERSONNUM, data=stlWarehouseDayHours, FUN=sum)
+
+aggStart <- filter(stlWarehouseDayHours, START >= 4 & START < 10)
+personStart <- aggregate(START ~ DATE + PERSONNUM, data=aggStart, FUN=min)
+
+hoursPerPErsonPerDay <- merge(personHours, personStart, by=c("DATE", "PERSONNUM"))
+
+
+day.hours.stl <- aggregate(HOURS ~ DATE, data = hoursPerPErsonPerDay, FUN=sum)
+day.hours.stl$DATE <- as.character(strptime(day.hours.stl$DATE, "%m/%d/%Y"))
+names(day.hours.stl) <- c("DATE", "TOTAL.DAY.HOURS")
+
+  
+ 
 
 ##############################################################################################################################
 ##############################################################################################################################
@@ -4557,6 +4641,10 @@ OMEGA <- merge(OMEGA, beerKegs, by="DATE")
 OMEGA <- merge(OMEGA, ciderKegs, by="DATE")
 OMEGA <- merge(OMEGA, breakage2015, by="DATE")
 OMEGA <- merge(OMEGA, inflows, by="DATE")
+OMEGA <- merge(OMEGA, total.bottles.stl, by="DATE")
+OMEGA <- merge(OMEGA, all.cases.stl, by="DATE")
+OMEGA <- merge(OMEGA, day.hours.stl, by="DATE")
+OMEGA <- OMEGA[-c(1,2,3,4),] #the other data started on teh 12th (for day hours)
 View(OMEGA)
 
 
@@ -4642,16 +4730,25 @@ OMEGA <- filter(OMEGA, INVENTORY.INFLOW.NET.RETURNS > 0)
 OMEGA$NET.CHANGE.INVENTORY <- onHandToday - onHandYesterday
 
 
+# Check lag in inventory received
+library(Hmisc)
+OMEGA$CASES.RECEIVED.LAG1 <- Lag(OMEGA$CASES.RECEIVED, shift=-1)
+
+
+# Add together cases received and total cases
+OMEGA$CASES.RECEIVED.PLUS.CASES.SOLD <- OMEGA$CASES.RECEIVED.LAG1 + OMEGA$TOTAL.STL.CASES
+
+
 #check work above
-inYesterday
-ohToday <- onHandYesterday + inYesterday - casesOutYesterday - breakageYesterday#VALIDATED! #INVALIDATED WITH DERICK WHITE
+#inYesterday
+#ohToday <- onHandYesterday + inYesterday - casesOutYesterday - breakageYesterday#VALIDATED! #INVALIDATED WITH DERICK WHITE
 
 head(OMEGA)
 
 
 
 
-#write.csv(OMEGA, file="OMEGA_BACKUP.csv")
+#write.csv(OMEGA, file="STL_OMEGA_BACKUP.csv")
 View(OMEGA)
 
 #head(OMEGA)
@@ -4660,7 +4757,7 @@ View(OMEGA)
 
 #### IN CASE YOU GO ASTRAY, YOUR PAST SELF HAS GOT YOUR BACK, BRO.
 #setwd("C:/Users/pmwash/Desktop/R_Files")
-#OMEGA <- read.csv("OMEGA_BACKUP.csv", header=TRUE)
+#OMEGA <- read.csv("STL_OMEGA_BACKUP.csv", header=TRUE)
 ####
 
   
@@ -4857,6 +4954,25 @@ g + geom_boxplot(colour="grey", alpha=0.4,
   scale_colour_gradient(low="green", high="red") 
 
 
+# for presentation
+# CPMH simple linear model as f(total cases stl), size and colour=hrs worked
+simpleModel <- lm(OMEGA$ACTUAL.CPMH ~ OMEGA$TOTAL.STL.CASES)
+slope <- summary(simpleModel)$coefficients[2]
+sd <- summary(simpleModel)$coefficients[4]
+r2 <- summary(lm(OMEGA$ACTUAL.CPMH ~ OMEGA$TOTAL.STL.CASES))$r.squared
+g <- ggplot(data=OMEGA, aes(x=OMEGA$TOTAL.STL.CASES, y=OMEGA$ACTUAL.CPMH))
+g + geom_point(aes(size=HRS.WORKED, colour=HRS.WORKED)) + 
+  geom_smooth(colour="black", method="lm", se=F) + 
+  annotate("text", x=16250, y=27.5, 
+           label=paste("R-squared =", round(r2,2))) +
+  labs(title="CPMH as a function of Total Cases (STL)",
+       x="Keg Adjusted Total Cases", y="Adjusted CPMH (for Kegs)") +
+  theme(legend.position="bottom") +
+  scale_colour_gradient(low="green", high="red") 
+
+
+
+
 # Percent OT hours by weekday and season, boxplot; outliers isolated
 library(scales)
 g <- ggplot(data=OMEGA, aes(x=factor(SEASON), y=PERCENT.OT))
@@ -4869,30 +4985,10 @@ daysOver15PercentOT <- filter(OMEGA, PERCENT.OT > .15)
 
 
 
-# P value matrix 
-correl <- OMEGA[, c(4:5, 7:10, 13, 15:33)]
-correl <- correl[, -c(23,26)]
-
-correl <- round(cor(correl), 2)
-names(correl)
-
-cor.mtest <- function(mat, ...) {
-  mat <- as.matrix(mat)
-  n <- ncol(mat)
-  p.mat <- matrix(NA, n, n)
-  diag(p.mat) <- 0
-  for (i in 1:(n-1)) {
-    for(j in (i + 1):n) {
-      tmp <- cor.test(mat[, i], mat[, j], ...)
-      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
-    }
-  }
-  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
-  p.mat
-}
-p.mat <- cor.mtest(correl)
-corrplot(p.mat, sig.level=0.05)
-
+# Correlations in data 
+correl <- OMEGA[, c(2:3, 5:7, 13:28, 30:32, 34:39)]
+correl <- correl[, c(2:6, 14:18, 20, 22:30)]
+correl <- round(cor(correl, use = 'na.or.complete'), 2)
 
 
 # Correlation matrix with ellipses
@@ -4949,7 +5045,7 @@ g + geom_histogram(stat="bin", binwidth=1.5, fill="lightblue", colour="red") +
 
 # Histogram of CPMH
 g <- ggplot(data=OMEGA, aes(x=ACTUAL.CPMH))
-g + geom_histogram(binwidth=3, colour="orange", fill="brown") +
+g + geom_histogram(binwidth=3, colour="orange", fill="lightgreen") +
   labs(title="Histogram of Keg Adjusted CPMH", 
        x="Keg Adjusted CPMH (bin width = 3)") +
   geom_vline(xintercept=c(32.54, 35.39, 37.52)) +
@@ -5001,14 +5097,39 @@ g + geom_point() + facet_wrap(~MONTH, nrow=1) + geom_smooth(aes(group=MONTH))
 ##################################################################################################
 ##################################################################################################
 
-## the leading model is below ###########################
-bestFit <- lm(HRS.WORKED ~ TOTAL.STL.CASES + CASES.RECEIVED, data=OMEGA)
-summary(bestFit)
+## NIGHT TIME MODEL the leading model is below ###########################
+bestFit <- lm(HRS.WORKED ~ TOTAL.STL.CASES, data=OMEGA)
+summary(bestFit)$r.squared
+
+
+fit <- lm(HRS.WORKED ~ TOTAL.STL.CASES + CASES.RECEIVED.LAG1, data=OMEGA)
+summary(fit)$r.squared
+
+fit <- lm(HRS.WORKED ~ CASES.RECEIVED.PLUS.CASES.SOLD, data=OMEGA)
+summary(fit)$r.squared
+
+fit <- lm(TOTAL.STL.CASES ~ CASES.RECEIVED, data=OMEGA)
+summary(fit)$r.squared
+
+fit <- lm(CASES.RECEIVED.LAG1 ~ CASES.RECEIVED, data=OMEGA)
+summary(fit)$r.squared
+
+fit <- lm(HRS.WORKED ~ ACTUAL.CPMH, data=OMEGA)
+summary(fit)
+
+
 library(fmsb)
 VIF(bestFit) # Want VIF less than 4
+degFree <- df.residual(bestFit)
+n <- length(OMEGA$MONTH)
+
 g <- ggplot(data=OMEGA, aes(y=CASES.RECEIVED, x=TOTAL.STL.CASES))
 g + geom_point() + geom_smooth(method="lm")
-summary(lm(TOTAL.STL.CASES ~ CASES.RECEIVED, data=OMEGA))$r.squared
+g <- ggplot(data=OMEGA, aes(y=CASES.RECEIVED, x=TOTAL.STL.CASES))
+g + geom_point() + geom_smooth(method="lm")
+
+summary(lm(TOTAL.STL.CASES ~ CASES.RECEIVED, data=OMEGA))
+summary(lm(HRS.WORKED ~ CASES.RECEIVED, data=OMEGA))
 #########################################################
 
 
@@ -5025,7 +5146,6 @@ qplot(data=OMEGA, y=HRS.WORKED, x=TOTAL.STL.CASES, geom="point")
 summary(lm(ACTUAL.CPMH ~ TOTAL.STL.CASES, data=OMEGA))
 qplot(data=OMEGA, y=ACTUAL.CPMH, x=TOTAL.STL.CASES, geom="point", colour=NUMBER.OF.EMPLOYEES)
 
-
 summary(lm(ACTUAL.CPMH ~ TOTAL.STL.CASES + INVENTORY.INFLOW.NET.RETURNS, data=OMEGA))
 
 summary(lm(ACTUAL.CPMH ~ CASES.INVENTORY.PER.EMPLOYEE, data=OMEGA))
@@ -5033,8 +5153,22 @@ qplot(data=OMEGA, x=CASES.INVENTORY.PER.EMPLOYEE, y=ACTUAL.CPMH, geom="point")
 
 summary(lm(CASES.BROKEN ~ HRS.WORKED, data=OMEGA))
 
-
 names(OMEGA)
+
+
+## DAY TIME MODEL the leading model is below #############################
+bestFitDay <- lm(TOTAL.DAY.HOURS ~ TOTAL.STL.CASES + CASES.RECEIVED, data=OMEGA)
+summary(bestFitDay)
+g <- ggplot(data=OMEGA, aes(x=TOTAL.STL.CASES, y=TOTAL.DAY.HOURS))
+g + geom_point() + geom_smooth(method="lm")
+plot(OMEGA$TOTAL.DAY.HOURS, OMEGA$TOTAL.STL.CASES)
+
+
+
+fit <- lm(TOTAL.DAY.HOURS ~ TOTAL.STL.CASES + CASES.RECEIVED, data=OMEGA)
+summary(fit)
+
+
 ##################################################################################################
 ##################################################################################################
 ##################################################################################################
@@ -5114,3 +5248,32 @@ d3heatmap(correl, scale="column",
 
 # Remove all files 
 # rm(list=ls())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#dead
+
+
+startHour <- substrLeft(as.character(hours$START), 2)
+startHour <- as.numeric(gsub("[[:punct:]]", "", startHour))
+
+startMinute <- round(as.numeric(substrRight(as.character(hours$START), 2)) / 60, 2)
+
+hours$START.TIME.NUMERIC <- startHour + startMinute
+startTime <- hours$START.TIME.NUMERIC
+
+hours$START.HOUR.NUMERIC <- startHour
