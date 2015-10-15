@@ -4519,6 +4519,13 @@ all.cases.kc <- merge(beer.cases.kc, wine.cases.kc, by=c("DATE", "WAREHOUSE"))
 all.cases.kc <- merge(all.cases.kc, liquor.cases.kc, by=c("DATE", "WAREHOUSE"))
 all.cases.kc <- merge(all.cases.kc, na.cases.kc, by=c("DATE", "WAREHOUSE"))
 all.cases.kc$DATE <- as.character(strptime(all.cases.kc$DATE, "%Y-%m-%d"))
+### ### ### ###
+
+
+# Compile total bottles 
+total.bottles.kc <- aggregate(Btls ~ DATE, data=kcProduction2015, FUN=sum)
+names(total.bottles.kc) <- c("DATE", "BOTTLES.KC")
+
 
 
 #setwd(home)
@@ -4581,6 +4588,7 @@ omega.kc <- merge(omega.kc, kc.inflows, by="DATE")
 omega.kc <- merge(omega.kc, cases.produced.kc, by="DATE") 
 omega.kc <- merge(omega.kc, kc.employees.per.night, by="DATE")
 omega.kc <- merge(omega.kc, all.cases.kc, by="DATE")
+omega.kc <- merge(omega.kc, total.bottles.kc, by="DATE")
 
 #names(omega.kc) <- c("DATE", "TOTAL.HOURS.WORKED", "AVG.HOURS.WORKED", "INVENTORY.INFLOWS",
                      #"TOTAL.CASES.PRODUCED.KC", "NUMBER.OF.EMPLOYEES")
@@ -4633,13 +4641,27 @@ head(omega.kc)
 
 
 
-
+# Regression model on total cases alone
 fit <- lm(TOTAL.HOURS.WORKED ~ TOTAL.CASES.PRODUCED.KC, data=omega.kc)
 summary(fit)
 
 
+# Try treating cases as individual groups
 fit <- lm(TOTAL.HOURS.WORKED ~ BEER.STD.CASES + WINE.STD.CASES + LIQUOR.STD.CASES + NA.STD.CAESS, data=omega.kc)
 summary(fit)
+
+
+# Try cases and bottles ... adds only .25% explanatory power
+fit <- lm(TOTAL.HOURS.WORKED ~ TOTAL.CASES.PRODUCED.KC + BOTTLES.KC, data=omega.kc)
+summary(fit)
+
+
+
+# Add in inventory inflows  ... adds no explanatory power
+fit <- lm(TOTAL.HOURS.WORKED ~ TOTAL.CASES.PRODUCED.KC + INVENTORY.INFLOWS, data=omega.kc)
+summary(fit)
+
+
 
 
 plot(omega.kc$TOTAL.HOURS.WORKED ~ omega.kc$TOTAL.CASES.PRODUCED.KC)
