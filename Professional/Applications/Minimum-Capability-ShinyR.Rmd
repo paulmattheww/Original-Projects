@@ -1,0 +1,141 @@
+---
+title: "Shiny"
+author: "Paul M. Washburn"
+date: "October 19, 2015"
+output: html_document
+---
+# Tutorial: Build Apps in ShinyR
+The Shiny package has eleven built-in examples that each demonstrate how Shiny works. Each example is a self-contained Shiny app.
+
+The Hello Shiny example plots a histogram of R’s faithful dataset with a configurable number of bins. Users can change the number of bins with a slider bar, and the app will immediately respond to their input. You’ll use Hello Shiny to explore the structure of a Shiny app and to create your first app.
+
+To run Hello Shiny, type:
+
+```{r}
+library(shiny)
+runExample("01_hello")
+```
+
+### Structure of a Shiny App
+Shiny apps have two components: (1) a user-interface script and (2) a server script
+
+The user-interface (ui) script controls the layout and appearance of your app. It is defined in a source script named ui.R. Here is the ui.R script for the Hello Shiny example.
+
+#### ui.R
+```{r}
+library(shiny)
+
+# Define UI for application that draws a histogram
+shinyUI(fluidPage(
+
+  # Application title
+  titlePanel("Hello Shiny!"),
+
+  # Sidebar with a slider input for the number of bins
+  sidebarLayout(
+    sidebarPanel(
+      sliderInput("bins",
+                  "Number of bins:",
+                  min = 1,
+                  max = 50,
+                  value = 30)
+    ),
+
+    # Show a plot of the generated distribution
+    mainPanel(
+      plotOutput("distPlot")
+    )
+  )
+))
+```
+The server.R script contains the instructions that your computer needs to build your app. Here is the server.R script for the Hello Shiny example.
+
+#### server.R
+```{r}
+library(shiny)
+
+# Define server logic required to draw a histogram
+shinyServer(function(input, output) {
+
+  # Expression that generates a histogram. The expression is
+  # wrapped in a call to renderPlot to indicate that:
+  #
+  #  1) It is "reactive" and therefore should re-execute automatically
+  #     when inputs change
+  #  2) Its output type is a plot
+
+  output$distPlot <- renderPlot({
+    x    <- faithful[, 2]  # Old Faithful Geyser data
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+
+    # draw the histogram with the specified number of bins
+    hist(x, breaks = bins, col = 'darkgray', border = 'white')
+  })
+})
+```
+At one level, the Hello Shiny server.R script is very simple. The script does some calculations and then plots a histogram with the requested number of bins.
+
+However, you’ll also notice that most of the script is wrapped in a call to renderPlot. The comment above the function explains a bit about this, but if you find it confusing, don’t worry. We’ll cover this concept in much more detail soon.
+
+Play with the Hello Shiny app and review the source code. Try to develop a feel for how the app works.
+
+Your R session will be busy while the Hello Shiny app is active, so you will not be able to run any R commands. R is monitoring the app and executing the app’s reactions. To get your R session back, hit escape or click the stop sign icon (found in the upper right corner of the RStudio console panel).
+
+
+### Running an App
+Every Shiny app has the same structure: two R scripts saved together in a directory. At a minimum, a Shiny app has ui.R and server.R files.
+
+You can create a Shiny app by making a new directory and saving a ui.R and server.R file inside it. Each app will need its own unique directory.
+
+You can run a Shiny app by giving the name of its directory to the function runApp. For example if your Shiny app is in a directory called my_app, run it with the following code:
+```{r}
+library(shiny)
+runApp("my_app")
+```
+Note: runApp is similar to read.csv, read.table, and many other functions in R. The first argument of runApp is the filepath from your working directory to the app’s directory. The code above assumes that the app directory is in your working directory. In this case, the filepath is just the name of the directory.
+
+(In case you are wondering, the Hello Shiny app’s files are saved in a special system directory called "01_hello". This directory is designed to work with the runExample ("01_hello") call.)
+
+### Try For Yourself
+Create a new directory named App-1 in your working directory. Then copy and paste the ui.R and server.R scripts above into your directory (the scripts from Hello Shiny). When you are finished the directory should look like this:
+
+Launch your app by running runApp("App-1"). Then click escape and make some changes to your app:
+```{r}
+setwd("C:/Users/pmwash/Desktop/R_files/Applications")
+runApp("App-1", display.mode='showcase')
+```
+When you are ready, launch your app again. Your new app should match the image below. If it doesn’t, or if you want to check your code, press the model answers button to reveal how we did these tasks.
+
+By default, Shiny apps display in “normal” mode, like the app pictured above. Hello Shiny and the other built in examples display in “showcase mode”, a different mode that displays the server.R and ui.R` scripts alongside the app.
+
+If you would like your app to display in showcase mode, you can run runApp("App-1", display.mode = "showcase").
+
+### Re-Launching Apps
+To relaunch your Shiny app:
+
+Run runApp("App-1"), or
+
+Open the ui.R or server.R scripts in your RStudio editor. RStudio will recognize the Shiny script and provide a Run App button (at the top of the editor). Either click this button to launch your app or use the keyboard shortcut: Command+Shift+Enter (Control+Shift+Enter on Windows).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
