@@ -692,6 +692,82 @@ When you are ready, update your server.R and ui.R files to match those above. Th
 
 Watch the server.R script. When Shiny rebuilds an output, it highlights the code it is running. This temporary highlighting can help you see how Shiny generates reactive output.
 
+### Try It Out
+Add a second line of reactive text to the main panel of your Shiny app. This line should display “You have chosen a range that goes from something to something”, and each something should show the current minimum (min) or maximum (max) value of the slider widget.
+
+Don’t forget to update both your ui.R and server.R files.
+
+### Discussion
+Add the second line of text in the same way that you added the first one. Use textOutput in ui.R to place the second line of text in the main panel. Use renderText in server.R to tell Shiny how to build the text. You’ll need to use the same name to refer to the text in both scripts (e.g., “text2”).
+
+Your text should use both the slider’s min value (saved as input$range[1]) and its max value (saved as input$range[2]).
+
+Remember that your text will be reactive as long as you connect input values to output objects. Shiny creates reactivity automatically when it recognizes these connections.
+
+##### ui.R
+```{r}
+# ui.R
+
+shinyUI(fluidPage(
+  titlePanel("censusVis"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      helpText("Create demographic maps with 
+               information from the 2010 US Census."),
+      
+      selectInput("var", 
+                  label = "Choose a variable to display",
+                  choices = c("Percent White", "Percent Black",
+                              "Percent Hispanic", "Percent Asian"),
+                  selected = "Percent White"),
+      
+      sliderInput("range", 
+                  label = "Range of interest:",
+                  min = 0, max = 100, value = c(0, 100))
+      ),
+    
+    mainPanel(
+      textOutput("text1"),
+      textOutput("text2")
+    )
+  )
+))
+```
+##### server.R
+```{r}
+# server.R
+
+shinyServer(
+  function(input, output) {
+    
+    output$text1 <- renderText({ 
+      paste("You have selected", input$var)
+    })
+    
+    output$text2 <- renderText({ 
+      paste("You have chosen a range that goes from",
+            input$range[1], "to", input$range[2])
+    })
+    
+  }
+)
+```
+
+### Recap
+In this lesson, you created your first reactive Shiny app. Along the way, you learned to
+
+use an *Output function in the ui.R script to place reactive objects in your Shiny app
+use a render* function in the server.R script to tell Shiny how to build your objects
+surround R expressions by braces, {}, in each render* function
+save your render* expressions in the output list, with one entry for each reactive object in your app.
+create reactivity by including an input value in a render* expression
+If you follow these rules, Shiny will automatically make your objects reactive.
+
+In Lesson 5 you will create a more sophisticated reactive app that relies on R scripts and external data.
+
+
+
 
 
 
