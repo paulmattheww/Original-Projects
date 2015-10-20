@@ -415,6 +415,288 @@ Now that you can place simple content in your user-interface, let’s look at ho
 
 
 ## Lesson 3: Add Control Widgets
+This lesson will show you how to add control widgets to your Shiny apps. What’s a widget? A web element that your users can interact with. Widgets provide a way for your users to send messages to the Shiny app.
+
+Shiny widgets collect a value from your user. When a user changes the widget, the value will change as well. This sets up opportunities that we’ll explore in Lesson 4.
+
+### Control Widgets
+Shiny comes with a family of pre-built widgets, each created with a transparently named R function. For example, Shiny provides a function named actionButton that creates an Action Button and a function namessliderInput that creates a slider bar.
+
+The standard Shiny widgets are:
+```
+function	widget
+actionButton	Action Button
+checkboxGroupInput	A group of check boxes
+checkboxInput	A single check box
+dateInput	A calendar to aid date selection
+dateRangeInput	A pair of calendars for selecting a date range
+fileInput	A file upload control wizard
+helpText	Help text that can be added to an input form
+numericInput	A field to enter numbers
+radioButtons	A set of radio buttons
+selectInput	A box with choices to select from
+sliderInput	A slider bar
+submitButton	A submit button
+textInput	A field to enter text
+```
+Some of these widgets are built using the Twitter Bootstrap project, a popular open source framework for building user-interfaces.
+
+### Adding Widgets
+You can add widgets to your web page in the same way that you added other types of HTML content in Lesson 2. To add a widget to your app, place a widget function in sidebarPanel or mainPanel in your ui.R file.
+
+Each widget function requires several arguments. The first two arguments for each widget are
+
+A Name for the widget. The user will not see this name, but you can use it to access the widget’s value. The name should be a character string.
+
+A label. This label will appear with the widget in your app. It should be a character string, but it can be an empty string "".
+
+In this example, the name is “action” and the label is “Action”: actionButton("action", label = "Action")
+
+The remaining arguments vary from widget to widget, depending on what the widget needs to do its job. They include things the widget needs to do its job, like initial values, ranges, and increments. You can find the exact arguments needed by a widget on the widget function’s help page, (e.g., ?selectInput).
+
+The ui.R script below makes the app pictured above. Change your own App-1 ui.R script to match it, and then launch the app (runApp("App-1"), select Run App, or use shortcuts).
+
+Play with each widget to get a feel for what it does. Experiment with changing the values of the widget functions and observe the effects. If you are interested in the layout scheme for this Shiny app, read the description in the application layout guide. This lesson will not cover this slightly more complicated layout scheme, but it is interesting to note what it does.
+```{r}
+# ui.R
+
+shinyUI(fluidPage(
+  titlePanel("Basic widgets"),
+  
+  fluidRow(
+    
+    column(3,
+      h3("Buttons"),
+      actionButton("action", label = "Action"),
+      br(),
+      br(), 
+      submitButton("Submit")),
+    
+    column(3,
+      h3("Single checkbox"),
+      checkboxInput("checkbox", label = "Choice A", value = TRUE)),
+    
+    column(3, 
+      checkboxGroupInput("checkGroup", 
+        label = h3("Checkbox group"), 
+        choices = list("Choice 1" = 1, 
+           "Choice 2" = 2, "Choice 3" = 3),
+        selected = 1)),
+    
+    column(3, 
+      dateInput("date", 
+        label = h3("Date input"), 
+        value = "2014-01-01"))   
+  ),
+  
+  fluidRow(
+    
+    column(3,
+      dateRangeInput("dates", label = h3("Date range"))),
+    
+    column(3,
+      fileInput("file", label = h3("File input"))),
+    
+    column(3, 
+      h3("Help text"),
+      helpText("Note: help text isn't a true widget,", 
+        "but it provides an easy way to add text to",
+        "accompany other widgets.")),
+    
+    column(3, 
+      numericInput("num", 
+        label = h3("Numeric input"), 
+        value = 1))   
+  ),
+    
+  fluidRow(
+    
+    column(3,
+      radioButtons("radio", label = h3("Radio buttons"),
+        choices = list("Choice 1" = 1, "Choice 2" = 2,
+                       "Choice 3" = 3),selected = 1)),
+    
+    column(3,
+      selectInput("select", label = h3("Select box"), 
+        choices = list("Choice 1" = 1, "Choice 2" = 2,
+                       "Choice 3" = 3), selected = 1)),
+    
+    column(3, 
+      sliderInput("slider1", label = h3("Sliders"),
+        min = 0, max = 100, value = 50),
+      sliderInput("slider2", "",
+        min = 0, max = 100, value = c(25, 75))
+      ),
+    
+    column(3, 
+      textInput("text", label = h3("Text input"), 
+        value = "Enter text..."))   
+  )
+
+))
+
+runApp("App-1")
+```
+
+### Recap
+It is easy to add fully functional widgets to your Shiny app.
+
+Shiny provides a family of functions to create these widgets.
+
+Each function requires a name and a label.
+
+Some widgets need specific instructions to do their jobs.
+
+You add widgets to your Shiny app just like you added other types of HTML content (see Lesson 2)
+
+### Next Steps
+The Shiny Widgets Gallery provides templates that you can use to quickly add widgets to your Shiny apps.
+
+To use a template, visit the gallery. The gallery displays each of Shiny’s widgets, and demonstrates how the widgets’ values change in response to your input.
+
+Select the widget that you want and click the “See Code” button below the widget. The gallery will take you to an example app that describes the widget. To use the widget, copy and paste the code in the example’s ui.R file to your ui.R file.
+
+In Lesson 4, you will learn how to connect widgets to reactive output, objects that update themselves whenever your user changes a widget.
+
+
+## Lesson 4: Display Reactive Output
+Time to give your Shiny app a “live” quality! This lesson will teach you how to build reactive output to display in your Shiny app. Reactive output automatically responds when your user toggles a widget.
+
+By the end of this lesson, you’ll know how to make a simple Shiny app with two reactive lines of text. Each line will display the values of a widget based on your user’s input.
+
+This new Shiny app will need its own, new directory. Create a folder in your working directory named census-app. This is where we’ll save the ui.R and server.R files that you make in this lesson.
+
+### Two Steps
+You can create reactive output with a two step process.
+
+Add an R object to your user-interface with ui.R.
+
+Tell Shiny how to build the object in server.R. The object will be reactive if the code that builds it calls a widget value.
+
+#### Step 1: Add an R Object to the User Interface
+Shiny provides a family of functions that turn R objects into output for your user-interface. Each function creates a specific type of output.
+```
+OutputFunction	creates
+htmlOutput	raw HTML
+imageOutput	image
+plotOutput	plot
+tableOutput	table
+textOutput	text
+uiOutput	raw HTML
+verbatimTextOutput	text
+```
+You can add output to the user-interface in the same way that you added HTML elements and widgets. Place the output function inside sidebarPanel or mainPanel in the ui.R script.
+
+For example, the ui.R file below uses textOutput to add a reactive line of text to the main panel of the Shiny app pictured above.
+```{r}
+# ui.R
+
+shinyUI(fluidPage(
+  titlePanel("censusVis"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      helpText("Create demographic maps with 
+        information from the 2010 US Census."),
+      
+      selectInput("var", 
+        label = "Choose a variable to display",
+        choices = c("Percent White", "Percent Black",
+          "Percent Hispanic", "Percent Asian"),
+        selected = "Percent White"),
+      
+      sliderInput("range", 
+        label = "Range of interest:",
+        min = 0, max = 100, value = c(0, 100))
+    ),
+    
+    mainPanel(
+      textOutput("text1")
+    )
+  )
+))
+```
+Notice that textOutput takes an argument, the character string “text1”. Each of the *Output functions require a single argument: a character string that Shiny will use as the name of your reactive element. Your users will not see this name, but you will use it later.
+
+#### Step 2: Provide R Code to Build Object(s)
+Placing a function in ui.R tells Shiny where to display your object. Next, you need to tell Shiny how to build the object.
+
+Do this by providing R code that builds the object in server.R. The code should go in the unnamed function that appears inside shinyServer in your server.R script.
+
+The unnamed function plays a special role in the Shiny process; it builds a list-like object named output that contains all of the code needed to update the R objects in your app. Each R object needs to have its own entry in the list.
+
+You can create an entry by defining a new element for output within the unnamed function, like below. The element name should match the name of the reactive element that you created in ui.R.
+
+In the script below, output$text1 matches textOutput("text1") in your ui.R script.
+```{r}
+# server.R
+
+shinyServer(function(input, output) {
+
+     output$text1 <- renderText({ 
+          "You have selected this"
+     })
+
+  }
+)
+```
+You do not need to arrange for the unnamed function to return output in its last line of code. R will automatically update output through reference class semantics.
+
+Each entry to output should contain the output of one of Shiny’s render* functions. These functions capture an R expression and do some light pre-processing on the expression. Use the render* function that corrresponds to the type of reactive object you are making.
+```
+render function	creates
+renderImage	images (saved as a link to a source file)
+renderPlot	plots
+renderPrint	any printed output
+renderTable	data frame, matrix, other table like structures
+renderText	character strings
+renderUI	a Shiny tag object or HTML
+```
+Each render* function takes a single argument: an R expression surrounded by braces, {}. The expression can be one simple line of text, or it can involve many lines of code, as if it were a complicated function call.
+
+Think of this R expression as a set of instructions that you give Shiny to store for later. Shiny will run the instructions when you first launch your app, and then Shiny will re-run the instructions every time it needs to update your object.
+
+For this to work, your expression should return the object you have in mind (a piece of text, a plot, a data frame, etc). You will get an error if the expression does not return an object, or if it returns the wrong type of object.
+
+### Use Widget Values
+If you run the server.R script above, the Shiny app will display “You have selected this” in the main panel. However, the text will not be reactive. It will not change even if you manipulate the widgets of your app.
+
+You can make the text reactive by asking Shiny to call a widget value when it builds the text. Let’s look at how to do this.
+
+Take a look at the first line of code in server.R. Do you notice that the unnamed function mentions two arguments, input and output? You already saw that output is a list-like object that stores instructions for building the R objects in your app.
+
+input is a second list-like object. It stores the current values of all of the widgets in your app. These values will be saved under the names that you gave the widgets in ui.R.
+
+So for example, our app has two widgets, one named “var” and one named “range” (you gave the widgets these names in Lesson 3). The values of “var” and “range” will be saved in input as input$var and input$range. Since the slider widget has two values (a min and a max), input$range will contain a vector of length two.
+
+Shiny will automatically make an object reactive if the object uses an input value. For example, the server.R file below creates a reactive line of text by calling the value of the select box widget to build the text.
+```{r}
+# server.R
+
+shinyServer(
+  function(input, output) {
+  
+    output$text1 <- renderText({ 
+      paste("You have selected", input$var)
+    })
+    
+  }
+)
+```
+Shiny tracks which outputs depend on which widgets. When a user changes a widget, Shiny will rebuild all of the outputs that depend on the widget, using the new value of the widget as it goes. As a result, the rebuilt objects will be completely up-to-date.
+
+This is how you create reactivity with Shiny, by connecting the values of input to the objects in output. Shiny takes care of all of the other details.
+
+### Launch App and See Reactive Output
+When you are ready, update your server.R and ui.R files to match those above. Then launch your Shiny app by running runApp("censusVis", display.mode = "showcase") at the command line. Your app should look like the app below, and your statement should update instantly as you change the select box widget.
+
+Watch the server.R script. When Shiny rebuilds an output, it highlights the code it is running. This temporary highlighting can help you see how Shiny generates reactive output.
+
+
+
+
+
+
 
 
 
