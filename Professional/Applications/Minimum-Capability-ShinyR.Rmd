@@ -214,6 +214,7 @@ You can add content to your Shiny app by placing it inside a *Panel function. Fo
 
 To add more advanced content, use one of Shiny’s HTML tag functions. These functions parallel common HTML5 tags. Let’s try out a few of them.
 
+```
 shiny function	HTML5 equivalent	creates
 p	<p>	A paragraph of text
 h1	<h1>	A first level header
@@ -232,6 +233,7 @@ img	<img>	An image
 strong	<strong>	Bold text
 em	<em>	Italicized text
 HTML	 	Directly passes a character string as HTML code
+```
 
 ### Headers
 To create a header element:
