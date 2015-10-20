@@ -5,6 +5,7 @@ date: "October, 2015"
 output: html_document
 ---
 # How To Build Apps in ShinyR
+This information is from [Shiny byRStudio](http://shiny.rstudio.com/tutorial)'s website.
 
 ## Lesson 1: Intro to ShinyR
 The Shiny package has eleven built-in examples that each demonstrate how Shiny works. Each example is a self-contained Shiny app.
