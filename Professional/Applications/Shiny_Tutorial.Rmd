@@ -754,6 +754,12 @@ shinyServer(
 )
 ```
 
+##### Run Code
+```{r}
+runApp("census-app", display.mode = "showcase")
+```
+
+
 ### Recap
 In this lesson, you created your first reactive Shiny app. Along the way, you learned to
 
@@ -765,6 +771,60 @@ create reactivity by including an input value in a render* expression
 If you follow these rules, Shiny will automatically make your objects reactive.
 
 In Lesson 5 you will create a more sophisticated reactive app that relies on R scripts and external data.
+
+
+## Lesson 5: Use R Scripts and Data
+This lesson will show you how to load data, R Scripts, and packages to use in your Shiny apps. Along the way, you will build a sophisticated app that visualizes US Census data.
+
+### counties.rds
+counties.rds is a dataset of demographic data for each county in the United States, collected with the UScensus2010 R package. You can download it here.
+
+Once you have the file,
+
+Create a new folder named data in your census-app directory.
+Move counties.rds into the data folder.
+When you’re done, your census-app folder should look like this.
+
+The dataset in counties.rds contains
+
+the name of each county in the United States
+the total population of the county
+the percent of residents in the county who are white, black, hispanic, or asian
+```{r}
+library(UScensus2010)
+counties <- readRDS("census-app/data/counties.rds")
+head(counties)
+```
+
+### helpser.R
+helpers.R is an R script that can help you make choropleth maps, like the ones pictured above. A choropleth map is a map that uses color to display the regional variation of a variable. In our case, helpers.R will create percent_map, a function designed to map the data in counties.rds. You can download helpers.R here.
+
+helpers.R uses the maps and mapproj packages in R. If you’ve never installed these packages before, you’ll need to do so before you make this app. Run
+```{r}
+library(maps)
+library(mapproj)
+```
+The percent_map function in helpers.R takes five arguments:
+
+```
+Argument	Input
+var	          a column vector from the counties.rds dataset
+color	        any character string you see in the output of colors()
+legend.title	A character string to use as the title of the plot’s legend
+max	          A parameter for controlling shade range (defaults to 100)
+min	          A parameter for controlling shade range (defaults to 0)
+```
+You can use percent_map at the command line to plot the counties data as a choropleth map, like this.
+```{r}
+library(maps)
+library(mapproj)
+source("census-app/helpers.R")
+counties <- readRDS("census-app/data/counties.rds")
+percent_map(counties$white, "darkgreen", "% white")
+```
+Note: The code above assumes that census-app is a sub-directory in your working directory. Make certain to set your working directory as the parent directory for census-app. To change your working directory location, click on Session > Set Working Directory > Choose Directory… in the RStudio menu bar.
+
+percent_map plots the counties data as a choropleth map. Here it will plot the percent of white residents in the counties in the color dark green.
 
 
 
