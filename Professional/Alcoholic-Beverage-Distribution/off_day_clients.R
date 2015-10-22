@@ -75,5 +75,49 @@ offDaySummary$AVG.OFF.DAY.CASES <- round(offDaySummary$CASES / offDaySummary$NUM
 
 
 
+# ##  ### ####  ##### ######  ####### # ##  ### ####  ##### ######  ####### # ##  ### ####  ##### ######  #######
+
+
+
+repClient <- read.csv('key_value_salesperson_customer.csv', header=TRUE)
+str(repClient)
+
+salespeople <- aggregate(Salesperson ~ Customer, data=repClient, FUN=paste)
+count <- aggregate(Salesperson ~ Customer, data=repClient, FUN=length)
+count <- arrange(count, -Salesperson)
+
+customerSalespeople <- merge(count, salespeople, by='Customer')
+names(customerSalespeople) <- c('Customer', 'Number.of.Salespeople', 'Salespeople')
+
+rawCustNo <- substrRight(as.character(customerSalespeople$Customer), 10)
+customerSalespeople$CUST.. <- str_extract(rawCustNo, "(([0-9]+))")
+
+moneyShot <- merge(offDaySummary, customerSalespeople, by='CUST..')
+names(moneyShot) <- c('CUSTOMER.NUMBER', 'CUSTOMER', 'CASES', 'NUMBER.OFF.DAY.DELIVERIES', 
+                      'AVG.OFF.DAY.CASES', 'Customer2', 'NUMBER.OF.SALESPEOPLE', 'SALESPEOPLE')
+moneyShot <- moneyShot[, -6]
+moneyShot <- arrange(moneyShot, -NUMBER.OFF.DAY.DELIVERIES)
+moneyShot <- moneyShot[, c(2, 7, 1, 3:6)]
+moneyShot <- data.frame(moneyShot)
+moneyShot$SALESPEOPLE <- factor(as.character(moneyShot$SALESPEOPLE))
+moneyShot$SALESPEOPLE <- as.character(moneyShot$SALESPEOPLE)
+
+head(moneyShot, 100)
+write.csv(moneyShot, file='10222015_30days_OffDayDeliveries_Salespeople.csv')
+
+repeatOffenders <- aggregate(NUMBER.OFF.DAY.DELIVERIES ~ SALESPEOPLE, data=moneyShot, FUN=sum)
+repeatOffenders <- arrange(repeatOffenders, -NUMBER.OFF.DAY.DELIVERIES)
+head(repeatOffenders, 50)
+write.csv(repeatOffenders, file='10222015_OffDayDeliveries_RepeatOffenders.csv')
+
+
+
+
+
+
+
+
+
+
 
 
