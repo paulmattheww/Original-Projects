@@ -1,6 +1,7 @@
 
 # Identifying salespersons who's accounts are delivered on off-days
 # Data from "Pivot by Delivery" tab in Delivery Audit report
+setwd("C:/Users/pmwash/Desktop/R_Files")
 
 substrRight <- function(x, n){
   substr(x, nchar(x)-n+1, nchar(x))
@@ -53,25 +54,13 @@ deliveries$OFF.DAY.DELIVERY <-
                                             ifelse(actual == mon, 'NO', 'YES')))))))
 
 deliveries$DAYS.SCHEDULED.FOR.DELIVERY <- paste(mon, tues, wed, thurs, fri, sat, sun, sep=".")
+library(dplyr)
 deliveries <- arrange(deliveries, -CASES) #sort large to small so highest volume 
-
-head(deliveries)
+deliveries <- select(deliveries,(c(DATE, CUST.., CUSTOMER, COMP, SHIP.FLAG, 
+                                          CITY, CASES, DOLLARS, COMPANY, TIER,
+                                          OFF.DAY.DELIVERY, DAYS.SCHEDULED.FOR.DELIVERY)))
+head(deliveries, 25)
 str(deliveries)
-
-offDayDeliveries <- filter(deliveries, OFF.DAY.DELIVERY == 'YES')
-
-offDayClients <- aggregate(CASES ~ CUSTOMER + CUST.., data=offDayDeliveries, FUN=sum)
-offDayClients <- arrange(offDayClients, -CASES)
-
-offDayCount <- aggregate(CASES ~ CUSTOMER + CUST.., data=offDayDeliveries, FUN=length)
-offDayCount <- arrange(offDayCount, -CASES)
-names(offDayCount) <- c('CUSTOMER', 'CUST..', 'NUMBER.OFF.DAY.DELIVERIES')
-filter(deliveries, CUST.. == 3283) #quick check
-
-offDaySummary <- merge(offDayClients, offDayCount, by=c('CUST..', 'CUSTOMER'))
-offDaySummary <- arrange(offDaySummary, -NUMBER.OFF.DAY.DELIVERIES)
-
-offDaySummary$AVG.OFF.DAY.CASES <- round(offDaySummary$CASES / offDaySummary$NUMBER.OFF.DAY.DELIVERIES, 1)
 
 
 
@@ -79,42 +68,79 @@ offDaySummary$AVG.OFF.DAY.CASES <- round(offDaySummary$CASES / offDaySummary$NUM
 
 
 
+offDayDeliveries <- filter(deliveries, OFF.DAY.DELIVERY == 'YES')
+
+offDayClients <- aggregate(CASES ~ CUSTOMER + CUST.. + CITY + COMP, data=offDayDeliveries, FUN=sum)
+offDayClients <- arrange(offDayClients, -CASES)
+#head(offDayClients)
+names(offDayClients) <- c('CUSTOMER', 'CUST..', 'CITY', 'COMP','CASES')
+
+offDayCount <- aggregate(CASES ~ CUSTOMER + CUST.. + CITY + COMP, data=offDayDeliveries, FUN=length)
+offDayCount <- arrange(offDayCount, -CASES)
+#head(offDayCount)
+names(offDayCount) <- c('CUSTOMER', 'CUST..', 'CITY', 'COMP','NUMBER.OFF.DAY.DELIVERIES')
+#filter(deliveries, CUST.. == 3283) #quick check
+
+offDaySummary <- merge(offDayClients, offDayCount, by=c('CUST..', 'CUSTOMER', 'COMP', 'CITY'))
+offDaySummary <- arrange(offDaySummary, -NUMBER.OFF.DAY.DELIVERIES)
+
+offDaySummary$AVG.OFF.DAY.CASES <- round(offDaySummary$CASES / offDaySummary$NUMBER.OFF.DAY.DELIVERIES, 1)
+
+head(offDaySummary)
+
+# ##  ### ####  ##### ######  ####### # ##  ### ####  ##### ######  ####### # ##  ### ####  ##### ######  #######
+
+
+
 repClient <- read.csv('key_value_salesperson_customer.csv', header=TRUE)
-str(repClient)
+head(repClient)
 
 salespeople <- aggregate(Salesperson ~ Customer, data=repClient, FUN=paste)
 count <- aggregate(Salesperson ~ Customer, data=repClient, FUN=length)
 count <- arrange(count, -Salesperson)
 
 customerSalespeople <- merge(count, salespeople, by='Customer')
+#head(customerSalespeople)
 names(customerSalespeople) <- c('Customer', 'Number.of.Salespeople', 'Salespeople')
 
 rawCustNo <- substrRight(as.character(customerSalespeople$Customer), 10)
 customerSalespeople$CUST.. <- str_extract(rawCustNo, "(([0-9]+))")
 
+# ##  ### ####  ##### ######  ####### # ##  ### ####  ##### ######  ####### # ##  ### ####  ##### ######  #######
+
+head(customerSalespeople)
+head(offDaySummary)
+filter(offDaySummary, CUST.. == 10382) #quick check
+filter(customerSalespeople, CUST.. == 10382) #quick check
+print("NOTE: CLIENTS ON EDI WILL NOT BE REPRESENTED!")
+
 moneyShot <- merge(offDaySummary, customerSalespeople, by='CUST..')
-names(moneyShot) <- c('CUSTOMER.NUMBER', 'CUSTOMER', 'CASES', 'NUMBER.OFF.DAY.DELIVERIES', 
+names(moneyShot) <- c('CUSTOMER.NUMBER', 'CUSTOMER', 'WAREHOUSE', 'CITY', 'CASES', 'NUMBER.OFF.DAY.DELIVERIES', 
                       'AVG.OFF.DAY.CASES', 'Customer2', 'NUMBER.OF.SALESPEOPLE', 'SALESPEOPLE')
-moneyShot <- moneyShot[, -6]
-moneyShot <- arrange(moneyShot, -NUMBER.OFF.DAY.DELIVERIES)
-moneyShot <- moneyShot[, c(2, 7, 1, 3:6)]
+moneyShot <- moneyShot[, -8]
+moneyShot <- moneyShot[, c(8, 2, 1, 3:7, 9)]
 moneyShot <- data.frame(moneyShot)
-moneyShot$SALESPEOPLE <- factor(as.character(moneyShot$SALESPEOPLE))
 moneyShot$SALESPEOPLE <- as.character(moneyShot$SALESPEOPLE)
+moneyShot <- arrange(moneyShot, -NUMBER.OFF.DAY.DELIVERIES)
 
-head(moneyShot, 100)
-write.csv(moneyShot, file='10222015_30days_OffDayDeliveries_Salespeople.csv')
+head(moneyShot, 50)
+write.csv(moneyShot, file='90days_OffDayDeliveries_SalespeopleCustomerWarehouse.csv')
 
-repeatOffenders <- aggregate(NUMBER.OFF.DAY.DELIVERIES ~ SALESPEOPLE, data=moneyShot, FUN=sum)
-repeatOffenders <- arrange(repeatOffenders, -NUMBER.OFF.DAY.DELIVERIES)
-head(repeatOffenders, 50)
-write.csv(repeatOffenders, file='10222015_OffDayDeliveries_RepeatOffenders.csv')
 
+# ##  ### ####  ##### ######  ####### # ##  ### ####  ##### ######  ####### # ##  ### ####  ##### ######  #######
 
 
 
+frequencyOffDayByRep <- aggregate(NUMBER.OFF.DAY.DELIVERIES ~ SALESPEOPLE, data=moneyShot, FUN=sum)
+frequencyOffDayByRep <- arrange(frequencyOffDayByRep, -NUMBER.OFF.DAY.DELIVERIES)
+head(frequencyOffDayByRep, 50)
+write.csv(frequencyOffDayByRep, file='OffDayDeliveries_frequencyOffDayByRep.csv')
 
 
+offDayClientsNotOnEDI <- aggregate(NUMBER.OFF.DAY.DELIVERIES ~ CUSTOMER + CITY + COMP, data=offDaySummary, FUN=sum)
+offDayClientsNotOnEDI <- arrange(offDayClientsNotOnEDI, -NUMBER.OFF.DAY.DELIVERIES)
+
+head(offDayClientsNotOnEDI, 50)
 
 
 
