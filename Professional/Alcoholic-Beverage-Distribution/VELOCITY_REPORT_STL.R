@@ -83,6 +83,12 @@ k12 <- "\\<5.16G\\>"
 k13 <- "\\<5.2G\\>"
 k14 <- "\\<5.4G\\>"
 k15 <- "\\<19.5L\\>"
+k16 <- "\\<50L\\>"
+k17 <- "\\<30L\\>"
+k18 <- "\\<5G\\>"
+k19 <- "\\<25L\\>"
+
+
 shipmentsLocations$IS.KEG <- ifelse(grepl(k1, DESC) == TRUE, 'YES', 
        ifelse(grepl(k2, DESC) == TRUE, 'YES', 
               ifelse(grepl(k3, DESC) == TRUE, 'YES', 
@@ -97,13 +103,18 @@ shipmentsLocations$IS.KEG <- ifelse(grepl(k1, DESC) == TRUE, 'YES',
                                                                              ifelse(grepl(k12, DESC) == TRUE, 'YES', 
                                                                                     ifelse(grepl(k13, DESC) == TRUE, 'YES', 
                                                                                            ifelse(grepl(k14, DESC) == TRUE, 'YES', 
-                                                                                                  ifelse(grepl(k15, DESC) == TRUE, 'YES', 'NO')))))))))))))))
+                                                                                                  ifelse(grepl(k15, DESC) == TRUE, 'YES', 
+                                                                                                         ifelse(grepl(k16, DESC), 'YES',
+                                                                                                                ifelse(grepl(k17, DESC), 'YES', 
+                                                                                                                       ifelse(grepl(k18, DESC), 'YES', 
+                                                                                                                              ifelse(grepl(k19, DESC), 'YES', 'NO')))))))))))))))))))
 
+# separate out cases that came from the keg room (which are oddballs) from kegs from keg room
 LINE <- shipmentsLocations$LINE
 ISKEG <- shipmentsLocations$IS.KEG
 shipmentsLocations$LINE <- ifelse(LINE == 'KEG ROOM' & ISKEG == 'NO', 'ODDBALL', LINE)
-check <- filter(shipmentsLocations, IS.KEG == 'NO' & LINE == 'ODDBALL')
-View(check)
+
+head(shipmentsLocations, 100)
 
 
 head(shipmentsLocations)
@@ -116,27 +127,51 @@ head(shipmentsLocations)
 ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####
 
 
-caseMovementByProduct = aggregate(CASES.SOLD ~ DESCRIPTION, data=shipmentsLocations, FUN=sum)
-caseMovementByProduct <- arrange(caseMovementByProductLocation, -CASES.SOLD)
+caseMovementByProduct = aggregate(CASES.SOLD ~ DESCRIPTION + ITEM.NUMBER, data=shipmentsLocations, FUN=sum)
+caseMovementByProduct <- arrange(caseMovementByProduct, -CASES.SOLD)
+totes <- sum(caseMovementByProduct$CASES.SOLD)
+share <- caseMovementByProduct$CASES.SOLD
+caseMovementByProduct$PERCENT.TOTAL.CASES <- round(share / totes, 3)
+caseMovementByProduct$AVG.CASES.PER.DAY <- round(share / productionDays, 2)
 head(caseMovementByProduct, 50)
 
 
 
 
-caseMovementByProductLocation <- aggregate(CASES.SOLD ~ LOCATION, 
+caseMovementByProductLocation <- aggregate(CASES.SOLD ~ LOCATION + LINE, 
                                            data=shipmentsLocations, FUN=sum)
 caseMovementByProductLocation <- arrange(caseMovementByProductLocation, -CASES.SOLD)
+cases <- caseMovementByProductLocation$CASES.SOLD
+caseMovementByProductLocation$CASES.PER.NIGHT <- round(cases / productionDays)
 head(caseMovementByProductLocation, 50)
 
+oddball <- filter(caseMovementByProductLocation, LINE=='ODDBALL')
+c.line <- filter(caseMovementByProductLocation, LINE=='C-LINE')
+d.line <- filter(caseMovementByProductLocation, LINE=='D-LINE')
+e.line <- filter(caseMovementByProductLocation, LINE=='E-LINE')
+f.line <- filter(caseMovementByProductLocation, LINE=='F-LINE')
+g.line <- filter(caseMovementByProductLocation, LINE=='G-LINE')
+h.line <- filter(caseMovementByProductLocation, LINE=='H-LINE')
+keg.room <- filter(caseMovementByProductLocation, LINE=='KEG ROOM')
 
-
-caseMovementByLine <- aggregate(CASES.SOLD ~ LINE, data=shipmentsLocations,
-                                FUN=sum) 
+caseMovementByLine <- aggregate(CASES.SOLD ~ LINE, data=shipmentsLocations, FUN=sum) 
 caseMovementByLine <- arrange(caseMovementByLine, -CASES.SOLD)
 cases <- caseMovementByLine$CASES.SOLD
 total <- sum(caseMovementByLine$CASES.SOLD)
 caseMovementByLine$PERCENT.OF.TOTAL <- round(cases / total, 3)
 caseMovementByLine
+
+
+caseMovementByLineByDate <- aggregate(CASES.SOLD ~ LINE + INVOICE.DATE, data=shipmentsLocations,
+                                FUN=sum) 
+caseMovementByLineByDate <- arrange(caseMovementByLineByDate, -CASES.SOLD)
+cases <- caseMovementByLineByDate$CASES.SOLD
+total <- sum(caseMovementByLineByDate$CASES.SOLD)
+caseMovementByLineByDate$PERCENT.OF.TOTAL <- round(cases / total, 3)
+head(caseMovementByLineByDate)
+
+
+
 
 itemsPerLine <- aggregate(DESCRIPTION ~ LINE, data=shipmentsLocations, FUN=countUnique)
 
@@ -150,3 +185,35 @@ lineSummary
 
 
 
+casesByLocationAvg <- aggregate(CASES.SOLD ~ LOCATION, data=casesByLocation, FUN=mean)
+casesByLocationAvg <- arrange(casesByLocationAvg, -CASES.SOLD)
+ROUNDED <- round(casesByLocationAvg$CASES.SOLD)
+casesByLocationAvg$CASES.SOLD <- ROUNDED
+names(casesByLocationAvg) <- c('LOCATION', 'AVG.DAILY.VELOCITY')
+
+head(casesByLocationAvg, 50)
+
+
+library(xlsx)
+write.xlsx2(lineSummary, file='VelocitySummary_10262015.xlsx', sheetName='velocityByLine')
+write.xlsx2(caseMovementByProduct, append=TRUE,
+           file='VelocitySummary_10262015.xlsx', sheetName='velocityByProduct')
+write.xlsx2(caseMovementByProductLocation, append=TRUE,
+           file='VelocitySummary_10262015.xlsx', sheetName='velocityByLocation')
+
+library(xlsx)
+write.xlsx2(oddball, file='VelocityReport_byLine_10262015.xlsx', sheetName='oddballs')
+write.xlsx2(g.line, append=TRUE,
+           file='VelocityReport_byLine_10262015.xlsx', sheetName='G')
+write.xlsx2(c.line, append=TRUE,
+           file='VelocityReport_byLine_10262015.xlsx', sheetName='C')
+write.xlsx2(e.line, append=TRUE,
+           file='VelocityReport_byLine_10262015.xlsx', sheetName='E')
+write.xlsx2(d.line, append=TRUE,
+           file='VelocityReport_byLine_10262015.xlsx', sheetName='D')
+write.xlsx2(f.line, append=TRUE,
+           file='VelocityReport_byLine_10262015.xlsx', sheetName='F')
+write.xlsx2(h.line, append=TRUE,
+           file='VelocityReport_byLine_10262015.xlsx', sheetName='H')
+write.xlsx2(keg.room, append=TRUE,
+           file='VelocityReport_byLine_10262015.xlsx', sheetName='F')
