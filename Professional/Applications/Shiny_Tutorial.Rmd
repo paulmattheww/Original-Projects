@@ -2,7 +2,7 @@
 title: "Shiny Tutorials"
 author: "Paul M. Washburn"
 date: "October, 2015"
-output: html_document
+output: pdf_document
 ---
 # How To Build Apps in ShinyR
 This information is from [Shiny byRStudio](http://shiny.rstudio.com/tutorial)'s website.
@@ -826,13 +826,284 @@ Note: The code above assumes that census-app is a sub-directory in your working 
 
 percent_map plots the counties data as a choropleth map. Here it will plot the percent of white residents in the counties in the color dark green.
 
+### Loading Files and File Paths
+Take a look at the above code. To use percent_map, we first ran helpers.R with the source function, and then loaded counties.rds with the readRDS function. We also ran library(maps) and library(mapproj).
+
+You will need to ask Shiny to call the same functions before it uses percent_map in your app, but how you write these functions will change. Both source and readRDS require a file path, and file paths do not behave the same way in a Shiny app as they do at the command line.
+
+When Shiny runs the commands in server.R, it will treat all file paths as if they begin in the same directory as server.R. In other words, the directory that you save server.R in will become the working directory of your Shiny app.
+
+Since you saved helpers.R in the same directory as server.R, you can ask Shiny to load it with
+```{r}
+source("helpers.R")
+```
+Since you saved counties.rds in a sub-directory (named data) of the directory that server.R is in, you can load it with.
+```{r}
+counties <- readRDS("census-app/data/counties.rds")
+```
+
+### Execution 
+Shiny will execute all of these commands if you place them in your server.R script. However, where you place them in server.R will determine how many times they are run (or re-run), which will in turn affect the performance of your app.
+
+Shiny will run some sections of server.R more often than others.
+
+Shiny will run the whole script the first time you call runApp. This causes Shiny to execute shinyServer. shinyServer then gives Shiny the unnamed function in its first argument.
+
+Shiny saves the unnamed function until a new user arrives. Each time a new user visits your app, Shiny runs the unnamed function again, one time. The function helps Shiny build a distinct set of reactive objects for each user.
+
+As users change widgets, Shiny will re-run the R expressions assigned to each reactive object. If your user is very active, these expressions may be re-run many, many times a second.
+
+Here’s what we’ve learned so far:
+
+The server.R script is run once, when you launch your app
+The unnamed function inside shinyServer is run once each time a user visits your app
+The R expressions inside render* functions are run many times. Shiny runs them once each time a user changes a widget.
+How can you use this information?
+
+Source scripts, load libraries, and read data sets at the beginning of server.R outside of the shinyServer function. Shiny will only run this code once, which is all you need to set your server up to run the R expressions contained in shinyServer.
+
+Define user specific objects inside shinyServer’s unnamed function, but outside of any render* calls. These would be objects that you think each user will need their own personal copy of. For example, an object that records the user’s session information. This code will be run once per user.
+
+Only place code that Shiny must rerun to build an object inside of a render* function. Shiny will rerun all of the code in a render* chunk each time a user changes a widget mentioned in the chunk. This can be quite often.
+
+You should generally avoid placing code inside a render function that does not need to be there. The code will slow down the entire app.
+
+### Give It A Try
+Copy and paste the following ui.R and server.R files to your census-app directory. Then add
+```{r}
+source("helpers.R")
+counties <- readRDS("data/counties.rds")
+library(maps)
+library(mapproj)
+```
+to server.R. Be sure to place the commands in an efficient location.
+
+Since your app only needs to load helpers.R and counties.rds once, they should go outside of the shinyServer function. This is also a good place to load the maps library (which percent_map uses).
+
+You may wonder, “Won’t each user need their own copy of counties and percent_map?” (which would imply that the code should go inside of shinyServer’s unnamed function). No, each user will not.
+
+Keep in mind that your user’s computer won’t run any of the R code in your Shiny app. In fact, their computer won’t even see the R code. The computer that you use as a server will run all of the R code necessary for all of your users. It will send the results over to your users as HTML elements.
+
+Your server can rely on a single global copy of counties.rds and percent_map to do all of the R execution necessary for all of the users. You only need to build a separate object for each user if the objects will have different values for each of your users.
+
+### Finishing The App
+The censusVis app has one reactive object, a plot named “map”. The plot is built with the percent_map function, which takes five arguments.
+
+The first three arguments, var, color, and legend.title, depend on the value of the select box widget.
+The last two arguments, max and min, should be the max and min values of the slider bar widget.
+The server.R script below shows one way to craft reactive arguments for percent_map. R’s switch function can transform the output of a select box widget to whatever you like. However, the script is incomplete. It does not provide values for color, legend.title, max, or min. Note: the script will not run as is. You will need to finish the script before you run it, which is the task of Your Turn 2.
+```{r}
+# server.R
+
+library(maps)
+library(mapproj)
+counties <- readRDS("data/counties.rds")
+source("helpers.R")
+
+shinyServer(
+  function(input, output) {
+    output$map <- renderPlot({
+      data <- switch(input$var, 
+        "Percent White" = counties$white,
+        "Percent Black" = counties$black,
+        "Percent Hispanic" = counties$hispanic,
+        "Percent Asian" = counties$asian)
+  
+      percent_map(var = data, color = ?, legend.title = ?, max = ?, min = ?)
+    })
+  }
+)
+```
+
+### Finishing the Code
+Complete the code to build a working censusVis app.
+
+When you’re ready to deploy your app, save your server.R and ui.R files and run runApp("census-app"). If everything works, your app should look like the picture below.
+
+You’ll need to decide
+
+how to create the argument values for percent_map, and
+where to put the code that creates these arguments.
+Remember, you’ll want the argument values to switch whenever a user changes the associated widget. When you are finished, or if you get stuck, read on below for a model answer.
+
+##### server.R
+```{r}
+# server.R
+    
+library(maps)
+library(mapproj)
+counties <- readRDS("data/counties.rds")
+source("helpers.R")
+    
+    
+shinyServer(
+  function(input, output) {
+    output$map <- renderPlot({
+      args <- switch(input$var,
+        "Percent White" = list(counties$white, "darkgreen", "% White"),
+        "Percent Black" = list(counties$black, "black", "% Black"),
+        "Percent Hispanic" = list(counties$hispanic, "darkorange", "% Hispanic"),
+        "Percent Asian" = list(counties$asian, "darkviolet", "% Asian"))
+        
+      args$min <- input$range[1]
+      args$max <- input$range[2]
+  
+      do.call(percent_map, args)
+    })
+  }
+)
+```
+
+##### ui.R
+```{r}
+# ui.R
+
+shinyUI(fluidPage(
+  titlePanel("censusVis"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      helpText("Create demographic maps with 
+        information from the 2010 US Census."),
+    
+      selectInput("var", 
+        label = "Choose a variable to display",
+        choices = c("Percent White", "Percent Black",
+          "Percent Hispanic", "Percent Asian"),
+        selected = "Percent White"),
+    
+      sliderInput("range", 
+        label = "Range of interest:",
+        min = 0, max = 100, value = c(0, 100))
+    ),
+  
+    mainPanel(plotOutput("map"))
+  )
+))
+```
+
+### Recap
+You can create more complicated Shiny apps by loading R Scripts, packages, and data sets.
+
+Keep in mind:
+
+The directory that server.R appears in will become the working directory of the Shiny app
+Shiny will run code placed at the start of server.R, before shinyServer, only once during the life of the app.
+Shiny will run code placed inside shinyServer multiple times, which can slow the app down.
+You also learned that switch is a useful companion to multiple choice Shiny widgets. Use switch to change the values of a widget into R expressions.
+
+As your apps become more complex, they can become inefficient and slow. Lesson 6 will show you how to build fast, modular apps with reactive expressions.
+
+```{r}
+runApp('census-app', display.mode='showcase')
+```
 
 
+## Lesson 6: Use Reactive Expressions
+Shiny apps wow your users by running fast, instantly fast. But what if your app needs to do a lot of slow computation?
 
+This lesson will show you how to streamline your Shiny apps with reactive expressions. Reactive expressions let you control which parts of your app update when, which prevents unnecessary work.
 
+To get started:
 
+* Create a new folder named stockVis in your working directory.
+* Download the following files and place them inside stockVis: ui.R, server.R, and helpers.R.
+* Launch the app with runApp("stockVis")
 
+StockVis use R’s quantmod package, so you’ll need to install quantmod with install.packages("quantmod") if you do not already have it.
+```{r}
+library(shiny)
+setwd("C:/Users/pmwash/Desktop/R_files/Applications")
+runApp("stockVis")
+```
+##### New App: stockVis
+The stockVis app looks up stock prices by ticker symbol and displays the results as a line chart. The app lets you
 
+* Select a stock to examine
+* Pick a range of dates to review
+* Choose whether to plot stock prices or the log of the stock prices on the y axis, and
+* Decide whether or not to correct prices for inflation.
+
+Note that the “Adjust prices for inflation” check box doesn’t work yet. One of our tasks in this lesson is to fix this check box.
+
+By default, stockVis displays the SPY ticker (an index of the entire S & P 500). To look up a different stock, type in a stock symbol that Yahoo finance will recognize. You can find a list of Yahoo’s stock symbols here. Some common symbols are GOOG (Google), AAPL (Apple), and GS (Goldman Sachs).
+
+StockVis relies heavily on two functions from the quantmod package:
+
+* It uses getSymbols to download financial data straight into R from websites like Yahoo finance and the Federal Reserve Bank of St. Louis.
+* It uses chartSeries to display prices in an attractive chart.
+StockVis also relies on an R script named helpers.R, which contains a function that adjusts stock prices for inflation.
+
+##### Check Boxes & Date Ranges
+The stockVis app uses a few new widgets.
+
+* a date range selector, created with dateRangeInput, and
+* a couple of check boxes made with checkboxInput. Check box widgets are very simple. They return a TRUE when the check box is checked, and a FALSE when the check box is not checked.
+
+The check boxes are named log and adjust in the ui.R script, which means you can look them up as input$log and input$adjust in the server.R script. If you’d like to review how to use widgets and their values, check out Lesson 3 and Lesson 4.
+
+##### Streamline Computation
+The stockVis app has a problem.
+
+Examine what will happen when you click “Plot y axis on the log scale.” The value of input$log will change, which will cause the entire expression in renderPlot to re-run:
+```{r}
+output$plot <- renderPlot({
+  data <- getSymbols(input$symb, src = "yahoo", 
+    from = input$dates[1],
+    to = input$dates[2],
+    auto.assign = FALSE)
+               
+  chartSeries(data, theme = chartTheme("white"), 
+    type = "line", log.scale = input$log, TA = NULL)
+})
+```
+Each time renderPlot re-runs
+
+* it re-fetches the data from Yahoo finance with getSymbols, and
+* it re-draws the chart with the correct axis.
+
+This is not good, because you do not need to re-fetch the data to re-draw the plot. In fact, Yahoo finance will cut you off if you re-fetch your data too often (because you begin to look like a bot). But more importantly, re-running getSymbols is unnecessary work, which can slow down your app and consume server bandwidth.
+
+##### Reactive Expressions
+You can limit what gets re-run during a reaction with reactive expressions.
+
+A reactive expression is an R expression that uses widget input and returns a value. The reactive expression will update this value whenever the original widget changes.
+
+To create a reactive expression use the reactive function, which takes an R expression surrounded by braces (just like the render* functions).
+
+For example, here’s a reactive expression that uses the widgets of stockVis to fetch data from Yahoo.
+
+```{r}
+dataInput <- reactive({
+  getSymbols(input$symb, src = "yahoo", 
+    from = input$dates[1],
+    to = input$dates[2],
+    auto.assign = FALSE)
+})
+```
+
+When you run the expression, it will run getSymbols and return the results, a data frame of price data. You can use the expression to access price data in renderPlot by calling dataInput().
+```{r}
+output$plot <- renderPlot({    
+  chartSeries(dataInput(), theme = chartTheme("white"), 
+    type = "line", log.scale = input$log, TA = NULL)
+})
+```
+Reactive expressions are a bit smarter than regular R functions. They cache their values and know when their values have become outdated. What does this mean? The first time that you run a reactive expression, the expression will save its result in your computer’s memory. The next time you call the reactive expression, it can return this saved result without doing any computation (which will make your app faster).
+
+The reactive expression will only return the saved result if it knows that the result is up-to-date. If the reactive expression has learned that the result is obsolete (because a widget has changed), the expression will recalculate the result. It then returns the new result and saves a new copy. The reactive expression will use this new copy until it too becomes out of date.
+
+Let’s summarize this behavior
+
+A reactive expression saves its result the first time you run it.
+
+The next time the reactive expression is called, it checks if the saved value has become out of date (i.e., whether the widgets it depends on have changed).
+
+If the value is out of date, the reactive object will recalculate it (and then save the new result).
+
+If the value is up-to-date, the reactive expression will return the saved value without doing any computation.
+
+You can use this behavior to prevent Shiny from re-running unnecessary code. Consider how a reactive expression will work in the new stockVis app below.
 
 
 
