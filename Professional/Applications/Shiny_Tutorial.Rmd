@@ -10,7 +10,7 @@ This information is from [Shiny byRStudio](http://shiny.rstudio.com/tutorial)'s 
 ## Lesson 1: Intro to ShinyR
 The Shiny package has eleven built-in examples that each demonstrate how Shiny works. Each example is a self-contained Shiny app.
 
-The Hello Shiny example plots a histogram of R’s faithful dataset with a configurable number of bins. Users can change the number of bins with a slider bar, and the app will immediately respond to their input. You’ll use Hello Shiny to explore the structure of a Shiny app and to create your first app.
+The Hello Shiny example plots a histogram of R's faithful dataset with a configurable number of bins. Users can change the number of bins with a slider bar, and the app will immediately respond to their input. You'll use Hello Shiny to explore the structure of a Shiny app and to create your first app.
 
 To run Hello Shiny, type:
 
@@ -78,11 +78,11 @@ shinyServer(function(input, output) {
 ```
 At one level, the Hello Shiny server.R script is very simple. The script does some calculations and then plots a histogram with the requested number of bins.
 
-However, you’ll also notice that most of the script is wrapped in a call to renderPlot. The comment above the function explains a bit about this, but if you find it confusing, don’t worry. We’ll cover this concept in much more detail soon.
+However, you'll also notice that most of the script is wrapped in a call to renderPlot. The comment above the function explains a bit about this, but if you find it confusing, don't worry. We'll cover this concept in much more detail soon.
 
 Play with the Hello Shiny app and review the source code. Try to develop a feel for how the app works.
 
-Your R session will be busy while the Hello Shiny app is active, so you will not be able to run any R commands. R is monitoring the app and executing the app’s reactions. To get your R session back, hit escape or click the stop sign icon (found in the upper right corner of the RStudio console panel).
+Your R session will be busy while the Hello Shiny app is active, so you will not be able to run any R commands. R is monitoring the app and executing the app's reactions. To get your R session back, hit escape or click the stop sign icon (found in the upper right corner of the RStudio console panel).
 
 
 ### Running an App
@@ -95,9 +95,9 @@ You can run a Shiny app by giving the name of its directory to the function runA
 library(shiny)
 runApp("my_app")
 ```
-Note: runApp is similar to read.csv, read.table, and many other functions in R. The first argument of runApp is the filepath from your working directory to the app’s directory. The code above assumes that the app directory is in your working directory. In this case, the filepath is just the name of the directory.
+Note: runApp is similar to read.csv, read.table, and many other functions in R. The first argument of runApp is the filepath from your working directory to the app's directory. The code above assumes that the app directory is in your working directory. In this case, the filepath is just the name of the directory.
 
-(In case you are wondering, the Hello Shiny app’s files are saved in a special system directory called "01_hello". This directory is designed to work with the runExample ("01_hello") call.)
+(In case you are wondering, the Hello Shiny app's files are saved in a special system directory called "01_hello". This directory is designed to work with the runExample ("01_hello") call.)
 
 ### Try For Yourself
 Create a new directory named App-1 in your working directory. Then copy and paste the ui.R and server.R scripts above into your directory (the scripts from Hello Shiny). When you are finished the directory should look like this:
@@ -107,9 +107,9 @@ Launch your app by running runApp("App-1"). Then click escape and make some chan
 setwd("C:/Users/pmwash/Desktop/R_files/Applications")
 runApp("App-1", display.mode='showcase')
 ```
-When you are ready, launch your app again. Your new app should match the image below. If it doesn’t, or if you want to check your code, press the model answers button to reveal how we did these tasks.
+When you are ready, launch your app again. Your new app should match the image below. If it doesn't, or if you want to check your code, press the model answers button to reveal how we did these tasks.
 
-By default, Shiny apps display in “normal” mode, like the app pictured above. Hello Shiny and the other built in examples display in “showcase mode”, a different mode that displays the server.R and ui.R` scripts alongside the app.
+By default, Shiny apps display in "normal" mode, like the app pictured above. Hello Shiny and the other built in examples display in "showcase mode", a different mode that displays the server.R and ui.R` scripts alongside the app.
 
 If you would like your app to display in showcase mode, you can run runApp("App-1", display.mode = "showcase").
 
@@ -127,9 +127,9 @@ To create your own Shiny app:
 
 Make a directory named for your app.
 
-Save your app’s server.R and ui.R script inside that directory.
+Save your app's server.R and ui.R script inside that directory.
 
-Launch the app with runApp or RStudio’s keyboard shortcuts.
+Launch the app with runApp or RStudio's keyboard shortcuts.
 
 Exit the Shiny app by clicking escape.
 
@@ -152,11 +152,11 @@ runExample("11_timer") # an automated timer
 ```
 
 ## Lesson 2: Build a UI
-Now that you understand the structure of a Shiny app, it’s time to build your first app from scratch.
+Now that you understand the structure of a Shiny app, it's time to build your first app from scratch.
 
 This lesson will show you how to build a user-interface for your app. You will learn how to lay out the user-interface and then add text, images, and other HTML elements to your Shiny app.
 
-We’ll use the App-1 app you made in Lesson 1. To get started, open its server.R and ui.R files. Edit the scripts to match the ones below:
+We'll use the App-1 app you made in Lesson 1. To get started, open its server.R and ui.R files. Edit the scripts to match the ones below:
 
 #### ui.R
 ```{r}
@@ -171,7 +171,7 @@ shinyServer(function(input, output) {
 This code is the bare minimum needed to create a Shiny app. The result is an empty app with a blank user-interface, an appropriate starting point for this lesson.
 
 ### Layout
-Shiny ui.R scripts use the function fluidPage to create a display that automatically adjusts to the dimensions of your user’s browser window. You lay out your app by placing elements in the fluidPage function.
+Shiny ui.R scripts use the function fluidPage to create a display that automatically adjusts to the dimensions of your user's browser window. You lay out your app by placing elements in the fluidPage function.
 
 For example, the ui.R script below creates a user-interface that has a title panel and then a sidebar layout, which includes a sidebar panel and a main panel. Note that these elements are placed within the fluidPage function.
 ```{r}
@@ -208,12 +208,12 @@ shinyUI(fluidPage(
   )
 ))
 ```
-titlePanel and sidebarLayout create a basic layout for your Shiny app, but you can also create more advanced layouts. You can use navbarPage to give your app a multi-page user-interface that includes a navigation bar. Or you can use fluidRow and column to build your layout up from a grid system. If you’d like to learn more about these advanced options, read the Shiny Application Layout Guide. We will stick with sidebarLayout in this tutorial.
+titlePanel and sidebarLayout create a basic layout for your Shiny app, but you can also create more advanced layouts. You can use navbarPage to give your app a multi-page user-interface that includes a navigation bar. Or you can use fluidRow and column to build your layout up from a grid system. If you'd like to learn more about these advanced options, read the Shiny Application Layout Guide. We will stick with sidebarLayout in this tutorial.
 
 ### HTML Content
-You can add content to your Shiny app by placing it inside a *Panel function. For example, the apps above display a character string in each of their panels. The words “sidebar panel” appear in the sidebar panel, because we added the string to the sidebarPanel function, e.gsidebarPanel("sidebar panel"). The same is true for the text in the title panel and the main panel.
+You can add content to your Shiny app by placing it inside a *Panel function. For example, the apps above display a character string in each of their panels. The words "sidebar panel" appear in the sidebar panel, because we added the string to the sidebarPanel function, e.gsidebarPanel("sidebar panel"). The same is true for the text in the title panel and the main panel.
 
-To add more advanced content, use one of Shiny’s HTML tag functions. These functions parallel common HTML5 tags. Let’s try out a few of them.
+To add more advanced content, use one of Shiny's HTML tag functions. These functions parallel common HTML5 tags. Let's try out a few of them.
 
 ```
 shiny function	HTML5 equivalent	creates
@@ -228,7 +228,7 @@ a	<a>	A hyper link
 br	<br>	A line break (e.g. a blank line)
 div	<div>	A division of text with a uniform style
 span	<span>	An in-line division of text with a uniform style
-pre	<pre>	Text ‘as is’ in a fixed width font
+pre	<pre>	Text 'as is' in a fixed width font
 code	<code>	A formatted block of code
 img	<img>	An image
 strong	<strong>	Bold text
@@ -243,7 +243,7 @@ select a header function (e.g., h1 or h5)
 
 give it the text you want to see in the header
 
-For example, you can create a first level header that says “My title” with h1("My title"). If you run the command at the command line, you’ll notice that it produces HTML code.
+For example, you can create a first level header that says "My title" with h1("My title"). If you run the command at the command line, you'll notice that it produces HTML code.
 ```{r}
 h1("My title")
 ```
@@ -275,7 +275,7 @@ You can create this effect with align = "center", as in h6("Episode IV", align =
 
 If you are unfamiliar with HTML tag attributes, you can look them up in one of the many free online HTML resources such as w3schools.
 
-Here’s the code that made the Star Wars-inspired user-interface:
+Here's the code that made the Star Wars-inspired user-interface:
 ```{r}
 # ui.R
 
@@ -335,7 +335,7 @@ You can also include other HTML friendly parameters such as height and width. No
 ```{r}
 img(src = "my_image.png", height = 72, width = 72)
 ```
-The img function looks for your image file in a specific place. Your file must be in a folder named www in the same directory as the ui.R script. Shiny treats this directory in a special way. Shiny will share any file placed here with your user’s web browser, which makes www a great place to put images, style sheets, and other things the browser will need to build the wep components of your Shiny app.
+The img function looks for your image file in a specific place. Your file must be in a folder named www in the same directory as the ui.R script. Shiny treats this directory in a special way. Shiny will share any file placed here with your user's web browser, which makes www a great place to put images, style sheets, and other things the browser will need to build the wep components of your Shiny app.
 
 So if you want to use an image named bigorb.png, your App-1 directory should look like this one:
 
@@ -355,9 +355,9 @@ shinyUI(fluidPage(
 ```
 
 ### Try It Yourself
-You can use Shiny’s layout, HTML, and img functions to create very attractive and useful user-interfaces. See how well you understand these functions by recreating the Shiny app pictured below. Use the examples in this tutorial to work on it and then test it out.
+You can use Shiny's layout, HTML, and img functions to create very attractive and useful user-interfaces. See how well you understand these functions by recreating the Shiny app pictured below. Use the examples in this tutorial to work on it and then test it out.
 
-Our ui.R script is found under the Model Answer button, but don’t copy and paste it. Make sure you understand how the code works before moving on.
+Our ui.R script is found under the Model Answer button, but don't copy and paste it. Make sure you understand how the code works before moving on.
 ```{r}
 # ui.R
 
@@ -387,8 +387,8 @@ shinyUI(fluidPage(
           href = "http://www.rstudio.com/shiny")),
       br(),
       h2("Features"),
-      p("* Build useful web applications with only a few lines of code—no JavaScript required."),
-      p("* Shiny applications are automatically “live” in the same way that ", 
+      p("* Build useful web applications with only a few lines of code-no JavaScript required."),
+      p("* Shiny applications are automatically "live" in the same way that ", 
         strong("spreadsheets"),
         " are live. Outputs change instantly as users modify inputs, without requiring a reload of the browser.")
     )
@@ -401,7 +401,7 @@ With your new skills, you can:
 
 create a user-interface with fluidPage, titlePanel and sidebarLayout
 
-create an HTML element with one of Shiny’s tag functions
+create an HTML element with one of Shiny's tag functions
 
 set HTML tag attributes in the arguments of each tag function
 
@@ -411,13 +411,13 @@ add multiple elements to each panel by separating them with a comma
 
 add images by placing your image in a folder labeled www within your Shiny app directory and then calling the img function
 
-Now that you can place simple content in your user-interface, let’s look at how you would place more complicated content, like widgets. Widgets are interactive web elements that your user can use to control the app. They are also the subject of Lesson 3.
+Now that you can place simple content in your user-interface, let's look at how you would place more complicated content, like widgets. Widgets are interactive web elements that your user can use to control the app. They are also the subject of Lesson 3.
 
 
 ## Lesson 3: Add Control Widgets
-This lesson will show you how to add control widgets to your Shiny apps. What’s a widget? A web element that your users can interact with. Widgets provide a way for your users to send messages to the Shiny app.
+This lesson will show you how to add control widgets to your Shiny apps. What's a widget? A web element that your users can interact with. Widgets provide a way for your users to send messages to the Shiny app.
 
-Shiny widgets collect a value from your user. When a user changes the widget, the value will change as well. This sets up opportunities that we’ll explore in Lesson 4.
+Shiny widgets collect a value from your user. When a user changes the widget, the value will change as well. This sets up opportunities that we'll explore in Lesson 4.
 
 ### Control Widgets
 Shiny comes with a family of pre-built widgets, each created with a transparently named R function. For example, Shiny provides a function named actionButton that creates an Action Button and a function namessliderInput that creates a slider bar.
@@ -446,13 +446,13 @@ You can add widgets to your web page in the same way that you added other types 
 
 Each widget function requires several arguments. The first two arguments for each widget are
 
-A Name for the widget. The user will not see this name, but you can use it to access the widget’s value. The name should be a character string.
+A Name for the widget. The user will not see this name, but you can use it to access the widget's value. The name should be a character string.
 
 A label. This label will appear with the widget in your app. It should be a character string, but it can be an empty string "".
 
-In this example, the name is “action” and the label is “Action”: actionButton("action", label = "Action")
+In this example, the name is "action" and the label is "Action": actionButton("action", label = "Action")
 
-The remaining arguments vary from widget to widget, depending on what the widget needs to do its job. They include things the widget needs to do its job, like initial values, ranges, and increments. You can find the exact arguments needed by a widget on the widget function’s help page, (e.g., ?selectInput).
+The remaining arguments vary from widget to widget, depending on what the widget needs to do its job. They include things the widget needs to do its job, like initial values, ranges, and increments. You can find the exact arguments needed by a widget on the widget function's help page, (e.g., ?selectInput).
 
 The ui.R script below makes the app pictured above. Change your own App-1 ui.R script to match it, and then launch the app (runApp("App-1"), select Run App, or use shortcuts).
 
@@ -552,19 +552,19 @@ You add widgets to your Shiny app just like you added other types of HTML conten
 ### Next Steps
 The Shiny Widgets Gallery provides templates that you can use to quickly add widgets to your Shiny apps.
 
-To use a template, visit the gallery. The gallery displays each of Shiny’s widgets, and demonstrates how the widgets’ values change in response to your input.
+To use a template, visit the gallery. The gallery displays each of Shiny's widgets, and demonstrates how the widgets' values change in response to your input.
 
-Select the widget that you want and click the “See Code” button below the widget. The gallery will take you to an example app that describes the widget. To use the widget, copy and paste the code in the example’s ui.R file to your ui.R file.
+Select the widget that you want and click the "See Code" button below the widget. The gallery will take you to an example app that describes the widget. To use the widget, copy and paste the code in the example's ui.R file to your ui.R file.
 
 In Lesson 4, you will learn how to connect widgets to reactive output, objects that update themselves whenever your user changes a widget.
 
 
 ## Lesson 4: Display Reactive Output
-Time to give your Shiny app a “live” quality! This lesson will teach you how to build reactive output to display in your Shiny app. Reactive output automatically responds when your user toggles a widget.
+Time to give your Shiny app a "live" quality! This lesson will teach you how to build reactive output to display in your Shiny app. Reactive output automatically responds when your user toggles a widget.
 
-By the end of this lesson, you’ll know how to make a simple Shiny app with two reactive lines of text. Each line will display the values of a widget based on your user’s input.
+By the end of this lesson, you'll know how to make a simple Shiny app with two reactive lines of text. Each line will display the values of a widget based on your user's input.
 
-This new Shiny app will need its own, new directory. Create a folder in your working directory named census-app. This is where we’ll save the ui.R and server.R files that you make in this lesson.
+This new Shiny app will need its own, new directory. Create a folder in your working directory named census-app. This is where we'll save the ui.R and server.R files that you make in this lesson.
 
 ### Two Steps
 You can create reactive output with a two step process.
@@ -616,7 +616,7 @@ shinyUI(fluidPage(
   )
 ))
 ```
-Notice that textOutput takes an argument, the character string “text1”. Each of the *Output functions require a single argument: a character string that Shiny will use as the name of your reactive element. Your users will not see this name, but you will use it later.
+Notice that textOutput takes an argument, the character string "text1". Each of the *Output functions require a single argument: a character string that Shiny will use as the name of your reactive element. Your users will not see this name, but you will use it later.
 
 #### Step 2: Provide R Code to Build Object(s)
 Placing a function in ui.R tells Shiny where to display your object. Next, you need to tell Shiny how to build the object.
@@ -642,7 +642,7 @@ shinyServer(function(input, output) {
 ```
 You do not need to arrange for the unnamed function to return output in its last line of code. R will automatically update output through reference class semantics.
 
-Each entry to output should contain the output of one of Shiny’s render* functions. These functions capture an R expression and do some light pre-processing on the expression. Use the render* function that corrresponds to the type of reactive object you are making.
+Each entry to output should contain the output of one of Shiny's render* functions. These functions capture an R expression and do some light pre-processing on the expression. Use the render* function that corrresponds to the type of reactive object you are making.
 ```
 render function	creates
 renderImage	images (saved as a link to a source file)
@@ -659,15 +659,15 @@ Think of this R expression as a set of instructions that you give Shiny to store
 For this to work, your expression should return the object you have in mind (a piece of text, a plot, a data frame, etc). You will get an error if the expression does not return an object, or if it returns the wrong type of object.
 
 ### Use Widget Values
-If you run the server.R script above, the Shiny app will display “You have selected this” in the main panel. However, the text will not be reactive. It will not change even if you manipulate the widgets of your app.
+If you run the server.R script above, the Shiny app will display "You have selected this" in the main panel. However, the text will not be reactive. It will not change even if you manipulate the widgets of your app.
 
-You can make the text reactive by asking Shiny to call a widget value when it builds the text. Let’s look at how to do this.
+You can make the text reactive by asking Shiny to call a widget value when it builds the text. Let's look at how to do this.
 
 Take a look at the first line of code in server.R. Do you notice that the unnamed function mentions two arguments, input and output? You already saw that output is a list-like object that stores instructions for building the R objects in your app.
 
 input is a second list-like object. It stores the current values of all of the widgets in your app. These values will be saved under the names that you gave the widgets in ui.R.
 
-So for example, our app has two widgets, one named “var” and one named “range” (you gave the widgets these names in Lesson 3). The values of “var” and “range” will be saved in input as input$var and input$range. Since the slider widget has two values (a min and a max), input$range will contain a vector of length two.
+So for example, our app has two widgets, one named "var" and one named "range" (you gave the widgets these names in Lesson 3). The values of "var" and "range" will be saved in input as input$var and input$range. Since the slider widget has two values (a min and a max), input$range will contain a vector of length two.
 
 Shiny will automatically make an object reactive if the object uses an input value. For example, the server.R file below creates a reactive line of text by calling the value of the select box widget to build the text.
 ```{r}
@@ -693,14 +693,14 @@ When you are ready, update your server.R and ui.R files to match those above. Th
 Watch the server.R script. When Shiny rebuilds an output, it highlights the code it is running. This temporary highlighting can help you see how Shiny generates reactive output.
 
 ### Try It Out
-Add a second line of reactive text to the main panel of your Shiny app. This line should display “You have chosen a range that goes from something to something”, and each something should show the current minimum (min) or maximum (max) value of the slider widget.
+Add a second line of reactive text to the main panel of your Shiny app. This line should display "You have chosen a range that goes from something to something", and each something should show the current minimum (min) or maximum (max) value of the slider widget.
 
-Don’t forget to update both your ui.R and server.R files.
+Don't forget to update both your ui.R and server.R files.
 
 ### Discussion
-Add the second line of text in the same way that you added the first one. Use textOutput in ui.R to place the second line of text in the main panel. Use renderText in server.R to tell Shiny how to build the text. You’ll need to use the same name to refer to the text in both scripts (e.g., “text2”).
+Add the second line of text in the same way that you added the first one. Use textOutput in ui.R to place the second line of text in the main panel. Use renderText in server.R to tell Shiny how to build the text. You'll need to use the same name to refer to the text in both scripts (e.g., "text2").
 
-Your text should use both the slider’s min value (saved as input$range[1]) and its max value (saved as input$range[2]).
+Your text should use both the slider's min value (saved as input$range[1]) and its max value (saved as input$range[2]).
 
 Remember that your text will be reactive as long as you connect input values to output objects. Shiny creates reactivity automatically when it recognizes these connections.
 
@@ -783,7 +783,7 @@ Once you have the file,
 
 Create a new folder named data in your census-app directory.
 Move counties.rds into the data folder.
-When you’re done, your census-app folder should look like this.
+When you're done, your census-app folder should look like this.
 
 The dataset in counties.rds contains
 
@@ -799,7 +799,7 @@ head(counties)
 ### helpser.R
 helpers.R is an R script that can help you make choropleth maps, like the ones pictured above. A choropleth map is a map that uses color to display the regional variation of a variable. In our case, helpers.R will create percent_map, a function designed to map the data in counties.rds. You can download helpers.R here.
 
-helpers.R uses the maps and mapproj packages in R. If you’ve never installed these packages before, you’ll need to do so before you make this app. Run
+helpers.R uses the maps and mapproj packages in R. If you've never installed these packages before, you'll need to do so before you make this app. Run
 ```{r}
 library(maps)
 library(mapproj)
@@ -810,7 +810,7 @@ The percent_map function in helpers.R takes five arguments:
 Argument	Input
 var	          a column vector from the counties.rds dataset
 color	        any character string you see in the output of colors()
-legend.title	A character string to use as the title of the plot’s legend
+legend.title	A character string to use as the title of the plot's legend
 max	          A parameter for controlling shade range (defaults to 100)
 min	          A parameter for controlling shade range (defaults to 0)
 ```
@@ -822,7 +822,7 @@ source("census-app/helpers.R")
 counties <- readRDS("census-app/data/counties.rds")
 percent_map(counties$white, "darkgreen", "% white")
 ```
-Note: The code above assumes that census-app is a sub-directory in your working directory. Make certain to set your working directory as the parent directory for census-app. To change your working directory location, click on Session > Set Working Directory > Choose Directory… in the RStudio menu bar.
+Note: The code above assumes that census-app is a sub-directory in your working directory. Make certain to set your working directory as the parent directory for census-app. To change your working directory location, click on Session > Set Working Directory > Choose Directory. in the RStudio menu bar.
 
 percent_map plots the counties data as a choropleth map. Here it will plot the percent of white residents in the counties in the color dark green.
 
@@ -853,7 +853,7 @@ Shiny saves the unnamed function until a new user arrives. Each time a new user 
 
 As users change widgets, Shiny will re-run the R expressions assigned to each reactive object. If your user is very active, these expressions may be re-run many, many times a second.
 
-Here’s what we’ve learned so far:
+Here's what we've learned so far:
 
 The server.R script is run once, when you launch your app
 The unnamed function inside shinyServer is run once each time a user visits your app
@@ -862,7 +862,7 @@ How can you use this information?
 
 Source scripts, load libraries, and read data sets at the beginning of server.R outside of the shinyServer function. Shiny will only run this code once, which is all you need to set your server up to run the R expressions contained in shinyServer.
 
-Define user specific objects inside shinyServer’s unnamed function, but outside of any render* calls. These would be objects that you think each user will need their own personal copy of. For example, an object that records the user’s session information. This code will be run once per user.
+Define user specific objects inside shinyServer's unnamed function, but outside of any render* calls. These would be objects that you think each user will need their own personal copy of. For example, an object that records the user's session information. This code will be run once per user.
 
 Only place code that Shiny must rerun to build an object inside of a render* function. Shiny will rerun all of the code in a render* chunk each time a user changes a widget mentioned in the chunk. This can be quite often.
 
@@ -880,18 +880,18 @@ to server.R. Be sure to place the commands in an efficient location.
 
 Since your app only needs to load helpers.R and counties.rds once, they should go outside of the shinyServer function. This is also a good place to load the maps library (which percent_map uses).
 
-You may wonder, “Won’t each user need their own copy of counties and percent_map?” (which would imply that the code should go inside of shinyServer’s unnamed function). No, each user will not.
+You may wonder, "Won't each user need their own copy of counties and percent_map?" (which would imply that the code should go inside of shinyServer's unnamed function). No, each user will not.
 
-Keep in mind that your user’s computer won’t run any of the R code in your Shiny app. In fact, their computer won’t even see the R code. The computer that you use as a server will run all of the R code necessary for all of your users. It will send the results over to your users as HTML elements.
+Keep in mind that your user's computer won't run any of the R code in your Shiny app. In fact, their computer won't even see the R code. The computer that you use as a server will run all of the R code necessary for all of your users. It will send the results over to your users as HTML elements.
 
 Your server can rely on a single global copy of counties.rds and percent_map to do all of the R execution necessary for all of the users. You only need to build a separate object for each user if the objects will have different values for each of your users.
 
 ### Finishing The App
-The censusVis app has one reactive object, a plot named “map”. The plot is built with the percent_map function, which takes five arguments.
+The censusVis app has one reactive object, a plot named "map". The plot is built with the percent_map function, which takes five arguments.
 
 The first three arguments, var, color, and legend.title, depend on the value of the select box widget.
 The last two arguments, max and min, should be the max and min values of the slider bar widget.
-The server.R script below shows one way to craft reactive arguments for percent_map. R’s switch function can transform the output of a select box widget to whatever you like. However, the script is incomplete. It does not provide values for color, legend.title, max, or min. Note: the script will not run as is. You will need to finish the script before you run it, which is the task of Your Turn 2.
+The server.R script below shows one way to craft reactive arguments for percent_map. R's switch function can transform the output of a select box widget to whatever you like. However, the script is incomplete. It does not provide values for color, legend.title, max, or min. Note: the script will not run as is. You will need to finish the script before you run it, which is the task of Your Turn 2.
 ```{r}
 # server.R
 
@@ -918,13 +918,13 @@ shinyServer(
 ### Finishing the Code
 Complete the code to build a working censusVis app.
 
-When you’re ready to deploy your app, save your server.R and ui.R files and run runApp("census-app"). If everything works, your app should look like the picture below.
+When you're ready to deploy your app, save your server.R and ui.R files and run runApp("census-app"). If everything works, your app should look like the picture below.
 
-You’ll need to decide
+You'll need to decide
 
 how to create the argument values for percent_map, and
 where to put the code that creates these arguments.
-Remember, you’ll want the argument values to switch whenever a user changes the associated widget. When you are finished, or if you get stuck, read on below for a model answer.
+Remember, you'll want the argument values to switch whenever a user changes the associated widget. When you are finished, or if you get stuck, read on below for a model answer.
 
 ##### server.R
 ```{r}
@@ -1010,7 +1010,7 @@ To get started:
 * Download the following files and place them inside stockVis: ui.R, server.R, and helpers.R.
 * Launch the app with runApp("stockVis")
 
-StockVis use R’s quantmod package, so you’ll need to install quantmod with install.packages("quantmod") if you do not already have it.
+StockVis use R's quantmod package, so you'll need to install quantmod with install.packages("quantmod") if you do not already have it.
 ```{r}
 library(shiny)
 setwd("C:/Users/pmwash/Desktop/R_files/Applications")
@@ -1024,9 +1024,9 @@ The stockVis app looks up stock prices by ticker symbol and displays the results
 * Choose whether to plot stock prices or the log of the stock prices on the y axis, and
 * Decide whether or not to correct prices for inflation.
 
-Note that the “Adjust prices for inflation” check box doesn’t work yet. One of our tasks in this lesson is to fix this check box.
+Note that the "Adjust prices for inflation" check box doesn't work yet. One of our tasks in this lesson is to fix this check box.
 
-By default, stockVis displays the SPY ticker (an index of the entire S & P 500). To look up a different stock, type in a stock symbol that Yahoo finance will recognize. You can find a list of Yahoo’s stock symbols here. Some common symbols are GOOG (Google), AAPL (Apple), and GS (Goldman Sachs).
+By default, stockVis displays the SPY ticker (an index of the entire S & P 500). To look up a different stock, type in a stock symbol that Yahoo finance will recognize. You can find a list of Yahoo's stock symbols here. Some common symbols are GOOG (Google), AAPL (Apple), and GS (Goldman Sachs).
 
 StockVis relies heavily on two functions from the quantmod package:
 
@@ -1040,12 +1040,12 @@ The stockVis app uses a few new widgets.
 * a date range selector, created with dateRangeInput, and
 * a couple of check boxes made with checkboxInput. Check box widgets are very simple. They return a TRUE when the check box is checked, and a FALSE when the check box is not checked.
 
-The check boxes are named log and adjust in the ui.R script, which means you can look them up as input$log and input$adjust in the server.R script. If you’d like to review how to use widgets and their values, check out Lesson 3 and Lesson 4.
+The check boxes are named log and adjust in the ui.R script, which means you can look them up as input$log and input$adjust in the server.R script. If you'd like to review how to use widgets and their values, check out Lesson 3 and Lesson 4.
 
 ##### Streamline Computation
 The stockVis app has a problem.
 
-Examine what will happen when you click “Plot y axis on the log scale.” The value of input$log will change, which will cause the entire expression in renderPlot to re-run:
+Examine what will happen when you click "Plot y axis on the log scale." The value of input$log will change, which will cause the entire expression in renderPlot to re-run:
 ```{r}
 output$plot <- renderPlot({
   data <- getSymbols(input$symb, src = "yahoo", 
@@ -1071,7 +1071,7 @@ A reactive expression is an R expression that uses widget input and returns a va
 
 To create a reactive expression use the reactive function, which takes an R expression surrounded by braces (just like the render* functions).
 
-For example, here’s a reactive expression that uses the widgets of stockVis to fetch data from Yahoo.
+For example, here's a reactive expression that uses the widgets of stockVis to fetch data from Yahoo.
 
 ```{r}
 dataInput <- reactive({
@@ -1089,22 +1089,177 @@ output$plot <- renderPlot({
     type = "line", log.scale = input$log, TA = NULL)
 })
 ```
-Reactive expressions are a bit smarter than regular R functions. They cache their values and know when their values have become outdated. What does this mean? The first time that you run a reactive expression, the expression will save its result in your computer’s memory. The next time you call the reactive expression, it can return this saved result without doing any computation (which will make your app faster).
+Reactive expressions are a bit smarter than regular R functions. They cache their values and know when their values have become outdated. What does this mean? The first time that you run a reactive expression, the expression will save its result in your computer's memory. The next time you call the reactive expression, it can return this saved result without doing any computation (which will make your app faster).
 
 The reactive expression will only return the saved result if it knows that the result is up-to-date. If the reactive expression has learned that the result is obsolete (because a widget has changed), the expression will recalculate the result. It then returns the new result and saves a new copy. The reactive expression will use this new copy until it too becomes out of date.
 
-Let’s summarize this behavior
+Let's summarize this behavior
 
-A reactive expression saves its result the first time you run it.
-
-The next time the reactive expression is called, it checks if the saved value has become out of date (i.e., whether the widgets it depends on have changed).
-
-If the value is out of date, the reactive object will recalculate it (and then save the new result).
-
-If the value is up-to-date, the reactive expression will return the saved value without doing any computation.
+* A reactive expression saves its result the first time you run it.
+* The next time the reactive expression is called, it checks if the saved value has become out of date (i.e., whether the widgets it depends on have changed).
+* If the value is out of date, the reactive object will recalculate it (and then save the new result).
+* If the value is up-to-date, the reactive expression will return the saved value without doing any computation.
 
 You can use this behavior to prevent Shiny from re-running unnecessary code. Consider how a reactive expression will work in the new stockVis app below.
+```{r}
+# server.R
 
+library(quantmod)
+source("helpers.R")
+
+shinyServer(function(input, output) {
+
+  dataInput <- reactive({
+    getSymbols(input$symb, src = "yahoo", 
+      from = input$dates[1],
+      to = input$dates[2],
+      auto.assign = FALSE)
+  })
+
+  output$plot <- renderPlot({    
+    chartSeries(dataInput(), theme = chartTheme("white"), 
+      type = "line", log.scale = input$log, TA = NULL)
+  })
+})
+```
+When you click "Plot y axis on the log scale", input$log will change and renderPlot will re-execute. Now
+
+* renderPlot will call dataInput()
+* dataInput will check that the dates and symb widgets have not changed
+* dataInput will return its saved data set of stock prices without re-fetching data from Yahoo
+* renderPlot will re-draw the chart with the correct axis.
+
+##### Dependencies
+What if your user changes the stock symbol in the symb widget?
+
+This will make the plot drawn by renderPlot out of date, but renderPlot no longer calls input$symb. Will Shiny know that input$symb has made plot out of date?
+
+Yes, Shiny will know and will redraw the plot. Shiny keeps track of which reactive expressions an output object depends on, as well as which widget inputs. Shiny will automatically re-build an object if
+
+* an input value in the objects's render* function changes, or
+* a reactive expression in the objects's render* function becomes obsolete
+
+Think of reactive expressions as links in a chain that connect input values to output objects. The objects in output will respond to changes made anywhere downstream in the chain. (You can fashion a long chain because reactive expressions can call other reactive expressions).
+
+Only call a reactive expression from within a reactive or a render*function. Why? Only these R functions are equipped to deal with reactive output, which can change without warning. In fact, Shiny will prevent you from calling reactive expressions outside of these functions.
+
+## Lesson 7: Sharing Your Apps
+You can now build a useful Shiny app, but can you share it with others? This lesson will show you several ways to share your Shiny apps.
+
+When it comes to sharing Shiny apps, you have two basic options:
+
+  * Share your Shiny app as two files: server.R and ui.R. This is the simplest way to share an app, but it works only if your users have R on their own computer (and know how to use it). Users can use these scripts to launch the app from their own R session, just like you’ve been launching the apps.
+
+  * Share your Shiny app as a web page. This is definitely the most user friendly way to share a Shiny app. Your users can navigate to your app through the internet with a web browser. They will find your app fully rendered, up to date, and ready to go.
+
+##### Share As Two R Files
+Anyone with R can run your Shiny app. They will need a copy of your server.R and ui.R files, as well as any supplementary materials used in your app (e.g., www folders or helpers.R files).
+
+To send your files to another user, email the files (perhaps in a zip file) or host the files online.
+
+Your user can place the files into an app directory in their working directory. They can launch the app in R with the same commands you used on your computer.
+
+Shiny has three built in commands that make it easy to use files that are hosted online: runUrl, runGitHub, and runGist.
+
+##### runUrl
+runUrl will download and launch a Shiny app straight from a weblink.
+
+To use runURL:
+
+  * Save your Shiny app’s directory as a zip file
+  * Host that zip file at its own link on a web page. Anyone with access to the link can launch the app from inside R by running:
+
+```{r}
+library(shiny)
+runUrl( "<the weblink>")
+```
+
+##### runGitHub
+If you don’t have your own web page to host the files at, you can host your the files for free at www.github.com.
+
+Github is a popular project hosting site for R developers since it does more than just host files. Github provides many features to support collaboration, such as issue trackers, wikis, and close integration with the git version control system. To use Github, you’ll need to sign up (it’s free) and choose a user name.
+
+To share an app through Github, create a project repository on Github. Then store your server.R and ui.R files in the repository, along with any supplementary files that the app uses.
+
+Your users can launch your app by running:
+```{r}
+runGitHub( "<your repository name>", "<your user name>")
+```
+
+##### runGist
+If you want an anonymous way to post files online, Github offers a pasteboard service for sharing files at gist.github.com. You don’t need to sign up for Github to use this service. Even if you have a Github account, Gist can be a simple, quick way to share Shiny projects.
+
+To share your app as a Gist:
+
+  * Copy and paste your server.R and ui.R files to the Gist web page.
+  * Note the URL that Github gives the Gist.
+  
+Once you’ve made a Gist, your users can launch the app with runGist("<gist number>") where "<gist number>" is the number that appears at the end of your Gist’s web address.
+
+Here’s an example of an app hosted as a Gist. You could launch this app with:
+
+```{r}
+runGist("3239667")
+```
+
+##### Share as a Webpage
+All of the above methods share the same limitation. They require your user to have R and Shiny installed on their computer.
+
+However, Shiny creates the perfect opportunity to share output with people who do not have R (and have no intention of getting it). Your Shiny app happens to be one of the most widely used communication tools in the world: a web page. If you host the app at its own URL, users can visit the app (and not need to worry about code).
+
+If you are familiar with web hosting or have access to an IT department, you can host your Shiny apps yourself.
+
+If you’d prefer an easier experience or need support, RStudio offers three ways to host your Shiny app as a web page:
+
+  * Shinyapps.io.
+  * Shiny Server, and
+  * Shiny Server Pro
+
+##### Shinyapps.io
+The easiest way to turn your Shiny app into a web page is to use shinyapps.io, RStudio’s hosting service for Shiny apps.
+
+shinyapps.io lets you upload your app straight from your R session to a server hosted by RStudio. You complete control over your app including server administration tools. To find out more about shinyapps.io visit shinyapps.io.
+
+##### Shiny Server
+Shiny Server is a companion program to Shiny that builds a web server designed to host Shiny apps. It’s free, open source, and available from Github.
+
+Shiny Server is a server program that Linux servers can run to host a Shiny app as a web page. To use Shiny Server, you’ll need a Linux server that has explicit support for Ubuntu 12.04 or greater (64 bit) and CentOS/RHEL 5 (64 bit). If you are not using an explicitly supported distribution, you can still use Shiny Server by building it from source.
+
+You can host multiple Shiny applications on multiple web pages with the same Shiny Server, and you can deploy the apps from behind a firewall.
+
+To see detailed instructions for installing and configuring a Shiny Server, visit the Shiny Server guide.
+
+##### Shiny Server Pro
+Shiny Server will get your app to the web and take care of all of your Shiny publishing needs. However, if you use Shiny in a for-profit setting, you may want to give yourself the server tools that come with most paid server programs, such as
+
+  * Password authentification
+  * SSL support
+  * Administrator tools
+  * Priority support
+  * and more.
+  
+If so, check out Shiny Server Pro, RStudio’s paid professional version of Shiny Server.
+
+##### Recap
+Shiny apps are easy to share. You can share your app as a couple of R scripts, or as a fully functioning web app with its own URL. Each method has its own advantages.
+
+You learned:
+
+  * Anyone can launch your app as long as they have a copy of R, Shiny, and a copy of your app’s files.
+  * runUrl, runGitHub, and runGist make it simple to share and retrieve Shiny files from web links.
+  * You can turn your app into a live web app at its own URL with shinyapps.io.
+  * You can use the open source Shiny Server to build a Linux server that hosts Shiny apps.
+  * If you need closer control, or want to manage large volumes of traffic, you can purchase Shiny Server Pro from RStudio.
+
+Congratulations. You’ve worked through the entire Shiny development process. You can build a sophisticated, reactive app, deploy it, and share it with others. Users can interact with your data and follow your stories in a new way.
+
+The next step is to practice, and then explore the advanced features of Shiny.
+
+The Shiny Dev Center can help you along the way. It hosts a gallery of inspiring apps, along with the code that makes the apps.
+
+The Shiny Dev Center also includes an articles section for continuing education. Each article examines an intermediate to advanced Shiny topic in depth.
+
+You now know enough to build your own Shiny apps. See what you can do!
 
 
 
