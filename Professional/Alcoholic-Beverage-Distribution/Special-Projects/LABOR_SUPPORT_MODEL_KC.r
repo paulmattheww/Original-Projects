@@ -4696,12 +4696,41 @@ check
 omega.kc$AVG.DAYTIME.HOURS <- omega.kc$TOTAL.DAY.HOURS / omega.kc$NUMBER.DAY.EMPLOYEES
 
 
+# Lag cases produced by one day
+library(DataCombine)
+names(omega.kc)
+omega.kc <- slide(omega.kc, Var='TOTAL.CASES.PRODUCED.KC', slideBy=-1)
+colnames(omega.kc)[23] <- 'YESTERDAY.TOTAL.CASES'
+
+omega.kc <- slide(omega.kc, Var='INVENTORY.INFLOWS', slideBy=-1)
+colnames(omega.kc)[24] <- 'YESTERDAY.INVENTORY.INFLOWS'
+
+
+# Combine today and yesterday production
+omega.kc$TOTAL.CASES.TODAY.AND.YESTERDAY <-
+  omega.kc$TOTAL.CASES.PRODUCED.KC + omega.kc$YESTERDAY.TOTAL.CASES
+
+
+
+
+# Check lag in inventory received
+library(Hmisc)
+names(omega.kc)
+C0 <- omega.kc$INVENTORY.INFLOWS
+C1 <- omega.kc$YESTERDAY.INVENTORY.INFLOWS
+C2 <- omega.kc$CASES.RECEIVED.LAG2 <- Lag(omega.kc$INVENTORY.INFLOWS, shift=-2)
+C3 <- omega.kc$CASES.RECEIVED.LAG3 <- Lag(omega.kc$INVENTORY.INFLOWS, shift=-3)
+omega.kc$CASES.RECEIVED.LAST.3.DAYS <- C0 + C1 + C2 + C3
+omega.kc$CASES.RECEIVED.LAST.2.DAYS <- C0 + C1 + C2
+omega.kc$CASES.RECEIVED.TODAY.YESTERDAY <- C0 + C1
+
+
 
 # If needed only!
 #setwd("C:/Users/pmwash/Desktop/R_Files/Data Backup")
 #omega.kc <- read.csv("OMEGA_BACKUP_KC.csv", header=TRUE)
 head(omega.kc)
-
+#omega.kc <- omega.kc[,-1]
 #setwd("C:/Users/pmwash/Desktop/R_Files/Data Backup")
 #write.csv(omega.kc, file='OMEGA_BACKUP_KC.csv')
 
@@ -4761,7 +4790,7 @@ kcMonthly$OVER.SHORT.DAY.STAFF <- ifelse(differenceDay > 0, paste('Over-staffed 
 
 head(kcMonthly)
 
-setwd("C:/Users/pmwash/Desktop/R_Files/Data Input")
+setwd("C:/Users/pmwash/Desktop/R_Files/Data Backup")
 #write.csv(kcMonthly, 'kc_monthly_warehouse.csv')
 #   just in case! ###########
 #kcMonthly <- read.csv('kc_monthly_warehouse.csv', header=TRUE)
@@ -4793,10 +4822,11 @@ library(caret)
 library(randomForest)
 control <- trainControl(allowParallel=TRUE, method='cv', number=4)
 names(omega.kc)
-quantVariables <- omega.kc[, -c(1,7:10,17)]
-model <- train(TOTAL.HOURS.WORKED ~., data=quantVariables, model='rf', trControl=control, 
+quantVariables <- omega.kc[, -c(1:3, 6:10, 17:19, 22)]
+model <- train(INFERRED.NIGHT.EMPLOYEES ~., data=quantVariables, model='rf', trControl=control, 
                importance=TRUE)
-varImpPlot(model$finalModel, sort=TRUE, pch=6, col=1, cex=0.7)
+varImpPlot(model$finalModel, sort=TRUE, pch=6, col=1, cex=0.7, type=1, 
+           main="Principal Components Analysis, KC Night Hours Predictors")
 
 
 library(party)
@@ -4808,7 +4838,7 @@ plot(ctree(model, data=omega.kc), main='Conditional Inference Tree')
 
 ######################### NIGHT
 # BEST FIT NIGHTLY
-BestFit <- lm(INFERRED.NIGHT.EMPLOYEES ~ TOTAL.CASES.PRODUCED.KC, data=omega.kc)
+BestFit <- lm(INFERRED.NIGHT.EMPLOYEES ~ TOTAL.CASES.TODAY.AND.YESTERDAY, data=omega.kc)
 summary(BestFit)
 
 # BEST FIT DAILY
@@ -4835,11 +4865,10 @@ summary(fit)
 
 ######################### DAY
 # DAILY
-BestFit <- lm(INFERRED.DAY.EMPLOYEES ~ INVENTORY.INFLOWS + SALES.TAKES, data=omega.kc)
-summary(BestFit)
+bestFitDay <- lm(INFERRED.DAY.EMPLOYEES ~ INVENTORY.INFLOWS + TOTAL.CASES.TODAY.AND.YESTERDAY, data=omega.kc)
+summary(bestFitDay)
 
-g <- ggplot(data=omega.kc, aes(x=INVENTORY.INFLOWS, y=INFERRED.DAY.EMPLOYEES))
-g + geom_point(colour='blue') + geom_smooth(colour='black', aes(group=1), method="lm", se=F) 
+
 
 
 # MONTHLY
@@ -4850,19 +4879,28 @@ names(kcMonthly)
 
 
 
+
+
+###############################
+
+names(omega.kc)
 library(caret)
 library(randomForest)
 control <- trainControl(allowParallel=TRUE, method='cv', number=4)
 names(omega.kc)
-quantVariables <- omega.kc[, -c(1,7:10,17)]
-model <- train(TOTAL.DAY.HOURS ~., data=quantVariables, model='rf', trControl=control, 
+quantVariables <- omega.kc[, -c(1:3, 6:10, 17:19, 22)]
+model <- train(INFERRED.DAY.EMPLOYEES ~., data=quantVariables, model='rf', trControl=control, 
                importance=TRUE)
-varImpPlot(model$finalModel, sort=TRUE, pch=6, col=1, cex=0.7, 
-           main='KC Day Employees, Principal Component Analysis')
+varImpPlot(model$finalModel, sort=TRUE, pch=6, col=1, cex=0.7, type=1,
+           main='Principal Component Analysis, KC Day Hours Predictors')
+
+
+
+
 
 
 library(party); library(coin)
-model <- train(TOTAL.DAY.HOURS ~ INVENTORY.INFLOWS, data=omega.kc, 
+model <- train(INFERRED.DAY.EMPLOYEES ~ TOTAL.CASES.TODAY.AND.YESTERDAY, data=omega.kc, 
                model='rf', trControl=control, importance=TRUE)
 plot(ctree(model, data=omega.kc), main='Conditional Inference Tree')
 
@@ -4907,10 +4945,103 @@ outliers <- filter(omega.kc, TOTAL.CASES.PRODUCED.KC > 15000)
 
 
 
+## SHow sbest predictors for daytime, not very good when plotted
+lm1 <- lm(INFERRED.DAY.EMPLOYEES ~ TOTAL.CASES.TODAY.AND.YESTERDAY, data=omega.kc)
+r2.1 <- round(summary(lm1)$r.squared, 2)
+g <- ggplot(data=omega.kc, aes(x=TOTAL.CASES.TODAY.AND.YESTERDAY, y=INFERRED.DAY.EMPLOYEES))
+todayYesterday <- g + geom_point(colour='blue') + geom_smooth(colour='black', aes(group=1), method="lm", se=F)  +
+  labs(title='Number of Daytime Employees ~ Total Cases Produced Today/Yesterday',
+       x='Sum of Total Cases, Today/Yesterday', y='Inferred Number of Day Employees (from actual hours)') +
+  annotate("text", x=25000, y=11, label=paste('R-squared =', r2.1))
+
+lm2 <- lm(INFERRED.DAY.EMPLOYEES ~ INVENTORY.INFLOWS, data=omega.kc)
+r2.2 <- round(summary(lm2)$r.squared, 2)
+g <- ggplot(data=omega.kc, aes(x=INVENTORY.INFLOWS, y=INFERRED.DAY.EMPLOYEES))
+inventoryFlow <- g + geom_point(colour='blue') + geom_smooth(colour='black', aes(group=1), method="lm", se=F)  +
+  labs(title='Number of Daytime Employees ~ Daily Inventory Inflows',
+       x='Inventory Inflows', y='Inferred Number of Day Employees (from actual hours)') +
+  annotate("text", x=5000, y=11, label=paste('R-squared =', r2.2))
+
+library(gridExtra)
+grid.arrange(todayYesterday, inventoryFlow)
+
+
+# Overlaying histograms of inferred daytime employees and actual employee count
+actual <- data.frame(omega.kc$NUMBER.DAY.EMPLOYEES)
+actual$TYPE <- 'Actual'
+names(actual) <- c('Number.Daytime.Employees', 'Type')
+inferred <- data.frame(omega.kc$INFERRED.DAY.EMPLOYEES)
+inferred$TYPE <- 'Inferred'
+names(inferred) <- c('Number.Daytime.Employees', 'Type')
+forHist <- rbind(inferred, actual)
+g <- ggplot(data=forHist, aes(Number.Daytime.Employees, fill=Type))
+g + geom_density(alpha=0.2) +
+  ggtitle(expression(atop('Actual Number of Daytime Employees per Day vs. Inferred Number of Employees (KC)',
+                     atop(italic('Based on an 8 hour day'), "")))) +
+  theme(legend.position='bottom')
+
+g <- ggplot(data=forHist, aes(Number.Daytime.Employees, fill=Type))
+g + geom_histogram(colour='black', data=subset(forHist, Type == 'Inferred'), alpha=0.4, binwidth=1) +
+  geom_histogram(colour='black', data=subset(forHist, Type == 'Actual'), alpha=0.4, binwidth=1) +
+  ggtitle(expression(atop('Actual Number of Daytime Employees per Day vs. Inferred Number of Employees (KC)',
+                          atop(italic('Based on an 8 hour day'), "")))) +
+  theme(legend.position='bottom')
+
+Inferred.Number.of.Day.Employees <- quantile(omega.kc$INFERRED.DAY.EMPLOYEES, c(0.01, 0.15, 0.5, 0.85, 0.99))
+Actual.Number.of.Day.Employees <- quantile(omega.kc$NUMBER.DAY.EMPLOYEES, c(0.01, 0.15, 0.5, 0.85, 0.99))
+both <- rbind(Inferred.Number.of.Day.Employees, Actual.Number.of.Day.Employees)
+both
+
+
+###
+# Overlaying histograms of inferred NIGHT employees and actual employee count
+library(ggplot2)
+actual <- data.frame(omega.kc$NUMBER.OF.EMPLOYEES)
+actual$TYPE <- 'Actual'
+names(actual) <- c('Number.Night.Employees', 'Type')
+inferred <- data.frame(omega.kc$INFERRED.NIGHT.EMPLOYEES)
+inferred$TYPE <- 'Inferred'
+names(inferred) <- c('Number.Night.Employees', 'Type')
+forHist <- rbind(inferred, actual)
+g <- ggplot(data=forHist, aes(Number.Night.Employees, fill=Type))
+g + geom_density(alpha=0.2) +
+  ggtitle(expression(atop('Actual Number of Night Employees per Evening vs. Inferred Number of Employees (KC)',
+                          atop(italic('Based on a 10 hour day'), "")))) +
+  theme(legend.position='bottom')
+
+g <- ggplot(data=forHist, aes(Number.Night.Employees, fill=Type))
+g + geom_histogram(data=subset(forHist, Type == 'Inferred'), alpha=0.4, binwidth=1) +
+  geom_histogram(data=subset(forHist, Type == 'Actual'), alpha=0.4, binwidth=1) +
+  ggtitle(expression(atop('Actual Number of Night Employees per Evening vs. Inferred Number of Employees (KC)',
+                          atop(italic('Based on a 10 hour day'), "")))) +
+  theme(legend.position='bottom')
+
+Inferred.Number.of.Night.Employees <- quantile(omega.kc$INFERRED.NIGHT.EMPLOYEES, c(0.01, 0.15, 0.5, 0.85, 0.99))
+Actual.Number.of.Night.Employees <- quantile(omega.kc$NUMBER.OF.EMPLOYEES, c(0.01, 0.15, 0.5, 0.85, 0.99))
+both <- rbind(Inferred.Number.of.Night.Employees, Actual.Number.of.Night.Employees)
+both
 
 
 
+# Histogram of avg hours per pereson per day KC
+nightAvg <- mean(omega.kc$AVG.HOURS.WORKED)
+g <- ggplot(data=omega.kc, aes(AVG.HOURS.WORKED))
+kcNight <- g + geom_density(alpha=0.2, fill='darkblue') +
+  ggtitle(expression(atop('Distribution of Average Hours per Person per Night (KC)',
+                          atop(italic('Shipping goal of 10 hours per night'), "")))) +
+  labs(x='Avg. Hours per Person per Night') +
+  geom_vline(xintercept=10) + geom_vline(xintercept=nightAvg, colour='red')
 
+dayAvg <- mean(omega.kc$AVG.DAY.HOURS)
+g <- ggplot(data=omega.kc, aes(AVG.DAY.HOURS))
+kcDay <- g + geom_density(alpha=0.2, fill='orange') +
+  ggtitle(expression(atop('Distribution of Average Hours per Person per Day (KC)',
+                          atop(italic('Warehouse goal of 8 hours per day'), "")))) +
+  labs(x='Avg. Hours per Person per Day') +
+  geom_vline(xintercept=8) + geom_vline(xintercept=dayAvg, colour='red')
+  
+library(gridExtra)
+grid.arrange(kcDay, kcNight, ncol=2)
 
 
 
