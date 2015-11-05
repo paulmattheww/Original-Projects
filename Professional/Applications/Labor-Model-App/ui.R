@@ -1,20 +1,24 @@
 library(shiny)
 
 shinyUI(fluidPage(
-  titlePanel("Number of Employees Needed, Shipping St. Louis"),
+  titlePanel("Labor Support Tool for Saint Louis Hourly Associates"),
   
   mainPanel(
-    helpText("Select the number of cases."),
+    div(plotOutput('plot1', width="100%")),
     
-    sliderInput("Cases",
-                "NUMBER OF CASES:",
-                min=0,
-                max=30000,
-                value=13253),
+    fluidRow(
+      sliderInput("Cases",
+                  "NUMBER OF CASES:",
+                  min=0,
+                  max=30000,
+                  value=13253),
+      numericInput("SpecialHours",
+                   label="PLANNED SPECIAL PROJECT HOURS:",
+                   value=0),
+    
+    div(plotOutput('plot2', width="100%")),
     
     h2(textOutput('Predicted.Number')),
-    
-    plotOutput('plot1'),
     
     textOutput('text1'),
     
@@ -22,4 +26,4 @@ shinyUI(fluidPage(
       Add in the number of hours needed for special projects.')
     
   )
-))
+)))
