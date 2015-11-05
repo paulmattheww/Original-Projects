@@ -4,7 +4,9 @@ shinyUI(fluidPage(
   titlePanel("Labor Support Tool for Saint Louis Hourly Associates"),
   
   mainPanel(
-    div(plotOutput('plot1', width="100%")),
+    splitLayout(cellWidths = c('50%','50%'),
+      plotOutput('plot1'),
+      plotOutput('plot2')),
     
     fluidRow(
       sliderInput("Cases",
@@ -16,14 +18,13 @@ shinyUI(fluidPage(
                    label="PLANNED SPECIAL PROJECT HOURS:",
                    value=0),
     
-    div(plotOutput('plot2', width="100%")),
-    
     h2(textOutput('Predicted.Number')),
     
-    textOutput('text1'),
+    textOutput('cpmhText'),
+
+    br(),
     
-    p('This forecast does not account for special projects. 
-      Add in the number of hours needed for special projects.')
+    p('This forecast is based on a linear regression model. All variables were considered carefully prior to making the model.')
     
   )
 )))
