@@ -42,12 +42,11 @@ shinyServer(
     
     output$plot1 <- renderPlot({
       g + geom_density(alpha=0.2) + 
-        ggtitle(expression(atop('Actual Number of Night Employees per Evening vs. Inferred Number of Employees (STL)',
+        ggtitle(expression(atop('Employees per Evening vs. Inferred Number of Employees (STL)',
                                 atop(italic('Based on a 10 hour day'), "")))) +
         theme(legend.position='bottom') + geom_vline(xintercept=prediction(), colour='red')
     })
       
-      #nightDist(prediction())
     
 })
     
