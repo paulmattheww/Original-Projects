@@ -26,15 +26,13 @@ nightShift <- 10
 
 shinyServer(
   function(input, output) {
-    
-    output$text1 <- renderText({
-      paste('You selected', input$Cases, 'cases to be used in this forecast.')
-    })
-    
-    prediction <- reactive({ round(nightInterceptStl + input$Cases * nightSlopeCasesStl, 1) 
+   
+    prediction <- reactive({ 
+      round(nightInterceptStl + input$Cases * nightSlopeCasesStl, 1) 
       })
     
-    goodPrediction <- reactive({ round(prediction() + (input$SpecialHours / nightShift), 1)
+    goodPrediction <- reactive({ 
+      round(prediction() + (input$SpecialHours / nightShift), 1)
       })
     
     output$Predicted.Number <- renderText({ paste('Shipping Employees Needed:', goodPrediction()) 
@@ -42,18 +40,26 @@ shinyServer(
     
     output$plot1 <- renderPlot({
       g + geom_density(alpha=0.4) + 
-        ggtitle(expression(atop('Employees per Evening vs. Inferred Number of Employees (STL)',
-                                atop(italic('Based on 2015 data Jan - Sept'), "")))) +
+        ggtitle(expression(atop('Employees per Evening (STL)',
+                                atop(italic('Based on a 10 hour day'), "")))) +
         theme(legend.position='bottom') + geom_vline(xintercept=goodPrediction(), colour='red') +
         labs(x='Number of Night Shift Employees') + geom_rug()
     })
       
     output$plot2 <- renderPlot({
       p + geom_density(alpha=0.4, fill='green') + 
-        ggtitle(expression(atop('Disitrubtion of Daily Cases (STL)',
-                                atop(italic('Based on a 10 hour day'), "")))) +
+        ggtitle(expression(atop('Distribution of Daily Cases (STL)',
+                                atop(italic('Based on 2015 data Jan - Sept'), "")))) +
         theme(legend.position='bottom') + geom_vline(xintercept=input$Cases, colour='red') +
         labs(x='Total Cases Produced (Daily)') + geom_rug()
+    })
+    
+    CPMH <- reactive({
+      round(input$Cases / (round(goodPrediction(), 0) * 10), 2)
+    })
+    
+    output$cpmhText <- renderText({
+      paste('If all', goodPrediction(), 'employees work a 10 hour day, then we will achieve a CPMH of', CPMH())
     })
     
 })
