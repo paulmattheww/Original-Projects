@@ -22,18 +22,23 @@ countUnique <- function(x) {
 
 
 # Read in and merge the data
+library(dplyr)
 setwd("C:/Users/pmwash/Desktop/R_Files")
 shipments <- read.csv('camtc1bk.csv', header=TRUE) # query containing transactions 
 names(shipments) <- c('ITEM.NUMBER', 'CASES', 'QTY.SOLD', 'INVOICE.DATE', 'INVOICE.NO',
                       'QTY.PER.CASE', 'CLASS.CODE', 'SIZE.CODE', 'LINE.ITEM.NO', 'TRNS.CODE')
 
 shipments$INVOICE.DATE <- as400Date(shipments$INVOICE.DATE)
-head(shipments, 2)
+shipments$TRNS.CODE <- as.character(shipments$TRNS.CODE)
+head(shipments)
+shipments <- na.omit(shipments)
+shipments <- arrange(shipments, ITEM.NUMBER)
 
 locations <- read.csv('product_locations_10232015.csv', header=TRUE)
 names(locations) <- toupper(names(locations))
 library(dplyr)
 locations <- select(locations, c(ITEM.NUMBER, DESCRIPTION, LOCATION, QPC))
+locations <- arrange(locations, ITEM.NUMBER)
 head(locations, 200)
 
 
@@ -114,10 +119,10 @@ LINE <- shipmentsLocations$LINE
 ISKEG <- shipmentsLocations$IS.KEG
 shipmentsLocations$LINE <- ifelse(LINE == 'KEG ROOM' & ISKEG == 'NO', 'ODDBALL', LINE)
 
+shipmentsLocations <- arrange(shipmentsLocations, ITEM.NUMBER)
+
 head(shipmentsLocations, 100)
 
-
-head(shipmentsLocations)
 
   
 
@@ -185,7 +190,7 @@ lineSummary
 
 
 
-casesByLocationAvg <- aggregate(CASES.SOLD ~ LOCATION, data=casesByLocation, FUN=mean)
+casesByLocationAvg <- aggregate(CASES.SOLD ~ LOCATION, data=shipmentsLocations, FUN=mean)
 casesByLocationAvg <- arrange(casesByLocationAvg, -CASES.SOLD)
 ROUNDED <- round(casesByLocationAvg$CASES.SOLD)
 casesByLocationAvg$CASES.SOLD <- ROUNDED
@@ -216,4 +221,182 @@ write.xlsx2(f.line, append=TRUE,
 write.xlsx2(h.line, append=TRUE,
            file='VelocityReport_byLine_10262015.xlsx', sheetName='H')
 write.xlsx2(keg.room, append=TRUE,
-           file='VelocityReport_byLine_10262015.xlsx', sheetName='F')
+           file='VelocityReport_byLine_10262015.xlsx', sheetName='kegRoom')
+
+
+# Move files
+moveRenameFile <- function(from, to) {
+  destination <- dirname(to)
+  if (!isTRUE(file.info(destination)$isdir)) dir.create(destination, recursive=TRUE)
+  file.rename(from = from,  to = to)
+}
+
+to <- "N:/Operations-IT/Operations Specialist/Velocity   !/VelocitySummary_10262015.xlsx"
+from <- "C:/Users/pmwash/Desktop/R_files/VelocitySummary_10262015.xlsx"
+moveRenameFile(from, to)
+
+
+####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####
+####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####
+####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####
+####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####  ####
+
+
+library(ggplot2)
+g <- ggplot(data=lineSummary, aes(x=LINE, y=PERCENT.TOTAL.CASES))
+g + geom_bar(stat='identity')
+
+g <- ggplot(data=caseMovementByLineByDate, aes(x=INVOICE.DATE, y=CASES.SOLD, group=LINE))
+g + geom_point(aes(group=LINE)) + facet_wrap(~LINE, scales='free') + 
+  geom_smooth(aes(group=LINE, colour=LINE), se=FALSE, size=1.25) +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) + theme_bw() +
+  theme(axis.text.x=element_blank(), legend.position='none') + 
+  labs(title='Daily Velocity by Line', x='Date', y='Cases Sold')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+# RE-ENGINEERING VELOCITY
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+
+library(dplyr)
+btlVel <- read.csv('bottle_velocity.csv', header=TRUE)
+btlVel$PICK.FREQUENCY <- as.numeric(btlVel$PICK.FREQUENCY)
+btlVel$BOTTLE.SALES <- as.numeric(btlVel$BOTTLE.SALES)
+
+btlVel <- arrange(btlVel, desc(BOTTLE.SALES))
+btlVel$BOTTLES.PER.PICK <- btlVel$BOTTLE.SALES / btlVel$PICK.FREQUENCY
+###########################################################################################
+csVel <- read.csv('case_velocity.csv', header=TRUE)
+csVel$PICK.FREQUENCY <- as.numeric(csVel$PICK.FREQUENCY)
+csVel$BOTTLE.SALES <- as.numeric(csVel$CASE.SALES)
+
+csVel <- arrange(csVel, desc(CASE.SALES))
+csVel$BOTTLES.PER.PICK <- csVel$BOTTLE.SALES / csVel$PICK.FREQUENCY
+csVel$CS.LINE.INDICATOR <- substrLeft(csVel$CASE.LOCATION, 1)
+
+DESC <- csVel$SIZE
+k1 <- "\\<1/6BL\\>" 
+k2 <- "\\<1/2BL\\>"
+k3 <- "\\<1/4BL\\>"
+k4 <- "\\<20L\\>"
+k5 <- "\\<10.8G\\>"
+k6 <- "\\<15.5G\\>"
+k7 <- "\\<15L\\>"
+k8 <- "\\<2.6G\\>"
+k9 <- "\\<19L\\>"
+k10 <- "\\<3.3G\\>"
+k11 <- "\\<4.9G\\>"
+k12 <- "\\<5.16G\\>"
+k13 <- "\\<5.2G\\>"
+k14 <- "\\<5.4G\\>"
+k15 <- "\\<19.5L\\>"
+k16 <- "\\<50L\\>"
+k17 <- "\\<30L\\>"
+k18 <- "\\<5G\\>"
+k19 <- "\\<25L\\>"
+
+csVel$IS.KEG <- ifelse(grepl(k1, DESC) == TRUE, 'YES', 
+                                    ifelse(grepl(k2, DESC) == TRUE, 'YES', 
+                                           ifelse(grepl(k3, DESC) == TRUE, 'YES', 
+                                                  ifelse(grepl(k4, DESC) == TRUE, 'YES', 
+                                                         ifelse(grepl(k5, DESC) == TRUE, 'YES', 
+                                                                ifelse(grepl(k6, DESC) == TRUE, 'YES', 
+                                                                       ifelse(grepl(k7, DESC) == TRUE, 'YES', 
+                                                                              ifelse(grepl(k8, DESC) == TRUE, 'YES', 
+                                                                                     ifelse(grepl(k9, DESC) == TRUE, 'YES', 
+                                                                                            ifelse(grepl(k10, DESC) == TRUE, 'YES', 
+                                                                                                   ifelse(grepl(k11, DESC) == TRUE, 'YES', 
+                                                                                                          ifelse(grepl(k12, DESC) == TRUE, 'YES', 
+                                                                                                                 ifelse(grepl(k13, DESC) == TRUE, 'YES', 
+                                                                                                                        ifelse(grepl(k14, DESC) == TRUE, 'YES', 
+                                                                                                                               ifelse(grepl(k15, DESC) == TRUE, 'YES', 
+                                                                                                                                      ifelse(grepl(k16, DESC), 'YES',
+                                                                                                                                             ifelse(grepl(k17, DESC), 'YES', 
+                                                                                                                                                    ifelse(grepl(k18, DESC), 'YES', 
+                                                                                                                                                           ifelse(grepl(k19, DESC), 'YES', 'NO')))))))))))))))))))
+
+# separate out cases that came from the keg room (which are oddballs) from kegs from keg room
+LINE <- shipmentsLocations$LINE
+ISKEG <- shipmentsLocations$IS.KEG
+shipmentsLocations$LINE <- ifelse(LINE == 'KEG ROOM' & ISKEG == 'NO', 'ODDBALL', LINE)
+
+shipmentsLocations <- arrange(shipmentsLocations, ITEM.NUMBER)
+
+head(shipmentsLocations, 100)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
