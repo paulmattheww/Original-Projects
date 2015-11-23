@@ -30,27 +30,22 @@ inventory$Product.Class <- ifelse(cls == 'High Alcohol Malt', 'BEER',
                                                                                              ifelse(cls == 'Liquor', 'LIQUOR', cls)))))))))))
 
 
-
-
-
-
-# Diver = TODAY'S INVENTORY dive in Tanya's folder
-setwd('C:/Users/pmwash/Desktop/R_files/Data Input')
-inventory <- read.csv('todays_inventory_STL_diver_11122015.csv', header=TRUE)
 names(inventory)[1] <- 'Item.Number'
-inventoryValues <- inventory[,c(1, 15)]
-head(inventoryValues)
+inventoryValues <- inventory[,c(3, 1, 15, 2)]
+tail(inventoryValues)
+sumAllInventory <- sum(inventoryValues$Value.On.Hand)
 
 # Read in inventory data
 locations <- read.csv('product_locations_10232015.csv', header=TRUE)
+locNum <- locations[,c(1,3)]
+head(locNum)
 
 # merge in locations
-invenLocs <- merge(inventory, locations, by='Item.Number')
-
+invenLocs <- merge(inventoryValues, locNum, by='Item.Number')
 head(invenLocs)
 
 # Break out information by class
-byClass <- aggregate(Value.On.Hand ~ Product.Class, data=inventory, FUN=sum)
+byClass <- aggregate(Value.On.Hand ~ Product.Class, data=invenLocs, FUN=sum)
 val <- byClass$Value.On.Hand
 tot <- sum(byClass$Value.On.Hand)
 byClass$Percent.Value.OH <- round(as.numeric(val / tot), 3)
@@ -72,7 +67,7 @@ class
 
 locationsPerBrand <- aggregate(Location ~ Brand + Product.Class, data=invenLocs, function(x) length(unique(x)))
 names(locationsPerBrand) <- c('Brand', 'Product.Class', 'Number.of.Locations')
-locationsPerBrand <- arrange(locationsPerBrand, desc(Number.of.Locations))
+#locationsPerBrand <- arrange(locationsPerBrand, desc(Number.of.Locations))
 
 head(locationsPerBrand, 50)
 
@@ -88,28 +83,54 @@ head(locationsPerBrand, 50)
 
 setwd("C:/Users/pmwash/Desktop/R_Files/Data Input")
 sales2015 <- read.csv('2015_sales_ytd_11182015.csv', header=TRUE)
+
+sumAllSales <- sum(sales2015$Dollars)
+
 library(dplyr)
 sales2015 <- arrange(sales2015, desc(Dollars))
 noBeer <- filter(sales2015, Product.Type != 'Beer')
-top500 <- head(noBeer, 500)
+top500 <- head(noBeer, 250)
 
 
 # Merge locations with sales data
 
 names(top500) <- c('Brand', 'Size', 'Item.Number', 'Type', 'Std.Cases', 'Dollar.Sales', 'Gross.Profit.Percent')
-locs <- locations[,1:5]
-head(top500)
-head(locs)
-salesLocations <- merge(top500, locs, by='Item.Number')
+#locs <- locations[,1:5]
+#head(top500)
+#head(locs)
+head(invenLocs)
+salesLocations <- merge(top500, invenLocs, by='Item.Number')
+#names(salesLocations)
 salesLocations <- arrange(salesLocations, desc(Dollar.Sales))
+salesLocations <- salesLocations[,c(1:7, 9:11)]
+salesLocations$Percent.Of.Inventory <- round(salesLocations$Value.On.Hand / sumAllInventory, 5)
+salesLocations$Percent.Of.Sales <- round(salesLocations$Dollar.Sales / sumAllSales, 5)
+#head(salesLocations, 100)
+
+
+# graph
 head(salesLocations)
-salesLocsOH <- merge(salesLocations, inventoryValues, by='Item.Number')
-salesLocsOH <- arrange(salesLocsOH, desc(Dollar.Sales))
-salesLocsOH$Turnover.Ratio <- salesLocsOH$Dollar.Sales / salesLocsOH$Value.On.Hand
-salesLocsOH <- salesLocsOH[,c(1, 3:13)]
-salesLocsOH <- salesLocsOH[,c(7,1:6,8:13)]
-names(salesLocsOH)
-head(salesLocsOH, 20)
+length(unique(salesLocations$Item.Number))
+length(unique(salesLocations$Location))
+library(ggplot2)
+library(scales)
+g <- ggplot(data=salesLocations, aes(x=Percent.Of.Inventory, y=Percent.Of.Sales))
+g + geom_point(size=3, aes(colour=Product.Class)) + 
+  geom_smooth(method='lm', se=FALSE, colour='black') + 
+  scale_y_continuous(labels=percent) +
+  labs(title='Percent Sales ~ Percent Inventory by SKU') +
+  theme(legend.position='bottom')
+
+
+
+#salesLocsOH <- merge(salesLocations, inventoryValues, by='Item.Number')
+#salesLocsOH <- arrange(salesLocsOH, desc(Dollar.Sales))
+#salesLocsOH$Turnover.Ratio <- salesLocsOH$Dollar.Sales / salesLocsOH$Value.On.Hand
+#salesLocsOH <- salesLocsOH[,c(1, 3:13)]
+#salesLocsOH <- salesLocsOH[,c(7,1:6,8:13)]
+#names(salesLocsOH)
+#head(salesLocsOH, 20)
+
 
 
 # Aggregate sales by class
@@ -127,11 +148,11 @@ locationsPerItem <- arrange(locationsPerItem, desc(Location))
 
 setwd("C:/Users/pmwash/Desktop/R_Files/Data Output")
 library(xlsx)
-write.xlsx(salesLocsOH, file='cycle_count_planning.xlsx', sheetName='Summary Top Selling Items')
-write.xlsx(locationsPerItem, file='cycle_count_planning.xlsx', sheetName='Locations per Item', append=TRUE)
-write.xlsx(class, file='cycle_count_planning.xlsx', sheetName='Summary of Inventory by Class', append=TRUE)
-write.xlsx(salesByClass, file='cycle_count_planning.xlsx', sheetName='Summary of YTD Sales by Class', append=TRUE)
-
+#write.xlsx(salesLocsOH, file='cycle_count_planning.xlsx', sheetName='Summary Top Selling Items')
+#write.xlsx(locationsPerItem, file='cycle_count_planning.xlsx', sheetName='Locations per Item', append=TRUE)
+#write.xlsx(class, file='cycle_count_planning.xlsx', sheetName='Summary of Inventory by Class', append=TRUE)
+#write.xlsx(salesByClass, file='cycle_count_planning.xlsx', sheetName='Summary of YTD Sales by Class', append=TRUE)
+write.xlsx(salesLocations, file='top250_cycle_count.xlsx', sheetName='Top 200 Items')
 
 
 
