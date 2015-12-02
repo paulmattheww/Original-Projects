@@ -1,0 +1,38 @@
+Sub BuildWavesStep2()
+
+    Dim s0 As Worksheet, i As Long, j As Long, LR As Long, inc As Integer, head As Range
+    
+    incr = 2
+    
+    Set s0 = Sheets("Step1")
+    s0.Select
+    
+    Set head = Range("A1:K1")
+    
+    LR = Range("A" & Rows.Count).End(xlUp).Row
+    For i = 2 To LR
+        If Cells(i, 11) = 1 Then
+            Rows(i).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave1").Select
+            Cells(incr, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        incr = incr + 1
+        s0.Select
+        
+        ElseIf Cells(i, 11) = 2 Then
+            Rows(i).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave2").Select
+            Cells(incr, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        incr = incr + 1
+        s0.Select
+        
+        
+        End If
+    Next
+    
+End Sub
