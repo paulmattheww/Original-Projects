@@ -31,6 +31,85 @@ Sub BuildWavesStep2()
         incr = incr + 1
         s0.Select
         
+        ElseIf Cells(i, 11) = 3 Then
+            Rows(i).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave3").Select
+            Cells(incr, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        incr = incr + 1
+        s0.Select
+        
+        ElseIf Cells(i, 11) = 4 Then
+            Rows(i).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave4").Select
+            Cells(incr, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        incr = incr + 1
+        s0.Select
+        
+        ElseIf Cells(i, 11) = 5 Then
+            Rows(i).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave5").Select
+            Cells(incr, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        incr = incr + 1
+        s0.Select
+        
+        ElseIf Cells(i, 11) = 6 Then
+            Rows(i).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave6").Select
+            Cells(incr, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        incr = incr + 1
+        s0.Select
+        
+        ElseIf Cells(i, 11) = 7 Then
+            Rows(i).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave7").Select
+            Cells(incr, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        incr = incr + 1
+        s0.Select
+        
+        ElseIf Cells(i, 11) = 8 Then
+            Rows(i).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave8").Select
+            Cells(incr, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        incr = incr + 1
+        s0.Select
+        
+        ElseIf Cells(i, 11) = 9 Then
+            Rows(i).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave9").Select
+            Cells(incr, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        incr = incr + 1
+        s0.Select
+        
+        ElseIf Cells(i, 11) = 10 Then
+            Rows(i).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave10").Select
+            Cells(incr, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        incr = incr + 1
+        s0.Select
         
         End If
     Next
