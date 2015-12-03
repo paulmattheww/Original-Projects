@@ -1,5 +1,4 @@
 Sub BuildWavesStep2()
-
     Dim s0 As Worksheet, i As Long, j As Long, LR As Long, inc As Integer, head As Range
     
     incr = 2
@@ -11,7 +10,7 @@ Sub BuildWavesStep2()
     
     LR = Range("A" & Rows.Count).End(xlUp).Row
     For i = 2 To LR
-        If Cells(i, 11) = 1 Then
+        If Cells(i, 8).Value >= 1 And Cells(i, 8).Value <= 20 Then
             Rows(i).EntireRow.Select
             Selection.Copy
             Sheets("Wave1").Select
@@ -20,7 +19,6 @@ Sub BuildWavesStep2()
         :=False, Transpose:=False
             Cells(1, 1).Select
             ActiveCell.EntireRow.Insert
-            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
             s0.Select
             Rows(1).EntireRow.Select
             Selection.Copy
@@ -28,10 +26,12 @@ Sub BuildWavesStep2()
             Cells(1, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Columns("A:ZZ").Sort key1:=Range("K:K"), order1:=xlAscending, key2 _
+        :=Range("A:A"), order2:=xlAscending, Header:=xlYes
         incr = incr + 1
         s0.Select
         
-        ElseIf Cells(i, 11) = 2 Then
+        ElseIf Cells(i, 8).Value >= 21 And Cells(i, 8).Value <= 40 Then
             Rows(i).EntireRow.Select
             Selection.Copy
             Sheets("Wave2").Select
@@ -40,7 +40,6 @@ Sub BuildWavesStep2()
         :=False, Transpose:=False
             Cells(1, 1).Select
             ActiveCell.EntireRow.Insert
-            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
             s0.Select
             Rows(1).EntireRow.Select
             Selection.Copy
@@ -48,10 +47,12 @@ Sub BuildWavesStep2()
             Cells(1, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Columns("A:ZZ").Sort key1:=Range("K:K"), order1:=xlAscending, key2 _
+        :=Range("A:A"), order2:=xlAscending, Header:=xlYes
         incr = incr + 1
         s0.Select
         
-        ElseIf Cells(i, 11) = 3 Then
+        ElseIf Cells(i, 8).Value >= 41 And Cells(i, 8).Value <= 60 Then
             Rows(i).EntireRow.Select
             Selection.Copy
             Sheets("Wave3").Select
@@ -60,7 +61,6 @@ Sub BuildWavesStep2()
         :=False, Transpose:=False
             Cells(1, 1).Select
             ActiveCell.EntireRow.Insert
-            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
             s0.Select
             Rows(1).EntireRow.Select
             Selection.Copy
@@ -68,10 +68,12 @@ Sub BuildWavesStep2()
             Cells(1, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Columns("A:ZZ").Sort key1:=Range("K:K"), order1:=xlAscending, key2 _
+        :=Range("A:A"), order2:=xlAscending, Header:=xlYes
         incr = incr + 1
         s0.Select
         
-        ElseIf Cells(i, 11) = 4 Then
+        ElseIf Cells(i, 8).Value >= 61 And Cells(i, 8).Value <= 80 Then
             Rows(i).EntireRow.Select
             Selection.Copy
             Sheets("Wave4").Select
@@ -80,7 +82,6 @@ Sub BuildWavesStep2()
         :=False, Transpose:=False
             Cells(1, 1).Select
             ActiveCell.EntireRow.Insert
-            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
             s0.Select
             Rows(1).EntireRow.Select
             Selection.Copy
@@ -88,10 +89,12 @@ Sub BuildWavesStep2()
             Cells(1, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Columns("A:ZZ").Sort key1:=Range("K:K"), order1:=xlAscending, key2 _
+        :=Range("A:A"), order2:=xlAscending, Header:=xlYes
         incr = incr + 1
         s0.Select
         
-        ElseIf Cells(i, 11) = 5 Then
+        ElseIf Cells(i, 8).Value >= 81 And Cells(i, 8).Value <= 100 Then
             Rows(i).EntireRow.Select
             Selection.Copy
             Sheets("Wave5").Select
@@ -100,7 +103,6 @@ Sub BuildWavesStep2()
         :=False, Transpose:=False
             Cells(1, 1).Select
             ActiveCell.EntireRow.Insert
-            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
             s0.Select
             Rows(1).EntireRow.Select
             Selection.Copy
@@ -108,10 +110,12 @@ Sub BuildWavesStep2()
             Cells(1, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Columns("A:ZZ").Sort key1:=Range("K:K"), order1:=xlAscending, key2 _
+        :=Range("A:A"), order2:=xlAscending, Header:=xlYes
         incr = incr + 1
         s0.Select
         
-        ElseIf Cells(i, 11) = 6 Then
+        ElseIf Cells(i, 8).Value >= 101 And Cells(i, 8).Value <= 120 Then
             Rows(i).EntireRow.Select
             Selection.Copy
             Sheets("Wave6").Select
@@ -120,7 +124,6 @@ Sub BuildWavesStep2()
         :=False, Transpose:=False
             Cells(1, 1).Select
             ActiveCell.EntireRow.Insert
-            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
             s0.Select
             Rows(1).EntireRow.Select
             Selection.Copy
@@ -128,10 +131,12 @@ Sub BuildWavesStep2()
             Cells(1, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Columns("A:ZZ").Sort key1:=Range("K:K"), order1:=xlAscending, key2 _
+        :=Range("A:A"), order2:=xlAscending, Header:=xlYes
         incr = incr + 1
         s0.Select
         
-        ElseIf Cells(i, 11) = 7 Then
+        ElseIf Cells(i, 8).Value >= 121 And Cells(i, 8).Value <= 140 Then
             Rows(i).EntireRow.Select
             Selection.Copy
             Sheets("Wave7").Select
@@ -140,7 +145,6 @@ Sub BuildWavesStep2()
         :=False, Transpose:=False
             Cells(1, 1).Select
             ActiveCell.EntireRow.Insert
-            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
             s0.Select
             Rows(1).EntireRow.Select
             Selection.Copy
@@ -148,10 +152,12 @@ Sub BuildWavesStep2()
             Cells(1, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Columns("A:ZZ").Sort key1:=Range("K:K"), order1:=xlAscending, key2 _
+        :=Range("A:A"), order2:=xlAscending, Header:=xlYes
         incr = incr + 1
         s0.Select
         
-        ElseIf Cells(i, 11) = 8 Then
+        ElseIf Cells(i, 8).Value >= 141 And Cells(i, 8).Value <= 160 Then
             Rows(i).EntireRow.Select
             Selection.Copy
             Sheets("Wave8").Select
@@ -160,7 +166,6 @@ Sub BuildWavesStep2()
         :=False, Transpose:=False
             Cells(1, 1).Select
             ActiveCell.EntireRow.Insert
-            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
             s0.Select
             Rows(1).EntireRow.Select
             Selection.Copy
@@ -168,10 +173,12 @@ Sub BuildWavesStep2()
             Cells(1, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Columns("A:ZZ").Sort key1:=Range("K:K"), order1:=xlAscending, key2 _
+        :=Range("A:A"), order2:=xlAscending, Header:=xlYes
         incr = incr + 1
         s0.Select
         
-        ElseIf Cells(i, 11) = 9 Then
+        ElseIf Cells(i, 8).Value >= 161 And Cells(i, 8).Value <= 180 Then
             Rows(i).EntireRow.Select
             Selection.Copy
             Sheets("Wave9").Select
@@ -180,7 +187,6 @@ Sub BuildWavesStep2()
         :=False, Transpose:=False
             Cells(1, 1).Select
             ActiveCell.EntireRow.Insert
-            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
             s0.Select
             Rows(1).EntireRow.Select
             Selection.Copy
@@ -188,10 +194,12 @@ Sub BuildWavesStep2()
             Cells(1, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Columns("A:ZZ").Sort key1:=Range("K:K"), order1:=xlAscending, key2 _
+        :=Range("A:A"), order2:=xlAscending, Header:=xlYes
         incr = incr + 1
         s0.Select
         
-        ElseIf Cells(i, 11) = 10 Then
+        ElseIf Cells(i, 8).Value >= 181 And Cells(i, 8).Value <= 200 Then
             Rows(i).EntireRow.Select
             Selection.Copy
             Sheets("Wave10").Select
@@ -200,7 +208,6 @@ Sub BuildWavesStep2()
         :=False, Transpose:=False
             Cells(1, 1).Select
             ActiveCell.EntireRow.Insert
-            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
             s0.Select
             Rows(1).EntireRow.Select
             Selection.Copy
@@ -208,6 +215,8 @@ Sub BuildWavesStep2()
             Cells(1, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Columns("A:ZZ").Sort key1:=Range("K:K"), order1:=xlAscending, key2 _
+        :=Range("A:A"), order2:=xlAscending, Header:=xlYes
         incr = incr + 1
         s0.Select
         
