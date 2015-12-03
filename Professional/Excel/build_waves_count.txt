@@ -18,6 +18,16 @@ Sub BuildWavesStep2()
             Cells(incr, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Cells(1, 1).Select
+            ActiveCell.EntireRow.Insert
+            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
+            s0.Select
+            Rows(1).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave1").Select
+            Cells(1, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
         incr = incr + 1
         s0.Select
         
@@ -26,6 +36,16 @@ Sub BuildWavesStep2()
             Selection.Copy
             Sheets("Wave2").Select
             Cells(incr, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+            Cells(1, 1).Select
+            ActiveCell.EntireRow.Insert
+            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
+            s0.Select
+            Rows(1).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave2").Select
+            Cells(1, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
         incr = incr + 1
@@ -38,6 +58,16 @@ Sub BuildWavesStep2()
             Cells(incr, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Cells(1, 1).Select
+            ActiveCell.EntireRow.Insert
+            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
+            s0.Select
+            Rows(1).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave3").Select
+            Cells(1, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
         incr = incr + 1
         s0.Select
         
@@ -46,6 +76,16 @@ Sub BuildWavesStep2()
             Selection.Copy
             Sheets("Wave4").Select
             Cells(incr, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+            Cells(1, 1).Select
+            ActiveCell.EntireRow.Insert
+            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
+            s0.Select
+            Rows(1).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave4").Select
+            Cells(1, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
         incr = incr + 1
@@ -58,6 +98,16 @@ Sub BuildWavesStep2()
             Cells(incr, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Cells(1, 1).Select
+            ActiveCell.EntireRow.Insert
+            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
+            s0.Select
+            Rows(1).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave5").Select
+            Cells(1, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
         incr = incr + 1
         s0.Select
         
@@ -66,6 +116,16 @@ Sub BuildWavesStep2()
             Selection.Copy
             Sheets("Wave6").Select
             Cells(incr, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+            Cells(1, 1).Select
+            ActiveCell.EntireRow.Insert
+            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
+            s0.Select
+            Rows(1).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave6").Select
+            Cells(1, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
         incr = incr + 1
@@ -78,6 +138,16 @@ Sub BuildWavesStep2()
             Cells(incr, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Cells(1, 1).Select
+            ActiveCell.EntireRow.Insert
+            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
+            s0.Select
+            Rows(1).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave7").Select
+            Cells(1, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
         incr = incr + 1
         s0.Select
         
@@ -86,6 +156,16 @@ Sub BuildWavesStep2()
             Selection.Copy
             Sheets("Wave8").Select
             Cells(incr, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+            Cells(1, 1).Select
+            ActiveCell.EntireRow.Insert
+            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
+            s0.Select
+            Rows(1).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave8").Select
+            Cells(1, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
         incr = incr + 1
@@ -98,6 +178,16 @@ Sub BuildWavesStep2()
             Cells(incr, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Cells(1, 1).Select
+            ActiveCell.EntireRow.Insert
+            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
+            s0.Select
+            Rows(1).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave9").Select
+            Cells(1, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
         incr = incr + 1
         s0.Select
         
@@ -108,8 +198,22 @@ Sub BuildWavesStep2()
             Cells(incr, 1).Activate
             Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
+            Cells(1, 1).Select
+            ActiveCell.EntireRow.Insert
+            Columns("A:ZZ").Sort key1:=Range("A:A"), order1:=xlAscending, Header:=xlYes
+            s0.Select
+            Rows(1).EntireRow.Select
+            Selection.Copy
+            Sheets("Wave10").Select
+            Cells(1, 1).Activate
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
         incr = incr + 1
         s0.Select
+        
+        Else
+        s0.Select
+        
         
         End If
     Next
