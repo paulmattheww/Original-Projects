@@ -1,25 +1,44 @@
-# Merge Item.No, Location, and UPC for printing label locations
-setwd("C:/Users/pmwash/Desktop/R_files")
-locations <- read.csv("locations.csv", header=TRUE)
-upc <- read.csv('BOTUPC.csv', header=TRUE)
-
-head(locations)
-head(upc)
-
 substrRight <- function(x, n){
   substr(x, nchar(x)-n+1, nchar(x))
 }
 
-upc$BUPC. <- as.character(upc$BUPC.)
-upc$UPC.CLEAN <- str_pad(substrRight(upc$BUPC., 3), 3, pad="0")
 
-merged <- merge(locations, upc, by='ITEM')
-head(merged)
 
-write.csv(merged, 'forLabels.csv')
+# Merge Item.No, Location, and UPC for printing label locations
+setwd("C:/Users/pmwash/Desktop/R_files/Data Input")
 
-# Check
-filter(locations, ITEM == '1250019')
-filter(upc, ITEM == '1250019')
-filter(merged, ITEM == '1250019')
-View(merged)
+upc <- read.csv('BOTUPC.csv', header=TRUE) # this is a file in as400 that you will need to run
+names(upc) <- c('Product.Id', 'UPC')
+head(upc)
+
+locsBob <- read.csv('locations_bob_labels.csv', header=TRUE) # Bob will send a list of locations only
+locsBob <- locsBob[,c(1:2)]
+names(locsBob) <- c('Location', 'nanana')
+head(locsBob)
+
+locations <- read.csv("all_inventory.csv", header=TRUE) # this is today's inventory from hi jump 
+names(locations) <- c('Product.Id', 'Description', 'Location', 'QPC',
+                      'Bottle.Size', 'Total.Bottles', 'Cases', 'Bottles')
+locations <- locations[,c('Product.Id', 'Location', 'Description')]
+head(locations)
+
+
+forLabels <- merge(locations, upc, by='Product.Id')
+forLabels <- merge(forLabels, locsBob, by='Location')
+forLabels <- forLabels[,c('Product.Id', 'Location', 'UPC', 'Description')]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
