@@ -38,10 +38,10 @@ invert1 <- data.frame(t(moneyShot1))
 # for liquor wine beer NA
 #positive <- filter(breaks, EXT_COST < 0)
 breaks$EXT_COST <- as.numeric(as.character(breaks$EXT_COST))
-spread <- aggregate(abs(EXT_COST) ~ X.RCODE + PTYPE, data=breaks, FUN=sum)
+spread <- aggregate(EXT_COST ~ X.RCODE + PTYPE, data=breaks, FUN=sum)
 spread <- data.frame(spread)
 library(tidyr)
-moneyShot2 <- spread(spread, PTYPE, abs.EXT_COST.)
+moneyShot2 <- spread(spread, PTYPE, EXT_COST)
 names(moneyShot2) <- c("Reason.Code", "Liquor (1)", "Wine (2)", "Beer (3)", "Non-Alc (4)")
 reason <- moneyShot2$Reason.Code
 moneyShot2$Reason.Code <- ifelse(reason == 2, "Sales (2)", 
@@ -171,10 +171,10 @@ invert1 <- data.frame(t(moneyShot1))
 # for liquor wine beer NA
 #positive <- filter(breaks, EXT_COST < 0)
 breaks$EXT_COST <- as.numeric(as.character(breaks$EXT_COST))
-spread <- aggregate(abs(EXT_COST) ~ X.RCODE + PTYPE, data=breaks, FUN=sum)
+spread <- aggregate(EXT_COST ~ X.RCODE + PTYPE, data=breaks, FUN=sum)
 spread <- data.frame(spread)
 library(tidyr)
-moneyShot2 <- spread(spread, PTYPE, abs.EXT_COST.)
+moneyShot2 <- spread(spread, PTYPE, EXT_COST)
 names(moneyShot2) <- c("Reason.Code", "Liquor (1)", "Wine (2)", "Beer (3)", "Non-Alc (4)")
 reason <- moneyShot2$Reason.Code
 moneyShot2$Reason.Code <- ifelse(reason == 2, "Sales (2)", 
@@ -351,26 +351,46 @@ p + geom_point(aes(fill=factor(Year), group=factor(Year))) +
   labs(title="Cumulative Total Breakage (STL) By Year",
        x="Month", y="Dollars ($)") +
   facet_wrap(~Year, nrow=1) +
-  geom_vline(xintercept=10) +
-  geom_hline(yintercept= 78781.93)
+  geom_vline(xintercept=11) +
+  geom_hline(yintercept= 87894.30)
+
+
+
+# Gross unsaleable percent of revenue
+# 3 Graphs Faceted, PERCENT OF SALES Monthly DRIVER BREAKAGE STL
+library(scales)
+p <- ggplot(breaks, aes(factor(Month), Gross.Unsaleable.Percent.Revenue))
+p + geom_point(aes(colour=Gross.Unsaleable.Percent.Revenue, 
+                   size=Gross.Unsaleable.Percent.Revenue)) + 
+  theme(legend.position="bottom") + geom_smooth(aes(group=1),
+                                                colour="black") +
+  labs(title="Monthly STL Unsaleables (% of Sales)",
+       x="Month", y="Percent of Sales") + facet_wrap(~Year, nrow=1) +
+  scale_colour_gradient(low="gray", high="black") +
+  scale_y_continuous(labels=percent)
+
 
 
 ##################################################################################
 # New part to determine the drivers (sizes) of breakage
 setwd("C:/Users/pmwash/Desktop/R_Files/Data Input")
 details <- read.csv('breakage_detailed_history.csv', header=TRUE) 
+details$Total.Cases <- as.numeric(details$Total.Cases)
 print('DO NOT CHANGE COLUMN NAMES!!!!')
 head(details)
 str(details)
 details$Month <- ordered(details$Month, levels=c('January','February','March',
-                                                               'April','May','June','July',
-                                                               'August','September','October'))
+                                                 'April','May','June','July',
+                                                 'August','September','October',
+                                                 'November'))
 
 library(ggplot2)
 g <- ggplot(data=details, aes(x=Month, y=Total.Cases, group=Type))
-g + geom_point() + facet_wrap(~Type) + geom_smooth(aes(group=Type)) +
+g + geom_point(aes(size=Total.Cases, colour=Total.Cases)) + 
+  facet_wrap(~Type, scales='free') + geom_smooth(colour='black', aes(group=Type)) +
   theme(axis.text.x=element_text(angle=90, hjust=1)) +
-  labs(title='Breakage by Type')
+  labs(title='Breakage by Type, STL') + 
+  scale_colour_gradient(low="darkblue", high="red")
 #
 
 
@@ -434,7 +454,7 @@ breaks <- breaks[!is.na(breaks$Month), ]
 # 3 Graphs Faceted, Monthly WAREHOUSE Breakage STL PERCENT OF SALES
 p <- ggplot(breaks, aes(factor(Month), Whse.Break.Percent.Sales))
 p + geom_point(aes(colour=Warehouse.Breakage, size=Warehouse.Breakage)) + 
-  theme(legend.position="bottom", axis.text.x=element_text(angle=90,hjust=1)) +
+  theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) +
   geom_smooth(aes(group=1), colour="black") +
   labs(title="Monthly Warehouse Breakage Kansas City",
        x="Month", y="Percent of Sales") + facet_wrap(~Year, nrow=2) +
@@ -460,9 +480,9 @@ theme(legend.position="bottom") + geom_smooth(aes(group=1),
 library(gridExtra)
 p <- ggplot(breaks, aes(factor(Month), Driver.Breakage))
 driveDollars <- p + geom_point(aes(colour=Driver.Breakage, size=Driver.Breakage)) + 
-  theme(legend.position="bottom") + geom_smooth(aes(group=1),
+  theme(legend.position="none") + geom_smooth(aes(group=1),
                                                 colour="black") +
-  labs(title="Monthly Driver Breakage",
+  labs(title="Monthly Driver Breakage KC",
        x="Month", y="Dollars ($)") + facet_wrap(~Year, nrow=2) +
   scale_colour_gradient(low="green", high="red")
 
@@ -471,13 +491,13 @@ library(scales)
 p <- ggplot(breaks, aes(factor(Month), Driver.Brk.Percent.Sales))
 drivePercent <- p + geom_point(aes(colour=Driver.Brk.Percent.Sales, 
                    size=Driver.Brk.Percent.Sales)) + 
-  theme(legend.position="bottom") + geom_smooth(aes(group=1),
+  theme(legend.position="none") + geom_smooth(aes(group=1),
                                                 colour="black") +
   labs(title="Monthly KC Driver Breakage (% of Sales)",
        x="Month", y="Percent of Sales") + facet_wrap(~Year, nrow=2) +
   scale_colour_gradient(low="green", high="red") +
   scale_y_continuous(labels=percent)
-grid.arrange(driveDollars, drivePercent, nrow=1)
+grid.arrange(driveDollars, drivePercent, nrow=2)
 
 
 
@@ -488,7 +508,7 @@ pup <- filter(breaks, Year >= 2009)
 p <- ggplot(pup, aes(factor(Month), Sprgfld.Percent.Sales))
 p + geom_point(aes(colour=Springfield.Breakage, 
                    size=Springfield.Breakage)) + 
-  theme(legend.position="bottom") + geom_smooth(aes(group=1),
+  theme(legend.position="none") + geom_smooth(aes(group=1),
                                                 colour="black") +
   labs(title="Monthly Springfield Breakage",
        x="Month", y="Percent of Sales") + facet_wrap(~Year, nrow=1) +
@@ -505,9 +525,9 @@ p <- ggplot(breaks, aes(factor(Month),
                         Total.KC.Breakage.Percent.Sales))
 p + geom_point(aes(colour=Total.KC.Breakage.Percent.Sales, 
                    size=Total.KC.Breakage.Percent.Sales)) + 
-  theme(legend.position="bottom") + geom_smooth(aes(group=1),
+  theme(legend.position="none") + geom_smooth(aes(group=1),
                                                 colour="black") +
-  labs(title="Total KC Monthly Breakage",
+  labs(title="Total KC Monthly Breakage+Unsaleables",
        x="Month", y="Percent of Sales") + facet_wrap(~Year, nrow=2) +
   scale_colour_gradient(low="darkblue", high="yellow") +
   scale_y_continuous(label=percent, limits=c(0, 0.008))
@@ -519,7 +539,7 @@ p <- ggplot(breaks, aes(factor(Month),
                         Total.Breakage.Only))
 p + geom_point(aes(colour=Total.Breakage.Only, 
                    size=Total.Breakage.Only)) + 
-  theme(legend.position="bottom") + geom_smooth(aes(group=1),
+  theme(legend.position="none") + geom_smooth(aes(group=1),
                                                 colour="black") +
   labs(title="Total KC Monthly Breakage (Excluding Unsaleables)",
        x="Month", y="Dollars ($)") + facet_wrap(~Year, nrow=2) +
@@ -536,12 +556,12 @@ p + geom_point(aes(fill=factor(Year), group=factor(Year))) +
   geom_line(aes(x=factor(Month), y=Cumulative.YTD.Breakage.Only, colour=factor(Year),
                 group=factor(Year))) +
   geom_smooth(method="lm", aes(group=factor(Year))) +
-  theme(legend.position="bottom") + 
-  labs(title="Cumulative Total Breakage + Unsaleables (KC) By Year (Including Unsaleables)",
+  theme(legend.position="none") + 
+  labs(title="Cumulative Total Breakage + Unsaleables (KC) By Year (Excluding Unsaleables)",
        x="Month", y="Dollars ($)") +
   facet_wrap(~Year, nrow=2) +
-  geom_vline(xintercept=10) +
-  geom_hline(yintercept= 66236.80) +
+  geom_vline(xintercept=11) +
+  geom_hline(yintercept= 71083.00) +
   scale_y_continuous(label=dollar) #, limits=c(0,500000))
 
 
@@ -554,12 +574,12 @@ withUnsaleables <- p + geom_point(aes(fill=factor(Year), size=Cumulative.Sales.Y
   geom_line(aes(x=factor(Month), y=Percent.Cumulative.Breakage.YTD, 
                 colour=factor(Year),
                 group=factor(Year))) +
-  theme(legend.position="bottom") + 
+  theme(legend.position="none") + 
   labs(title="KC: Percent Cumulative Breakage of Cumulative Sales YTD (INCLUDING Unsaleables)",
        x="Month", y="Percent of Cumulative Sales") +
   facet_wrap(~Year, nrow=2) +
-  geom_vline(xintercept=10) +
-  geom_hline(yintercept= 0.00450) +
+  geom_vline(xintercept=11) +
+  geom_hline(yintercept= 0.00420) +
   scale_y_continuous(label=percent) #, limits=c(0,500000))
 ###
 p <- ggplot(breaks, aes(factor(Month), Percent.Cumulative.Breakage.Only.YTD, 
@@ -569,14 +589,14 @@ withoutUnsaleables <- p + geom_point(aes(fill=factor(Year), size=Cumulative.Sale
   geom_line(aes(x=factor(Month), y=Percent.Cumulative.Breakage.Only.YTD, 
                 colour=factor(Year),
                 group=factor(Year))) +
-  theme(legend.position="bottom") + 
+  theme(legend.position="none") + 
   labs(title="KC: Percent Cumulative Breakage of Cumulative Sales YTD (EXCLUDING Unsaleables)",
        x="Month", y="Percent of Cumulative Sales") +
   facet_wrap(~Year, nrow=2) +
-  geom_vline(xintercept=10) +
-  geom_hline(yintercept= 0.000537848) +
+  geom_vline(xintercept=11) +
+  geom_hline(yintercept= 0.000520000) +
   scale_y_continuous(label=percent) #, limits=c(0,500000))
-grid.arrange(withUnsaleables, withoutUnsaleables, nrow=1)
+grid.arrange(withUnsaleables, withoutUnsaleables, nrow=2)
 
 
 # Cum sales
@@ -586,12 +606,12 @@ p + geom_point(aes(fill=factor(Year), group=factor(Year))) +
   geom_line(aes(x=factor(Month), y=Cumulative.Sales.YTD, colour=factor(Year),
                 group=factor(Year))) +
   geom_smooth(method="lm", aes(group=factor(Year))) +
-  theme(legend.position="bottom") + 
+  theme(legend.position="none") + 
   labs(title="KC Cumulative Sales YTD",
        x="Month", y="Dollars ($)") +
   facet_wrap(~Year, nrow=2) +
-  geom_vline(xintercept=10) +
-  geom_hline(yintercept= 123151412) +
+  geom_vline(xintercept=11) +
+  geom_hline(yintercept= 135789941) +
   scale_y_continuous(label=dollar) #, limits=c(0,500000))
 
 
@@ -603,12 +623,12 @@ p + geom_point(aes(fill=factor(Year), group=factor(Year))) +
   geom_line(aes(x=factor(Month), y=Cumulative.Unsaleables.YTD, colour=factor(Year),
                 group=factor(Year))) +
   geom_smooth(method="lm", aes(group=factor(Year))) +
-  theme(legend.position="bottom") + 
+  theme(legend.position="none") + 
   labs(title="KC Cumulative Unsaleables YTD",
        x="Month", y="Dollars ($)") +
   facet_wrap(~Year, nrow=2) +
-  geom_vline(xintercept=10) +
-  geom_hline(yintercept= 487954.7) +
+  geom_vline(xintercept=11) +
+  geom_hline(yintercept= 497539.3) +
   scale_y_continuous(label=dollar) #, limits=c(0,500000))
 
 
@@ -620,12 +640,12 @@ withoutUnsaleables <- p + geom_point(aes(fill=factor(Year), group=factor(Year)))
   geom_line(aes(x=factor(Month), y=Cumulative.YTD.Breakage.Only, colour=factor(Year),
                 group=factor(Year))) +
   geom_smooth(method="lm", aes(group=factor(Year))) +
-  theme(legend.position="bottom") + 
+  theme(legend.position="none") + 
   labs(title="Cumulative Breakage Excluding Unsaleables (KC) by Year",
        x="Month", y="Dollars ($)") +
   facet_wrap(~Year, nrow=2) +
-  geom_vline(xintercept=10) +
-  geom_hline(yintercept= 66236.80) +
+  geom_vline(xintercept=11) +
+  geom_hline(yintercept= 71083.00) +
   scale_y_continuous(label=dollar) #, limits=c(0,500000))
 
 p <- ggplot(breaks, aes(factor(Month), Cumulative.Breakage.YTD, 
@@ -634,14 +654,14 @@ withUnsaleables <- p + geom_point(aes(fill=factor(Year), group=factor(Year))) +
   geom_line(aes(x=factor(Month), y=Cumulative.Breakage.YTD, colour=factor(Year),
                 group=factor(Year))) +
   geom_smooth(method="lm", aes(group=factor(Year))) +
-  theme(legend.position="bottom") + 
+  theme(legend.position="none") + 
   labs(title="Cumulative Breakage Including Unsaleables (KC) by Year",
        x="Month", y="Dollars ($)") +
   facet_wrap(~Year, nrow=2) +
-  geom_vline(xintercept=10) +
-  geom_hline(yintercept= 554191.5) +
+  geom_vline(xintercept=11) +
+  geom_hline(yintercept= 568622.0) +
   scale_y_continuous(label=dollar) #, limits=c(0,500000))
-grid.arrange(withUnsaleables, withoutUnsaleables, nrow=1)
+grid.arrange(withUnsaleables, withoutUnsaleables, nrow=2)
 
 
 
@@ -656,22 +676,33 @@ grid.arrange(withUnsaleables, withoutUnsaleables, nrow=1)
 
 
 ##################################################################################
-# New part to determine the drivers (sizes) of breakage
+# BY TYPE
 setwd("C:/Users/pmwash/Desktop/R_Files/Data Input")
-detail <- read.csv('monthly_breakage.csv', header=TRUE) # take n from the monthly breakage report
+detail <- read.csv('kc_breakage_byType.csv', header=TRUE) # taken from the monthly breakage report
+detail$Month <- factor(detail$Month, levels=c('January', 'February', 'March', 'April', 'May', 
+                                              'June', 'July', 'August', 'September', 'October', 'November'))
 head(detail)
 
+g <- ggplot(data=detail, aes(x=Month, y=Cases, group=Type))
+g + geom_point(aes(group=Type, size=Cases)) + facet_wrap(~Type) +
+  geom_smooth(aes(group=Type, colour=Type), se=F) +
+  theme(legend.position='none', axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(title='KC Breakage by Type')
 
-head(detail)
-sizes <- aggregate(SUM.CASES ~ SIZE, data=detail, FUN=sum)
-library(dplyr)
-sizes <- arrange(sizes, -SUM.CASES)
-sizes
 
 
-descriptions <- aggregate(SUM.CASES ~ DESCRIPTION, data=detail, FUN=sum)
-descriptions <- arrange(descriptions, -SUM.CASES)
-head(descriptions, 50)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
