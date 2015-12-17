@@ -141,10 +141,87 @@ lots$Received.Til.Expiration <- as.numeric(lots$Received.Til.Expiration)
 lots$Expiration.Date <- as.character(lots$Expiration.Date)
 lots$Date.Lot.Received <- as.character(lots$Date.Lot.Received)
 lots <- filter(lots, as.numeric(lots$Received.Til.Expiration) > 0 & as.numeric(lots$Received.Til.Expiration) < 350)
+today <- as.POSIXct(today, '%Y-%m-%d')
+expDate <- lots$Expiration.Date
+recDate <- lots$Date.Lot.Received
+exp <- expDate < today
+lots$Expired <- ifelse(exp==TRUE, 'Expired', 'In Date')
+
+
+
+bySupplier <- aggregate(Original.Lot.Qty ~ Supplier, data=lots, FUN=sum)
+bySupplier <- arrange(bySupplier, desc(Original.Lot.Qty))
+
+lotsBad <- filter(lots, Expired == 'Expired')
+bySupplierExpired <- aggregate(Original.Lot.Qty ~ Supplier, data=lotsBad, FUN=sum)
+bySupplierExpired <- arrange(bySupplierExpired, desc(Original.Lot.Qty))
+
+bySupplierPurchase <- aggregate(Original.Lot.Qty ~ Supplier, data=lots, function(x) round(mean(x)))
+
+bySupplierNumber <- aggregate(Original.Lot.Qty ~ Supplier, data=lots, FUN=length)
+
+suppliers <- merge(bySupplier, bySupplierExpired, by='Supplier')
+#suppliers$Percent.Expired.365 <- round(suppliers$Original.Lot.Qty.y / suppliers$Original.Lot.Qty.x, 3)
+suppliers <- merge(suppliers, bySupplierPurchase, by='Supplier')
+suppliers <- merge(suppliers, bySupplierNumber, by='Supplier')
+names(suppliers) <- c('Supplier', 'Original.Qty', 'Expired.Cases.In.House', 
+                      'Avg.Purchase.Size.Cases', 'No.of.Purchases')
+suppliers <- arrange(suppliers, desc(Expired.Cases.In.House))
+
+beerSales <- read.csv('jan_dec_beerSales_2015.csv', header=TRUE) # 2015 beer sales through 12/17
+supplierSales <- aggregate(Std.Cases ~ Supplier, data=beerSales, function(x) round(sum(x)))
+names(supplierSales) <- c('Supplier', 'Std.Case.Sales.YTD')
+
+suppliers <- merge(suppliers, supplierSales, by='Supplier')
+suppliers <- arrange(suppliers, desc(Expired.Cases.In.House))
+
+supplierDollars <- aggregate(Dollars ~ Supplier, data=beerSales, function(x) round(sum(x)))
+names(supplierDollars) <- c('Supplier', 'Dollar.Sales.YTD')
+
+suppliers <- merge(suppliers, supplierDollars, by='Supplier')
+suppliers <- arrange(suppliers, desc(Expired.Cases.In.House))
+
+setwd("C:/Users/pmwash/Desktop/R_Files/Data Input")
+unsale <- read.csv('unsaleables_beer_dec2015.csv', header=TRUE)
+names(unsale) <- c('Product.ID', 'Description', 'Size', 'Case', 'Bottle', 'Laid.In', 'Ext.Cost',
+                   'Trans.Code', 'Trans', 'Company', 'Trans.Date', 'QPC', 'Alt.QPC', 'Suppx', 
+                   'Cases', 'Month', 'Class', 'Supplier..')
+unsale <- filter(unsale, Class=='BEER')
+unsale <- unsale[,c('Product.ID', 'Description', 'Ext.Cost', 
+                    'Cases', 'Supplier..')]
+names(unsale) <- c('Product.ID', 'Description', 'Ext.Cost.Unsaleable', 
+                   'Cases.Unsaleable.YTD', 'Supplier..')
+unsale <- merge(lots, unsale, by='Product.ID')
+unsale <- unsale[,c(1:22)]
+supplierUnsale <- aggregate(Cases.Unsaleable.YTD ~ Supplier, data=unsale, FUN=sum)
+
+suppliers <- merge(suppliers, supplierUnsale, by='Supplier')
+suppliers$Case.Unsaleable.Percent.Cases.Sold <- round(suppliers$Cases.Unsaleable.YTD / suppliers$Std.Case.Sales.YTD, 3)
+suppliers <- arrange(suppliers, desc(Case.Unsaleable.Percent.Cases.Sold))
+
+
+
+
+
+
+
+
+
+library(xlsx)
+setwd("C:/Users/pmwash/Desktop/R_Files/Data Output")
+write.xlsx(suppliers)
+
+
+
 
 library(ggplot2)
 g <- ggplot(data=lots, aes(x=as.numeric(Received.Til.Expiration), group=Supplier., weight=Original.Lot.Qty))
-g + geom_histogram(binwidth=25, aes(group=Supplier.)) + facet_wrap(~Supplier., scales='free')
+g + geom_histogram(binwidth=15, aes(group=Supplier., fill=Supplier.)) + facet_wrap(~Supplier., scales='free') +
+  labs(title='Distribution of Days til Expiration of Lots Received, Weighted by Original Lot Qty',
+       x='Days til Expiration of Lot Received', y='Count') +
+  geom_rug(aes(group=Supplier., weight=Original.Lot.Qty)) + theme(legend.position='none')
+
+
 
 
 
