@@ -33,7 +33,7 @@ grid.arrange(one,two)
 
 
 
-
+################################################################################
 
 
 
@@ -74,17 +74,17 @@ pQ <- slide(pQ, Var='Stella.Q', slideBy=-1)
 head(pQ)
 
 #Calculate change in Q and change in P through time
-pQ$Marco.dP <- round((pQ$Marco.P - pQ$`Marco.P-1`) / pQ$Marco.P, 4)
-pQ$Risata.dP <- round((pQ$Risata.P - pQ$`Risata.P-1`) / pQ$Risata.P, 4)
-pQ$Castello.dP <- round((pQ$Castello.P - pQ$`Castello.P-1`) / pQ$Castello.P, 4)
-pQ$Beviamo.dP <- round((pQ$Beviamo.P - pQ$`Beviamo.P-1`) / pQ$Beviamo.P, 4)
-pQ$Stella.dP <- round((pQ$Stella.P - pQ$`Stella.P-1`) / pQ$Stella.P, 4)
+pQ$Marco.dP <- round((pQ$Marco.P - pQ$`Marco.P-1`) / pQ$`Marco.P-1`, 4)
+pQ$Risata.dP <- round((pQ$Risata.P - pQ$`Risata.P-1`) / pQ$`Risata.P-1`, 4)
+pQ$Castello.dP <- round((pQ$Castello.P - pQ$`Castello.P-1`) / pQ$`Castello.P-1`, 4)
+pQ$Beviamo.dP <- round((pQ$Beviamo.P - pQ$`Beviamo.P-1`) / pQ$`Beviamo.P-1`, 4)
+pQ$Stella.dP <- round((pQ$Stella.P - pQ$`Stella.P-1`) / pQ$`Stella.P-1`, 4)
 
-pQ$Marco.dQ <- round((pQ$Marco.Q - pQ$`Marco.Q-1`) / pQ$Marco.Q, 4)
-pQ$Risata.dQ <- round((pQ$Risata.Q - pQ$`Risata.Q-1`) / pQ$Risata.Q, 4)
-pQ$Castello.dQ <- round((pQ$Castello.Q - pQ$`Castello.Q-1`) / pQ$Castello.Q, 4)
-pQ$Beviamo.dQ <- round((pQ$Beviamo.Q - pQ$`Beviamo.Q-1`) / pQ$Beviamo.Q, 4)
-pQ$Stella.dQ <- round((pQ$Stella.Q - pQ$`Stella.Q-1`) / pQ$Stella.Q, 4)
+pQ$Marco.dQ <- round((pQ$Marco.Q - pQ$`Marco.Q-1`) / pQ$`Marco.Q-1`, 4)
+pQ$Risata.dQ <- round((pQ$Risata.Q - pQ$`Risata.Q-1`) / pQ$`Risata.Q-1`, 4)
+pQ$Castello.dQ <- round((pQ$Castello.Q - pQ$`Castello.Q-1`) / pQ$`Castello.Q-1`, 4)
+pQ$Beviamo.dQ <- round((pQ$Beviamo.Q - pQ$`Beviamo.Q-1`) / pQ$`Beviamo.Q-1`, 4)
+pQ$Stella.dQ <- round((pQ$Stella.Q - pQ$`Stella.Q-1`) / pQ$`Stella.Q-1`, 4)
 
 head(pQ)
 
@@ -145,13 +145,13 @@ head(PQ);tail(PQ)
 
 library(xlsx)
 setwd("C:/Users/pmwash/Desktop/R_Files/Data Output")
-write.xlsx(PQ, file='moscato_price_quantity_elasticities.xlsx', sheet='Elasticities & Price History')
+write.xlsx(PQ, file='moscato_category.xlsx', sheet='Category History 2015, Raw')
 #perform quick removal of NA and NaN etc, save as CSV
-el <- read.csv('moscato_price_quantity_elasticities.csv', header=TRUE)
+el <- read.csv('moscato_category.csv', header=TRUE)
 head(el);tail(el)
 
 elAvg <- round(colMeans(el[,c(2:56)], na.rm=TRUE), 4)
-write.xlsx(elAvg, file='moscato_price_quantity_elasticities.xlsx', sheet='Average Elasticities 2015', append=TRUE)
+write.xlsx(elAvg, file='moscato_category.xlsx', sheet='Average Elasticities 2015', append=TRUE)
 
 
 
@@ -165,10 +165,11 @@ volDollars <- volDollars[c(1:52),]
 head(volDollars);tail(volDollars)
 
 PQ <- cbind(PQ, volDollars)
+head(PQ)
 
 #rewrite and replace 
 setwd("C:/Users/pmwash/Desktop/R_Files/Data Output")
-write.xlsx(PQ, file='moscato_price_quantity_elasticities.xlsx', sheet='Price Revenue Elasticities Over Time', append=TRUE)
+write.xlsx(PQ, file='moscato_category.xlsx', sheet='Moscato Category 2015', append=TRUE)
 
 
 
@@ -215,7 +216,15 @@ risata <- pairs(PQ$Risata.P, PQ$Risata.Sales, 'Risata')
 castello <- pairs(PQ$Castello.P, PQ$Castello.Sales, 'Castello')
 beviamo <- pairs(PQ$Beviamo.P, PQ$Beviamo.Sales, 'Beviamo')
 stella <- pairs(PQ$Stella.P, PQ$Stella.Sales, 'Stella')
+
+
 grid.arrange(marcoSales, risataSales, castelloSales, beviamoSales, stellaSales,
              marcoPrice, risataPrice, castelloPrice, beviamoPrice, stellaPrice, 
              marco, risata, castello, beviamo, stella, nrow=3)
+
+
+
+
+
+
 
