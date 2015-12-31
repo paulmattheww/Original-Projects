@@ -1,0 +1,221 @@
+
+
+
+price <- c(146.78,144.86,135.59,135.45,159.70,130.37,
+           144.96,135.58,144.75,134.98,144.97,130.18)
+quantity <- c(201,281,462,641,263,895,192,425,244,762,317,426)
+pq <- cbind(price, quantity)
+pq <- data.frame(pq)
+
+fit <- lm(quantity ~ price, data=pq)
+summary(fit)
+
+
+gp <- c( 6939.00,10622.00,13309.00,17926.00,11353.00,24601.00,
+         6637.00,11917.00,8319.00,20877.00,10530.00,51109.00)
+pq <- cbind(pq, gp)
+
+fit <- lm(gp ~ price, data=pq)
+summary(fit)
+
+
+adjGp <- c(16330.58,10599.73,22946.98,11018.32,15394.65,26506.68,
+           14605.48,16659.85,19348.25,8838.23,13210.33,18679.92)
+pq <- cbind(pq, adjGp)
+
+fit <- lm(adjGp ~ price, data=pq)
+summary(fit)
+
+pq <- pq[c(1:11),]
+one <- qplot(data=pq, x=gp, geom='density', main='Distribution of GP in $', fill='lightgreen', alpha=0.5)
+two <- qplot(data=pq, x=price, geom='density', main='Distribution of Price $', fill='blue', alpha=0.5)
+grid.arrange(one,two)
+
+
+
+
+
+
+
+
+setwd("C:/Users/pmwash/Desktop/R_Files/Data Input")
+mos <- read.csv('elasticities_moscato.csv', header=TRUE)
+head(mos)
+
+mosX <- mos[,c(3:4, 6:7, 9:10, 12:13, 15:16)]
+names(mosX)
+
+units <- mosX[c(1:52),c(1,3,5,7,9)]
+prices <- mosX[c(1:52),-c(1,3,5,7,9)]
+
+pQ <- cbind(prices, units)
+names(pQ) <- c('Marco.P', 'Risata.P', 'Castello.P', 'Beviamo.P', 'Stella.P', 
+                  'Marco.Q', 'Risata.Q', 'Castello.Q', 'Beviamo.Q', 'Stella.Q')
+head(pQ)
+
+
+#lag variables to obtain change in p and q for cross elasticity calculation
+library(DataCombine)
+pQ <- slide(pQ, Var='Marco.P', slideBy=-1)
+pQ <- slide(pQ, Var='Marco.Q', slideBy=-1)
+
+pQ <- slide(pQ, Var='Risata.P', slideBy=-1)
+pQ <- slide(pQ, Var='Risata.Q', slideBy=-1)
+
+pQ <- slide(pQ, Var='Castello.P', slideBy=-1)
+pQ <- slide(pQ, Var='Castello.Q', slideBy=-1)
+
+pQ <- slide(pQ, Var='Beviamo.P', slideBy=-1)
+pQ <- slide(pQ, Var='Beviamo.Q', slideBy=-1)
+
+pQ <- slide(pQ, Var='Stella.P', slideBy=-1)
+pQ <- slide(pQ, Var='Stella.Q', slideBy=-1)
+
+head(pQ)
+
+#Calculate change in Q and change in P through time
+pQ$Marco.dP <- round((pQ$Marco.P - pQ$`Marco.P-1`) / pQ$Marco.P, 4)
+pQ$Risata.dP <- round((pQ$Risata.P - pQ$`Risata.P-1`) / pQ$Risata.P, 4)
+pQ$Castello.dP <- round((pQ$Castello.P - pQ$`Castello.P-1`) / pQ$Castello.P, 4)
+pQ$Beviamo.dP <- round((pQ$Beviamo.P - pQ$`Beviamo.P-1`) / pQ$Beviamo.P, 4)
+pQ$Stella.dP <- round((pQ$Stella.P - pQ$`Stella.P-1`) / pQ$Stella.P, 4)
+
+pQ$Marco.dQ <- round((pQ$Marco.Q - pQ$`Marco.Q-1`) / pQ$Marco.Q, 4)
+pQ$Risata.dQ <- round((pQ$Risata.Q - pQ$`Risata.Q-1`) / pQ$Risata.Q, 4)
+pQ$Castello.dQ <- round((pQ$Castello.Q - pQ$`Castello.Q-1`) / pQ$Castello.Q, 4)
+pQ$Beviamo.dQ <- round((pQ$Beviamo.Q - pQ$`Beviamo.Q-1`) / pQ$Beviamo.Q, 4)
+pQ$Stella.dQ <- round((pQ$Stella.Q - pQ$`Stella.Q-1`) / pQ$Stella.Q, 4)
+
+head(pQ)
+
+
+Marco.Marco <- (round(pQ$Marco.dQ / pQ$Marco.dP, 2))
+Marco.Risata <- round(pQ$Marco.dQ / pQ$Risata.dP, 2)
+Marco.Castello <- round(pQ$Marco.dQ / pQ$Castello.dP, 2)
+Marco.Beviamo <- round(pQ$Marco.dQ / pQ$Beviamo.dP, 2)
+Marco.Stella <- round(pQ$Marco.dQ / pQ$Stella.dP, 2)
+
+Risata.Marco <- round(pQ$Risata.dQ / pQ$Marco.dP, 2)
+Risata.Risata <- (round(pQ$Risata.dQ / pQ$Risata.dP, 2))
+Risata.Castello <- round(pQ$Risata.dQ / pQ$Castello.dP, 2)
+Risata.Beviamo <- round(pQ$Risata.dQ / pQ$Beviamo.dP, 2)
+Risata.Stella <- round(pQ$Risata.dQ / pQ$Stella.dP, 2)
+
+Castello.Marco <- round(pQ$Castello.dQ / pQ$Marco.dP, 2)
+Castello.Risata <- round(pQ$Castello.dQ / pQ$Risata.dP, 2)
+Castello.Castello <- (round(pQ$Castello.dQ / pQ$Castello.dP, 2))
+Castello.Beviamo <- round(pQ$Castello.dQ / pQ$Beviamo.dP, 2)
+Castello.Stella <- round(pQ$Castello.dQ / pQ$Stella.dP, 2)
+
+Beviamo.Marco <- round(pQ$Beviamo.dQ / pQ$Marco.dP, 2)
+Beviamo.Risata <- round(pQ$Beviamo.dQ / pQ$Risata.dP, 2)
+Beviamo.Castello <- round(pQ$Beviamo.dQ / pQ$Castello.dP, 2)
+Beviamo.Beviamo <- (round(pQ$Beviamo.dQ / pQ$Beviamo.dP, 2))
+Beviamo.Stella <- round(pQ$Beviamo.dQ / pQ$Stella.dP, 2)
+
+Stella.Marco <- round(pQ$Stella.dQ / pQ$Marco.dP, 2)
+Stella.Risata <- round(pQ$Stella.dQ / pQ$Risata.dP, 2)
+Stella.Castello <- round(pQ$Stella.dQ / pQ$Castello.dP, 2)
+Stella.Beviamo <- round(pQ$Stella.dQ / pQ$Beviamo.dP, 2)
+Stella.Stella <- (round(pQ$Stella.dQ / pQ$Stella.dP, 2))
+
+
+elasticities <- cbind(Marco.Marco, Marco.Risata, Marco.Castello, Marco.Beviamo, Marco.Stella,
+                      Risata.Marco, Risata.Risata, Risata.Castello, Risata.Beviamo, Risata.Stella,
+                      Castello.Marco, Castello.Risata, Castello.Castello, Castello.Beviamo, Castello.Stella,
+                      Beviamo.Marco, Beviamo.Risata, Beviamo.Castello, Beviamo.Beviamo, Beviamo.Stella,
+                      Stella.Marco, Stella.Risata, Stella.Castello, Stella.Beviamo, Stella.Stella)
+elasticities <- data.frame(elasticities)
+
+
+substrRight <- function(x, n){
+  substr(x, nchar(x)-n+1, nchar(x))
+}
+
+Week <- mos$X
+Week <- as.character(Week[c(1:52)])
+Week <- substrRight(Week, 8)
+
+elasticities <- cbind(Week, elasticities)
+
+
+PQ <- cbind(elasticities, pQ)
+head(PQ);tail(PQ)
+
+
+library(xlsx)
+setwd("C:/Users/pmwash/Desktop/R_Files/Data Output")
+write.xlsx(PQ, file='moscato_price_quantity_elasticities.xlsx', sheet='Elasticities & Price History')
+#perform quick removal of NA and NaN etc, save as CSV
+el <- read.csv('moscato_price_quantity_elasticities.csv', header=TRUE)
+head(el);tail(el)
+
+elAvg <- round(colMeans(el[,c(2:56)], na.rm=TRUE), 4)
+write.xlsx(elAvg, file='moscato_price_quantity_elasticities.xlsx', sheet='Average Elasticities 2015', append=TRUE)
+
+
+
+
+# get volume of all products
+setwd("C:/Users/pmwash/Desktop/R_Files/Data Input")
+mos <- read.csv('elasticities_moscato.csv', header=TRUE)
+volDollars <- mos[,c(2,5,8,11,14)]
+names(volDollars) <- c('Marco.Sales', 'Risata.Sales', 'Castello.Sales', 'Beviamo.Sales', 'Stella.Sales')
+volDollars <- volDollars[c(1:52),]
+head(volDollars);tail(volDollars)
+
+PQ <- cbind(PQ, volDollars)
+
+#rewrite and replace 
+setwd("C:/Users/pmwash/Desktop/R_Files/Data Output")
+write.xlsx(PQ, file='moscato_price_quantity_elasticities.xlsx', sheet='Price Revenue Elasticities Over Time', append=TRUE)
+
+
+
+head(PQ)
+
+
+library(gridExtra)
+ts <- function(product, title) {
+  library(ggplot2)
+  g <- ggplot(data=PQ, aes(x=Week, y=product))
+  g + geom_point() + geom_smooth(aes(group=1)) + 
+    geom_line(aes(group=1)) +
+    theme(axis.text.x=element_text(angle=90, hjust=1)) +
+    labs(title=title, y=title)
+}
+
+marcoSales <- ts(PQ$Marco.Sales, 'Marco Sales')
+marcoPrice <- ts(PQ$Marco.P, 'Marco Price')
+
+risataSales <- ts(PQ$Risata.Sales, 'Risata Sales')
+risataPrice <- ts(PQ$Risata.P, 'Risata Price')
+
+castelloSales <- ts(PQ$Castello.Sales, 'Castello Sales')
+castelloPrice <- ts(PQ$Castello.P, 'Castello Price')
+
+beviamoSales <- ts(PQ$Beviamo.Sales, 'Beviamo Sales')
+beviamoPrice <- ts(PQ$Beviamo.P, 'Beviamo Price')
+
+stellaSales <- ts(PQ$Stella.Sales, 'Stella Sales')
+stellaPrice <- ts(PQ$Stella.P, 'Stella Price')
+
+
+
+
+pairs <- function(productx, producty, title) {
+  library(ggplot2)
+  g <- ggplot(data=PQ, aes(x=productx, y=producty))
+  g + geom_point() + geom_smooth(method='lm', se=F, aes(group=1)) +
+    labs(title=title, y='Sales Volume', x='Price')
+}
+
+marco <- pairs(PQ$Marco.P, PQ$Marco.Sales, 'Marco')
+risata <- pairs(PQ$Risata.P, PQ$Risata.Sales, 'Risata')
+castello <- pairs(PQ$Castello.P, PQ$Castello.Sales, 'Castello')
+beviamo <- pairs(PQ$Beviamo.P, PQ$Beviamo.Sales, 'Beviamo')
+stella <- pairs(PQ$Stella.P, PQ$Stella.Sales, 'Stella')
+grid.arrange(marcoSales, risataSales, castelloSales, beviamoSales, stellaSales,
+             marcoPrice, risataPrice, castelloPrice, beviamoPrice, stellaPrice, 
+             marco, risata, castello, beviamo, stella, nrow=3)
+
