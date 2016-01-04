@@ -1,6 +1,9 @@
 library(dplyr)
 library(xlsx)
+library(lubridate)
+library(ggplot2)
 
+print('Define functions necessary for analysis.')
 headTail = function(x) {
   h <- head(x)
   t <- tail(x)
@@ -8,16 +11,37 @@ headTail = function(x) {
   print(t)
 }
 
+as400Date <- function(x) {
+  date <- as.character(x)
+  date <- substrRight(date, 6)
+  date <- as.character((strptime(date, "%y%m%d")))
+  date
+}
+
+substrRight <- function(x, n){
+  substr(x, nchar(x)-n+1, nchar(x))
+}
+
+substrLeft <- function(x, n){
+  substr(x, 1, n)
+}
+
+
 print('Beer returns & spoilage. Based on RCT1 and mtc1 files in AS400.')
 setwd("C:/Users/pmwash/Desktop/R_files/Data Input")
 
 
 print('Be sure to re-run both queries. Gain access to query before replacing these file objects in memory.')
 rct = read.csv('rct1.csv', header=TRUE, na.strings='NA')
-mtc= read.csv('mtc1.csv', header=TRUE, na.strings=NA) #make sure change file name to mtc
+mtc = read.csv('mtc1.csv', header=TRUE, na.strings=NA) #make sure change file name to mtc
 headTail(rct)
 headTail(mtc)
 
+print('Create dates in both files.')
+rct$DATE = as400Date(rct$X.RDATE)
+rct$MONTH = month(rct$DATE, label=TRUE)
+mtc$DATE = as400Date(mtc$X.MIVDT)
+mtc$MONTH = month(mtc$DATE, label=TRUE)
 
 print('Create cases from cases & bottles using QPC.')
 cs = rct$X.RCASE
@@ -105,6 +129,31 @@ customers = merge(cust, customers, by='CUSTOMER.NO')
 customers = arrange(customers, CASES.RETURNED)
 headTail(customers)
 
+print('Generate a time series of returns and inventory adjustments/dumps.')
+monthReturns = aggregate(CASES ~ MONTH + X.MINP., data=mtc, FUN=sum)
+names(monthReturns) = c('MONTH', 'ITEM.NO', 'CASES.RETURNED')
+headTail(monthReturns)
+
+monthAdjustments = aggregate(CASES ~ MONTH + PSUPPL + X.SSUNM + X.RPRD. + X.RDESC + CLASS, data=rct, FUN=sum)
+names(monthAdjustments) = c('MONTH', 'SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS', 'CASES.DUMPED.ADJUSTED')
+headTail(monthAdjustments)
+
+monthly = merge(monthAdjustments, monthReturns, by=c('ITEM.NO', 'MONTH'))
+monthly$TOT.CASES.UNSALEABLE = monthly$CASES.DUMPED.ADJUSTED + monthly$CASES.RETURNED
+headTail(monthly)
+
+monthly = arrange(monthly, TOT.CASES.UNSALEABLE)
+monthly = arrange(monthly, MONTH)
+headTail(monthly)
+
+
+#################################################################################################
+
+
+print('Create a plot of time series for suppliers.')
+g = ggplot(data=monthly, aes(x=MONTH, y=abs(TOT.CASES.UNSALEABLE)))
+g + geom_boxplot(aes(group=MONTH)) +
+  theme(legend.position='none') 
 
 #################################################################################################
 
@@ -114,6 +163,7 @@ setwd("C:/Users/pmwash/Desktop/R_files/Data Output")
 write.xlsx(supplierItem, file='returned_dumped_2015.xlsx', sheet='Item Summary')
 write.xlsx(suppliers, file='returned_dumped_2015.xlsx', sheet='Supplier Summary', append=TRUE)
 write.xlsx(customers, file='returned_dumped_2015.xlsx', sheet='Customer Returns Summary', append=TRUE)
+write.xlsx(monthly, file='returned_dumped_2015.xlsx', sheet='Time Series', append=TRUE)
 
 
 
