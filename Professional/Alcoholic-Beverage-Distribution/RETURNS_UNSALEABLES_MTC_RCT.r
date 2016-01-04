@@ -97,8 +97,12 @@ headTail(suppliers)
 
 print('Check returns by customer number XMCUS.')
 customers = aggregate(CASES ~ X.MCUS., data=mtc, FUN=sum)
-customers = arrange(customers, CASES)
 names(customers) = c('CUSTOMER.NO', 'CASES.RETURNED')
+setwd("C:/Users/pmwash/Desktop/R_files/Data Input")
+cust = read.csv('active_customers_dive.csv', header=TRUE)
+names(cust) = c('CUSTOMER', 'CUSTOMER.NO')
+customers = merge(cust, customers, by='CUSTOMER.NO')
+customers = arrange(customers, CASES.RETURNED)
 headTail(customers)
 
 
@@ -107,8 +111,9 @@ headTail(customers)
 
 print('Write items and suppliers to Excel document.')
 setwd("C:/Users/pmwash/Desktop/R_files/Data Output")
-write.xlsx(suppliers, file='2015_returns_spoilage.xlsx', sheet='Suppliers')
-write.xlsx(supplierItem, file='2015_returns_spoilage.xlsx', sheet='Items', append=TRUE)
+write.xlsx(supplierItem, file='returned_dumped_2015.xlsx', sheet='Item Summary')
+write.xlsx(suppliers, file='returned_dumped_2015.xlsx', sheet='Supplier Summary', append=TRUE)
+write.xlsx(customers, file='returned_dumped_2015.xlsx', sheet='Customer Returns Summary', append=TRUE)
 
 
 
