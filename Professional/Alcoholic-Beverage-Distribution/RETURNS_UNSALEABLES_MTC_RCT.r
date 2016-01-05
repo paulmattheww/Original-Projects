@@ -1,7 +1,9 @@
+print('Load the necessary libraries.')
 library(dplyr)
 library(xlsx)
 library(lubridate)
 library(ggplot2)
+
 
 print('Define functions necessary for analysis.')
 headTail = function(x) {
@@ -10,18 +12,15 @@ headTail = function(x) {
   print(h)
   print(t)
 }
-
 as400Date <- function(x) {
   date <- as.character(x)
   date <- substrRight(date, 6)
   date <- as.character((strptime(date, "%y%m%d")))
   date
 }
-
 substrRight <- function(x, n){
   substr(x, nchar(x)-n+1, nchar(x))
 }
-
 substrLeft <- function(x, n){
   substr(x, 1, n)
 }
@@ -152,8 +151,30 @@ headTail(monthly)
 
 print('Create a plot of time series for suppliers.')
 g = ggplot(data=monthly, aes(x=MONTH, y=abs(TOT.CASES.UNSALEABLE)))
-g + geom_boxplot(aes(group=MONTH)) +
-  theme(legend.position='none') 
+g + geom_bar(stat='sum', aes(group=MONTH, fill=SUPPLIER.NO)) +
+  theme(legend.position='none') + 
+  labs(title='Total Unsaleable, Colored by Supplier', x='Month', y='Total Cases Unsaleable')
+
+
+print('First gather customer/monthly data. Create a plot of time series for Customers.')
+custMonth = aggregate(CASES ~ X.MCUS. + MONTH, data=mtc, FUN=sum)
+names(custMonth) = c('CUSTOMER.NO', 'MONTH', 'CASES.RETURNED')
+setwd("C:/Users/pmwash/Desktop/R_files/Data Input")
+cust = read.csv('active_customers_dive.csv', header=TRUE)
+names(cust) = c('CUSTOMER', 'CUSTOMER.NO')
+custMonth = merge(cust, custMonth, by='CUSTOMER.NO')
+custMonth = arrange(custMonth, CASES.RETURNED)
+headTail(custMonth)
+g = ggplot(data=custMonth, aes(x=MONTH, y=abs(CASES.RETURNED)))
+g + geom_bar(stat='sum', aes(group=MONTH, fill=CUSTOMER)) +
+  theme(legend.position='none') + 
+  labs(title='Total Returns, Colored by Customer', x='Month', y='Total Cases Unsaleable')
+
+##
+print('Look at case unsaleables.')
+g = ggplot(data=mtc, aes(x=MONTH, y=abs(CASES)))
+g + geom_jitter(aes(group=MONTH))
+
 
 #################################################################################################
 
