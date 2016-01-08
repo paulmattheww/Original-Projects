@@ -25,6 +25,24 @@ unite = function(dir) {
     returns$Date = as.character(strptime(str_extract(as.character(file_list[i]), "(\\d+)-(\\d+)"), "%m-%d"))
     names(returns) = c('Metric', 'Value', 'Date')
     
+    overShort <- readWorksheetFromFile(file_list[i], sheet=1,
+                                       startCol=1, endCol=2,
+                                       startRow=10, endRow=50)
+    overShort$Date = as.character(strptime(str_extract(as.character(file_list[i]), "(\\d+)-(\\d+)"), "%m-%d"))
+    names(overShort) = c('Metric', 'Value', 'Date')
+    
+    contechWaves <- readWorksheetFromFile(file_list[i], sheet=1,
+                                          startCol=9, endCol=10,
+                                          startRow=4, endRow=58)
+    contechWaves$Date = as.character(strptime(str_extract(as.character(file_list[i]), "(\\d+)-(\\d+)"), "%m-%d"))
+    names(contechWaves) = c('Metric', 'Value', 'Date')
+    
+    oddballs <- readWorksheetFromFile(file_list[i], sheet=1,
+                                      startCol=12, endCol=13,
+                                      startRow=18, endRow=26)
+    oddballs$Date = as.character(strptime(str_extract(as.character(file_list[i]), "(\\d+)-(\\d+)"), "%m-%d"))
+    names(oddballs) = c('Metric', 'Value', 'Date')
+    
     temp = data.frame(rbind(production, nightlyHours, returns))
     output = if(!exists("output")){
       output = temp
