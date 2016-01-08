@@ -11,13 +11,21 @@ unite = function(dir) {
                                         startCol=4, endCol=5,
                                         startRow=4, endRow=31)
     production$Date = as.character(strptime(str_extract(as.character(file_list[i]), "(\\d+)-(\\d+)"), "%m-%d"))
+    names(production) = c('Metric', 'Value', 'Date')
+    
     nightlyHours = readWorksheetFromFile(file_list[i], sheet=1,
                                           startCol=4, endCol=5,
                                           startRow=33, endRow=53)
     nightlyHours$Date = as.character(strptime(str_extract(as.character(file_list[i]), "(\\d+)-(\\d+)"), "%m-%d"))
-    names(production) = c('Metric', 'Value', 'Date')
     names(nightlyHours) = c('Metric', 'Value', 'Date')
-    temp = data.frame(rbind(production, nightlyHours))
+    
+    returns <- readWorksheetFromFile(file_list[i], sheet=1,
+                                     startCol=1, endCol=2,
+                                     startRow=4, endRow=9)
+    returns$Date = as.character(strptime(str_extract(as.character(file_list[i]), "(\\d+)-(\\d+)"), "%m-%d"))
+    names(returns) = c('Metric', 'Value', 'Date')
+    
+    temp = data.frame(rbind(production, nightlyHours, returns))
     output = if(!exists("output")){
       output = temp
     } else {
