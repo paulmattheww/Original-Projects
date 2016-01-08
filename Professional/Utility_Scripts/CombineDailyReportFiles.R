@@ -1,4 +1,4 @@
-dir <- "N:/Daily Report/2015/SEPT"
+print('Define function necessary to compile all data from Daily Reports.')
 unite = function(dir) {
   library(XLConnect)
   library(stringr)
@@ -43,7 +43,7 @@ unite = function(dir) {
     oddballs$Date = as.character(strptime(str_extract(as.character(file_list[i]), "(\\d+)-(\\d+)"), "%m-%d"))
     names(oddballs) = c('Metric', 'Value', 'Date')
     
-    temp = data.frame(rbind(production, nightlyHours, returns))
+    temp = data.frame(rbind(production, nightlyHours, returns, overShort, contechWaves, oddballs))
     output = if(!exists("output")){
       output = temp
     } else {
@@ -52,4 +52,6 @@ unite = function(dir) {
   }
   output
 }
+
+dir <- "N:/Daily Report/2015/SEPT"
 unite(dir)
