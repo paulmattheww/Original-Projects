@@ -14,7 +14,12 @@ unite = function(dir) {
                                           startRow=33, endRow=53)
     names(production) = c('Metric', 'Value')
     names(nightlyHours) = c('Metric', 'Value')
-    output = rbind(output, production, nightlyHours)
+    temp = data.frame(rbind(production, nightlyHours))
+    output = if(!exists("output")){
+      output = temp
+    } else {
+      rbind(output, temp)
+    }
   }
   output
 }
