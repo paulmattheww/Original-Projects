@@ -9,7 +9,8 @@ Sub BuildRecountSheetsWave1()
             Sheets("Formatting Template").Range("A1:M50").Copy
             ws.Range("A1:M50").PasteSpecial xlPasteFormats
             Sheets("Formatting Template").Columns("A:M").Copy
-            'ws.Columns("A:M").PasteSpecial xlColumnWidths
+            ws.Columns("A:M").PasteSpecial Paste:=xlPasteColumnWidths
+            Sheets("Formatting Template").Range("1:50").RowHeight = ws.Range("1:50").RowHeight
         End If
     Next ws
     
