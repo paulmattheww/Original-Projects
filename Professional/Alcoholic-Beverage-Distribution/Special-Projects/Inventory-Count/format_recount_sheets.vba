@@ -1,4 +1,4 @@
-Sub BuildRecountSheetsWave1()
+Sub BuildRecountSheetsWave()
     Dim ws As Worksheet, rg As Range, wave As Integer
     
     For Each ws In ActiveWorkbook.Worksheets
@@ -10,8 +10,11 @@ Sub BuildRecountSheetsWave1()
             ws.Range("A1:M50").PasteSpecial xlPasteFormats
             Sheets("Formatting Template").Columns("A:M").Copy
             ws.Columns("A:M").PasteSpecial Paste:=xlPasteColumnWidths
-            Sheets("Formatting Template").Range("1:50").RowHeight = ws.Range("1:50").RowHeight
+            Sheets("Formatting Template").Range("1:50").RowHeight.Copy
+            ws.Range("1:50").RowHeight.PasteSpecial Paste:=xlPasteRowHeights
         End If
     Next ws
     
 End Sub
+
+
