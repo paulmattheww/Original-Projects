@@ -8,7 +8,8 @@ Sub BuildRecountSheetsWave1()
             ws.Cells(1, 1) = "Recount_" & ws.Name
             Sheets("Formatting Template").Range("A1:M50").Copy
             ws.Range("A1:M50").PasteSpecial xlPasteFormats
-            
+            Sheets("Formatting Template").Columns("A:M").Copy
+            'ws.Columns("A:M").PasteSpecial xlColumnWidths
         End If
     Next ws
     
