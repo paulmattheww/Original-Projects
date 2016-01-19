@@ -18,10 +18,13 @@ Sub BuildRecountSheetsWave1()
             Sheets("Formatting Template").Range("G16:N16").Copy
             ws.Range("G16:N16").PasteSpecial xlPasteAll
             ws.PageSetup.Orientation = xlLandscape
+            ws.Rows(17).PageBreak = xlPageBreakManual
+            ws.Columns("O").PageBreak = xlPageBreakManual
         End If
     Next ws
     
 End Sub
+
 
 
 
