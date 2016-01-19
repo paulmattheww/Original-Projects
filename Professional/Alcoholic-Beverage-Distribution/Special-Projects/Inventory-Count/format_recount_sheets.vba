@@ -10,20 +10,29 @@ Sub BuildRecountSheetsWave1()
             ws.Range("A1:N50").PasteSpecial xlPasteFormats
             Sheets("Formatting Template").Columns("A:N").Copy
             ws.Columns("A:N").PasteSpecial Paste:=xlPasteColumnWidths
-            ws.Rows("3:15").RowHeight = 36
+            ws.Rows("3:16").RowHeight = 33
             Sheets("Formatting Template").Range("A2:N2").Copy
             ws.Range("A2:N2").PasteSpecial xlPasteValuesAndNumberFormats
             Sheets("Formatting Template").Range("G1:N1").Copy
             ws.Range("G1:N1").PasteSpecial xlPasteAll
             Sheets("Formatting Template").Range("G16:N16").Copy
             ws.Range("G16:N16").PasteSpecial xlPasteAll
+            ws.ResetAllPageBreaks
             ws.PageSetup.Orientation = xlLandscape
+            ws.PageSetup.PaperSize = xlPaperA4
+            ws.PageSetup.LeftMargin = Application.InchesToPoints(0.2)
+            ws.PageSetup.RightMargin = Application.InchesToPoints(0.2)
+            ws.PageSetup.HeaderMargin = Application.InchesToPoints(0.2)
+            ws.PageSetup.FooterMargin = Application.InchesToPoints(0.2)
             ws.Rows(17).PageBreak = xlPageBreakManual
-            ws.Columns("O").PageBreak = xlPageBreakManual
+            ws.Columns("P").PageBreak = xlPageBreakManual
         End If
     Next ws
     
 End Sub
+
+
+
 
 
 
