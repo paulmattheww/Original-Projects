@@ -1,4 +1,4 @@
-Sub BuildRecountSheetsWave1()
+Sub FormatRecountSheets()
     Dim ws As Worksheet, rg As Range, wave As Integer, i As Long
 
     For Each ws In ActiveWorkbook.Worksheets
@@ -29,7 +29,14 @@ Sub BuildRecountSheetsWave1()
         End If
     Next ws
     
+    ActiveWorkbook.ExportAsFixedFormat Type:=xlTypePDF, _
+        Filename:="C:\Users\pmwash\Desktop\R_files\Data Output\Recount_Sheets_Wave1.pdf", _
+        OpenAfterPublish:=True
+    
 End Sub
+
+
+
 
 
 
