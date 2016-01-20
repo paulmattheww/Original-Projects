@@ -25,29 +25,27 @@ substrLeft <- function(x, n){
   substr(x, 1, n)
 }
 
-
 print('Beer returns & spoilage. Based on RCT1 and mtc1 files in AS400.')
 setwd("C:/Users/pmwash/Desktop/R_files/Data Input")
 
-
-print('Be sure to re-run both queries. Gain access to query before replacing these file objects in memory.')
+print('Be sure to re-run both queries. Gain access to query before replacing these file objects in memory')
+timeframe = 'Jan. 1 2015 to Dec. 31 2015'
 rct = read.csv('rct1.csv', header=TRUE, na.strings='NA')
 mtc = read.csv('mtc1.csv', header=TRUE, na.strings=NA) #make sure change file name to mtc
 headTail(rct)
 headTail(mtc)
 
-print('Create dates in both files.')
+print('Create dates in both files')
 rct$DATE = as400Date(rct$X.RDATE)
 rct$MONTH = month(rct$DATE, label=TRUE)
 mtc$DATE = as400Date(mtc$X.MIVDT)
 mtc$MONTH = month(mtc$DATE, label=TRUE)
 
-print('Create cases from cases & bottles using QPC.')
+print('Create cases from cases & bottles using QPC in the RTC file')
 cs = rct$X.RCASE
 btl = rct$X.RBOTT
 qpc = rct$X.RQPC
-rct$CASES = cs + round(btl/qpc, 2)
-
+rct$CASES.UNSALEABLE = cs + round(btl/qpc, 2)
 
 print('Put in Class codes.')
 class = rct$X.RCLA.
@@ -68,92 +66,157 @@ rct$CLASS = ifelse(class==10, 'Liquor & Spirits',
                                                                                                               ifelse(class==88, 'Beer & Cider', 
                                                                                                                      ifelse(class>=90, 'Non-Alcoholic', 'XXXXXXXXXXXXX'))))))))))))))))
 
-print('Put in Cases for mtcfile.')
+print('Cases for MTC; divide bottles (Q sold) by QPC')
 qpc = mtc$X.MQPC 
 qty = mtc$X.MQTYS
-code = mtc$X.MQTY.
-btl = ifelse(code=='B', qty, 0)
-btlCs = round(as.numeric(btl)/as.numeric(qpc), 2)
-cs = ifelse(code=='C', as.numeric(qty), 0)
-mtc$CASES = btlCs + cs
-
+mtc$CASES = round(qty / qpc, 2)
 
 print('Check names.')
 headTail(mtc);headTail(rct)
 
-#################################################################################################
 
-print('Sum inventory adjustments/dumps, returns, & total unsaleables by Supplier;
-      Units are CASES derived from case + bottle using QPC.')
-supplierItem = aggregate(CASES ~ PSUPPL + X.SSUNM + X.RPRD. + X.RDESC + CLASS, data=rct, FUN=sum)#inventory adjustments
-supplierItem = arrange(supplierItem, CASES)
-names(supplierItem) = c('SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS', 'CASES.DUMPED.ADJUSTED') 
+print('###################')
+print('Start report below')
+print('###################')
+
+
+
+print('Gather data by supplier and item, also returning class and supplier number;
+      RCT will be total unsaleables; aggregate by supplier')
+supplierItem = aggregate(CASES.UNSALEABLE ~ PSUPPL + X.SSUNM + X.RPRD. + X.RDESC + CLASS, data=rct, FUN=sum)#total unsaleables
+supplierItem = arrange(supplierItem, CASES.UNSALEABLE)
+names(supplierItem) = c('SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS', 'CASES.UNSALEABLE') 
 headTail(supplierItem)
 
-print('Sum cases returned from mtc1 by MINP product number.')
+print('MTC will be total returns; aggregate by product number')
 itemReturns = aggregate(CASES ~ X.MINP., data=mtc, FUN=sum)
 itemReturns = arrange(itemReturns, CASES)
 names(itemReturns) = c('ITEM.NO', 'CASES.RETURNED')
 headTail(itemReturns)
 
+print('Merge the two above files to get unsaleable by supplier and item;
+      This is where we subtract returns (MCT) from total unsaleables (RCT)')
 supplierItem = merge(supplierItem, itemReturns, by='ITEM.NO')
-supplierItem$TOT.CASES.UNSALEABLE = supplierItem$CASES.DUMPED.ADJUSTED + supplierItem$CASES.RETURNED
-supplierItem = arrange(supplierItem, TOT.CASES.UNSALEABLE)
-print('Here is the BY ITEM moneyshot.')
+supplierItem$CASES.DUMPED = supplierItem$CASES.UNSALEABLE - supplierItem$CASES.RETURNED
+supplierItem = arrange(supplierItem, CASES.UNSALEABLE)
 headTail(supplierItem)
 
 
-print('Now get info by supplier only.')
-suppliers = aggregate(CASES.DUMPED.ADJUSTED ~ SUPPLIER + SUPPLIER.NO + CLASS, data=supplierItem, FUN=sum)
-suppliers = arrange(suppliers, CASES.DUMPED.ADJUSTED)
-headTail(suppliers)
+print('Gather by supplier only;
+      Independently gather dumped, returned and unsaleable & validate with previous data')
+dumped = aggregate(CASES.DUMPED ~ SUPPLIER + SUPPLIER.NO, data=supplierItem, FUN=sum)
+dumped = arrange(dumped, CASES.DUMPED)
+headTail(dumped)
 
 returned = aggregate(CASES.RETURNED ~ SUPPLIER + SUPPLIER.NO, data=supplierItem, FUN=sum)
 returned = arrange(returned, CASES.RETURNED)
 headTail(returned)
 
-suppliers = merge(suppliers, returned, by=c('SUPPLIER', 'SUPPLIER.NO'))
-suppliers$TOT.CASES.UNSALEABLE = suppliers$CASES.DUMPED.ADJUSTED + suppliers$CASES.RETURNED
-suppliers = arrange(suppliers, TOT.CASES.UNSALEABLE)
-print('Here is the BY SUPPLIER moneyshot')
+unsaleable = aggregate(CASES.UNSALEABLE ~ SUPPLIER + SUPPLIER.NO, data=supplierItem, FUN=sum)
+unsaleable = arrange(unsaleable, CASES.UNSALEABLE)
+headTail(unsaleable)
+
+
+print('Merge together dumped, returned & unsaleable by supplier & supplier number')
+suppliers = merge(dumped, returned, by=c('SUPPLIER', 'SUPPLIER.NO'))
+suppliers = merge(suppliers, unsaleable, by=c('SUPPLIER', 'SUPPLIER.NO'))
+names(suppliers) = c('SUPPLIER.NO', 'SUPPLIER', 'CASES.DUMPED', 'CASES.RETURNED', 'CASES.UNSALEABLE')
+suppliers = arrange(suppliers, CASES.UNSALEABLE)
 headTail(suppliers)
 
-print('Check returns by customer number XMCUS.')
+
+headTail(mtc)
+
+
+print('Gather case returns by customer number (X.MCUS)
+      Read in customer names (value) and customer ID (key) 
+      Merge to give them names')
 customers = aggregate(CASES ~ X.MCUS., data=mtc, FUN=sum)
 names(customers) = c('CUSTOMER.NO', 'CASES.RETURNED')
 setwd("C:/Users/pmwash/Desktop/R_files/Data Input")
 cust = read.csv('active_customers_dive.csv', header=TRUE)
 names(cust) = c('CUSTOMER', 'CUSTOMER.NO')
+
 customers = merge(cust, customers, by='CUSTOMER.NO')
 customers = arrange(customers, CASES.RETURNED)
-headTail(customers)
+head(customers, 50)
 
-print('Generate a time series of returns and inventory adjustments/dumps.')
+
+print('Generate time series of returns from MTC file')
 monthReturns = aggregate(CASES ~ MONTH + X.MINP., data=mtc, FUN=sum)
 names(monthReturns) = c('MONTH', 'ITEM.NO', 'CASES.RETURNED')
 headTail(monthReturns)
 
-monthAdjustments = aggregate(CASES ~ MONTH + PSUPPL + X.SSUNM + X.RPRD. + X.RDESC + CLASS, data=rct, FUN=sum)
-names(monthAdjustments) = c('MONTH', 'SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS', 'CASES.DUMPED.ADJUSTED')
-headTail(monthAdjustments)
+monthUnsaleable = aggregate(CASES.UNSALEABLE ~ MONTH + PSUPPL + X.SSUNM + X.RPRD. + X.RDESC + CLASS, data=rct, FUN=sum)
+names(monthUnsaleable) = c('MONTH', 'SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS', 'CASES.UNSALEABLE')
+headTail(monthUnsaleable)
 
-monthly = merge(monthAdjustments, monthReturns, by=c('ITEM.NO', 'MONTH'))
-monthly$TOT.CASES.UNSALEABLE = monthly$CASES.DUMPED.ADJUSTED + monthly$CASES.RETURNED
-headTail(monthly)
-
-monthly = arrange(monthly, TOT.CASES.UNSALEABLE)
+monthly = merge(monthUnsaleable, monthReturns, by=c('ITEM.NO', 'MONTH'))
+monthly$CASES.DUMPED = monthly$CASES.UNSALEABLE - monthly$CASES.RETURNED
+monthly = arrange(monthly, CASES.UNSALEABLE)
 monthly = arrange(monthly, MONTH)
 headTail(monthly)
 
 
-#################################################################################################
 
 
-print('Create a plot of time series for suppliers.')
-g = ggplot(data=monthly, aes(x=MONTH, y=abs(TOT.CASES.UNSALEABLE)))
+print('##############')
+print('START GRAPHICS')
+print('##############')
+
+
+
+
+print('Create a plot of time series for worst 10 suppliers for unsaleables')
+top10SupplierUnsaleables = head(suppliers, 10)$SUPPLIER
+top10SupplierUnsaleables
+top10Month = monthly[monthly$SUPPLIER.NO %in% c('ST. LOUIS BREWING 803933/803934',
+                                            'THE WINE GROUP           802301',
+                                            'OSKAR BLUES BREWERY      800054',
+                                            'FOUNDERS BREWING COMPANY 805204',
+                                            'KOOCHENVAGNER\'S BREWING  803091',
+                                            'LEFT HAND BREWING COMPNY 805220',
+                                            'SKA/MBB                 805251',
+                                            'TWO BROTHERS BREWING CO  800038',
+                                            'ROGUE ALES AND SPIRITS   805244',
+                                            '4 HANDS BREWING CO, LLC 804291'),]
+top10Month$SUPPLIER.NO = factor(top10Month$SUPPLIER.NO, levels=c('ST. LOUIS BREWING 803933/803934',
+                                                                 'THE WINE GROUP           802301',
+                                                                 'OSKAR BLUES BREWERY      800054',
+                                                                 'FOUNDERS BREWING COMPANY 805204',
+                                                                 'KOOCHENVAGNER\'S BREWING  803091',
+                                                                 'LEFT HAND BREWING COMPNY 805220',
+                                                                 'SKA/MBB                 805251',
+                                                                 'TWO BROTHERS BREWING CO  800038',
+                                                                 'ROGUE ALES AND SPIRITS   805244',
+                                                                 '4 HANDS BREWING CO, LLC 804291'))
+
+g = ggplot(data=top10Month, aes(x=MONTH, y=abs(CASES.UNSALEABLE)))
 g + geom_bar(stat='sum', aes(group=MONTH, fill=SUPPLIER.NO)) +
-  theme(legend.position='none') + 
-  labs(title='Total Unsaleable, Colored by Supplier', x='Month', y='Total Cases Unsaleable')
+  theme(legend.position='none') + facet_wrap(~SUPPLIER.NO, ncol=2, scales="free_y") +
+  labs(title='Total Cases Unsaleable, Top 10 Suppliers In Order', x='Month', y='Total Cases Unsaleable')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 print('First gather customer/monthly data. Create a plot of time series for Customers.')
