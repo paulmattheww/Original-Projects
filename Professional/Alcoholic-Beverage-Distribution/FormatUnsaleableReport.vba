@@ -1,3 +1,4 @@
+
 Sub FormatUnsaleablesReport()
     Dim ws As Worksheet
     
@@ -10,7 +11,9 @@ Sub FormatUnsaleablesReport()
         Selection.AutoFilter
         ActiveWindow.DisplayGridlines = False
         ws.Columns("A:ZZ").AutoFit
+        ws.Rows("1:999999").RowHeight = 11.5
     Next ws
     
 End Sub
+
 
