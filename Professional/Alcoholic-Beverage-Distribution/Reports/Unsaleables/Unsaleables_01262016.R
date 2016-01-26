@@ -273,24 +273,24 @@ top10SupplierUnsaleables = head(suppliers, 10)$SUPPLIER
 top10SupplierUnsaleables
 top10Month = monthly[monthly$SUPPLIER.NO %in% c('ST. LOUIS BREWING 803933/803934',
                                             'THE WINE GROUP           802301',
-                                            'OSKAR BLUES BREWERY      800054',
                                             'FOUNDERS BREWING COMPANY 805204',
                                             'KOOCHENVAGNER\'S BREWING  803091',
+                                            'OSKAR BLUES BREWERY      800054',
                                             'LEFT HAND BREWING COMPNY 805220',
-                                            'SKA/MBB                 805251',
-                                            'TWO BROTHERS BREWING CO  800038',
                                             'ROGUE ALES AND SPIRITS   805244',
-                                            '4 HANDS BREWING CO, LLC 804291'),]
+                                            'TWO BROTHERS BREWING CO  800038',
+                                            'CONSTELLATION BRANDS     800606',
+                                            'GREAT DIVIDE BREWING     802821'),]
 top10Month$SUPPLIER.NO = factor(top10Month$SUPPLIER.NO, levels=c('ST. LOUIS BREWING 803933/803934',
                                                                  'THE WINE GROUP           802301',
-                                                                 'OSKAR BLUES BREWERY      800054',
                                                                  'FOUNDERS BREWING COMPANY 805204',
                                                                  'KOOCHENVAGNER\'S BREWING  803091',
+                                                                 'OSKAR BLUES BREWERY      800054',
                                                                  'LEFT HAND BREWING COMPNY 805220',
-                                                                 'SKA/MBB                 805251',
-                                                                 'TWO BROTHERS BREWING CO  800038',
                                                                  'ROGUE ALES AND SPIRITS   805244',
-                                                                 '4 HANDS BREWING CO, LLC 804291'))
+                                                                 'TWO BROTHERS BREWING CO  800038',
+                                                                 'CONSTELLATION BRANDS     800606',
+                                                                 'GREAT DIVIDE BREWING     802821'))
 
 g = ggplot(data=top10Month, aes(x=MONTH, y=abs(CASES.UNSALEABLE)))
 g + geom_bar(stat='sum', aes(group=MONTH, fill=SUPPLIER.NO)) +
@@ -321,18 +321,41 @@ g + geom_bar(stat='sum', aes(group=MONTH, fill=SUPPLIER.NO)) +
 
 
 print('First gather customer/monthly data. Create a plot of time series for Customers.')
+head(customers, 10)
 custMonth = aggregate(CASES ~ X.MCUS. + MONTH, data=mtc, FUN=sum)
 names(custMonth) = c('CUSTOMER.NO', 'MONTH', 'CASES.RETURNED')
+custMonth = custMonth %>% filter(CUSTOMER.NO==11944 | CUSTOMER.NO==100487 |
+                                   CUSTOMER.NO==11368 | CUSTOMER.NO==7456 |
+                                   CUSTOMER.NO==1801 | CUSTOMER.NO==3009142 |
+                                   CUSTOMER.NO==3009706 | CUSTOMER.NO==10382 |
+                                   CUSTOMER.NO==12047 | CUSTOMER.NO==8571)#MAKE SURE THEY MATCH
+
 setwd("C:/Users/pmwash/Desktop/R_files/Data Input")
 cust = read.csv('active_customers_dive.csv', header=TRUE)
 names(cust) = c('CUSTOMER', 'CUSTOMER.NO')
-custMonth = merge(cust, custMonth, by='CUSTOMER.NO')
-custMonth = arrange(custMonth, CASES.RETURNED)
-headTail(custMonth)
-g = ggplot(data=custMonth, aes(x=MONTH, y=abs(CASES.RETURNED)))
-g + geom_bar(stat='sum', aes(group=MONTH, fill=CUSTOMER)) +
-  theme(legend.position='none') + 
-  labs(title='Total Returns, Colored by Customer', x='Month', y='Total Cases Unsaleable')
+custMonth = merge(cust, custMonth, by='CUSTOMER.NO', all.y=TRUE)
+custMonth = arrange(custMonth, MONTH, CASES.RETURNED)
+head(custMonth)
+custMonth$CUSTOMER = factor(custMonth$CUSTOMER, 
+                            levels=c('FRIAR TUCK BEVERAGE O FALLON (11944)',
+                                     'LUKAS LIQUOR SUPERSTORE (1004877)',
+                                     ' FRIAR TUCK BEVERAGE CRESTWOOD (11368)',
+                                     'LUKAS LIQUOR SUPERSTORE (7456)',
+                                     'TOTAL WINE #1801 TWN & CNTRY (1801)',
+                                     'CRAFT BEER CELLAR COLUMBIA (3009142)',
+                                     'DIERBERGS #25 LAKEVIEW POINTE (3009706)',
+                                     'RANDALLS WINE & SPIRITS (10382)',
+                                     'MOLLYS 808 GEYER           OOB (12047)',
+                                     'SHOP N SAVE #1834 HARVESTER (8571)'))
+
+
+
+  headTail(custMonth)
+  g = ggplot(data=custMonth, aes(x=MONTH, y=abs(CASES.RETURNED)))
+  g + geom_bar(stat='sum', aes(group=MONTH, fill=CUSTOMER)) +
+    theme(legend.position='none') + 
+    facet_wrap(~CUSTOMER, ncol=2, scales='free') +
+    labs(title='Total Returns, Top 10 Customers for Returns In Order', x='Month', y='Total Cases Unsaleable')
 
 ##
 print('Look at case unsaleables.')
@@ -341,18 +364,4 @@ g + geom_jitter(aes(group=MONTH))
 
 
 #################################################################################################
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
