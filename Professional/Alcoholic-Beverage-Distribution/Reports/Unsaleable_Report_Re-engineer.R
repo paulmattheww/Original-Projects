@@ -173,12 +173,12 @@ headTail(supplierItem)
 supplierItem$COST.DUMPED = supplierItem$COST.UNSALEABLE - supplierItem$COST.RETURNED
 supplierItem$CASES.DUMPED = supplierItem$CASES.UNSALEABLE - supplierItem$CASES.RETURNED
 supplierItem = supplierItem %>% arrange(desc(COST.UNSALEABLE))
-supplierItem = supplierItem[,c('ITEM.NO', 'SUPPLIER.NO', 'SUPPLIER', 'DESCRIPTION', 'CLASS',
+supplierItem = supplierItem[,c('ITEM.NO', 'DESCRIPTION', 'SUPPLIER.NO', 'SUPPLIER', 'CLASS',
                                'CASES.UNSALEABLE', 'CASES.RETURNED', 'CASES.DUMPED',
                                'COST.UNSALEABLE', 'COST.RETURNED', 'COST.DUMPED')]
 headTail(supplierItem)
 
-
+#########
 schlafly = filter(supplierItem, SUPPLIER.NO==218)
 sum(schlafly$COST.UNSALEABLE)
 sum(schlafly$CASES.UNSALEABLE)
@@ -186,6 +186,7 @@ sum(schlafly$CASES.UNSALEABLE)
 koochen = filter(supplierItem, SUPPLIER.NO==309)
 sum(koochen$COST.UNSALEABLE)
 sum(koochen$CASES.UNSALEABLE)
+############
 
 print('Gather by supplier only;
       Independently gather dumped, returned and unsaleable & validate with previous data')
@@ -204,7 +205,7 @@ suppliers = merge(suppliers, dumpedCost, by=c('SUPPLIER', 'SUPPLIER.NO'))
 suppliers = merge(suppliers, returnedCost, by=c('SUPPLIER', 'SUPPLIER.NO'))
 suppliers = merge(suppliers, unsaleableCost, by=c('SUPPLIER', 'SUPPLIER.NO'))
 
-suppliers = arrange(suppliers, COST.UNSALEABLE)
+suppliers = arrange(suppliers, desc(COST.UNSALEABLE))
 headTail(suppliers)
 ##########
 
@@ -214,13 +215,15 @@ print('Gather case returns by customer number (X.MCUS)
       Merge to give them names')
 customers = aggregate(CASES ~ X.MCUS., data=mtc, FUN=sum)
 names(customers) = c('CUSTOMER.NO', 'CASES.RETURNED')
+
+print('If need be, update active customer dive')
 setwd("C:/Users/pmwash/Desktop/R_files/Data Input")
 cust = read.csv('active_customers_dive.csv', header=TRUE)
 names(cust) = c('CUSTOMER', 'CUSTOMER.NO')
-customers = merge(cust, customers, by='CUSTOMER.NO')
+customers = merge(cust, customers, by='CUSTOMER.NO', all.y=TRUE)
 customers$CASES.RETURNED = customers$CASES.RETURNED*(-1)
 customers = arrange(customers, desc(CASES.RETURNED))
-head(customers, 50)
+head(customers, 100)
 
 
 print('Generate time series of returns from MTC file')
