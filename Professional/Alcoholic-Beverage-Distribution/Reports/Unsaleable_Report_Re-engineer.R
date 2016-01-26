@@ -25,20 +25,17 @@ substrLeft <- function(x, n){
   substr(x, 1, n)
 }
 
-print('Returns & Spoilage: pwmtc1 & pwrct1 & pwcurrcost by house')
+print('Returns & Spoilage: pwmtc1 & pwrct1 by house')
 setwd("C:/Users/pmwash/Desktop/R_files/Data Input")
 
 print('Be sure to re-run both queries. Gain access to query before replacing these file objects in memory')
 timeframe = 'Jan. 1 2015 to Dec. 31 2015'
 rct = read.csv('rct1.csv', header=TRUE, na.strings=NA)
 mtc = read.csv('mtc1.csv', header=TRUE, na.strings=NA)
-print('Be sure to pull the correct HOUSE for cost')
-itemCost = read.csv('pwcurrcost.csv', header=TRUE) #change by house
 headTail(rct)
 headTail(mtc)
-headTail(itemCost)
 
-print('Create dates in both files')
+print('Create dates & months in both files')
 rct$DATE = as400Date(rct$X.RDATE)
 rct$MONTH = month(rct$DATE, label=TRUE)
 mtc$DATE = as400Date(mtc$X.MIVDT)
@@ -69,6 +66,13 @@ rct$CLASS = ifelse(class==10, 'Liquor & Spirits',
                                                                                                               ifelse(class==88, 'Beer & Cider', 
                                                                                                                      ifelse(class>=90, 'Non-Alcoholic', 'XXXXXXXXXXXXX'))))))))))))))))
 
+
+cs = rct$X.RCASE
+fob = rct$X.RFOB
+qpc = rct$X.RQPC
+btl = rct$X.RBOTT
+rct$EXT.COST = (cs * fob) + (fob/qpc*btl) #### BUG FIXED
+
 print('Cases for MTC; divide bottles (Q sold) by QPC')
 qpc = mtc$X.MQPC 
 qty = mtc$X.MQTYS
@@ -82,42 +86,106 @@ print('###################')
 print('Start report below')
 print('###################')
 
-
-
 print('Gather data by supplier and item, also returning class and supplier number;
       RCT will be total unsaleables; aggregate by supplier')
 supplierItem = aggregate(CASES.UNSALEABLE ~ PSUPPL + X.SSUNM + X.RPRD. + X.RDESC + CLASS, data=rct, FUN=sum)#total unsaleables
 names(supplierItem) = c('SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS', 'CASES.UNSALEABLE') 
 
+############ 
+print("check koochenvagner for cases unsaleable")
+koochen = filter(supplierItem, SUPPLIER==309)
+sum(koochen$CASES.UNSALEABLE)#matches Kathie's
+rm(koochen)
+############
+
 print('MTC will be total returns; aggregate by product number')
 itemReturns = aggregate(CASES ~ X.MINP., data=mtc, FUN=sum)
 names(itemReturns) = c('ITEM.NO', 'CASES.RETURNED')
 
-print('Below numbers were weird, so cost data was added in')
-#######  
-#print('MTC will also have returns by cost and price; gather here')
-#supplierItemCost = aggregate(X.MCOS. ~ X.MINP., data=mtc, FUN=sum)
-#names(supplierItemCost) = c('ITEM.NO', 'COST.RETURNED')#verify
+print('Aggregate X.MCOS. by item number from MTC to obtain cost returned')
+supplierItemCost = aggregate(X.MCOS. ~ X.MINP., data=mtc, FUN=sum)
+names(supplierItemCost) = c('ITEM.NO', 'COST.RETURNED')#verify
 
-#supplierItemReturnsCost = aggregate(X.RFOB ~ X.RPRD., data=rct, FUN=sum)#verify that X.RFOB is correct cost to pull
-#names(supplierItemReturnsCost) = c('ITEM.NO', 'COST.UNSALEABLE')
-########
+supplierItemUnsaleableCost = aggregate(EXT.COST ~ PSUPPL + X.SSUNM + X.RPRD. + X.RDESC + CLASS, data=rct, FUN=sum)
+names(supplierItemUnsaleableCost) = c('SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS', 'COST.UNSALEABLE')
+supplierItemUnsaleableCost = supplierItemUnsaleableCost %>% arrange(COST.UNSALEABLE)
+############ 
+print("check koochenvagner for ext cost")
+koochen = filter(supplierItemUnsaleableCost, SUPPLIER==309)
+sum(koochen$COST.UNSALEABLE)#matches Kathie's
+rm(koochen)
+############ 
 
 
 print('Merge the two above files to get unsaleable by supplier and item;
       This is where we subtract returns (MTC) from total unsaleables (RCT)')
-supplierItem = merge(supplierItem, itemReturns, by='ITEM.NO')
+supplierItem = merge(supplierItem, itemReturns, by='ITEM.NO', all=TRUE)
+returned = supplierItem$CASES.RETURNED
+supplierItem$CASES.RETURNED = ifelse(is.na(returned), 0, returned)
+############ 
+print("check koochenvagner for ext cost")
+koochen = filter(supplierItem, SUPPLIER==309)
+head(koochen)
+sum(koochen$CASES.UNSALEABLE)#matches Kathie's
+sum(koochen$CASES.RETURNED)#matches Kathie's
+rm(koochen)
+############ 
+supplierItem = merge(supplierItem, supplierItemCost, by='ITEM.NO', all=TRUE)
+############ 
+print("check koochenvagner for ext cost")
+check = merge(supplierItem, supplierItemCost, by='ITEM.NO', all=TRUE)
+koochen = filter(check, SUPPLIER==309)
+sum(koochen$CASES.UNSALEABLE)#matches Kathie's
+sum(koochen$CASES.RETURNED)
+rm(koochen)
+############ 
+supplierItem = merge(supplierItem, supplierItemUnsaleableCost, by=c('SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS'), all=TRUE)
+costReturned = supplierItem$COST.RETURNED
+supplierItem$COST.RETURNED = ifelse(is.na(costReturned), 0, costReturned)
+############ 
+print("check koochenvagner for ext cost")
+check = merge(supplierItem, supplierItemUnsaleableCost, by=c('SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS'), all=TRUE)
+koochen = filter(check, SUPPLIER==309)
+sum(koochen$CASES.UNSALEABLE)#matches Kathie's
+sum(koochen$CASES.RETURNED)
+rm(koochen)
+############ 
+names(supplierItem) = c('SUPPLIER.NO', 'SUPPLIER', 'ITEM.NO', 'DESCRIPTION',
+                        'CLASS', 'CASES.UNSALEABLE', 'CASES.RETURNED', 'COST.RETURNED',
+                        'COST.UNSALEABLE')
+supplierItem = supplierItem %>% arrange(COST.UNSALEABLE)
+head(supplierItem, 100)
+############ 
+print("check koochenvagner for ext cost")
+koochen = filter(supplierItem, SUPPLIER.NO==309)
+sum(koochen$COST.UNSALEABLE)#matches Kathie's
+sum(koochen$CASES.UNSALEABLE)#matches Kathie's
+sum(koochen$COST.RETURNED)
+sum(koochen$CASES.RETURNED)
+rm(koochen)
+############
+supplierItem$COST.RETURNED =  supplierItem$COST.RETURNED*(-1)
+supplierItem$COST.UNSALEABLE = supplierItem$COST.UNSALEABLE*(-1)
+supplierItem$CASES.UNSALEABLE = supplierItem$CASES.UNSALEABLE*(-1)
+supplierItem$CASES.RETURNED = supplierItem$CASES.RETURNED*(-1)
+headTail(supplierItem)
+
+supplierItem$COST.DUMPED = supplierItem$COST.UNSALEABLE - supplierItem$COST.RETURNED
 supplierItem$CASES.DUMPED = supplierItem$CASES.UNSALEABLE - supplierItem$CASES.RETURNED
-supplierItem = merge(supplierItem, itemCost, by='ITEM.NO')
-supplierItem$COST.UNSALEABLE = round(supplierItem$CASES.UNSALEABLE * supplierItem$LAIDINCOST)
-supplierItem$COST.DUMPED = round(supplierItem$CASES.DUMPED * supplierItem$LAIDINCOST)
-supplierItem$COST.RETURNED = round(supplierItem$CASES.RETURNED * supplierItem$LAIDINCOST)
-#itemSupplierCost = supplierItem[,c('ITEM.NO', 'SUPPLIER', 'LAIDINCOST')] #save for later
-supplierItem = supplierItem[,-9]
-supplierItem = arrange(supplierItem, COST.UNSALEABLE)
+supplierItem = supplierItem %>% arrange(desc(COST.UNSALEABLE))
+supplierItem = supplierItem[,c('ITEM.NO', 'SUPPLIER.NO', 'SUPPLIER', 'DESCRIPTION', 'CLASS',
+                               'CASES.UNSALEABLE', 'CASES.RETURNED', 'CASES.DUMPED',
+                               'COST.UNSALEABLE', 'COST.RETURNED', 'COST.DUMPED')]
 headTail(supplierItem)
 
 
+schlafly = filter(supplierItem, SUPPLIER.NO==218)
+sum(schlafly$COST.UNSALEABLE)
+sum(schlafly$CASES.UNSALEABLE)
+
+koochen = filter(supplierItem, SUPPLIER.NO==309)
+sum(koochen$COST.UNSALEABLE)
+sum(koochen$CASES.UNSALEABLE)
 
 print('Gather by supplier only;
       Independently gather dumped, returned and unsaleable & validate with previous data')
@@ -138,7 +206,7 @@ suppliers = merge(suppliers, unsaleableCost, by=c('SUPPLIER', 'SUPPLIER.NO'))
 
 suppliers = arrange(suppliers, COST.UNSALEABLE)
 headTail(suppliers)
-
+##########
 
 
 print('Gather case returns by customer number (X.MCUS)
@@ -149,24 +217,26 @@ names(customers) = c('CUSTOMER.NO', 'CASES.RETURNED')
 setwd("C:/Users/pmwash/Desktop/R_files/Data Input")
 cust = read.csv('active_customers_dive.csv', header=TRUE)
 names(cust) = c('CUSTOMER', 'CUSTOMER.NO')
-
 customers = merge(cust, customers, by='CUSTOMER.NO')
-customers = arrange(customers, CASES.RETURNED)
+customers$CASES.RETURNED = customers$CASES.RETURNED*(-1)
+customers = arrange(customers, desc(CASES.RETURNED))
 head(customers, 50)
 
 
 print('Generate time series of returns from MTC file')
 monthReturns = aggregate(CASES ~ MONTH + X.MINP., data=mtc, FUN=sum)
 names(monthReturns) = c('MONTH', 'ITEM.NO', 'CASES.RETURNED')
+monthReturns$CASES.RETURNED = monthReturns$CASES.RETURNED*(-1)
 headTail(monthReturns)
 
 monthUnsaleable = aggregate(CASES.UNSALEABLE ~ MONTH + PSUPPL + X.SSUNM + X.RPRD. + X.RDESC + CLASS, data=rct, FUN=sum)
 names(monthUnsaleable) = c('MONTH', 'SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS', 'CASES.UNSALEABLE')
+monthUnsaleable$CASES.UNSALEABLE = monthUnsaleable$CASES.UNSALEABLE*(-1)
 headTail(monthUnsaleable)
 
 monthly = merge(monthUnsaleable, monthReturns, by=c('ITEM.NO', 'MONTH'))
 monthly$CASES.DUMPED = monthly$CASES.UNSALEABLE - monthly$CASES.RETURNED
-monthly = arrange(monthly, CASES.UNSALEABLE)
+monthly = arrange(monthly, desc(CASES.UNSALEABLE))
 monthly = arrange(monthly, MONTH)
 headTail(monthly)
 
