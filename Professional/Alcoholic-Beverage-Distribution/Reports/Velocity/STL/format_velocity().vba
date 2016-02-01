@@ -12,7 +12,7 @@ Sub format_velocity()
         ws.Columns("A:ZZ").AutoFit
         ws.Rows("1:999999").RowHeight = 11.5
         ws.Rows("1").Font.Bold = True
-        ws.Rows("1").Select
+        ws.Range("B2").Select
         ActiveWindow.FreezePanes = True
         Application.ErrorCheckingOptions.BackgroundChecking = False
         If ws.Name <> "Line Summary" Then
@@ -22,6 +22,3 @@ Sub format_velocity()
     Next ws
     
 End Sub
-
-
-
