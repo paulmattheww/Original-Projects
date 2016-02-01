@@ -12,6 +12,7 @@ Sub FormatUnsaleablesReport()
         ActiveWindow.DisplayGridlines = False
         ws.Columns("A:ZZ").AutoFit
         ws.Rows("1:999999").RowHeight = 11.5
+        Application.ErrorCheckingOptions.BackgroundChecking = False
     Next ws
     
 End Sub
