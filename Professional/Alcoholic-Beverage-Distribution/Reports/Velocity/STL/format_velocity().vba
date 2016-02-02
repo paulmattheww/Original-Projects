@@ -16,9 +16,10 @@ Sub format_velocity()
         ActiveWindow.FreezePanes = True
         Application.ErrorCheckingOptions.BackgroundChecking = False
         If ws.Name <> "Line Summary" Then
-            ws.Columns("D").Interior.Color = vbGreen
-            ws.Columns("D").Font.Bold = True
+            ws.Columns("C").Interior.Color = vbGreen
+            ws.Columns("C").Font.Bold = True
         End If
     Next ws
     
 End Sub
+
