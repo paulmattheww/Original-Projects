@@ -184,18 +184,27 @@ lineSummary = arrange(lineSummary, -CASE.SALES)
 lineSummary
 
 
-print('Print results to a file for distribution')
+print('Print results to a file for distribution. Make sure file name is equal to the file output name before running moveRenameFile()')
 setwd("C:/Users/pmwash/Desktop/R_Files/Data Output")
-write.xlsx(lineSummary, file='velocity_stl_01012016-01312016.xlsx', sheetName='Line Summary')
-write.xlsx(a.btl.line, file='velocity_stl_01012016-01312016.xlsx', sheetName='A Rack', append=TRUE)
-write.xlsx(b.btl.line, file='velocity_stl_01012016-01312016.xlsx', sheetName='B Rack', append=TRUE)
-write.xlsx(c.line, append=TRUE, file='velocity_stl_01012016-01312016.xlsx', sheetName='C Line')
-write.xlsx(d.line, append=TRUE, file='velocity_stl_01012016-01312016.xlsx', sheetName='D Line')
-write.xlsx(e.line, append=TRUE, file='velocity_stl_01012016-01312016.xlsx', sheetName='E Line')
-write.xlsx(f.line, append=TRUE, file='velocity_stl_01012016-01312016.xlsx', sheetName='F Line')
-write.xlsx(g.line, append=TRUE, file='velocity_stl_01012016-01312016.xlsx', sheetName='G Line')
-write.xlsx(keg.room, append=TRUE, file='velocity_stl_01012016-01312016.xlsx', sheetName='Keg Room')
-write.xlsx(wine.room, append=TRUE, file='velocity_stl_01012016-01312016.xlsx', sheetName='Wine Room')
-write.xlsx(oddball, append=TRUE, file='velocity_stl_01012016-01312016.xlsx', sheetName='Oddball')
+file_name = 'velocity_stl_01012016-01312016.xlsx'
+write.xlsx(lineSummary, file=file_name, sheetName='Line Summary')
+write.xlsx(a.btl.line, file=file_name, sheetName='A Rack', append=TRUE)
+write.xlsx(b.btl.line, file=file_name, sheetName='B Rack', append=TRUE)
+write.xlsx(c.line, append=TRUE, file=file_name, sheetName='C Line')
+write.xlsx(d.line, append=TRUE, file=file_name, sheetName='D Line')
+write.xlsx(e.line, append=TRUE, file=file_name, sheetName='E Line')
+write.xlsx(f.line, append=TRUE, file=file_name, sheetName='F Line')
+write.xlsx(g.line, append=TRUE, file=file_name, sheetName='G Line')
+write.xlsx(keg.room, append=TRUE, file=file_name, sheetName='Keg Room')
+write.xlsx(wine.room, append=TRUE, file=file_name, sheetName='Wine Room')
+write.xlsx(oddball, append=TRUE, file=file_name, sheetName='Oddball')
+
+
+print('STOP and run the VBA code to format the report for distribution. Make sure file output name matches the final branch of the file paths below')
+
+
+from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
+to = paste0("//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Velocity/", file_name, sep='')
+moveRenameFile(from, to)
 
 
