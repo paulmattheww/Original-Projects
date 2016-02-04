@@ -6,10 +6,8 @@ Sub FormatCompleoVelocity()
     Set ws = Worksheets(1)
     
     ws.Rows("1:3").Delete Shift:=xlUp
-    ws.Rows("1:1").Select
-    ActiveWindow.FreezePanes = True
     
-    ws.Range("A1:I1000000").Sort Header:=xlYes, Key1:=Range("A1"), Order1:=xlDescending
+    ' ws.Range("A1:I1000000").Sort Header:=xlYes, Key1:=Range("A1"), Order1:=xlDescending
     
     Dim Arr As Variant
     Dim i As Long
@@ -21,8 +19,8 @@ Sub FormatCompleoVelocity()
         End If
     Next i
     
-    ws.Columns("A:ZZ").Font.Size = 9
-    ws.Columns("A:ZZ").AutoFit
+    ws.Columns("A:H").Font.Size = 9
+    ws.Columns("A:H").AutoFit
     ActiveWindow.DisplayGridlines = False
     
     Set Rng = Range("A1:H1000000")
@@ -31,7 +29,7 @@ Sub FormatCompleoVelocity()
     Rng.Sort Key1:=cell, Order1:=xlDescending, Header:=xlYes
     
     ws.Columns(1).NumberFormat = "####"
-    ws.Columns(3).NumberFormat = "####.##"
+    ws.Columns(3).NumberFormat = "####"
     ws.Columns(4).NumberFormat = "####"
     ws.Columns(5).NumberFormat = "####"
     ws.Columns(6).NumberFormat = "####"
@@ -39,5 +37,8 @@ Sub FormatCompleoVelocity()
     ws.Columns(8).NumberFormat = "####"
     
 End Sub
+
+
+
 
 
