@@ -30,5 +30,14 @@ Sub FormatCompleoVelocity()
     
     Rng.Sort Key1:=cell, Order1:=xlDescending, Header:=xlYes
     
+    ws.Columns(1).NumberFormat = "####"
+    ws.Columns(3).NumberFormat = "####.##"
+    ws.Columns(4).NumberFormat = "####"
+    ws.Columns(5).NumberFormat = "####"
+    ws.Columns(6).NumberFormat = "####"
+    ws.Columns(7).NumberFormat = "####"
+    ws.Columns(8).NumberFormat = "####"
+    
 End Sub
+
 
