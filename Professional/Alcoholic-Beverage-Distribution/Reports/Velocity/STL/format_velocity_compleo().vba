@@ -5,7 +5,7 @@ Sub FormatCompleoVelocity()
     
     Set ws = Worksheets(1)
     
-    ws.Rows("1:3").Delete Shift:=xlUp
+    ws.Rows("1:3").Delete shift:=xlUp
 
     Dim Arr As Variant
     Dim i As Long
@@ -41,4 +41,3 @@ Sub FormatCompleoVelocity()
     
     
 End Sub
-
