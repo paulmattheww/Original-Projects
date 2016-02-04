@@ -1,5 +1,6 @@
 Sub FormatCompleoVelocity()
     '' Be sure that you have separated bottles and cases BEFORE running
+    '' Be sure there are three rows before header row
     Dim ws As Worksheet, Rng As Range, cell As Range
     
     Set ws = Worksheets(1)
@@ -21,8 +22,6 @@ Sub FormatCompleoVelocity()
     Next i
       
 End Sub
-
-
 
 
 
