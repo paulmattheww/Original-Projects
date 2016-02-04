@@ -6,9 +6,7 @@ Sub FormatCompleoVelocity()
     Set ws = Worksheets(1)
     
     ws.Rows("1:3").Delete Shift:=xlUp
-    
-    ' ws.Range("A1:I1000000").Sort Header:=xlYes, Key1:=Range("A1"), Order1:=xlDescending
-    
+
     Dim Arr As Variant
     Dim i As Long
     Arr = Array(xlCellTypeBlanks, xlCellTypeConstants)
@@ -36,7 +34,10 @@ Sub FormatCompleoVelocity()
     ws.Columns(7).NumberFormat = "####"
     ws.Columns(8).NumberFormat = "####"
     
+    ws.Columns("I:XFD").EntireColumn.Delete
+    
 End Sub
+
 
 
 
