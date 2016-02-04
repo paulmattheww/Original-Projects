@@ -36,6 +36,10 @@ Sub FormatCompleoVelocity()
     
     ws.Columns("I:XFD").EntireColumn.Delete
     
+    '' Dim LastRow As Long
+    '' Set LastRow = ws.Cells(.Rows.Count, "A").End(xlUp).Row
+    
+    
 End Sub
 
 
