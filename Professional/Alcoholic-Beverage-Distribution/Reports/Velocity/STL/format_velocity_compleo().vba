@@ -20,8 +20,15 @@ Sub FormatCompleoVelocity()
             Rng.EntireRow.Delete
         End If
     Next i
-      
+    
+    ws.Columns("A:ZZ").Font.Size = 9
+    ws.Columns("A:ZZ").AutoFit
+    ActiveWindow.DisplayGridlines = False
+    
+    Set Rng = Range("A1:H1000000")
+    Set cell = Range("C1")
+    
+    Rng.Sort Key1:=cell, Order1:=xlDescending, Header:=xlYes
+    
 End Sub
-
-
 
