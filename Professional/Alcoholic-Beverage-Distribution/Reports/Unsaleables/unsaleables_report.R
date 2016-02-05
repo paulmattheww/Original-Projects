@@ -24,12 +24,16 @@ substrRight <- function(x, n){
 substrLeft <- function(x, n){
   substr(x, 1, n)
 }
+countUnique <- function(x) {
+  length(unique(x))
+}
+
 
 print('Returns & Spoilage: pwmtc1 & pwrct1 by house')
 setwd("C:/Users/pmwash/Desktop/R_files/Data Input")
 
 print('Be sure to re-run both queries. Gain access to query before replacing these file objects in memory')
-timeframe = 'Jan. 1 2015 to Dec. 31 2015'
+timeFrame = 'Jan. 1 2015 to Dec. 31 2015'
 rct = read.csv('rct1.csv', header=TRUE, na.strings=NA)
 mtc = read.csv('mtc1.csv', header=TRUE, na.strings=NA)
 headTail(rct)
@@ -82,6 +86,14 @@ print('Check names.')
 headTail(mtc);headTail(rct)
 
 
+# ############
+# print('Investigate duplicates in raw files')
+# length(mtc$X.MIVND)
+# x = ifelse(duplicated(mtc[,c(1:6)])==TRUE, 1, 0)
+# sum(x) #all clear
+# ############
+
+
 print('###################')
 print('Start report below')
 print('###################')
@@ -89,14 +101,15 @@ print('###################')
 print('Gather data by supplier and item, also returning class and supplier number;
       RCT will be total unsaleables; aggregate by supplier')
 supplierItem = aggregate(CASES.UNSALEABLE ~ PSUPPL + X.SSUNM + X.RPRD. + X.RDESC + CLASS, data=rct, FUN=sum)#total unsaleables
-names(supplierItem) = c('SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS', 'CASES.UNSALEABLE') 
+names(supplierItem) = c('SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS', 'CASES.UNSALEABLE')
+supplierItem = supplierItem %>% arrange(ITEM.NO)
 
-############ 
-print("check koochenvagner for cases unsaleable")
-koochen = filter(supplierItem, SUPPLIER==309)
-sum(koochen$CASES.UNSALEABLE)#matches Kathie's
-rm(koochen)
-############
+# ############ 
+# print("check koochenvagner for cases unsaleable")
+# koochen = filter(supplierItem, SUPPLIER==309)
+# sum(koochen$CASES.UNSALEABLE)#matches Kathie's
+# rm(koochen)
+# ############
 
 print('MTC will be total returns; aggregate by product number')
 itemReturns = aggregate(CASES ~ X.MINP., data=mtc, FUN=sum)
@@ -109,47 +122,94 @@ names(supplierItemCost) = c('ITEM.NO', 'COST.RETURNED')#verify
 supplierItemUnsaleableCost = aggregate(EXT.COST ~ PSUPPL + X.SSUNM + X.RPRD. + X.RDESC + CLASS, data=rct, FUN=sum)
 names(supplierItemUnsaleableCost) = c('SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS', 'COST.UNSALEABLE')
 supplierItemUnsaleableCost = supplierItemUnsaleableCost %>% arrange(COST.UNSALEABLE)
-############ 
-print("check koochenvagner for ext cost")
-koochen = filter(supplierItemUnsaleableCost, SUPPLIER==309)
-sum(koochen$COST.UNSALEABLE)#matches Kathie's
-rm(koochen)
-############ 
 
+# ############ 
+# print("check koochenvagner for ext cost")
+# koochen = filter(supplierItemUnsaleableCost, SUPPLIER==309)
+# sum(koochen$COST.UNSALEABLE)#matches Kathie's
+# rm(koochen)
+print('check sum of returned')
+before = sum(itemReturns$CASES.RETURNED, na.rm=T) #matches expected
+before2 = sum(mtc$CASES, na.rm=T)
+# ############ 
 
 print('Merge the two above files to get unsaleable by supplier and item;
       This is where we subtract returns (MTC) from total unsaleables (RCT)')
 supplierItem = merge(supplierItem, itemReturns, by='ITEM.NO', all=TRUE)
-returned = supplierItem$CASES.RETURNED
+supplierItem = supplierItem[!duplicated(supplierItem$ITEM.NO),]
+after = sum(supplierItem$CASES.RETURNED, na.rm=T)
+paste('Passes first test: ', before == after)
+paste('Passes second test: ', after == before2)
+
+###########
+print('Debug find out why after the merge CASES.RETURNED goes up')
+after = sum(supplierItem$CASES.RETURNED, na.rm=T)
+paste0('Before there were ', before, ' and from mtc1 it was ', before2, ' cases returned now there are ', after)
+after = after*-1
+before = before *-1
+after-before
+check = supplierItem %>% filter(abs(CASES.RETURNED) < 400 & abs(CASES.RETURNED) > 100) %>% arrange(CASES.RETURNED)
+check
+rm(check, before, after, before2)
+itemsOnly = arrange(itemReturns, CASES.RETURNED)
+itemsOnly = itemsOnly$CASES.RETURNED
+itemsSupp = arrange(supplierItem, CASES.RETURNED)
+itemsSupp = itemsSupp$CASES.RETURNED
+itemsSupp == itemsOnly
+
+check = merge(itemReturns, supplierItem, by='ITEM.NO')
+headTail(check)
+sum(check$CASES.RETURNED.y)
+sum(check$CASES.RETURNED.x)
+
+check = merge(supplierItem, itemReturns, by='ITEM.NO', all.y=TRUE)
+sum(check$CASES.RETURNED, na.rm=T)
+headTail(check)
+####BUG FIXED
+print('DUPLICATES MADE IT INTO THE DATASET BECAUSE DESCRIPTIONS WERE DIFFERENT BETWEEN EQUAL ITEM NUMBERS')
+poop = supplierItem[!duplicated(supplierItem$ITEM.NO),]
+sum(supplierItem$CASES.RETURNED, na.rm=T)
+sum(poop$CASES.RETURNED, na.rm=T)
+poop = arrange(poop, ITEM.NO)
+poop
+###########
+
+
 supplierItem$CASES.RETURNED = ifelse(is.na(returned), 0, returned)
-############ 
-print("check koochenvagner for ext cost")
-koochen = filter(supplierItem, SUPPLIER==309)
-head(koochen)
-sum(koochen$CASES.UNSALEABLE)#matches Kathie's
-sum(koochen$CASES.RETURNED)#matches Kathie's
-rm(koochen)
-############ 
+
+# ############ 
+# print("check koochenvagner for ext cost")
+# koochen = filter(supplierItem, SUPPLIER==309)
+# head(koochen)
+# sum(koochen$CASES.UNSALEABLE)#matches Kathie's
+# sum(koochen$CASES.RETURNED)#matches Kathie's
+# rm(koochen)
+# ############ 
+
 supplierItem = merge(supplierItem, supplierItemCost, by='ITEM.NO', all=TRUE)
-############ 
-print("check koochenvagner for ext cost")
-check = merge(supplierItem, supplierItemCost, by='ITEM.NO', all=TRUE)
-koochen = filter(check, SUPPLIER==309)
-sum(koochen$CASES.UNSALEABLE)#matches Kathie's
-sum(koochen$CASES.RETURNED)
-rm(koochen)
-############ 
+
+# ############ 
+# print("check koochenvagner for ext cost")
+# check = merge(supplierItem, supplierItemCost, by='ITEM.NO', all=TRUE)
+# koochen = filter(check, SUPPLIER==309)
+# sum(koochen$CASES.UNSALEABLE)#matches Kathie's
+# sum(koochen$CASES.RETURNED)
+# rm(koochen)
+# ############ 
+
 supplierItem = merge(supplierItem, supplierItemUnsaleableCost, by=c('SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS'), all=TRUE)
 costReturned = supplierItem$COST.RETURNED
 supplierItem$COST.RETURNED = ifelse(is.na(costReturned), 0, costReturned)
-############ 
-print("check koochenvagner for ext cost")
-check = merge(supplierItem, supplierItemUnsaleableCost, by=c('SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS'), all=TRUE)
-koochen = filter(check, SUPPLIER==309)
-sum(koochen$CASES.UNSALEABLE)#matches Kathie's
-sum(koochen$CASES.RETURNED)
-rm(koochen)
-############ 
+
+# ############ 
+# print("check koochenvagner for ext cost")
+# check = merge(supplierItem, supplierItemUnsaleableCost, by=c('SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS'), all=TRUE)
+# koochen = filter(check, SUPPLIER==309)
+# sum(koochen$CASES.UNSALEABLE)#matches Kathie's
+# sum(koochen$CASES.RETURNED)
+# rm(koochen)
+# ############ 
+
 names(supplierItem) = c('SUPPLIER.NO', 'SUPPLIER', 'ITEM.NO', 'DESCRIPTION',
                         'CLASS', 'CASES.UNSALEABLE', 'CASES.RETURNED', 'COST.RETURNED',
                         'COST.UNSALEABLE')
@@ -176,17 +236,27 @@ supplierItem = supplierItem %>% arrange(desc(COST.UNSALEABLE))
 supplierItem = supplierItem[,c('ITEM.NO', 'DESCRIPTION', 'SUPPLIER.NO', 'SUPPLIER', 'CLASS',
                                'CASES.UNSALEABLE', 'CASES.RETURNED', 'CASES.DUMPED',
                                'COST.UNSALEABLE', 'COST.RETURNED', 'COST.DUMPED')]
-headTail(supplierItem)
 
-#########
-schlafly = filter(supplierItem, SUPPLIER.NO==218)
-sum(schlafly$COST.UNSALEABLE)
-sum(schlafly$CASES.UNSALEABLE)
+# ######### 
+# print('Check for duplicates in supplierItem table')
+# original = (sum(mtc$CASES))*-1
+# before = sum(supplierItem$CASES.RETURNED)
+# check = supplierItem[!duplicated(supplierItem[,c(1:11)]),]
+# after = sum(check$CASES.RETURNED, na.rm=T)
+# paste('Originally supplierItem had', before, 'cases returned. After the duplicate removal there was', after, 
+#       'cases returned. Move forward =', before == after)
+# paste('Originally there were', original, 'cases returned from the pwmtc1 query (raw)')
+# #########
 
-koochen = filter(supplierItem, SUPPLIER.NO==309)
-sum(koochen$COST.UNSALEABLE)
-sum(koochen$CASES.UNSALEABLE)
-############
+# #########
+# schlafly = filter(supplierItem, SUPPLIER.NO==218)
+# sum(schlafly$COST.UNSALEABLE)
+# sum(schlafly$CASES.UNSALEABLE)
+# 
+# koochen = filter(supplierItem, SUPPLIER.NO==309)
+# sum(koochen$COST.UNSALEABLE)
+# sum(koochen$CASES.UNSALEABLE)
+# ############
 
 print('Gather by supplier only;
       Independently gather dumped, returned and unsaleable & validate with previous data')
@@ -207,7 +277,8 @@ suppliers = merge(suppliers, unsaleableCost, by=c('SUPPLIER', 'SUPPLIER.NO'))
 
 suppliers = arrange(suppliers, desc(COST.UNSALEABLE))
 headTail(suppliers)
-##########
+print('Check totals still match')
+sum(suppliers$CASES.RETURNED)
 
 
 print('Gather case returns by customer number (X.MCUS)
@@ -223,8 +294,18 @@ names(cust) = c('CUSTOMER', 'CUSTOMER.NO')
 customers = merge(cust, customers, by='CUSTOMER.NO', all.y=TRUE)
 customers$CASES.RETURNED = customers$CASES.RETURNED*(-1)
 customers = arrange(customers, desc(CASES.RETURNED))
-head(customers, 100)
+head(customers, 20)
+sum(customers$CASES.RETURNED)
 
+print('Check that count of unique ecustomeres is the same')
+custFile = unique(cust$CUSTOMER.NO)
+custMtc = unique(mtc$X.MCUS.)
+intersection = countUnique(intersect(custFile, custMtc))
+custFile = countUnique(cust$CUSTOMER.NO)
+custMtc = countUnique(mtc$X.MCUS.)
+paste('Out of', custFile, 'unique customers represented in the customer file', intersection, 
+      'customers were in both files, MTC1 and the customer file for the time period', timeFrame, 
+      '. Should you update the customer file?')
 
 print('Generate time series of returns from MTC file')
 monthReturns = aggregate(CASES ~ MONTH + X.MINP., data=mtc, FUN=sum)
@@ -244,7 +325,7 @@ monthly = arrange(monthly, MONTH)
 headTail(monthly)
 
 
-
+##########################
 print('#############')
 print('Print results')
 print('#############')
@@ -254,11 +335,27 @@ print('#############')
 print('Write items and suppliers to Excel document; make sure to delete old ones first
       The formatting macro is on GitHub')
 setwd("C:/Users/pmwash/Desktop/R_files/Data Output")
-write.xlsx(supplierItem, file='returned_dumped_2015.xlsx', sheet='Item Summary')
-write.xlsx(suppliers, file='returned_dumped_2015.xlsx', sheet='Supplier Summary', append=TRUE)
-write.xlsx(customers, file='returned_dumped_2015.xlsx', sheet='Customer Returns Summary', append=TRUE)
-write.xlsx(monthly, file='returned_dumped_2015.xlsx', sheet='Time Series', append=TRUE)
+file_name = 'returned_dumped_2015_all_Missouri.xlsx'
+write.xlsx(supplierItem, file=file_name, sheet='Item Summary')
+write.xlsx(suppliers, file=file_name, sheet='Supplier Summary', append=TRUE)
+write.xlsx(customers, file=file_name, sheet='Customer Returns Summary', append=TRUE)
+write.xlsx(monthly, file=file_name, sheet='Time Series', append=TRUE)
 
+
+
+print('STOP and run the VBA code to format the report for distribution. Make sure file output name matches the final branch of the file paths below')
+
+
+print('Below is for KC moving files')
+from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
+to = paste0('M:/Operations Intelligence/Monthly Reports/Unsaleables/', file_name, sep='')
+moveRenameFile(from, to)
+
+
+print('Below is for STL moving files')
+from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
+to = paste0("//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Unsaleables/", file_name, sep='')
+moveRenameFile(from, to)
 
 
 print('##############')
@@ -364,4 +461,18 @@ g + geom_jitter(aes(group=MONTH))
 
 
 #################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
