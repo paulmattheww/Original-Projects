@@ -302,28 +302,60 @@ paste('Cases returned:       ', one,
 
 
 
-print('Generate time series of returns from MTC file')
-monthReturns = aggregate(CASES ~ MONTH + X.MINP., data=mtc, FUN=sum)
-names(monthReturns) = c('MONTH', 'ITEM.NO', 'CASES.RETURNED')
-monthReturns$CASES.RETURNED = monthReturns$CASES.RETURNED*(-1)
-headTail(monthReturns)
 
-monthUnsaleable = aggregate(CASES.UNSALEABLE ~ MONTH + PSUPPL + X.SSUNM + X.RPRD. + X.RDESC + CLASS, data=rct, FUN=sum)
-names(monthUnsaleable) = c('MONTH', 'SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS', 'CASES.UNSALEABLE')
-monthUnsaleable$CASES.UNSALEABLE = monthUnsaleable$CASES.UNSALEABLE*(-1)
-headTail(monthUnsaleable)
+print('Break out time series for Jill/Mitch')
+monthly_returns = aggregate(CASES ~ MONTH + X.MINP., data=mtc, FUN=function(x) round(sum(x), 2))
+names(monthly_returns) = c('MONTH', 'ITEM.NO', 'CASES.RETURNED')
+monthly_returns$CASES.RETURNED = monthly_returns$CASES.RETURNED*(-1)
 
-monthly = merge(monthUnsaleable, monthReturns, by=c('ITEM.NO', 'MONTH'))
-monthly$CASES.DUMPED = monthly$CASES.UNSALEABLE - monthly$CASES.RETURNED
-monthly = arrange(monthly, desc(CASES.UNSALEABLE))
-monthly = arrange(monthly, MONTH)
-headTail(monthly)
+gather_columns = aggregate(CASES.UNSALEABLE ~ MONTH + PSUPPL + X.SSUNM + X.RPRD. + X.RDESC + CLASS, data=rct, FUN=length)
+names(gather_columns) = c('MONTH', 'SUPPLIER', 'SUPPLIER.NO', 'ITEM.NO', 'DESCRIPTION', 'CLASS', 'NUMBER.INCIDENTS')
+
+print('Merge 1')
+monthly_accumulator = merge(gather_columns, monthly_returns, by=c('ITEM.NO', 'MONTH'), all.y=TRUE)
+names(monthly_accumulator) = c('ITEM.NO', 'MONTH', 'SUPPLIER.NO', 'SUPPLIER', 
+                              'DESCRIPTION', 'CLASS', 'NUMBER.INCIDENTS', 'CASES.RETURNED')
 
 
-##########################
+
+monthly_unsaleable = aggregate(CASES.UNSALEABLE ~ MONTH + X.RPRD., data=rct, FUN=function(x) round(sum(x), 2))
+names(monthly_unsaleable) = c('MONTH', 'ITEM.NO', 'CASES.UNSALEABLE')
+monthly_unsaleable$CASES.UNSALEABLE = monthly_unsaleable$CASES.UNSALEABLE*(-1)
+headTail(monthly_unsaleable)
+
+print('Merge 2')
+monthly_accumulator = merge(monthly_accumulator, monthly_unsaleable, by=c('ITEM.NO', 'MONTH'), all=TRUE)
+monthly_accumulator$CASES.DUMPED = monthly_accumulator$CASES.UNSALEABLE - monthly_accumulator$CASES.RETURNED
+
+
+
+
+print('Sanity check')
+headTail(monthly_accumulator)
+one = sum(monthly_accumulator$CASES.RETURNED, na.rm=T)
+two = sum(monthly_accumulator$CASES.UNSALEABLE, na.rm=T)
+paste('Cases returned:       ', one, 
+      '                   ',
+      'Cost unsaleable:        ', two)
+
+
+
+
+
+
+
+
+
+
 print('#############')
 print('Print results')
 print('#############')
+
+
+
+
+
+
 
 
 
@@ -332,9 +364,9 @@ print('Write items and suppliers to Excel document; make sure to delete old ones
 setwd("C:/Users/pmwash/Desktop/R_files/Data Output")
 file_name = 'returned_dumped_2015_all_Missouri.xlsx'
 write.xlsx(accumulator, file=file_name, sheet='Item Summary')
-write.xlsx(suppliers, file=file_name, sheet='Supplier Summary', append=TRUE)
+write.xlsx(supplier_accumulator, file=file_name, sheet='Supplier Summary', append=TRUE)
 write.xlsx(customers, file=file_name, sheet='Customer Returns Summary', append=TRUE)
-write.xlsx(monthly, file=file_name, sheet='Time Series', append=TRUE)
+write.xlsx(monthly_accumulator, file=file_name, sheet='Time Series', append=TRUE)
 
 
 
