@@ -161,6 +161,7 @@ wine.room = cases %>% filter(CASE.LINE=='WINE ROOM') %>% arrange(desc(CASE.SALES
 a.btl.line = btls %>% filter(BTL.LINE=='A-RACK') %>% arrange(desc(BTL.SALES), ITEM.NUMBER)
 b.btl.line = btls %>% filter(BTL.LINE=='B-RACK') %>% arrange(desc(BTL.SALES), ITEM.NUMBER)
 keg.room = cases %>% filter(IS.KEG=='YES') %>% arrange(desc(CASE.SALES), ITEM.NUMBER)
+oddballBtls = btls %>% filter(BTL.LINE=='ODDBALL') %>% arrange(desc(BTL.SALES), ITEM.NUMBER)
 
 
 
@@ -195,6 +196,7 @@ file_name = 'velocity_kc_01012016-01312016.xlsx'
 write.xlsx(lineSummary, file=file_name, sheetName='Line Summary')
 write.xlsx(a.btl.line, file=file_name, sheetName='A Rack', append=TRUE)
 write.xlsx(b.btl.line, file=file_name, sheetName='B Rack', append=TRUE)
+write.xlsx(oddballBtls, file=file_name, sheetName='Oddball Bottles', append=TRUE)
 write.xlsx(c100.line, append=TRUE, file=file_name, sheetName='C-100')
 write.xlsx(c200.line, append=TRUE, file=file_name, sheetName='C-200')
 write.xlsx(c300.line, append=TRUE, file=file_name, sheetName='C-300')
