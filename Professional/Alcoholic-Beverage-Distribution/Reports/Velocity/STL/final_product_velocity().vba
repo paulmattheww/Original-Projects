@@ -15,6 +15,7 @@ Sub format_velocity()
         ws.Range("A2").Select
         ActiveWindow.FreezePanes = True
         Application.ErrorCheckingOptions.BackgroundChecking = False
+        ws.Cells.Replace "#N/A", "", xlWhole
         If ws.Name <> "Line Summary" Then
             ws.Columns("C").Interior.Color = vbGreen
             ws.Columns("C").Font.Bold = True
