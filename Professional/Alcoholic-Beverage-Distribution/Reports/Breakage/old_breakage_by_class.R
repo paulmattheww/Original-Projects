@@ -1,20 +1,5 @@
-print('Read in STL data; do not change column headers')
-breaks = read.csv("C:/Users/pmwash/Desktop/R_Files/Data Input/PWBREAKAGE_STL.csv", header=TRUE) 
-
-# print('Read in KC data, do not chagen column headers')
-# breaks = read.csv("C:/Users/pmwash/Desktop/R_Files/Data Input/PWBREAKAGE_KC.csv", header=TRUE) 
-
-
-breakage_by_class = function(pwbreakage) {
-  print('This function takes in the pwbreakage query for dates you specify')
-  
-  headTail = function(x) {
-    h = head(x)
-    t = tail(x)
-    print(h)
-    print(t)
-  }
-  
+breakage_by_class = function(breaks) {
+  #pwbreakage query is input
   print('Isolate counts of incidents by type')
   spread1 = aggregate(CASES ~ X.RCODE + PTYPE, data=breaks, FUN=length)
   spread1 = data.frame(spread1)
@@ -31,8 +16,8 @@ breakage_by_class = function(pwbreakage) {
   names(invert1) = c('Sales (2)', 'Warehouse (3)', 'Driver (4)', 'Columbia (5)')
   invert1 = invert1[-c(1) ,]
   print(invert1)
-  print('------------------------------------------------------')
   
+  print('------------------------------------------------------')
   
   print('Isolate breakage by EXT COST')
   breaks$EXT_COST = as.numeric(as.character(breaks$EXT_COST))
@@ -51,8 +36,8 @@ breakage_by_class = function(pwbreakage) {
   names(invert2) = c("Liquor (1)", "Wine (2)", "Beer (3)", "Non-Alc (4)")
   invert2 = invert2[-c(1) ,]
   print(invert2)
-  print('------------------------------------------------------')
   
+  print('------------------------------------------------------')
   
   spread3 = aggregate(as.numeric(as.character(CASES)) ~ X.RCODE, data=breaks, FUN=sum)
   spread3 = data.frame(spread3)
@@ -73,9 +58,4 @@ breakage_by_class = function(pwbreakage) {
   print('------------------------------------------------------')
   
   print('Compare these to Excel; copy/paste into *_breakage_2016.xlsx')
-  
 }
-
-
-
-breakage_by_class(breaks)
