@@ -6,6 +6,7 @@ library(dplyr)
 library(ggplot2)
 library(reshape2)
 library(scales)
+library(xlsx)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 
 
@@ -280,6 +281,10 @@ calculate_percent_sales = function(master_dataset, ytd_sales, current_sales) {
 print('Check to be sure these are correctly associated')
 ytd_sales = tail(sales$YTD.Sales, 1)
 current_sales = tail(sales$Sales, 1)
+
+ytd_sales_lastyr = head(tail(sales$YTD.Sales, 13), 1)
+current_sales_lastyr = head(tail(sales$Sales, 13), 1)
+
 master_dataset = calculate_percent_sales(master_dataset, ytd_sales, current_sales)
 
 
@@ -312,11 +317,14 @@ create_monthly_summary = function(master_dataset, month='January', year=2016) {
   cost_warehouse = aggregate(Warehouse.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   cost_driver = aggregate(Driver.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   cost_columbia = aggregate(Columbia.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
-  
 
   cost_warehouse_ytd = aggregate(YTD.Warehouse.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   cost_driver_ytd = aggregate(YTD.Driver.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   cost_columbia_ytd = aggregate(YTD.Columbia.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
+  
+  incidents_warehouse = aggregate(Warehouse.Incidents ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
+  incidents_driver = aggregate(Driver.Incidents ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
+  incidents_columbia = aggregate(Columbia.Incidents ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   
   
   summary = merge(cost_warehouse, cost_driver, by=c('Month', 'Year'))
@@ -326,17 +334,20 @@ create_monthly_summary = function(master_dataset, month='January', year=2016) {
   summary = merge(summary, cost_driver_ytd, by=c('Month', 'Year'))
   summary = merge(summary, cost_columbia_ytd, by=c('Month', 'Year'))
   
+  summary = merge(summary, incidents_warehouse, by=c('Month', 'Year'))
+  summary = merge(summary, incidents_driver, by=c('Month', 'Year'))
+  summary = merge(summary, incidents_columbia, by=c('Month', 'Year'))
+  
+  
   t_summary = data.frame(t(summary))
   names(t_summary) = c(paste0(month, '-', lastyr), paste0(month, '-', year))
   t_summary = t_summary[-c(1:2) , c(2,1)]
   
   t_summary = cbind(rownames(t_summary), t_summary)
   rownames(t_summary) = NULL
-  names(t_summary) = c('', 'January-2016', 'January-2015')
+  names(t_summary) = c('', paste0(month, '-', year), paste0(month, '-', lastyr))
   
   
-  
-  #incidents =
   
   print(t_summary)
   
@@ -346,26 +357,42 @@ monthly_summary = create_monthly_summary(master_dataset)
 
 
 
-prepare_summary = function(supplier_for_summary, monthly_summary) {
+prepare_summary = function(supplier_for_summary, monthly_summary, current_sales, ytd_sales, current_sales_lastyr, ytd_sales_lastyr) {
   summary = rbind(supplier_for_summary, monthly_summary)
   summary[,3] = as.numeric(summary[,3])
   summary[,2] = as.numeric(summary[,2])
   
   summary$YOY.Percent.Change = round(((summary[,2] - summary[,3]) / summary[,3]), 4)
-  summary$Percent.Sales = summary[,2] / sales
-  summary$Percent.Sales.YTD =
+  
+  summary$Percent.Sales.TY.TM = round(summary[,2] / current_sales, 6)
+  summary$Percent.Sales.TY.YTD = round(summary[,2] / ytd_sales, 6)
+  summary[c(5:7), 5] = NA
+  summary[c(1:4), 6] = NA
+  
+  summary$Percent.Sales.LY.TM = round(summary[,3] / current_sales_lastyr, 6)
+  summary$Percent.Sales.LY.YTD = round(summary[,3] / ytd_sales, 6)
+  summary[c(5:7), 7] = NA
+  summary[c(1:4), 8] = NA  
+  
+  summary = summary[, c(1:2, 5:6, 3, 7:8, 4)]
+  summary[c(8:10), c(3,4,6,7)] = NA
+  
+  
   
   summary
 }
 
-prepare_summary(supplier_for_summary, monthly_summary)
+breakage_summary = prepare_summary(supplier_for_summary, monthly_summary, current_sales, ytd_sales, current_sales_lastyr, ytd_sales_lastyr)
 
 
 
-
-
-
-
+print('Write to a file for presentation and distribution')
+file_name = 'breakage_report_test.xlsx'
+write.xlsx(breakage_summary, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Summary')
+write.xlsx(warehouse_breakage, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Warehouse Breakage by Item', append=TRUE)
+write.xlsx(driver_breakage_item, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Driver Breakage by Item', append=TRUE)
+write.xlsx(master_dataset, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Master Dataset', append=TRUE)
+write.xlsx(breaks, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Raw Dataset', append=TRUE)
 
 
 
