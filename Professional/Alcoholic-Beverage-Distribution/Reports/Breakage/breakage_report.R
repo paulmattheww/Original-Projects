@@ -20,6 +20,7 @@ print('Read in STL data; do not change column headers')
 breaks = read.csv("C:/Users/pmwash/Desktop/R_Files/Data Input/PWBREAKAGE_STL.csv", header=TRUE) 
 sales = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/sales_history_for_breakage_report.csv', header=TRUE)
 supplier = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/suppbreaka.csv', header=TRUE)
+supplier_history = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/supplier_history_for_breakage.csv', header=TRUE)
 history = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/breakage_detailed_history.csv', header=TRUE)
 
 # print('Read in KC data, do not chagen column headers')
@@ -140,6 +141,22 @@ breakage_supplier_cost = function(supplier) {
 }
 
 supplier_breakage = breakage_supplier_cost(supplier)
+
+
+append_supplier_records = function(supplier_breakage, supplier_history, month='January', year=2016) {
+  old = supplier_history
+  new = data.frame(year, month, supplier_breakage)
+  names(new) = c('Year', 'Month', 'Supplier.Breakage')
+  appended = rbind(old, new)
+  
+  write.csv(appended, 'C:/Users/pmwash/Desktop/R_files/Data Output/save_as_____supplier_history_for_breakage.csv')
+  appended
+}
+
+supplier_breakage = append_supplier_records(supplier_breakage, supplier_history)
+#if goes wrong, use this to delete last row duplicated:
+#supplier_breakage = supplier_breakage[-c(14)]
+
 
 
 combine_incidents_cost = function(incident_summary, cost_summary, month='January', year=2016) {
@@ -267,39 +284,81 @@ master_dataset = calculate_percent_sales(master_dataset, ytd_sales, current_sale
 
 
 
+
+print('Summarize information for export to file')
+
+create_supplier_summary = function(supplier_breakage, month='January', year=2016) {
+  lastyr = year-1
+  s = supplier_breakage %>% filter(Month == month) %>% 
+    filter(Year == year | Year == lastyr)
+  previous = s[2,3]
+  current = s[1,3]
+  
+  s = data.frame('Supplier.Cost', current, previous)
+  names(s) = c('', paste0(month, '-', lastyr), paste0(month, '-', year))
+  s = s[, c(1, 3, 2)]
+  
+  s
+}
+
+supplier_for_summary = create_supplier_summary(supplier_breakage)
+
+
 create_monthly_summary = function(master_dataset, month='January', year=2016) {
   library(dplyr)
   lastyr = year-1
   this_month = master_dataset %>% filter(Month == month) %>% filter(Year == year | Year == lastyr)
   
-  cost_total = aggregate(Total.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   cost_warehouse = aggregate(Warehouse.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   cost_driver = aggregate(Driver.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   cost_columbia = aggregate(Columbia.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   
-  cost_total_ytd = aggregate(YTD.Total.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
+
   cost_warehouse_ytd = aggregate(YTD.Warehouse.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   cost_driver_ytd = aggregate(YTD.Driver.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   cost_columbia_ytd = aggregate(YTD.Columbia.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   
   
-  summary = merge(cost_total, cost_warehouse, by=c('Month', 'Year'))
-  summary = merge(summary, cost_driver, by=c('Month', 'Year'))
+  summary = merge(cost_warehouse, cost_driver, by=c('Month', 'Year'))
   summary = merge(summary, cost_columbia, by=c('Month', 'Year'))
   
-  #cost_columbia
+  summary = merge(summary, cost_warehouse_ytd, by=c('Month', 'Year'))
+  summary = merge(summary, cost_driver_ytd, by=c('Month', 'Year'))
+  summary = merge(summary, cost_columbia_ytd, by=c('Month', 'Year'))
   
-  #cost_sales
+  t_summary = data.frame(t(summary))
+  names(t_summary) = c(paste0(month, '-', lastyr), paste0(month, '-', year))
+  t_summary = t_summary[-c(1:2) , c(2,1)]
+  
+  t_summary = cbind(rownames(t_summary), t_summary)
+  rownames(t_summary) = NULL
+  names(t_summary) = c('', 'January-2016', 'January-2015')
   
   
-  #incidents = aggregate(Total.Incidents ~ )
   
-  print(summary)
+  #incidents =
+  
+  print(t_summary)
   
 }
 
-create_monthly_summary(master_dataset)
+monthly_summary = create_monthly_summary(master_dataset)
 
+
+
+prepare_summary = function(supplier_for_summary, monthly_summary) {
+  summary = rbind(supplier_for_summary, monthly_summary)
+  summary[,3] = as.numeric(summary[,3])
+  summary[,2] = as.numeric(summary[,2])
+  
+  summary$YOY.Percent.Change = round(((summary[,2] - summary[,3]) / summary[,3]), 4)
+  summary$Percent.Sales = summary[,2] / sales
+  summary$Percent.Sales.YTD =
+  
+  summary
+}
+
+prepare_summary(supplier_for_summary, monthly_summary)
 
 
 
