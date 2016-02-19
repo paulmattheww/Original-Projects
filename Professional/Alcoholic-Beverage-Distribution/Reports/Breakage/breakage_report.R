@@ -24,6 +24,10 @@ supplier = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/suppbreaka.csv',
 supplier_history = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/supplier_history_for_breakage.csv', header=TRUE)
 history = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/breakage_detailed_history.csv', header=TRUE)
 
+
+the_year = 2016
+the_month = 'January'
+
 # print('Read in KC data, do not chagen column headers')
 # breaks = read.csv("C:/Users/pmwash/Desktop/R_Files/Data Input/PWBREAKAGE_KC.csv", header=TRUE) 
 
@@ -357,7 +361,9 @@ monthly_summary = create_monthly_summary(master_dataset)
 
 
 
-prepare_summary = function(supplier_for_summary, monthly_summary, current_sales, ytd_sales, current_sales_lastyr, ytd_sales_lastyr) {
+prepare_summary = function(supplier_for_summary, monthly_summary, current_sales, ytd_sales, current_sales_lastyr, ytd_sales_lastyr, the_year, the_month) {
+  last_yr = the_year - 1
+  
   summary = rbind(supplier_for_summary, monthly_summary)
   summary[,3] = as.numeric(summary[,3])
   summary[,2] = as.numeric(summary[,2])
@@ -377,12 +383,43 @@ prepare_summary = function(supplier_for_summary, monthly_summary, current_sales,
   summary = summary[, c(1:2, 5:6, 3, 7:8, 4)]
   summary[c(8:10), c(3,4,6,7)] = NA
   
+  name = 'Total.Cost.STL' #'Total.KC'
+  ty_stl_bk = sum(summary[c(2:3), 2])
+  pct_sales_ty_tm = round(ty_stl_bk / current_sales, 6)
+  ly_stl_bk = sum(summary[c(2:3), 5])
+  pct_sales_ly_tm = round(ly_stl_bk / current_sales_lastyr, 6)
+  yoy_chg = round((ty_stl_bk - ly_stl_bk) / ly_stl_bk, 6)
   
+  row_one = c(name, ty_stl_bk, pct_sales_ty_tm, NA, ly_stl_bk, pct_sales_ly_tm, NA, yoy_chg)
+  
+  ytd_name = 'YTD.Total.Cost.STL' #'YTD.Total.KC'
+  ytd_ty_stl_bk = sum(summary[c(5:6), 2])
+  ytd_pct_sales_ty_tm = round(ytd_ty_stl_bk / ytd_sales, 6)
+  ytd_ly_stl_bk = sum(summary[c(5:6), 5])
+  ytd_pct_sales_ly_tm = round(ytd_ly_stl_bk / ytd_sales_lastyr, 6)
+  ytd_yoy_chg = round((ytd_ty_stl_bk - ytd_ly_stl_bk) / ytd_ly_stl_bk, 6)
+  
+  row_two = c(ytd_name, ytd_ty_stl_bk, ytd_pct_sales_ty_tm, NA, ytd_ly_stl_bk, ytd_pct_sales_ly_tm, NA, ytd_yoy_chg)
+  
+  for_append = rbind(row_one, row_two)
+  for_append = data.frame(for_append)
+  names(for_append) = c('x', paste0(the_month, '-', the_year), 'Percent.Sales.TY.TM', 'Percent.Sales.TY.YTD', 
+                        paste0(the_month, '-', last_yr), 'Percent.Sales.LY.TM', 'Percent.Sales.LY.YTD', 'YOY.Percent.Change')
+  names(summary) = c('x', paste0(the_month, '-', the_year), 'Percent.Sales.TY.TM', 'Percent.Sales.TY.YTD', 
+                        paste0(the_month, '-', last_yr), 'Percent.Sales.LY.TM', 'Percent.Sales.LY.YTD', 'YOY.Percent.Change')
+  
+  summary = rbind(summary, for_append)
+  rownames(summary) = NULL
+  
+  summary$x = factor(summary$x, levels=c('Total.Cost.STL', 'Warehouse.Cost', 'Driver.Cost', 'Columbia.Cost', 'Supplier.Cost', 
+                                         'YTD.Total.Cost.STL', 'YTD.Warehouse.Cost', 'YTD.Driver.Cost', 'YTD.Columbia.Cost', 
+                                         'Warehouse.Incidents', 'Driver.Incidents', 'Columbia.Incidents'))
+  summary = summary %>% arrange(x)
   
   summary
 }
 
-breakage_summary = prepare_summary(supplier_for_summary, monthly_summary, current_sales, ytd_sales, current_sales_lastyr, ytd_sales_lastyr)
+breakage_summary = prepare_summary(supplier_for_summary, monthly_summary, current_sales, ytd_sales, current_sales_lastyr, ytd_sales_lastyr, the_year, the_month)
 
 
 
