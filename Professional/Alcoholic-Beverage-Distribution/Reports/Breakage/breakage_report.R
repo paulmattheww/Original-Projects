@@ -44,6 +44,7 @@ breakage_by_class_incidents = function(breaks) {
   invert1 = data.frame(t(moneyShot1))
   names(invert1) = c('Sales (2)', 'Warehouse (3)', 'Driver (4)', 'Columbia (5)')
   invert1 = invert1[-c(1) ,]
+  invert1 = invert1[, c('Sales (2)', 'Driver (4)', 'Warehouse (3)', 'Columbia (5)')]
   print(invert1)
 }
 
@@ -52,7 +53,7 @@ incident_summary = breakage_by_class_incidents(breaks)
 
 breakage_by_class_cost = function(breaks) {
   breaks$EXT_COST = as.numeric(as.character(breaks$EXT_COST))
-  spread2 = aggregate(EXT_COST ~ X.RCODE + PTYPE, data=breaks, FUN=function(x) round(sum(x), 2))
+  spread2 = aggregate(EXT_COST ~ X.RCODE + PTYPE, data=breaks, FUN=function(x) abs(round(sum(x), 2)))
   spread2 = data.frame(spread2)
   moneyShot2 = spread(spread2, PTYPE, EXT_COST)
   names(moneyShot2) = c("Reason.Code", "Liquor (1)", "Wine (2)", "Beer (3)", "Non-Alc (4)")
@@ -63,8 +64,9 @@ breakage_by_class_cost = function(breaks) {
                                                 ifelse(reason==5, "Columbia (5)", ""))))
   names(moneyShot2) =c("", "Liquor (1)", "Wine (2)", "Beer (3)", "Non-Alc (4)")
   invert2 = data.frame(t(moneyShot2))
-  names(invert2) = c("Sales (2)", "Driver (4)", "Warehouse (3)", "Columbia (5)")
+  names(invert2) = c("Sales (2)", "Warehouse (3)", "Driver (4)", "Columbia (5)")
   invert2 = invert2[-c(1) ,]
+  invert2 = invert2[, c("Sales (2)", "Driver (4)", "Warehouse (3)", "Columbia (5)")]
   print(invert2)
 }
 
@@ -140,8 +142,8 @@ breakage_supplier_cost = function(supplier) {
 supplier_breakage = breakage_supplier_cost(supplier)
 
 
-combine_incidents_cost = function(incidents, cost, month='January', year=2016) {
-  combo = cbind(incidents, cost)
+combine_incidents_cost = function(incident_summary, cost_summary, month='January', year=2016) {
+  combo = cbind(incident_summary, cost_summary)
   combo$Year = year
   combo$Month = month
   combo = combo[,c(9:10, 1:8)]
@@ -154,7 +156,7 @@ combine_incidents_cost = function(incidents, cost, month='January', year=2016) {
   combo
 }
 
-current = combine_incidents_cost(incidents, cost)
+current = combine_incidents_cost(incident_summary, cost_summary)
 
 
 append_old_new = function(history, current) {
@@ -253,13 +255,15 @@ calculate_percent_sales = function(master_dataset, ytd_sales, current_sales) {
   m$YTD.Warehouse.Break.Percent.Sales = round(m$YTD.Warehouse.Cost / ytd_sales, 6)
   m$YTD.Columbia.Break.Percent.Sales = round(m$YTD.Columbia.Cost / ytd_sales, 6)
   
+  write.csv(m, 'C:/Users/pmwash/Desktop/R_files/Data Output/backup_of_breakage_data.csv')
+  
   m
 }
 
 print('Check to be sure these are correctly associated')
 ytd_sales = tail(sales$YTD.Sales, 1)
 current_sales = tail(sales$Sales, 1)
-calculate_percent_sales(master_dataset, ytd_sales, current_sales)
+master_dataset = calculate_percent_sales(master_dataset, ytd_sales, current_sales)
 
 
 
@@ -269,19 +273,29 @@ create_monthly_summary = function(master_dataset, month='January', year=2016) {
   this_month = master_dataset %>% filter(Month == month) %>% filter(Year == year | Year == lastyr)
   
   cost_total = aggregate(Total.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
+  cost_warehouse = aggregate(Warehouse.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
+  cost_driver = aggregate(Driver.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
+  cost_columbia = aggregate(Columbia.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   
-  cost_warehouse
+  cost_total_ytd = aggregate(YTD.Total.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
+  cost_warehouse_ytd = aggregate(YTD.Warehouse.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
+  cost_driver_ytd = aggregate(YTD.Driver.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
+  cost_columbia_ytd = aggregate(YTD.Columbia.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   
-  cost_driver
   
-  cost_columbia
+  summary = merge(cost_total, cost_warehouse, by=c('Month', 'Year'))
+  summary = merge(summary, cost_driver, by=c('Month', 'Year'))
+  summary = merge(summary, cost_columbia, by=c('Month', 'Year'))
   
-  cost_sales
+  #cost_columbia
+  
+  #cost_sales
   
   
   #incidents = aggregate(Total.Incidents ~ )
   
-  cost_total
+  print(summary)
+  
 }
 
 create_monthly_summary(master_dataset)
@@ -293,21 +307,6 @@ create_monthly_summary(master_dataset)
 
 
 
-
-
-
-
-
-print('Append incidents and cost to "breakage_history_for_graphs.csv"')
-incidents = breakage_by_class_incidents(breaks)
-cost = breakage_by_class_cost(breaks)
-
-
-
-breakage_by_class_summary(breaks)
-warehouse_breakage_by_item(breaks)
-driver_breakage_by_item(breaks)
-breakage_supplier_cost(supplier)
 
 
 
