@@ -47,7 +47,7 @@ breakage_by_class_incidents = function(breaks) {
   print(invert1)
 }
 
-breakage_by_class_incidents(breaks)
+incident_summary = breakage_by_class_incidents(breaks)
 
 
 breakage_by_class_cost = function(breaks) {
@@ -68,7 +68,7 @@ breakage_by_class_cost = function(breaks) {
   print(invert2)
 }
 
-breakage_by_class_cost(breaks)
+cost_summary = breakage_by_class_cost(breaks)
 
 
 breakage_by_class_cases = function(breaks) {
@@ -89,7 +89,7 @@ breakage_by_class_cases = function(breaks) {
   print(invert3)
 }
 
-breakage_by_class_cases(breaks)
+case_summary = breakage_by_class_cases(breaks)
 
 
 warehouse_breakage_by_item = function(breaks) {
@@ -109,7 +109,7 @@ warehouse_breakage_by_item = function(breaks) {
   print(whse_summary)
 }
 
-warehouse_breakage_by_item(breaks)
+warehouse_breakage = warehouse_breakage_by_item(breaks)
 
 
 driver_breakage_by_item = function(breaks) {
@@ -129,7 +129,7 @@ driver_breakage_by_item = function(breaks) {
   print(drv_summary)
 }
 
-driver_breakage_by_item(breaks)
+driver_breakage_item = driver_breakage_by_item(breaks)
 
 
 breakage_supplier_cost = function(supplier) {
@@ -137,7 +137,7 @@ breakage_supplier_cost = function(supplier) {
   print(total_supplier_breakage)
 }
 
-breakage_supplier_cost(supplier)
+supplier_breakage = breakage_supplier_cost(supplier)
 
 
 combine_incidents_cost = function(incidents, cost, month='January', year=2016) {
@@ -177,6 +177,7 @@ appended_dataset = append_old_new(history, current)
 
 
 calculate_ytd = function(appended_dataset) {
+  library(dplyr)
   master = appended_dataset %>% group_by(Year, Type) %>% 
     mutate(YTD.Sales.Incidents=cumsum(Sales.Incidents),
            YTD.Driver.Incidents=cumsum(Driver.Incidents),
@@ -190,10 +191,75 @@ calculate_ytd = function(appended_dataset) {
   
   master$Total.Incidents = abs(master$Sales.Incidents + master$Driver.Incidents + master$Warehouse.Incidents + master$Columbia.Incidents)
   master$Total.Cost = abs(master$Sales.Cost + master$Driver.Cost + master$Warehouse.Cost + master$Columbia.Cost)
+  
   master
 }
 
 master_dataset = calculate_ytd(appended_dataset)
+
+
+calculate_delta = function(master_dataset) {
+  m = master_dataset
+  
+  yoy_pct_chg = function(x) {
+    round((x - lag(x, 48)) / lag(x, 48), 2)
+  }
+  
+  m$delta.Sales.Incidents = yoy_pct_chg(m$Sales.Incidents)
+  m$delta.Driver.Incidents = yoy_pct_chg(m$Driver.Incidents)
+  m$delta.Warehouse.Incidents = yoy_pct_chg(m$Warehouse.Incidents)
+  m$delta.Columbia.Incidents = yoy_pct_chg(m$Columbia.Incidents)
+  
+  m$delta.Sales.Cost = yoy_pct_chg(m$Sales.Cost)
+  m$delta.Driver.Cost = yoy_pct_chg(m$Driver.Cost)
+  m$delta.Warehouse.Cost = yoy_pct_chg(m$Warehouse.Cost)
+  m$delta.Columbia.Cost = yoy_pct_chg(m$Columbia.Cost)
+  
+  m$delta.Total.Incidents = yoy_pct_chg(m$Total.Incidents)
+  m$delta.Total.Cost = yoy_pct_chg(m$Total.Cost)
+  
+  write.csv(m, 'C:/Users/pmwash/Desktop/R_files/Data Output/backup_of_breakage_data.csv')
+  
+  m
+}
+
+master_dataset = calculate_delta(master_dataset)
+
+
+calculate_ytd_sales = function(sales) {
+  library(dplyr)
+  s = sales
+  
+  s = s %>% group_by(Year) %>%
+    mutate(YTD.Sales = cumsum(Dollars))
+  names(s) = c('Year', 'Year.Month', 'Std.Cases', 'Sales', 'YTD.Sales')
+  
+  s
+}
+
+sales = calculate_ytd_sales(sales)
+
+
+calculate_percent_sales = function(master_dataset, ytd_sales, current_sales) {
+  m = master_dataset
+  
+  m$Sales.Break.Percent.Sales = round(m$Sales.Cost / current_sales, 6)
+  m$Driver.Break.Percent.Sales = round(m$Driver.Cost / current_sales, 6)
+  m$Warehouse.Break.Percent.Sales = round(m$Warehouse.Cost / current_sales, 6)
+  m$Columbia.Break.Percent.Sales = round(m$Columbia.Cost / current_sales, 6)
+  
+  m$YTD.Sales.Break.Percent.Sales = round(m$YTD.Sales.Cost / ytd_sales, 6)
+  m$YTD.Driver.Break.Percent.Sales = round(m$YTD.Driver.Cost / ytd_sales, 6)
+  m$YTD.Warehouse.Break.Percent.Sales = round(m$YTD.Warehouse.Cost / ytd_sales, 6)
+  m$YTD.Columbia.Break.Percent.Sales = round(m$YTD.Columbia.Cost / ytd_sales, 6)
+  
+  m
+}
+
+print('Check to be sure these are correctly associated')
+ytd_sales = tail(sales$YTD.Sales, 1)
+current_sales = tail(sales$Sales, 1)
+calculate_percent_sales(master_dataset, ytd_sales, current_sales)
 
 
 
