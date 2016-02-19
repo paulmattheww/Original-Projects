@@ -22,53 +22,61 @@ Sub format_breakage()
             ws.Columns("A:AZ").AutoFit
             ws.Rows("1:9999").RowHeight = 12.5
             
-            ws.Range("A2").EntireRow.Insert
-            ws.Range("A6").EntireRow.Insert
+            ws.Range("A2").EntireRow.Insert shift:=xlUp
+            ws.Range("A7").EntireRow.Insert shift:=xlUp
             
             
             Dim whse As Long, drv As Long, current As Long
-            Dim whsex As Long, drvx As Long, ytd As Long
+            Dim whse_ytd As Long, drv_ytd As Long, ytd As Long
             
             whse = ws.Range("B3").Value
             drv = ws.Range("B4").Value
-            whsex = ws.Range("B6").Value
-            drvx = ws.Range("B7").Value
+            whse_ytd = ws.Range("B8").Value
+            drv_ytd = ws.Range("B9").Value
             
             current = whse + drv
-            ytd = whsx + drvx
+            ytd = whse_ytd + drv_ytd
             
             ws.Range("B2").Select
             ActiveCell.FormulaR1C1 = current
-            ws.Range("B6").Select
+            ws.Range("B7").Select
             ActiveCell.FormulaR1C1 = ytd
             
             
-            Dim whsely As Long, drvly As Long, currently As Long
-            Dim whselyx As Long, drvlyx As Long, ytdly As Long
+            Dim whse_ly As Long, drv_ly As Long, current_ly As Long
+            Dim whse_ly_ytd As Long, drv_ly_ytd As Long, ytd_ly As Long
             
-            whsely = ws.Range("E3").Value
-            drvly = ws.Range("E4").Value
-            whselyx = ws.Range("E6").Value
-            drvlyx = ws.Range("E7").Value
+            whse_ly = ws.Range("E3").Value
+            drv_ly = ws.Range("E4").Value
+            whse_ly_ytd = ws.Range("E8").Value
+            drv_ly_ytd = ws.Range("E9").Value
             
-            currently = whsely + drvly
-            ytdly = whslyx + drvlyx
+            current_ly = whse_ly + drv_ly
+            ytd_ly = whse_ly_ytd + drv_ly_ytd
             
             ws.Range("E2").Select
-            ActiveCell.FormulaR1C1 = currently
-            ws.Range("E6").Select
-            ActiveCell.FormulaR1C1 = ytdly
+            ActiveCell.FormulaR1C1 = current_ly
+            ws.Range("E7").Select
+            ActiveCell.FormulaR1C1 = ytd_ly
             
             
             
-            ws.Range("B2:B7").NumberFormat = "$#,##0"
-            ws.Range("C2:D10").NumberFormat = "0.00%"
-            ws.Range("F2:H10").NumberFormat = "0.00%"
+            ws.Range("B2:B10").NumberFormat = "$#,##0"
+            ws.Range("E2:E10").NumberFormat = "$#,##0"
+            ws.Range("C2:D13").NumberFormat = "0.0000%"
+            ws.Range("F2:H13").NumberFormat = "0.0000%"
                         
         End If
     Next ws
     
 End Sub
+
+
+
+
+
+
+
 
 
 
