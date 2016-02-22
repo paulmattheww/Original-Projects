@@ -373,15 +373,15 @@ prepare_summary = function(supplier_for_summary, monthly_summary, current_sales,
   summary[,3] = as.numeric(summary[,3])
   summary[,2] = as.numeric(summary[,2])
   
-  summary$YOY.Percent.Change = round(((summary[,2] - summary[,3]) / summary[,3]), 4)
+  summary$YOY.Percent.Change = round(((summary[,2] - summary[,3]) / summary[,3]), 9)
   
   summary$Percent.Sales.TY.TM = round(summary[,2] / current_sales, 6)
   summary$Percent.Sales.TY.YTD = round(summary[,2] / ytd_sales, 6)
   summary[c(5:7), 5] = NA
   summary[c(1:4), 6] = NA
   
-  summary$Percent.Sales.LY.TM = round(summary[,3] / current_sales_lastyr, 6)
-  summary$Percent.Sales.LY.YTD = round(summary[,3] / ytd_sales, 6)
+  summary$Percent.Sales.LY.TM = round(summary[,3] / current_sales_lastyr, 9)
+  summary$Percent.Sales.LY.YTD = round(summary[,3] / ytd_sales, 9)
   summary[c(5:7), 7] = NA
   summary[c(1:4), 8] = NA  
   
@@ -390,19 +390,19 @@ prepare_summary = function(supplier_for_summary, monthly_summary, current_sales,
   
   name = 'Total.Cost.Warehouse.Driver' #'Total.KC'
   ty_stl_bk = sum(summary[c(2:3), 2])
-  pct_sales_ty_tm = round(ty_stl_bk / current_sales, 6)
+  pct_sales_ty_tm = round(ty_stl_bk / current_sales, 9)
   ly_stl_bk = sum(summary[c(2:3), 5])
-  pct_sales_ly_tm = round(ly_stl_bk / current_sales_lastyr, 6)
-  yoy_chg = round((ty_stl_bk - ly_stl_bk) / ly_stl_bk, 6)
+  pct_sales_ly_tm = round(ly_stl_bk / current_sales_lastyr, 9)
+  yoy_chg = round((ty_stl_bk - ly_stl_bk) / ly_stl_bk, 9)
   
   row_one = c(name, ty_stl_bk, pct_sales_ty_tm, NA, ly_stl_bk, pct_sales_ly_tm, NA, yoy_chg)
   
   ytd_name = 'YTD.Total.Cost.Warehouse.Driver' #'YTD.Total.KC'
   ytd_ty_stl_bk = sum(summary[c(5:6), 2])
-  ytd_pct_sales_ty_tm = round(ytd_ty_stl_bk / ytd_sales, 6)
+  ytd_pct_sales_ty_tm = round(ytd_ty_stl_bk / ytd_sales, 9)
   ytd_ly_stl_bk = sum(summary[c(5:6), 5])
-  ytd_pct_sales_ly_tm = round(ytd_ly_stl_bk / ytd_sales_lastyr, 6)
-  ytd_yoy_chg = round((ytd_ty_stl_bk - ytd_ly_stl_bk) / ytd_ly_stl_bk, 6)
+  ytd_pct_sales_ly_tm = round(ytd_ly_stl_bk / ytd_sales_lastyr, 9)
+  ytd_yoy_chg = round((ytd_ty_stl_bk - ytd_ly_stl_bk) / ytd_ly_stl_bk, 9)
   
   row_two = c(ytd_name, ytd_ty_stl_bk, ytd_pct_sales_ty_tm, NA, ytd_ly_stl_bk, ytd_pct_sales_ly_tm, NA, ytd_yoy_chg)
   
@@ -422,12 +422,13 @@ prepare_summary = function(supplier_for_summary, monthly_summary, current_sales,
   summary = summary %>% arrange(x)
   names(summary) = c('', paste0(the_month, '-', the_year), 'Percent.Sales.TY.TM', 'Percent.Sales.TY.YTD', 
                      paste0(the_month, '-', last_yr), 'Percent.Sales.LY.TM', 'Percent.Sales.LY.YTD', 'YOY.Percent.Change')
+  summary = data.matrix(summary)
   
   print(summary)
 }
 
 breakage_summary = prepare_summary(supplier_for_summary, monthly_summary, current_sales, ytd_sales, current_sales_lastyr, ytd_sales_lastyr, the_year, the_month)
-
+# str(breakage_summary)
 
 
 print('Write to a file for presentation and distribution')
@@ -436,7 +437,7 @@ write.xlsx(breakage_summary, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data O
 write.xlsx(warehouse_breakage, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Warehouse Breakage by Item', append=TRUE)
 write.xlsx(driver_breakage_item, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Driver Breakage by Item', append=TRUE)
 write.xlsx(master_dataset, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Master Dataset', append=TRUE)
-write.xlsx(breaks, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Raw Dataset', append=TRUE)
+#write.xlsx(breaks, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Raw Dataset', append=TRUE)
 
 
 
