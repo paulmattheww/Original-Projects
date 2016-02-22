@@ -7,6 +7,7 @@ library(ggplot2)
 library(reshape2)
 library(scales)
 library(xlsx)
+library(tidyr)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 
 
@@ -155,9 +156,10 @@ append_supplier_records = function(supplier_breakage, supplier_history, month='J
   appended = rbind(old, new)
   
   write.csv(appended, 'C:/Users/pmwash/Desktop/R_files/Data Output/save_as_____supplier_history_for_breakage.csv')
-  appended
+  print(appended)
 }
 
+print('Check to make sure there are no duplicates')
 supplier_breakage = append_supplier_records(supplier_breakage, supplier_history)
 #if goes wrong, use this to delete last row duplicated:
 #supplier_breakage = supplier_breakage[-c(14)]
@@ -175,7 +177,7 @@ combine_incidents_cost = function(incident_summary, cost_summary, month='January
   rownames(combo) = NULL
   colnames(combo) = c('Type', 'Year', 'Month', 'Sales.Incidents', 'Driver.Incidents', 'Warehouse.Incidents', 'Columbia.Incidents',
                       'Sales.Cost', 'Driver.Cost', 'Warehouse.Cost', 'Columbia.Cost')
-  combo
+  print(combo)
 }
 
 current = combine_incidents_cost(incident_summary, cost_summary)
@@ -193,11 +195,12 @@ append_old_new = function(history, current) {
   appended[,c(10)] = as.numeric(appended[,c(10)])
   appended[,c(11)] = as.numeric(appended[,c(11)])
   
-  appended
+  print(appended)
 }
 
+print('Check to make sure there are only 4 lines per month/year')
 appended_dataset = append_old_new(history, current)
-
+# appended_dataset = appended_dataset[-c(245:248),]
 
 
 calculate_ytd = function(appended_dataset) {
@@ -216,7 +219,7 @@ calculate_ytd = function(appended_dataset) {
   master$Total.Incidents = abs(master$Sales.Incidents + master$Driver.Incidents + master$Warehouse.Incidents + master$Columbia.Incidents)
   master$Total.Cost = abs(master$Sales.Cost + master$Driver.Cost + master$Warehouse.Cost + master$Columbia.Cost)
   
-  master
+  print(master)
 }
 
 master_dataset = calculate_ytd(appended_dataset)
@@ -244,7 +247,7 @@ calculate_delta = function(master_dataset) {
   
   write.csv(m, 'C:/Users/pmwash/Desktop/R_files/Data Output/backup_of_breakage_data.csv')
   
-  m
+  print(m)
 }
 
 master_dataset = calculate_delta(master_dataset)
@@ -258,7 +261,7 @@ calculate_ytd_sales = function(sales) {
     mutate(YTD.Sales = cumsum(Dollars))
   names(s) = c('Year', 'Year.Month', 'Std.Cases', 'Sales', 'YTD.Sales')
   
-  s
+  print(s)
 }
 
 sales = calculate_ytd_sales(sales)
@@ -279,13 +282,15 @@ calculate_percent_sales = function(master_dataset, ytd_sales, current_sales) {
   
   write.csv(m, 'C:/Users/pmwash/Desktop/R_files/Data Output/backup_of_breakage_data.csv')
   
-  m
+  print(m)
 }
 
 print('Check to be sure these are correctly associated')
+tail(sales[,c('YTD.Sales', 'Sales')], 1)
 ytd_sales = tail(sales$YTD.Sales, 1)
 current_sales = tail(sales$Sales, 1)
 
+tail(sales[,c('YTD.Sales', 'Sales')], 13)
 ytd_sales_lastyr = head(tail(sales$YTD.Sales, 13), 1)
 current_sales_lastyr = head(tail(sales$Sales, 13), 1)
 
@@ -307,7 +312,7 @@ create_supplier_summary = function(supplier_breakage, month='January', year=2016
   names(s) = c('', paste0(month, '-', lastyr), paste0(month, '-', year))
   s = s[, c(1, 3, 2)]
   
-  s
+  print(s)
 }
 
 supplier_for_summary = create_supplier_summary(supplier_breakage)
@@ -383,7 +388,7 @@ prepare_summary = function(supplier_for_summary, monthly_summary, current_sales,
   summary = summary[, c(1:2, 5:6, 3, 7:8, 4)]
   summary[c(8:10), c(3,4,6,7)] = NA
   
-  name = 'Total.Cost.STL' #'Total.KC'
+  name = 'Total.Cost.Warehouse.Driver' #'Total.KC'
   ty_stl_bk = sum(summary[c(2:3), 2])
   pct_sales_ty_tm = round(ty_stl_bk / current_sales, 6)
   ly_stl_bk = sum(summary[c(2:3), 5])
@@ -392,7 +397,7 @@ prepare_summary = function(supplier_for_summary, monthly_summary, current_sales,
   
   row_one = c(name, ty_stl_bk, pct_sales_ty_tm, NA, ly_stl_bk, pct_sales_ly_tm, NA, yoy_chg)
   
-  ytd_name = 'YTD.Total.Cost.STL' #'YTD.Total.KC'
+  ytd_name = 'YTD.Total.Cost.Warehouse.Driver' #'YTD.Total.KC'
   ytd_ty_stl_bk = sum(summary[c(5:6), 2])
   ytd_pct_sales_ty_tm = round(ytd_ty_stl_bk / ytd_sales, 6)
   ytd_ly_stl_bk = sum(summary[c(5:6), 5])
@@ -411,12 +416,14 @@ prepare_summary = function(supplier_for_summary, monthly_summary, current_sales,
   summary = rbind(summary, for_append)
   rownames(summary) = NULL
   
-  summary$x = factor(summary$x, levels=c('Total.Cost.STL', 'Warehouse.Cost', 'Driver.Cost', 'Columbia.Cost', 'Supplier.Cost', 
-                                         'YTD.Total.Cost.STL', 'YTD.Warehouse.Cost', 'YTD.Driver.Cost', 'YTD.Columbia.Cost', 
+  summary$x = factor(summary$x, levels=c('Total.Cost.Warehouse.Driver', 'Warehouse.Cost', 'Driver.Cost', 'Columbia.Cost', 'Supplier.Cost', 
+                                         'YTD.Total.Cost.Warehouse.Driver', 'YTD.Warehouse.Cost', 'YTD.Driver.Cost', 'YTD.Columbia.Cost', 
                                          'Warehouse.Incidents', 'Driver.Incidents', 'Columbia.Incidents'))
   summary = summary %>% arrange(x)
+  names(summary) = c('', paste0(the_month, '-', the_year), 'Percent.Sales.TY.TM', 'Percent.Sales.TY.YTD', 
+                     paste0(the_month, '-', last_yr), 'Percent.Sales.LY.TM', 'Percent.Sales.LY.YTD', 'YOY.Percent.Change')
   
-  summary
+  print(summary)
 }
 
 breakage_summary = prepare_summary(supplier_for_summary, monthly_summary, current_sales, ytd_sales, current_sales_lastyr, ytd_sales_lastyr, the_year, the_month)
