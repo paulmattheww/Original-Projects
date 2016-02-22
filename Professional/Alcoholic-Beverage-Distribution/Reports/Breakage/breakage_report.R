@@ -404,7 +404,7 @@ prepare_summary = function(supplier_for_summary, monthly_summary, current_sales,
   ytd_pct_sales_ly_tm = round(ytd_ly_stl_bk / ytd_sales_lastyr, 9)
   ytd_yoy_chg = round((ytd_ty_stl_bk - ytd_ly_stl_bk) / ytd_ly_stl_bk, 9)
   
-  row_two = c(ytd_name, ytd_ty_stl_bk, ytd_pct_sales_ty_tm, NA, ytd_ly_stl_bk, ytd_pct_sales_ly_tm, NA, ytd_yoy_chg)
+  row_two = c(ytd_name, ytd_ty_stl_bk, NA, ytd_pct_sales_ty_tm, ytd_ly_stl_bk, NA, ytd_pct_sales_ly_tm, ytd_yoy_chg)
   
   for_append = rbind(row_one, row_two)
   for_append = data.frame(for_append)
@@ -419,10 +419,18 @@ prepare_summary = function(supplier_for_summary, monthly_summary, current_sales,
   summary$x = factor(summary$x, levels=c('Total.Cost.Warehouse.Driver', 'Warehouse.Cost', 'Driver.Cost', 'Columbia.Cost', 'Supplier.Cost', 
                                          'YTD.Total.Cost.Warehouse.Driver', 'YTD.Warehouse.Cost', 'YTD.Driver.Cost', 'YTD.Columbia.Cost', 
                                          'Warehouse.Incidents', 'Driver.Incidents', 'Columbia.Incidents'))
+  
+  
   summary = summary %>% arrange(x)
   names(summary) = c('', paste0(the_month, '-', the_year), 'Percent.Sales.TY.TM', 'Percent.Sales.TY.YTD', 
                      paste0(the_month, '-', last_yr), 'Percent.Sales.LY.TM', 'Percent.Sales.LY.YTD', 'YOY.Percent.Change')
-  summary = data.matrix(summary)
+  summary[, 2] = as.numeric(summary[, 2])
+  summary[, 3] = as.numeric(summary[, 3])
+  summary[, 4] = as.numeric(summary[, 4])
+  summary[, 5] = as.numeric(summary[, 5])
+  summary[, 6] = as.numeric(summary[, 6])
+  summary[, 7] = as.numeric(summary[, 7])
+  summary[, 8] = as.numeric(summary[, 8])
   
   print(summary)
 }
@@ -432,7 +440,7 @@ breakage_summary = prepare_summary(supplier_for_summary, monthly_summary, curren
 
 
 print('Write to a file for presentation and distribution')
-file_name = 'breakage_report_test.xlsx'
+file_name = 'breakage_report_jan_2016.xlsx'
 write.xlsx(breakage_summary, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Summary')
 write.xlsx(warehouse_breakage, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Warehouse Breakage by Item', append=TRUE)
 write.xlsx(driver_breakage_item, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Driver Breakage by Item', append=TRUE)
@@ -442,6 +450,20 @@ write.xlsx(master_dataset, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Out
 
 
 
+print('Below is for STL moving files')
+
+from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
+to = paste0("//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Breakage/", 'stl_', file_name, sep='')
+moveRenameFile(from, to)
+
+
+# print('Save as... *_kcversion.xlsx')
+# 
+# file_name = '01_unsaleables_returns_dumps_january_2016_kcversion.xlsx'
+# print('Below is for KC moving files')
+# from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
+# to = paste0('M:/Operations Intelligence/Monthly Reports/Unsaleables/', file_name, sep='')
+# moveRenameFile(from, to)
 
 
 
@@ -468,32 +490,104 @@ write.xlsx(master_dataset, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Out
 
 
 
+print("UNDER CONSTRUCTION")
+print('Input plots into spreadsheet')
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+insert_breakage_plots = function(master_dataset) {
+  library(scales)
+  library(openxlsx)
+  library(installr)
+  library(Rtools)
+  
+  wb = loadWorkbook(paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name))
+  f_handle = paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name)
+  
+  breaks = master_dataset
+  breaks$Month = factor(breaks$Month, levels=c('January','February','March','April','May','June','July',
+                                               'August','September','October','November','December'))
+  breaks$Type = factor(breaks$Type, levels=c('Liquor (1)', 'Wine (2)', 'Beer (3)', 'Non-Alc (4)'))
+  
+  print('3 Graphs Faceted, Monthly WAREHOUSE Breakage STL')
+  p = ggplot(breaks, aes(factor(Month), Warehouse.Cost))
+  one = p + geom_point(aes(colour=Type, size=Warehouse.Cost, group=Type)) + 
+    geom_line(aes(colour=Type, group=Type)) +
+    theme(legend.position='none', axis.text.x=element_text(angle=90, hjust=1)) + 
+    geom_smooth(aes(group=Type), colour="black", se=FALSE) +
+    labs(title="Monthly Warehouse Breakage",
+         x="Month", y="Dollars ($)") + facet_wrap(~Type+Year, ncol=6, scales='free') +
+    scale_y_continuous(labels=dollar)
+  print(one)
+  insertPlot(wb, sheet=1, width=10, height=10, fileType='png')
+  saveWorkbook(wb, f_handle, overwrite=TRUE)
+  
+  
+  print('3 Graphs Faceted, Monthly DRIVER Breakage STL')
+  p = ggplot(breaks, aes(factor(Month), Driver.Cost))
+  two = p + geom_point(aes(colour=Type, size=Driver.Cost, group=Type)) + 
+    geom_line(aes(colour=Type, group=Type)) +
+    theme(legend.position='none', axis.text.x=element_text(angle=90, hjust=1)) + 
+    geom_smooth(aes(group=Type), colour="black", se=FALSE) +
+    labs(title="Driver Warehouse Breakage",
+         x="Month", y="Dollars ($)") + facet_wrap(~Type+Year, ncol=6, scales='free') +
+    scale_y_continuous(labels=dollar)
+  print(two)
+  
+  
+  print('Cumulative')
+  p = ggplot(breaks, aes(factor(Month), y=YTD.Warehouse.Cost))
+  p + geom_point(aes(group=factor(Type))) + 
+    geom_line(aes(x=factor(Month), y=YTD.Warehouse.Cost, colour=factor(Type),
+                  group=factor(Type))) +
+    theme(legend.position='bottom', axis.text.x=element_text(angle=90, hjust=1)) + 
+    labs(title="YTD Warehouse Cost By Year",
+         x="Month", y="Dollars ($)") +
+    facet_wrap(~Year, nrow=1) +
+    scale_y_continuous(labels=dollar)
+  
+  
+  
+  p = ggplot(breaks, aes(factor(Month), y=YTD.Driver.Cost))
+  p + geom_point(aes(group=factor(Type))) + 
+    geom_line(aes(x=factor(Month), y=YTD.Driver.Cost, colour=factor(Type),
+                  group=factor(Type))) +
+    theme(legend.position='bottom', axis.text.x=element_text(angle=90, hjust=1)) + 
+    labs(title="YTD Driver Cost By Year",
+         x="Month", y="Dollars ($)") +
+    facet_wrap(~Year, nrow=1) +
+    scale_y_continuous(labels=dollar)
+  
+  # 3 Graphs Faceted, PERCENT OF SALES Monthly WAREHOUSE Breakage STL
+#   library(scales)
+#   p = ggplot(breaks, aes(factor(Month), Whse.Break.Percent.Sales))
+#   two = p + geom_point(aes(colour=Whse.Break.Percent.Sales, 
+#                            size=Whse.Break.Percent.Sales)) + 
+#     theme(legend.position='none') + geom_smooth(aes(group=1),
+#                                                 colour="black") +
+#     labs(title="Monthly Warehouse Breakage (% of Sales)",
+#          x="Month", y="Percent of Sales") + facet_wrap(~Year, nrow=1) +
+#     scale_colour_gradient(low="purple", high="orange") +
+#     scale_y_continuous(labels=percent)
+#   # get cumsum warehouse
+#   breaks = breaks %>% group_by(Year) %>% 
+#     mutate(Cumulative.Warehouse.Cost=cumsum(Warehouse.Cost))
+#   breaks = data.frame(breaks)
+#   p = ggplot(breaks, aes(factor(Month), Cumulative.Warehouse.Cost))
+#   three = p + geom_point(aes(colour=Cumulative.Warehouse.Cost, 
+#                              size=Cumulative.Warehouse.Cost)) + 
+#     theme(legend.position='none') + geom_smooth(aes(group=1),
+#                                                 colour="black") +
+#     labs(title="Cumulative Warehouse Breakage (Monthly Data)",
+#          x="Month", y="YTD Warehouse Breakage ($)") + facet_wrap(~Year, nrow=1) +
+#     scale_colour_gradient(low="purple", high="orange") +
+#     scale_y_continuous(labels=dollar) +
+#     geom_vline(xintercept=12) +
+#     geom_hline(yintercept=79386.65)
+#   library(gridExtra)
+#   grid.arrange(one,two,three,ncol=1)
+#   
+}
 
 
 
@@ -524,42 +618,42 @@ brk = read.csv("C:/Users/pmwash/Desktop/R_Files/Data Input/breakage_history_for_
 
 
 
-print('3 Graphs Faceted, Monthly WAREHOUSE Breakage STL')
-p = ggplot(breaks, aes(factor(Month), Warehouse.Breakage))
-one = p + geom_point(aes(colour=Warehouse.Breakage, size=Warehouse.Breakage)) + 
-  theme(legend.position='none') + geom_smooth(aes(group=1),
-                                                colour="black") +
-  labs(title="Monthly Warehouse Breakage",
-       x="Month", y="Dollars ($)") + facet_wrap(~Year, nrow=1) +
-  scale_colour_gradient(low="purple", high="orange")
-# 3 Graphs Faceted, PERCENT OF SALES Monthly WAREHOUSE Breakage STL
-library(scales)
-p = ggplot(breaks, aes(factor(Month), Whse.Break.Percent.Sales))
-two = p + geom_point(aes(colour=Whse.Break.Percent.Sales, 
-                   size=Whse.Break.Percent.Sales)) + 
-  theme(legend.position='none') + geom_smooth(aes(group=1),
-                                                colour="black") +
-  labs(title="Monthly Warehouse Breakage (% of Sales)",
-       x="Month", y="Percent of Sales") + facet_wrap(~Year, nrow=1) +
-  scale_colour_gradient(low="purple", high="orange") +
-  scale_y_continuous(labels=percent)
-# get cumsum warehouse
-breaks = breaks %>% group_by(Year) %>% 
-  mutate(Cumulative.Warehouse.Breakage=cumsum(Warehouse.Breakage))
-breaks = data.frame(breaks)
-p = ggplot(breaks, aes(factor(Month), Cumulative.Warehouse.Breakage))
-three = p + geom_point(aes(colour=Cumulative.Warehouse.Breakage, 
-                         size=Cumulative.Warehouse.Breakage)) + 
-  theme(legend.position='none') + geom_smooth(aes(group=1),
-                                              colour="black") +
-  labs(title="Cumulative Warehouse Breakage (Monthly Data)",
-       x="Month", y="YTD Warehouse Breakage ($)") + facet_wrap(~Year, nrow=1) +
-  scale_colour_gradient(low="purple", high="orange") +
-  scale_y_continuous(labels=dollar) +
-  geom_vline(xintercept=12) +
-  geom_hline(yintercept=79386.65)
-library(gridExtra)
-grid.arrange(one,two,three,ncol=1)
+# print('3 Graphs Faceted, Monthly WAREHOUSE Breakage STL')
+# p = ggplot(breaks, aes(factor(Month), Warehouse.Breakage))
+# one = p + geom_point(aes(colour=Warehouse.Breakage, size=Warehouse.Breakage)) + 
+#   theme(legend.position='none') + geom_smooth(aes(group=1),
+#                                                 colour="black") +
+#   labs(title="Monthly Warehouse Breakage",
+#        x="Month", y="Dollars ($)") + facet_wrap(~Year, nrow=1) +
+#   scale_colour_gradient(low="purple", high="orange")
+# # 3 Graphs Faceted, PERCENT OF SALES Monthly WAREHOUSE Breakage STL
+# library(scales)
+# p = ggplot(breaks, aes(factor(Month), Whse.Break.Percent.Sales))
+# two = p + geom_point(aes(colour=Whse.Break.Percent.Sales, 
+#                    size=Whse.Break.Percent.Sales)) + 
+#   theme(legend.position='none') + geom_smooth(aes(group=1),
+#                                                 colour="black") +
+#   labs(title="Monthly Warehouse Breakage (% of Sales)",
+#        x="Month", y="Percent of Sales") + facet_wrap(~Year, nrow=1) +
+#   scale_colour_gradient(low="purple", high="orange") +
+#   scale_y_continuous(labels=percent)
+# # get cumsum warehouse
+# breaks = breaks %>% group_by(Year) %>% 
+#   mutate(Cumulative.Warehouse.Breakage=cumsum(Warehouse.Breakage))
+# breaks = data.frame(breaks)
+# p = ggplot(breaks, aes(factor(Month), Cumulative.Warehouse.Breakage))
+# three = p + geom_point(aes(colour=Cumulative.Warehouse.Breakage, 
+#                          size=Cumulative.Warehouse.Breakage)) + 
+#   theme(legend.position='none') + geom_smooth(aes(group=1),
+#                                               colour="black") +
+#   labs(title="Cumulative Warehouse Breakage (Monthly Data)",
+#        x="Month", y="YTD Warehouse Breakage ($)") + facet_wrap(~Year, nrow=1) +
+#   scale_colour_gradient(low="purple", high="orange") +
+#   scale_y_continuous(labels=dollar) +
+#   geom_vline(xintercept=12) +
+#   geom_hline(yintercept=79386.65)
+# library(gridExtra)
+# grid.arrange(one,two,three,ncol=1)
 
 
 #### DRIVER GRAPHS ####
@@ -653,18 +747,18 @@ p + geom_point(aes(colour=STL.Total, size=STL.Total)) +
 
 
 # Cumulative STL TOTAL BREAKAGE
-p = ggplot(breaks, aes(factor(Month), STL.Cumulative.By.Year, 
-                        fill=factor(Year)))
-p + geom_point(aes(fill=factor(Year), group=factor(Year))) + 
-  geom_line(aes(x=factor(Month), y=STL.Cumulative.By.Year, colour=factor(Year),
-                group=factor(Year))) +
-  theme(legend.position='none') + 
-  labs(title="Cumulative Total Breakage (STL) By Year",
-       x="Month", y="Dollars ($)") +
-  facet_wrap(~Year, nrow=1) +
-  geom_vline(xintercept=12) +
-  geom_hline(yintercept= 97644.01) + 
-  scale_y_continuous(labels=dollar)
+# p = ggplot(breaks, aes(factor(Month), STL.Cumulative.By.Year, 
+#                         fill=factor(Year)))
+# p + geom_point(aes(fill=factor(Year), group=factor(Year))) + 
+#   geom_line(aes(x=factor(Month), y=STL.Cumulative.By.Year, colour=factor(Year),
+#                 group=factor(Year))) +
+#   theme(legend.position='none') + 
+#   labs(title="Cumulative Total Breakage (STL) By Year",
+#        x="Month", y="Dollars ($)") +
+#   facet_wrap(~Year, nrow=1) +
+#   geom_vline(xintercept=12) +
+#   geom_hline(yintercept= 97644.01) + 
+#   scale_y_continuous(labels=dollar)
 
 
 print('Cumsum by Year of just Col, Warehouse. First create cumulative sum of both.')
