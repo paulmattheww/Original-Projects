@@ -6,9 +6,6 @@ Sub production_report_gather()
     Dim ws              As Worksheet
     Dim file_name       As String
     Dim directory       As String
-    Dim ext             As String
-    Dim f_num           As Integer
-    Dim my_files()      As String
     Dim t_wb            As Workbook
     Dim docs            As Workbook
     Dim file_list       As Object
@@ -16,8 +13,6 @@ Sub production_report_gather()
     Dim source          As Object
     Dim file            As Variant
     Dim last_row        As String
-    Dim rng             As Range
-    Dim cell            As Range
         
     Application.ScreenUpdating = False
     Application.EnableEvents = False
@@ -46,7 +41,7 @@ Sub production_report_gather()
         t_wb.Activate
         t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues
         
-        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 142) = wb.Name ' 49 + 52 = 101 + 56 = 157 + 8 = 165 - 9 for first rows = 156 - 3 = 153 - 101 for split = 142
+        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 54) = wb.Name ' 49 + 52 = 101 + 56 = 157 + 8 = 165 - 9 for first rows = 156 - 3 = 153 - 101 for split = 142
         
         wb.Close False
         t_wb.Close True
@@ -71,7 +66,7 @@ Sub production_report_gather()
         t_wb.Activate
         t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, SkipBlanks:=False
         
-        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 89) = wb.Name ' 153 - (56 + 8) = 89
+        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 48) = wb.Name ' 153 - (56 + 8) = 89
         
         wb.Close False
         t_wb.Close True
@@ -79,3 +74,6 @@ Sub production_report_gather()
     Next file
     
 End Sub
+
+
+
