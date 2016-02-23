@@ -1,5 +1,7 @@
 Sub production_report_gather()
 
+    ' Start with a blank spreadsheet with three columns Key Value Date
+
     Dim wb              As Workbook
     Dim ws              As Worksheet
     Dim file_name       As String
@@ -32,44 +34,48 @@ Sub production_report_gather()
         Set wb = Workbooks.Open(file)
         Set t_wb = Workbooks.Open(target_path)
         
-        last_row = Sheets(1).Cells(Rows.Count, "A").End(xlUp).Row + 1
-        
-        wb.Sheets("Summary").Range("A1:B50").Copy
-        t_wb.Activate
-        t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, Operation:=xlNone
+        last_row = Cells(Rows.Count, "A").End(xlUp).Row + 1 ' Sheets(1).Cells(Rows.Count, "A").End(xlUp).Row + 1
         
         wb.Activate
-        wb.Sheets("Summary").Range("D1:E53").Copy
+        wb.Sheets("Summary").Range("I5:J57").Copy
         t_wb.Activate
-        t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, Operation:=xlNone
-        
-        wb.Activate
-        wb.Sheets("Summary").Range("I1:J57").Copy
-        t_wb.Activate
-        t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, Operation:=xlNone
+        t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues
         
         wb.Activate
         wb.Sheets("Summary").Range("L19:M26").Copy
         t_wb.Activate
-        t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, Operation:=xlNone
+        t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues
         
-        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 165) = wb.Name ' 49 + 52 = 101 + 56 = 157 + 8 = 165
+        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 142) = wb.Name ' 49 + 52 = 101 + 56 = 157 + 8 = 165 - 9 for first rows = 156 - 3 = 153 - 101 for split = 142
         
-            
         wb.Close False
         t_wb.Close True
+        
+    Next file
+    
+    
+    For Each file In file_list.Files
+        
+        Set wb = Workbooks.Open(file)
+        Set t_wb = Workbooks.Open(target_path)
+        
+        last_row = Cells(Rows.Count, "A").End(xlUp).Row + 1
+    
+        wb.Activate
+        wb.Sheets("Summary").Range("A5:B50").Copy
+        t_wb.Activate
+        t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, SkipBlanks:=False
+        
+        wb.Activate
+        wb.Sheets("Summary").Range("D5:E53").Copy
+        t_wb.Activate
+        t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, SkipBlanks:=False
+        
+        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 89) = wb.Name ' 153 - (56 + 8) = 89
+        
+        wb.Close False
+        t_wb.Close True
+        
     Next file
     
 End Sub
-
-' file_name = dir & "*.xl*"
-
-' Set wb = Workbooks.Open(file_name)
-'           Set ws = wb.Sheets("Summary")
-
-
-
-'.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
-'            SkipBlanks:=False, Transpose:=True
-
-
