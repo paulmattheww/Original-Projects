@@ -30,8 +30,12 @@ tidy_production_data = function(raw_data) {
   
   
   
-  factor(rownames(raw_data), levels=c('54_TOTAL.CASES.', '55_.ST.LOUIS', '58_.KC.TRANSFER', '59_.COLUMBIA', '60_.CAPE', '57_.RED.BULL',
-                                      '61_BOTTLES', '62_.ST.LOUIS', '63_.COLUMBIA', '64_.CAPE', ))
+  factor(rownames(raw_data), levels=c('103_TOTAL.CASES.', '104_.ST.LOUIS', '107_.KC.TRANSFER', '108_.COLUMBIA', '109_.CAPE', '106_.RED.BULL',
+                                      '110_BOTTLES', '111_.ST.LOUIS', '112_.COLUMBIA', '113_.CAPE', 
+                                      '62_.O/S.CASES', '63_.O/S.BOTTLES' , '65_.CASE', '66_.BOTTLES',             #add in case errors columbia when they put it in the daily report
+                                      '67_RAW.CASE.ERRORS', '68_RAW.BOTTLE.ERRORS',
+                                      '132_TOTAL.HOURS', '133_.SENIORITY', '134_.CASUAL',' 135_REGULAR.HOURS', '136_.SENIORITY', '137_.CASUAL',
+                                      '138_OT.HOURS', '139_.SENIORITY', '140_.CASUAL'))
   
   #here is where sorting by factor comes in, do later
   
