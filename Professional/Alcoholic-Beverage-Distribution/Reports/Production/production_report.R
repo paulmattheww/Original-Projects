@@ -31,11 +31,18 @@ tidy_production_data = function(raw_data) {
   
   
   factor(rownames(raw_data), levels=c('103_TOTAL.CASES.', '104_.ST.LOUIS', '107_.KC.TRANSFER', '108_.COLUMBIA', '109_.CAPE', '106_.RED.BULL',
-                                      '110_BOTTLES', '111_.ST.LOUIS', '112_.COLUMBIA', '113_.CAPE', 
+                                      '110_BOTTLES', '111_.ST.LOUIS', '112_.COLUMBIA', '113_.CAPE', '105_.KEGS', 
                                       '62_.O/S.CASES', '63_.O/S.BOTTLES' , '65_.CASE', '66_.BOTTLES',             #add in case errors columbia when they put it in the daily report
-                                      '67_RAW.CASE.ERRORS', '68_RAW.BOTTLE.ERRORS',
+                                      '67_RAW.CASE.ERRORS', '68_RAW.BOTTLE.ERRORS', '149_COMPLETION.TIME:',
                                       '132_TOTAL.HOURS', '133_.SENIORITY', '134_.CASUAL',' 135_REGULAR.HOURS', '136_.SENIORITY', '137_.CASUAL',
-                                      '138_OT.HOURS', '139_.SENIORITY', '140_.CASUAL'))
+                                      '138_OT.HOURS', '139_.SENIORITY', '140_.CASUAL', '141_TEMP.HOURS', '142_DRIVER.CHECK-IN.HOURS',
+                                      '143_ABSENT.EMPLOYEES', '144_.SENIORITY', '145_.CASUAL',
+                                      '147_TOTAL.EMPLOYEES.ON.HAND', '146_TOTAL.TEMPS.ON.HAND', '148_TOTAL.EMPLOYEES.WITH.TEMPS',
+                                      '118_TOTAL.STLTRUCKS', '119_.CASE/SPLIT', '120_.KEG/OTHER', 
+                                      '58_EMPTY.BOXES.RETURNED', 
+                                      '114_TOTAL.STOPS', '115_.ST.LOUIS', '116_.CAPE', '117_.COLUMBIA.(ONLY)',
+                                      
+                                      '151_CASES.PER.MAN.HOUR', '150_CASES.PER.MAN.HOUR.(OT.ADJUSTED)', '121_CASES.PER.HOUR'))
   
   #here is where sorting by factor comes in, do later
   
