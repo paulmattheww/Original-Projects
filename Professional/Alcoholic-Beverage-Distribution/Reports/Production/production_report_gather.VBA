@@ -66,16 +66,35 @@ Sub production_report_gather()
         t_wb.Activate
         t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, SkipBlanks:=False
         
+        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 48) = wb.Name
+        
+        t_wb.Worksheets(1).Range("D" & last_row).Select
+        Selection = "54"
+        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=102, Trend:=False
+        
+        wb.Close False
+        t_wb.Close True
+        
+    Next file
+    
+    
+    For Each file In file_list.Files
+        
+        Set wb = Workbooks.Open(file)
+        Set t_wb = Workbooks.Open(target_path)
+        
+        last_row = Cells(Rows.Count, "A").End(xlUp).Row + 1
+        
         wb.Activate
         wb.Sheets("Summary").Range("D5:E53").Copy
         t_wb.Activate
         t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, SkipBlanks:=False
         
-        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 48) = wb.Name ' 153 - (56 + 8) = 89
+        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 48) = wb.Name
         
         t_wb.Worksheets(1).Range("D" & last_row).Select
-        Selection = "54"
-        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=103, Trend:=False
+        Selection = "103"
+        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=151, Trend:=False
         
         wb.Close False
         t_wb.Close True
