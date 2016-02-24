@@ -1,6 +1,7 @@
 Sub production_report_gather()
 
     ' Start with a blank spreadsheet with three columns Key Value Date
+    ' Copy Daily Reports to a safe place; delete afterwards (from N:\Daily Report\2016)
 
     Dim wb              As Workbook
     Dim ws              As Worksheet
