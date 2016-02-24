@@ -75,7 +75,7 @@ Sub production_report_gather()
         
         t_wb.Worksheets(1).Range("D" & last_row).Select
         Selection = "54"
-        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=49, Trend:=False
+        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=103, Trend:=False
         
         wb.Close False
         t_wb.Close True
