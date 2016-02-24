@@ -74,7 +74,7 @@ Sub production_report_gather()
         t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 48) = wb.Name ' 153 - (56 + 8) = 89
         
         t_wb.Worksheets(1).Range("D" & last_row).Select
-        Selection = "1"
+        Selection = "54"
         Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=49, Trend:=False
         
         wb.Close False
