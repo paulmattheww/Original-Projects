@@ -44,6 +44,10 @@ Sub production_report_gather()
         
         t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 54) = wb.Name ' 49 + 52 = 101 + 56 = 157 + 8 = 165 - 9 for first rows = 156 - 3 = 153 - 101 for split = 142
         
+        t_wb.Worksheets(1).Range("D" & last_row).Select
+        Selection = "1"
+        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=53, Trend:=False
+        
         wb.Close False
         t_wb.Close True
         
@@ -68,6 +72,10 @@ Sub production_report_gather()
         t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, SkipBlanks:=False
         
         t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 48) = wb.Name ' 153 - (56 + 8) = 89
+        
+        t_wb.Worksheets(1).Range("D" & last_row).Select
+        Selection = "1"
+        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=49, Trend:=False
         
         wb.Close False
         t_wb.Close True
