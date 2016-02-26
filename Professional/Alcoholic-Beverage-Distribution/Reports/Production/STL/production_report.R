@@ -5,6 +5,11 @@ print('New Production Report 02242016')
 print('Gather external utilities')
 library(dplyr)
 library(tidyr)
+library(ggplot2)
+library(scales)
+library(zoo)
+library(gridExtra)
+library(lubridate)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 raw_data = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/test_input_production_report.csv', header=TRUE)
 
@@ -156,21 +161,138 @@ tidy_production_data = function(raw_data) {
   t_tidy_data = data.frame(sapply(t_tidy_data, function(x) as.numeric(as.character(x))))
   
   row.names(t_tidy_data) = dat 
-  t_tidy_data$MONTH = month(dat)
+  t_tidy_data$MONTH = month = month(dat)
   t_tidy_data$YEAR = year(dat)
   t_tidy_data$DATE = dat
+  t_tidy_data$SEASON = ifelse(month==1 | month==2 |month==3, "Winter", 
+                            ifelse(month==4 | month==5 | month==6, "Spring",
+                                   ifelse(month==7 | month==8 | month==9, "Summer",
+                                          ifelse(month==10 | month==11 | month==12, "Fall", ""))))
   row.names(t_tidy_data) = NULL
   
-  t_tidy_data = t_tidy_data[,c(146, 1:145)]
+  t_tidy_data = t_tidy_data[,c(146, 1:145, 147)]
   
   t_tidy_data
 }
 
+print('This takes key value pairs from all of the production daily reports gathered using VBA')
 production = tidy_production_data(raw_data)
-headTail(production)
 
 
-write.csv(production, file='C:/Users/pmwash/Desktop/R_files/Data Input/Living Documents/Production Report Data Archive.csv')
+
+
+generate_cumsum_moving_avg = function(production) {
+  p = data.frame(production)
+  
+  #generate cumsums
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.CASES.TOTAL=cumsum(CASES.TOTAL))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.CASES.STL=cumsum(CASES.STL))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.CASES.KC.TRANSFER=cumsum(CASES.KC.TRANSFER))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.CASES.COLUMBIA=cumsum(CASES.COLUMBIA))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.CASES.CAPE=cumsum(CASES.CAPE))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.BOTTLES.STL.REGION=cumsum(BOTTLES.STL.REGION))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.BOTTLES.STL=cumsum(BOTTLES.STL))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.BOTTLES.COLUMBIA=cumsum(BOTTLES.COLUMBIA))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.BOTTLES.CAPE=cumsum(BOTTLES.CAPE))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.KEGS.TOTAL.REGION=cumsum(KEGS.TOTAL.REGION))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.TOTAL.HOURS=cumsum(TOTAL.HOURS))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.REG.HOURS=cumsum(REG.HOURS))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.OT.HOURS=cumsum(OT.HOURS))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.ABSENT.EMPS=cumsum(ABSENT.EMPS))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.STOPS.TOTAL=cumsum(STOPS.TOTAL))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.STOPS.STL=cumsum(STOPS.STL))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.STOPS.CAPE=cumsum(STOPS.CAPE))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.STOPS.COLUMBIA=cumsum(STOPS.COLUMBIA))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.TOTAL.ERRORS=cumsum(TOTAL.ERRORS))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.RETURNS.INVOICE.TOTAL=cumsum(RETURNS.INVOICE.TOTAL))
+  
+  
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.BOTTLES.STL=cumsum(BOTTLES.STL))
+  
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.BOTTLES.STL=cumsum(BOTTLES.STL))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.BOTTLES.STL=cumsum(BOTTLES.STL))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.BOTTLES.STL=cumsum(BOTTLES.STL))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.BOTTLES.STL=cumsum(BOTTLES.STL))
+  
+    
+  #generate moving averages
+  history = history %>% group_by(Year) %>%
+    mutate(Keg.Other.Trucks.3.Month.Mvg.Avg = rollmean(x=Keg.Other.Trucks, 3, align='right', fill=NA))
+}
+
+
+
+
+
+
+
+
+
+append_archive_daily_data = function(production) {
+  
+}
+
+
+
+
+
+
+
+
+generate_monthly_totals_average = function(x) {
+  
+}
+
+
+
+
+
+
+
+
+
+
+append_archive_monthly_data = function(x) {
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+#write.csv(production, file='C:/Users/pmwash/Desktop/R_files/Data Input/Living Documents/STL Production Report Daily Data Archive.csv')
 
 
 
