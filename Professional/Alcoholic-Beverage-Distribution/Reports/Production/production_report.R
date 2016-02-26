@@ -28,7 +28,6 @@ tidy_production_data = function(raw_data) {
   
   row.names(raw_data) = sapply(rownames(raw_data), function(x)gsub('\\s+', '.',x))
   
-  
   order = c('151_CASES.PER.MAN.HOUR', '103_TOTAL.CASES.', '104_.ST.LOUIS', '107_.KC.TRANSFER', '108_.COLUMBIA', '109_.CAPE', '106_.RED.BULL',
             '110_BOTTLES', '111_.ST.LOUIS', '112_.COLUMBIA', '113_.CAPE', '105_.KEGS', 
             
@@ -43,9 +42,11 @@ tidy_production_data = function(raw_data) {
             '40_CASE.SHORTS', '41_BOTTLE.SHORTS',
             '69_TOTAL.ERRORS', '67_RAW.CASE.ERRORS', '68_RAW.BOTTLE.ERRORS', 
             '62_.O/S.CASES', '63_.O/S.BOTTLES' , '64_MISPICK', '65_.CASE', '66_.BOTTLES',             
-            '67_RAW.CASE.ERRORS', '68_RAW.BOTTLE.ERRORS', '149_COMPLETION.TIME:',
+            #'67_RAW.CASE.ERRORS', '68_RAW.BOTTLE.ERRORS', 
+            '149_COMPLETION.TIME:',
             #returns
-            '56_STOP.RETURN.COUNT', '57_INVOICE.TOTAL', '54_CASES', 
+            '56_STOP.RETURN.COUNT', 
+            '57_INVOICE.TOTAL', '54_CASES', 
             '58_EMPTY.BOXES.RETURNED', '55_BOTTLES', 
             
             '76_C.LINE', '77_.O/S', '78_.MISPICK', '33_C.LINE.ERRORS', '125_CPMH.C', 
@@ -58,7 +59,7 @@ tidy_production_data = function(raw_data) {
             '97_KEG', '98_.O/S', '99_.MISPICK', '19_KEGS', '20_KEG.HOURS',
             
             '150_CASES.PER.MAN.HOUR.(OT.ADJUSTED)', '121_CASES.PER.HOUR', 
-            '25_LOADING.HRS', '45_RESTOCK.HOURS',
+            '25_LOADING.HRS', '45_RESTOCK.HOURS.',
             
             '70_A.LINE', '71_.O/S', '72_.MISPICK', 
             '73_B.LINE', '74_.O/S', '75_.MISPICK', '32_BOTTLE.ERRORS', '21_B.PICK.BOTTLES', 
@@ -83,72 +84,73 @@ tidy_production_data = function(raw_data) {
   tidy_data$x = factor(row.names(tidy_data), levels=order)
   tidy_data = tidy_data %>% arrange(factor(row.names(raw_data), levels=order)) 
   
-  tidy_data = tidy_data[c(1:142), ] 
+  tidy_data = tidy_data[c(1:143), ] 
   
-  row.names(tidy_data) = tidy_data$x
+  for_factor = tidy_data[c(1:143), c('x')]
+  row.names(tidy_data) = factor(for_factor, levels=for_factor)
+  
   tidy_data = tidy_data[, (names(tidy_data) != 'x')]
   colnames(tidy_data) = as.character(strptime(substrRight(colnames(tidy_data), 10), format='%Y-%m-%d'))
   
   t_tidy_data = data.frame(t(tidy_data))
   
-  final_order = c('CPMH', 'CASES.TOTAL', 'CASES.STL', 'CASES.KC.TRANSFER', 
+  final_order = c('CPMH', 'CASES.TOTAL', 'CASES.STL', 'CASES.KC.TRANSFER', #
                   'CASES.COLUMBIA', 'CASES.CAPE', 'CASES.RED.BULL',
-                  'BOTTLES.STL.REGION', 'BOTTLES.STL', 'BOTTLES.COLUMBIA', 'BOTTLES.CAPE', 
-                  'KEGS.TOTAL.REGION', 
+                  'BOTTLES.STL.REGION', 'BOTTLES.STL', 'BOTTLES.COLUMBIA', 'BOTTLES.CAPE',#
+                  'KEGS.TOTAL.REGION',# 
                   
-                  'TOTAL.HOURS', 'SENIORITY.HOURS', 'CASUAL.HOURS', 
-                  'REG.HOURS', 'SENIORITY.REG.HOURS', 'CASUAL.REG.HOURS',
-                  'OT.HOURS', 'SENIORITY.OT.HOURS', 'CASUAL.OT.HOURS', 'TEMP.HOURS', 'DRIVER.CHECK-IN.HOURS',
-                  'ABSENT.EMPS', 'SENIORITY.ABSENT.EMPS', 'CASUAL.ABSENT.EMPS',
-                  'TOTAL.EMPS.ON.HAND', 'TOTAL.TEMPS.ON.HAND', 'TOTAL.EMPS.TEMPS',
+                  'TOTAL.HOURS', 'SENIORITY.HOURS', 'CASUAL.HOURS',# 
+                  'REG.HOURS', 'SENIORITY.REG.HOURS', 'CASUAL.REG.HOURS',#
+                  'OT.HOURS', 'SENIORITY.OT.HOURS', 'CASUAL.OT.HOURS', 'TEMP.HOURS', 'DRIVER.CHECK-IN.HOURS',#
+                  'ABSENT.EMPS', 'SENIORITY.ABSENT.EMPS', 'CASUAL.ABSENT.EMPS',#
+                  'TOTAL.EMPS.ON.HAND', 'TOTAL.TEMPS.ON.HAND', 'TOTAL.EMPS.TEMPS',#
                   
-                  'TRUCKS.TOTAL', 'TRUCKS.PACKAGE', 'TRUCKS.KEG', 
-                  'STOPS.TOTAL', 'STOPS.STL', 'STOPS.CAPE', 'STOPS.COLUMBIA',
+                  'TRUCKS.TOTAL', 'TRUCKS.PACKAGE', 'TRUCKS.KEG',# 
+                  'STOPS.TOTAL', 'STOPS.STL', 'STOPS.CAPE', 'STOPS.COLUMBIA',#
                   
-                  'CASE.SHORTS', 'BOTTLE.SHORTS',
-                  'TOTAL.ERRORS', 'RAW.CASE.ERRORS', 'RAW.BOTTLE.ERRORS', 
-                  'O/S.CASES', 'O/S.BOTTLES' , 'MISPICKS', 'MISPICK.CASES', 'MISPICK.BOTTLES',             
-                  'RAW.CASE.ERRORS', 'RAW.BOTTLE.ERRORS', 
-                  'COMPLETION.TIME',
-                  #returns
-                  'RETURNS.X', 
-                  'RETURNS.INVOICE.TOTAL', 'RETURNS.CASES', 
-                  'RETURNS.BOXES', 'RETURNS.BOTTLES', 
+                  'CASE.SHORTS', 'BOTTLE.SHORTS',#
+                  'TOTAL.ERRORS', 'RAW.CASE.ERRORS', 'RAW.BOTTLE.ERRORS',# 
+                  'O/S.CASES', 'O/S.BOTTLES' , 'MISPICKS', 'MISPICK.CASES', 'MISPICK.BOTTLES',##             
+                  #'RAW.CASE.ERRORS', 'RAW.BOTTLE.ERRORS',# 
+                  'COMPLETION.TIME',#
                   
-                  'C.LINE.ERRORS', 'C.O/S', 'C.MISPICK', 'C.ERRORS', 'CPMH.C', 
-                  'D.LINE.ERRORS', 'D.O/S', 'D.MISPICK', 'D.ERRORS', 'CPMH.D',
-                  'E.LINE.ERRORS', 'E.O/S', 'E.MISPICK', 'E.ERRORS', 'CPMH.E',
-                  'F.LINE.ERRORS', 'F.O/S', 'F.MISPICK', 'F.ERRORS', 'F.CASES.', 'F.HOURS', 'CPMH.F',
-                  'G.LINE.ERRORS', 'G.O/S', 'G.MISPICK', 'G.ERRORS', 'G.CASES.', 'G.HOURS', 'CPMH.G',
-                  'W.LINE.ERRORS', 'W.O/S', 'W.MISPICK', 'W.ERRORS', 'W.CASES', 'W.HOURS',
-                  'H.LINE.ERRORS', 'H.O/S', 'H.MISPICK', 'UNKNOWN.CASES.', 'UNKNOWN.CASES.HOURS',
-                  'KEG.ERRORS', 'KEG.O/S', 'KEG.MISPICK', 'KEGS.PRODUCED', 'KEG.HOURS',
+                  'RETURNS.X',# 
+                  'RETURNS.INVOICE.TOTAL', 'RETURNS.CASES',# 
+                  'RETURNS.BOXES', 'RETURNS.BOTTLES',# 
                   
-                  'CPMH.OT.ADJUSTED', 'CASES.PER.HOUR', 
-                  'LOADING.HOURS', 'RESTOCK.HOURS',
+                  'C.LINE.ERRORS', 'C.O/S', 'C.MISPICK', 'C.ERRORS', 'CPMH.C',# 
+                  'D.LINE.ERRORS', 'D.O/S', 'D.MISPICK', 'D.ERRORS', 'CPMH.D',#
+                  'E.LINE.ERRORS', 'E.O/S', 'E.MISPICK', 'E.ERRORS', 'CPMH.E',#
+                  'F.LINE.ERRORS', 'F.O/S', 'F.MISPICK', 'F.ERRORS', 'F.CASES', 'F.HOURS', 'CPMH.F',#
+                  'G.LINE.ERRORS', 'G.O/S', 'G.MISPICK', 'G.ERRORS', 'G.CASES', 'G.HOURS', 'CPMH.G',#
+                  'W.LINE.ERRORS', 'W.O/S', 'W.MISPICK', 'W.ERRORS', 'W.CASES', 'W.HOURS',#
+                  'H.LINE.ERRORS', 'H.O/S', 'H.MISPICK', 'UNKNOWN.CASES.', 'UNKNOWN.CASES.HOURS',#
+                  'KEG.ERRORS', 'KEG.O/S', 'KEG.MISPICK', 'KEGS.PRODUCED', 'KEG.HOURS',#
                   
-                  'A.LINE.ERRORS', 'A.O/S', 'A.MISPICK', 
-                  'B.LINE.ERRORS', 'B.O/S', 'B.MISPICK', 'BOTTLE.ERRORS', 
-                  'B.PICK.BOTTLES', 'B.PICK.HOURS', 'A-B.RESTOCK.CASES', 
-                  'BPMH.B.BOTTLE','BPMH.TOTAL', 'BPMH.PTV', 
+                  'CPMH.OT.ADJUSTED', 'CASES.PER.HOUR',#
+                  'LOADING.HOURS', 'RESTOCK.HOURS',#
                   
-                  'NON.CONVEYABLE.', 'PALLET.PICKS', 'SORTER.RUN.TIME.(HOURS)',
-                  'NO.READS', 'MULTI.READS', 'JACKPOT.CASES',
-                  'JACKPOT.HAND.SCAN', 'RECIRCULATION.CASES', 'NUMBER.ID.GROUPS',
-                  'NUMBER.WAVES', 'WAVE.PART.SUMMARY', 'CONTECH.TOTAL.CASES', 
-                  'TOTAL.WAVES', 'TOTAL.WAVE.PARTS', 'AVG.CASES.PER.WAVE',
-                  'AVG.CASES/WAVE.PART', 'AVG.WAVE.PARTS/WAVE', '%.REDUCTION.IN.PICK.CYCLES',
+                  'A.LINE.ERRORS', 'A.O/S', 'A.MISPICK',# 
+                  'B.LINE.ERRORS', 'B.O/S', 'B.MISPICK', 'BOTTLE.ERRORS',# 
+                  'B.PICK.BOTTLES', 'B.PICK.HOURS', 'A-B.RESTOCK.CASES',# 
+                  'BPMH.B.BOTTLE','BPMH.TOTAL', 'BPMH.PTV',#
                   
-                  'TOTAL.ODD.BALL', 'TOTAL.ODD.BALL.HOURS', 'ODD.BALL.ERRORS',
-                  'ODD.BALL.CASES.1', 'ODD.BALL.HOURS.1', 
-                  'ODD.BALL.CASES.2', 'ODD.BALL.HOURS.2',
-                  'ODD.BALL.CASES.3', 'ODD.BALL.HOURS.3',
-                  'ODD.BALL.CASES.4', 'ODD.BALL.HOURS.4')
+                  'NON.CONVEYABLE.', 'PALLET.PICKS', 'SORTER.RUN.TIME.(HOURS)',#
+                  'NO.READS', 'MULTI.READS', 'JACKPOT.CASES',#
+                  'JACKPOT.HAND.SCAN', 'RECIRCULATION.CASES', 'NUMBER.ID.GROUPS',#
+                  'NUMBER.WAVES', 'WAVE.PART.SUMMARY', 'CONTECH.TOTAL.CASES',# 
+                  'TOTAL.WAVES', 'TOTAL.WAVE.PARTS', 'AVG.CASES.PER.WAVE',#
+                  'AVG.CASES/WAVE.PART', 'AVG.WAVE.PARTS/WAVE', '%.REDUCTION.IN.PICK.CYCLES',#
+                  
+                  'TOTAL.ODD.BALL', 'TOTAL.ODD.BALL.HOURS', 'ODD.BALL.ERRORS',#
+                  'ODD.BALL.CASES.1', 'ODD.BALL.HOURS.1',#
+                  'ODD.BALL.CASES.2', 'ODD.BALL.HOURS.2',#
+                  'ODD.BALL.CASES.3', 'ODD.BALL.HOURS.3',#
+                  'ODD.BALL.CASES.4', 'ODD.BALL.HOURS.4')#
   
-  
-  xx = as.character(names(t_tidy_data))
-  xx = sapply(xx, function(x)gsub('X', '',x))
-  ifelse(!(xx %in% order), xx, '')
+  the_names = factor(final_order, levels=final_order)
+  names(t_tidy_data) = factor(final_order, levels=final_order)
+
   
   
   
