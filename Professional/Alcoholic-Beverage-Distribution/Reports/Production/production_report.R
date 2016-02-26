@@ -1,11 +1,3 @@
-
-print('New Production Report 02242016')
-
-
-print('Gather external utilities')
-library(dplyr)
-library(tidyr)
-source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 raw_data = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/test_input_production_report.csv', header=TRUE)
 
 
@@ -150,66 +142,12 @@ tidy_production_data = function(raw_data) {
   
   the_names = factor(final_order, levels=final_order)
   names(t_tidy_data) = factor(final_order, levels=final_order)
-
   
+  dat = row.names(t_tidy_data)
+  t_tidy_data$MONTH = month(dat)
+  t_tidy_data$YEAR = year(dat)
   
-  
-  names(t_tidy_data) = make.unique(factor(as.character(final_order), levels=final_order))
-  t_tidy_data = subset(t_tidy_data, select= c(1:145))
-  t_tidy_data = tbl_df(t_tidy_data)
-  
-  
-  #row.names(raw_data) = as.character(strptime(substrRight(rownames(raw_data), 10), format='%Y-%m-%d'))
-  
-  
-  print(t_tidy_data)
+  t_tidy_data
 }
 
-
-
-
-
-
-headTail(check)
-
-
-headTail(raw_data)
-
-
-
-
-#for figuring it out
-x <- data.frame(x=rep(c("red","blue","green"),each=4), y=rep(letters[1:4],3), value.1 = 1:12, value.2 = 13:24)
-x %>%
-  gather(Var, val, starts_with("value")) %>% 
-  unite(Var1,Var, y) 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+production = tidy_production_data(raw_data)
