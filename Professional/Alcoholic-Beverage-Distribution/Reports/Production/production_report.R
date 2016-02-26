@@ -1,3 +1,11 @@
+
+print('New Production Report 02242016')
+
+
+print('Gather external utilities')
+library(dplyr)
+library(tidyr)
+source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 raw_data = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/test_input_production_report.csv', header=TRUE)
 
 
@@ -144,10 +152,56 @@ tidy_production_data = function(raw_data) {
   names(t_tidy_data) = factor(final_order, levels=final_order)
   
   dat = row.names(t_tidy_data)
+  
+  t_tidy_data = data.frame(sapply(t_tidy_data, function(x) as.numeric(as.character(x))))
+  
+  row.names(t_tidy_data) = dat 
   t_tidy_data$MONTH = month(dat)
   t_tidy_data$YEAR = year(dat)
+  t_tidy_data$DATE = dat
+  row.names(t_tidy_data) = NULL
+  
+  t_tidy_data = t_tidy_data[,c(146, 1:145)]
   
   t_tidy_data
 }
 
 production = tidy_production_data(raw_data)
+headTail(production)
+
+
+write.csv(production, file='C:/Users/pmwash/Desktop/R_files/Data Input/Living Documents/Production Report Data Archive.csv')
+
+
+
+#str(production)
+qplot(data=production, x=CASES.TOTAL, geom='density')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
