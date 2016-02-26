@@ -145,7 +145,7 @@ tidy_production_data = function(raw_data) {
                   'BPMH.B.BOTTLE','BPMH.TOTAL', 'BPMH.PTV',#
                   'BOTTLE.HOURS', 'P2V.PICK.HOURS',
                   
-                  'NON.CONVEYABLE.', 'PALLET.PICKS', 'SORTER.RUN.TIME.(HOURS)',#
+                  'NON.CONVEYABLE', 'PALLET.PICKS', 'SORTER.RUN.TIME.(HOURS)',#
                   'NO.READS', 'MULTI.READS', 'JACKPOT.CASES',#
                   'JACKPOT.HAND.SCAN', 'RECIRCULATION.CASES', 'NUMBER.ID.GROUPS',#
                   'NUMBER.WAVES', 'WAVE.PART.SUMMARY', 'CONTECH.TOTAL.CASES',# 
@@ -180,17 +180,15 @@ tidy_production_data = function(raw_data) {
   t_tidy_data
 }
 
-print('This takes key value pairs from all of the production daily reports gathered using VBA')
 production = tidy_production_data(raw_data)
 #write.csv(production, file='C:/Users/pmwash/Desktop/R_files/Data Input/Living Documents/STL Production Report Daily Data Archive.csv')
 
 
 
 
-generate_cumsum_moving_avg = function(production) {
+generate_cumsums = function(production) {
   p = data.frame(production)
-  
-  #generate cumsums
+
   p = p %>% group_by(YEAR) %>% 
     mutate(YTD.CASES.TOTAL=cumsum(CASES.TOTAL))
   p = p %>% group_by(YEAR) %>% 
@@ -231,30 +229,57 @@ generate_cumsum_moving_avg = function(production) {
     mutate(YTD.TOTAL.ERRORS=cumsum(TOTAL.ERRORS))
   p = p %>% group_by(YEAR) %>% 
     mutate(YTD.RETURNS.INVOICE.TOTAL=cumsum(RETURNS.INVOICE.TOTAL))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.C.CASES=cumsum(C.CASES))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.D.CASES=cumsum(D.CASES))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.E.CASES=cumsum(E.CASES))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.F.CASES=cumsum(F.CASES))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.G.CASES=cumsum(G.CASES))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.ODD.BALL.CASES=cumsum(TOTAL.ODD.BALL))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.NON.CONVEYABLE.CASES=cumsum(NON.CONVEYABLE))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.PALLET.PICKS.CASES=cumsum(PALLET.PICKS))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.SORTER.RUN.TIME..HOURS.=cumsum(SORTER.RUN.TIME..HOURS.))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.NO.READS=cumsum(NO.READS))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.MULTI.READS=cumsum(MULTI.READS))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.JACKPOT.CASES=cumsum(JACKPOT.CASES))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.JACKPOT.HAND.SCAN=cumsum(JACKPOT.HAND.SCAN))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.NO.READS=cumsum(NO.READS))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.RECIRCULATION.CASES=cumsum(RECIRCULATION.CASES))
+  p = p %>% group_by(YEAR) %>% 
+    mutate(YTD.NUMBER.WAVES=cumsum(NUMBER.WAVES))
   
+  p = data.frame(p)
   
-  p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.BOTTLES.STL=cumsum(BOTTLES.STL))
+  p
+}
+
+
+production = generate_cumsums(production)
+
+
+
+
+generate_moving_avgs = function(production) {
+  m = production
   
-  p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.BOTTLES.STL=cumsum(BOTTLES.STL))
-  p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.BOTTLES.STL=cumsum(BOTTLES.STL))
-  p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.BOTTLES.STL=cumsum(BOTTLES.STL))
-  p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.BOTTLES.STL=cumsum(BOTTLES.STL))
-  
-    
   #generate moving averages
   history = history %>% group_by(Year) %>%
     mutate(Keg.Other.Trucks.3.Month.Mvg.Avg = rollmean(x=Keg.Other.Trucks, 3, align='right', fill=NA))
 }
-
-
-
-
-
 
 
 
