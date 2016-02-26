@@ -35,14 +35,24 @@ Sub production_report_gather()
         wb.Activate
         wb.Sheets("Summary").Range("I5:J57").Copy
         t_wb.Activate
-        t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues
+        t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, SkipBlanks:=False
+        
+        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 54) = wb.Name
+        
+        t_wb.Worksheets(1).Range("D" & last_row).Select
+        Selection = "1"
+        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=53, Trend:=False
+        
+        
+        
+        last_row = Cells(Rows.Count, "A").End(xlUp).Row + 1
         
         wb.Activate
         wb.Sheets("Summary").Range("L19:M26").Copy
         t_wb.Activate
-        t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues
+        t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, SkipBlanks:=False
         
-        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 54) = wb.Name ' 49 + 52 = 101 + 56 = 157 + 8 = 165 - 9 for first rows = 156 - 3 = 153 - 101 for split = 142
+        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 7) = wb.Name
         
         t_wb.Worksheets(1).Range("D" & last_row).Select
         Selection = "1"
@@ -102,6 +112,3 @@ Sub production_report_gather()
     Next file
     
 End Sub
-
-
-
