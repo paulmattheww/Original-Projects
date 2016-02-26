@@ -54,9 +54,12 @@ tidy_production_data = function(raw_data) {
             '57_INVOICE.TOTAL', '54_CASES', 
             '58_EMPTY.BOXES.RETURNED', '55_BOTTLES', 
             
-            '76_C.LINE', '77_.O/S', '78_.MISPICK', '33_C.LINE.ERRORS', '125_CPMH.C', 
-            '79_D.LINE', '80_.O/S', '81_.MISPICK', '34_D.LINE.ERRORS', '126_CPMH.D',
-            '82_E.LINE', '83_.O/S', '84_.MISPICK', '35_E.LINE.ERRORS', '127_CPMH.E',
+            '76_C.LINE', '77_.O/S', '78_.MISPICK', '33_C.LINE.ERRORS', '3_C.CASES', '4_C.HOURS', 
+            '125_CPMH.C', 
+            '79_D.LINE', '80_.O/S', '81_.MISPICK', '34_D.LINE.ERRORS',  '5_D.CASES.', '6_D.HOURS',
+            '126_CPMH.D',
+            '82_E.LINE', '83_.O/S', '84_.MISPICK', '35_E.LINE.ERRORS', '7_E.CASES', '8_E.HOURS',
+            '127_CPMH.E',
             '85_F.LINE', '86_.O/S', '87_.MISPICK', '36_F.LINE.ERRORS', '9_F.CASES.', '10_F.HOURS', '128_CPMH.F',
             '88_G.LINE', '89_.O/S', '90_.MISPICK', '37_G.LINE.ERRORS', '11_G.CASES.', '12_G.HOURS', '129_CPMH.G',
             '91_W.LINE', '92_.O/S', '93_.MISPICK', '38_WINE.ERRORS', '13_W.CASES', '14_W.HOURS',
@@ -70,6 +73,7 @@ tidy_production_data = function(raw_data) {
             '73_B.LINE', '74_.O/S', '75_.MISPICK', '32_BOTTLE.ERRORS', '21_B.PICK.BOTTLES', 
             '22_B.PICK.HOURS', '44_A-B.RESTOCK.CASES', '124_BPMH.B.BOTTLE',
             '122_BPMH.TOTAL', '123_BPMH.PTV', 
+            '1_BOTTLE.HOURS', '2_PTV.PICK.HOURS',
             
             '23_NON.CONVEYABLE.', '24_PALLET.PICKS', '26_SORTER.RUN.TIME.(HOURS)',
             '27_NO.READS', '28_MULTI.READS', '29_JACKPOT.CASES',
@@ -89,9 +93,9 @@ tidy_production_data = function(raw_data) {
   tidy_data$x = factor(row.names(tidy_data), levels=order)
   tidy_data = tidy_data %>% arrange(factor(row.names(raw_data), levels=order)) 
   
-  tidy_data = tidy_data[c(1:143), ] 
+  tidy_data = tidy_data[c(1:151), ] 
   
-  for_factor = tidy_data[c(1:143), c('x')]
+  for_factor = tidy_data$x  #[c(1:143), c('x')]
   row.names(tidy_data) = factor(for_factor, levels=for_factor)
   
   tidy_data = tidy_data[, (names(tidy_data) != 'x')]
@@ -123,9 +127,9 @@ tidy_production_data = function(raw_data) {
                   'RETURNS.INVOICE.TOTAL', 'RETURNS.CASES',# 
                   'RETURNS.BOXES', 'RETURNS.BOTTLES',# 
                   
-                  'C.LINE.ERRORS', 'C.O/S', 'C.MISPICK', 'C.ERRORS', 'CPMH.C',# 
-                  'D.LINE.ERRORS', 'D.O/S', 'D.MISPICK', 'D.ERRORS', 'CPMH.D',#
-                  'E.LINE.ERRORS', 'E.O/S', 'E.MISPICK', 'E.ERRORS', 'CPMH.E',#
+                  'C.LINE.ERRORS', 'C.O/S', 'C.MISPICK', 'C.ERRORS', 'C.CASES', 'C.HOURS', 'CPMH.C',# 
+                  'D.LINE.ERRORS', 'D.O/S', 'D.MISPICK', 'D.ERRORS', 'D.CASES', 'D.HOURS', 'CPMH.D',#
+                  'E.LINE.ERRORS', 'E.O/S', 'E.MISPICK', 'E.ERRORS', 'E.CASES', 'E.HOURS', 'CPMH.E',#
                   'F.LINE.ERRORS', 'F.O/S', 'F.MISPICK', 'F.ERRORS', 'F.CASES', 'F.HOURS', 'CPMH.F',#
                   'G.LINE.ERRORS', 'G.O/S', 'G.MISPICK', 'G.ERRORS', 'G.CASES', 'G.HOURS', 'CPMH.G',#
                   'W.LINE.ERRORS', 'W.O/S', 'W.MISPICK', 'W.ERRORS', 'W.CASES', 'W.HOURS',#
@@ -139,6 +143,7 @@ tidy_production_data = function(raw_data) {
                   'B.LINE.ERRORS', 'B.O/S', 'B.MISPICK', 'BOTTLE.ERRORS',# 
                   'B.PICK.BOTTLES', 'B.PICK.HOURS', 'A-B.RESTOCK.CASES',# 
                   'BPMH.B.BOTTLE','BPMH.TOTAL', 'BPMH.PTV',#
+                  'BOTTLE.HOURS', 'P2V.PICK.HOURS',
                   
                   'NON.CONVEYABLE.', 'PALLET.PICKS', 'SORTER.RUN.TIME.(HOURS)',#
                   'NO.READS', 'MULTI.READS', 'JACKPOT.CASES',#
@@ -170,13 +175,14 @@ tidy_production_data = function(raw_data) {
                                           ifelse(month==10 | month==11 | month==12, "Fall", ""))))
   row.names(t_tidy_data) = NULL
   
-  t_tidy_data = t_tidy_data[,c(146, 1:145, 147)]
+  t_tidy_data = t_tidy_data[,c(154, 1:153, 155)]
   
   t_tidy_data
 }
 
 print('This takes key value pairs from all of the production daily reports gathered using VBA')
 production = tidy_production_data(raw_data)
+#write.csv(production, file='C:/Users/pmwash/Desktop/R_files/Data Input/Living Documents/STL Production Report Daily Data Archive.csv')
 
 
 
