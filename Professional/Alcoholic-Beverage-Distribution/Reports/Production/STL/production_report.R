@@ -10,6 +10,7 @@ library(scales)
 library(zoo)
 library(gridExtra)
 library(lubridate)
+library(reshape2)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 raw_data = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/test_input_production_report.csv', header=TRUE)
 
@@ -184,9 +185,16 @@ production = tidy_production_data(raw_data)
 #write.csv(production, file='C:/Users/pmwash/Desktop/R_files/Data Input/Living Documents/STL Production Report Daily Data Archive.csv')
 
 
+append_archive_daily_data = function(production) {
+  
+}
 
 
-generate_cumsums = function(production) {
+
+
+
+
+generate_cumsums = function(production_appended) {
   p = data.frame(production)
 
   p = p %>% group_by(YEAR) %>% 
@@ -268,12 +276,12 @@ generate_cumsums = function(production) {
 }
 
 
-production = generate_cumsums(production)
+production_appended = generate_cumsums(production_appended)
 
 
 
 
-generate_moving_avgs = function(production) {
+generate_moving_avgs = function(production_appended) {
   m = production
 
   m = m %>% group_by(YEAR) %>%
@@ -488,13 +496,67 @@ generate_moving_avgs = function(production) {
   m
 }
 
-production = generate_moving_avgs(production)
+production_appended = generate_moving_avgs(production)
 
 
 
 
 
-append_archive_daily_data = function(production) {
+aggregate_monthly_averages_totals = function(production_appended) {
+  t = production_appended
+  
+  
+  t_melt = melt(t, id=c('MONTH'))  #, 'YEAR'))
+  t_melt = filter(t_melt, variable != 'DATE' | variable != 'MONTH' | variable != 'YEAR')
+  t_melt$value = as.numeric(t_melt$value)
+  
+  t_sums = dcast(t_melt, MONTH ~ variable, function(x) round(sum(x, na.rm=TRUE), 2))
+  colnames(t_sums) = sapply(colnames(t_sums), function(x) paste0('SUM.', x))
+  row.names(t_sums) = c('JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 
+                        'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER')
+  
+  t_sums = t_sums[, c('SUM.CASES.TOTAL', 'SUM.BOTTLES.STL.REGION', 'SUM.MISPICKS', 
+                      'SUM.TOTAL.ERRORS', 'SUM.O.S.CASES', 'SUM.O.S.BOTTLES', 
+                      'SUM.TOTAL.HOURS', 'SUM.OT.HOURS', 'SUM.TOTAL.ODD.BALL.HOURS',
+                      'SUM.RETURNS.CASES', 'SUM.TOTAL.ODD.BALL')]
+  names(t_sums) = c('CASES', 'BOTTLES', 'MISPICKS', 
+                    'ERRORS', 'O.S.CASES', 'O.S.BOTTLES', 
+                    'MAN.HOURS', 'OVERTIME.HOURS', 'ODD.BALL.HOURS',
+                    'CASES.RETURNED', 'ODD.BALL.CASES')
+  
+  
+  t_avgs = dcast(t_melt, MONTH ~ variable, function(x) round(mean(x, na.rm=TRUE), 4))
+  colnames(t_avgs) = sapply(colnames(t_avgs), function(x) paste0('AVG.', x))
+  row.names(t_avgs) = c('JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 
+                        'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER')
+  
+  t_avgs = t_avgs[, c('AVG.CPMH.OT.ADJUSTED', 'AVG.CPMH', 'AVG.CASES.TOTAL', 
+                      'AVG.TOTAL.EMPS.TEMPS', 'AVG.TOTAL.ODD.BALL', 'AVG.BOTTLES.STL.REGION', 'AVG.TOTAL.ODD.BALL.HOURS')]
+  names(t_avgs) = c('CPMH.OT.ADJ', 'CPMH', 'AVG.CASES', 
+                    'AVG.EMPLOYEES.ON.HAND', 'AVG.ODD.BALL.CASES', 'AVG.BOTTLES', 'AVG.ODD.BALL.HOURS')
+  
+  t_combined = cbind(t_sums, t_avgs)
+  order = c('CASES', 'AVG.CASES', 'BOTTLES', 'AVG.BOTTLES', 
+            'CPMH', 'CPMH.OT.ADJ', 'MAN.HOURS', 'AVG.EMPLOYEES.ON.HAND',
+            'ERRORS', 'MISPICKS' , 'O.S.CASES', 'O.S.BOTTLES', 
+            'ODD.BALL.CASES', 'AVG.ODD.BALL.CASES', 'ODD.BALL.HOURS', 'AVG.ODD.BALL.HOURS')
+  t_combined = t_combined[, order]
+  
+  T_combined = data.frame(t(t_combined))
+  
+  T_combined
+}
+
+production_monthly = aggregate_monthly_averages_totals(production_appended)
+
+
+
+
+
+
+
+
+generate_yoy_percent_change = function(x) {
   
 }
 
@@ -504,19 +566,6 @@ append_archive_daily_data = function(production) {
 
 
 
-
-generate_monthly_totals = function(x) {
-  
-}
-
-
-
-
-
-
-generate_monthly_averages = function(x) {
-  
-}
 
 
 
