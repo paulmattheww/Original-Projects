@@ -12,7 +12,7 @@ library(gridExtra)
 library(lubridate)
 library(reshape2)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
-raw_data = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/test_input_production_report.csv', header=TRUE)
+raw_data = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Living Documents/Input Production Report/input_production_report.csv', header=TRUE)
 
 
 
@@ -189,15 +189,26 @@ append_archive_daily_data = function(production) {
   path = '//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Production/Production History/STL Production Report Daily Data Archive.csv'
   
   history = read.csv(path, header=TRUE)
+  names(history) = names(production)
+  appended = rbind(history, production)
+  
+  write.csv(appended, path)
+  
+  appended
 }
 
-production_appended = production
+
+print('Delete first column from output csv document')
+production_appended = append_archive_daily_data(production)
+# If you must re-read it in without appending duplicates... 
+# path = '//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Production/Production History/STL Production Report Daily Data Archive.csv'
+# production_appended = read.csv(path, header=TRUE)
 
 
 
 
 generate_cumsums = function(production_appended) {
-  p = data.frame(production)
+  p = data.frame(production_appended)
 
   p = p %>% group_by(YEAR) %>% 
     mutate(YTD.CASES.TOTAL=cumsum(CASES.TOTAL))
@@ -284,7 +295,7 @@ production_appended = generate_cumsums(production_appended)
 
 
 generate_moving_avgs = function(production_appended) {
-  m = production
+  m = production_appended
 
   m = m %>% group_by(YEAR) %>%
     mutate(CPMH.10.DAY.MVG.AVG = rollmean(x=CPMH, 10, align='right', fill=NA))
@@ -389,110 +400,6 @@ generate_moving_avgs = function(production_appended) {
   m = m %>% group_by(YEAR) %>%
     mutate(TOTAL.ODD.BALL.HOURS.10.DAY.MVG.AVG = rollmean(x=TOTAL.ODD.BALL.HOURS, 10, align='right', fill=NA))
   
-  
-  m = m %>% group_by(YEAR) %>%
-    mutate(CPMH.30.DAY.MVG.AVG = rollmean(x=CPMH, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(CASES.TOTAL.30.DAY.MVG.AVG = rollmean(x=CASES.TOTAL, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(CASES.STL.30.DAY.MVG.AVG = rollmean(x=CASES.STL, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(CASES.KC.TRANSFER.30.DAY.MVG.AVG = rollmean(x=CASES.KC.TRANSFER, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(CASES.COLUMBIA.30.DAY.MVG.AVG = rollmean(x=CASES.COLUMBIA, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(CASES.CAPE.30.DAY.MVG.AVG = rollmean(x=CASES.CAPE, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(BOTTLES.STL.REGION.30.DAY.MVG.AVG = rollmean(x=BOTTLES.STL.REGION, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(KEGS.TOTAL.REGION.30.DAY.MVG.AVG = rollmean(x=KEGS.TOTAL.REGION, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(TOTAL.HOURS.30.DAY.MVG.AVG = rollmean(x=TOTAL.HOURS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(REG.HOURS.30.DAY.MVG.AVG = rollmean(x=REG.HOURS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(OT.HOURS.30.DAY.MVG.AVG = rollmean(x=OT.HOURS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(TOTAL.EMPS.TEMPS.30.DAY.MVG.AVG = rollmean(x=TOTAL.EMPS.TEMPS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(TRUCKS.TOTAL.30.DAY.MVG.AVG = rollmean(x=TRUCKS.TOTAL, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(TRUCKS.PACKAGE.30.DAY.MVG.AVG = rollmean(x=TRUCKS.PACKAGE, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(TRUCKS.KEG.30.DAY.MVG.AVG = rollmean(x=TRUCKS.KEG, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(STOPS.TOTAL.30.DAY.MVG.AVG = rollmean(x=STOPS.TOTAL, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(COMPLETION.TIME.30.DAY.MVG.AVG = rollmean(x=COMPLETION.TIME, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(RETURNS.INVOICE.TOTAL.30.DAY.MVG.AVG = rollmean(x=RETURNS.INVOICE.TOTAL, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(RETURNS.CASES.30.DAY.MVG.AVG = rollmean(x=RETURNS.CASES, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(C.CASES.30.DAY.MVG.AVG = rollmean(x=C.CASES, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(C.HOURS.30.DAY.MVG.AVG = rollmean(x=C.HOURS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(CPMH.C.30.DAY.MVG.AVG = rollmean(x=CPMH.C, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(D.CASES.30.DAY.MVG.AVG = rollmean(x=D.CASES, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(D.HOURS.30.DAY.MVG.AVG = rollmean(x=D.HOURS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(CPMH.D.30.DAY.MVG.AVG = rollmean(x=CPMH.D, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(E.CASES.30.DAY.MVG.AVG = rollmean(x=E.CASES, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(E.HOURS.30.DAY.MVG.AVG = rollmean(x=E.HOURS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(CPMH.E.30.DAY.MVG.AVG = rollmean(x=CPMH.E, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(F.CASES.30.DAY.MVG.AVG = rollmean(x=F.CASES, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(F.HOURS.30.DAY.MVG.AVG = rollmean(x=F.HOURS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(CPMH.F.30.DAY.MVG.AVG = rollmean(x=CPMH.F, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(G.CASES.30.DAY.MVG.AVG = rollmean(x=G.CASES, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(G.HOURS.30.DAY.MVG.AVG = rollmean(x=G.HOURS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(CPMH.G.30.DAY.MVG.AVG = rollmean(x=CPMH.G, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(W.CASES.30.DAY.MVG.AVG = rollmean(x=W.CASES, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(W.HOURS.30.DAY.MVG.AVG = rollmean(x=W.HOURS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(LOADING.HOURS.30.DAY.MVG.AVG = rollmean(x=LOADING.HOURS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(NON.CONVEYABLE.30.DAY.MVG.AVG = rollmean(x=NON.CONVEYABLE, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(PALLET.PICKS.30.DAY.MVG.AVG = rollmean(x=PALLET.PICKS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(SORTER.RUN.TIME..HOURS..30.DAY.MVG.AVG = rollmean(x=SORTER.RUN.TIME..HOURS., 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(NO.READS.30.DAY.MVG.AVG = rollmean(x=NO.READS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(MULTI.READS.30.DAY.MVG.AVG = rollmean(x=MULTI.READS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(JACKPOT.CASES.30.DAY.MVG.AVG = rollmean(x=JACKPOT.CASES, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(JACKPOT.HAND.SCAN.30.DAY.MVG.AVG = rollmean(x=JACKPOT.HAND.SCAN, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(RECIRCULATION.CASES.30.DAY.MVG.AVG = rollmean(x=RECIRCULATION.CASES, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(NUMBER.ID.GROUPS.30.DAY.MVG.AVG = rollmean(x=NUMBER.ID.GROUPS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(NUMBER.WAVES.30.DAY.MVG.AVG = rollmean(x=NUMBER.WAVES, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(TOTAL.WAVE.PARTS.30.DAY.MVG.AVG = rollmean(x=TOTAL.WAVE.PARTS, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(AVG.CASES.PER.WAVE.30.DAY.MVG.AVG = rollmean(x=AVG.CASES.PER.WAVE, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(TOTAL.ODD.BALL.30.DAY.MVG.AVG = rollmean(x=TOTAL.ODD.BALL, 30, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(TOTAL.ODD.BALL.HOURS.30.DAY.MVG.AVG = rollmean(x=TOTAL.ODD.BALL.HOURS, 30, align='right', fill=NA))
-  
   m = data.frame(m)
   
   m
@@ -504,18 +411,19 @@ production_appended = generate_moving_avgs(production_appended)
 
 
 
-aggregate_monthly_averages_totals = function(production_appended) {
+aggregate_monthly_averages_totals = function(production_appended, report_month='JANUARY') {
   t = production_appended
   
   
-  t_melt = melt(t, id=c('MONTH'))  #, 'YEAR'))
-  t_melt = filter(t_melt, variable != 'DATE' | variable != 'MONTH' | variable != 'YEAR')
+  t_melt = melt(t, id=c('MONTH', 'YEAR'))  #, 'YEAR'))
+  #t_melt = filter(t_melt, variable != 'DATE' | variable != 'MONTH' | variable != 'YEAR')
   t_melt$value = as.numeric(t_melt$value)
   
-  t_sums = dcast(t_melt, MONTH ~ variable, function(x) round(sum(x, na.rm=TRUE), 2))
+  t_sums = dcast(t_melt, MONTH + YEAR ~ variable, function(x) round(sum(x, na.rm=TRUE), 2))
   colnames(t_sums) = sapply(colnames(t_sums), function(x) paste0('SUM.', x))
-  row.names(t_sums) = c('JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 
-                        'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER')
+  row.names(t_sums) = c('JANUARY 2015', 'FEBRUARY 2015', 'MARCH 2015', 'APRIL 2015', 'MAY 2015', 'JUNE 2015', 
+                        'JULY 2015', 'AUGUST 2015', 'SEPTEMBER 2015', 'OCTOBER 2015', 'NOVEMBER 2015', 'DECEMBER 2015',
+                        'JANUARY 2016')
   
   t_sums = t_sums[, c('SUM.CASES.TOTAL', 'SUM.BOTTLES.STL.REGION', 'SUM.MISPICKS', 
                       'SUM.TOTAL.ERRORS', 'SUM.O.S.CASES', 'SUM.O.S.BOTTLES', 
@@ -527,10 +435,11 @@ aggregate_monthly_averages_totals = function(production_appended) {
                     'CASES.RETURNED', 'ODD.BALL.CASES')
   
   
-  t_avgs = dcast(t_melt, MONTH ~ variable, function(x) round(mean(x, na.rm=TRUE), 4))
+  t_avgs = dcast(t_melt, MONTH +  YEAR ~ variable, function(x) round(mean(x, na.rm=TRUE), 4))
   colnames(t_avgs) = sapply(colnames(t_avgs), function(x) paste0('AVG.', x))
-  row.names(t_avgs) = c('JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 
-                        'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER')
+  row.names(t_avgs) = c('JANUARY 2015', 'FEBRUARY 2015', 'MARCH 2015', 'APRIL 2015', 'MAY 2015', 'JUNE 2015', 
+                        'JULY 2015', 'AUGUST 2015', 'SEPTEMBER 2015', 'OCTOBER 2015', 'NOVEMBER 2015', 'DECEMBER 2015',
+                        'JANUARY 2016')
   
   t_avgs = t_avgs[, c('AVG.CPMH.OT.ADJUSTED', 'AVG.CPMH', 'AVG.CASES.TOTAL', 
                       'AVG.TOTAL.EMPS.TEMPS', 'AVG.TOTAL.ODD.BALL', 'AVG.BOTTLES.STL.REGION', 'AVG.TOTAL.ODD.BALL.HOURS')]
@@ -544,7 +453,15 @@ aggregate_monthly_averages_totals = function(production_appended) {
             'ODD.BALL.CASES', 'AVG.ODD.BALL.CASES', 'ODD.BALL.HOURS', 'AVG.ODD.BALL.HOURS')
   t_combined = t_combined[, order]
   
+  this_month = 'JAN'
+  t_combined = t_combined[which(substrLeft(row.names(t_combined), 3) %in% this_month), ]
+  
   T_combined = data.frame(t(t_combined))
+  
+  this = T_combined$JANUARY.2016
+  last = T_combined$JANUARY.2015
+  T_combined$PERCENT.CHANGE = round((this - last) / last, 4)
+  T_combined = T_combined[, c(2, 1, 3)]
   
   T_combined
 }
@@ -561,7 +478,6 @@ generate_yoy_percent_change = function(x) {
 
 
 
-file_path = 'C:/Users/pmwash/Desktop/R_files/Data Output/production_report_2015.xlsx'
 write_analysis_to_file = function(production_appended, file_path) {
   p = production_appended
   row.names(p) = factor(p$DATE, levels=p$DATE)
@@ -572,6 +488,8 @@ write_analysis_to_file = function(production_appended, file_path) {
   write.xlsx(monthly_summary, file=file_path, sheet='Monthly Summary')
   write.xlsx(p, file=file_path, sheet='Raw Data', append=TRUE)
 }
+
+file_path = 'C:/Users/pmwash/Desktop/R_files/Data Output/production_report_2015.xlsx'
 
 write_analysis_to_file(production_appended, file_path)
 
