@@ -186,10 +186,12 @@ production = tidy_production_data(raw_data)
 
 
 append_archive_daily_data = function(production) {
+  path = '//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Production/Production History/STL Production Report Daily Data Archive.csv'
   
+  history = read.csv(path, header=TRUE)
 }
 
-
+production_appended = production
 
 
 
@@ -496,7 +498,7 @@ generate_moving_avgs = function(production_appended) {
   m
 }
 
-production_appended = generate_moving_avgs(production)
+production_appended = generate_moving_avgs(production_appended)
 
 
 
@@ -547,10 +549,7 @@ aggregate_monthly_averages_totals = function(production_appended) {
   T_combined
 }
 
-production_monthly = aggregate_monthly_averages_totals(production_appended)
-
-
-
+monthly_summary = aggregate_monthly_averages_totals(production_appended)
 
 
 
@@ -562,8 +561,33 @@ generate_yoy_percent_change = function(x) {
 
 
 
+file_path = 'C:/Users/pmwash/Desktop/R_files/Data Output/production_report_2015.xlsx'
+write_analysis_to_file = function(production_appended, file_path) {
+  p = production_appended
+  row.names(p) = factor(p$DATE, levels=p$DATE)
+  p$DATE = NULL
+  
+  monthly_summary = aggregate_monthly_averages_totals(p)
+  
+  write.xlsx(monthly_summary, file=file_path, sheet='Monthly Summary')
+  write.xlsx(p, file=file_path, sheet='Raw Data', append=TRUE)
+}
+
+write_analysis_to_file(production_appended, file_path)
 
 
+
+print('Below is for STL moving files')
+file_name = 'production_report_2015.xlsx'
+from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
+to = paste0("//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Production/", 'stl_', file_name, sep='')
+moveRenameFile(from, to)
+
+
+
+
+
+write_plots_to_file = function(file_path)
 
 
 
