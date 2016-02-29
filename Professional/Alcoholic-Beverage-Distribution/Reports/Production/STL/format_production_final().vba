@@ -20,10 +20,11 @@ Sub format_production()
             ws.Columns("A:AZ").AutoFit
             ws.Rows("1:9999").RowHeight = 12.5
             
-            ws.Range("B2:M17").NumberFormat = "#,##0"
+            ws.Range("B2:C17").NumberFormat = "#,##0"
+            ws.Range("D2:D17").NumberFormat = "0.00%"
+            ws.Range("B6:C7").NumberFormat = "#,###.#0"
                         
         End If
     Next ws
     
 End Sub
-
