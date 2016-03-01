@@ -28,7 +28,7 @@ tidy_production_data = function(raw_data) {
                      timevar = 'Date',
                      idvar = 'Key', 
                      direction = 'wide')
-
+  
   row.names(raw_data) = toupper(as.character(raw_data[,1]))
   raw_data = raw_data[,-c(1)]
   
@@ -171,9 +171,9 @@ tidy_production_data = function(raw_data) {
   t_tidy_data$YEAR = year(dat)
   t_tidy_data$DATE = dat
   t_tidy_data$SEASON = ifelse(month==1 | month==2 |month==3, "Winter", 
-                            ifelse(month==4 | month==5 | month==6, "Spring",
-                                   ifelse(month==7 | month==8 | month==9, "Summer",
-                                          ifelse(month==10 | month==11 | month==12, "Fall", ""))))
+                              ifelse(month==4 | month==5 | month==6, "Spring",
+                                     ifelse(month==7 | month==8 | month==9, "Summer",
+                                            ifelse(month==10 | month==11 | month==12, "Fall", ""))))
   row.names(t_tidy_data) = NULL
   
   t_tidy_data = t_tidy_data[,c(154, 1:153, 155)]
@@ -209,7 +209,7 @@ production_appended = append_archive_daily_data(production)
 
 generate_cumsums = function(production_appended) {
   p = data.frame(production_appended)
-
+  
   p = p %>% group_by(YEAR) %>% 
     mutate(YTD.CASES.TOTAL=cumsum(CASES.TOTAL))
   p = p %>% group_by(YEAR) %>% 
@@ -296,7 +296,7 @@ production_appended = generate_cumsums(production_appended)
 
 generate_moving_avgs = function(production_appended) {
   m = production_appended
-
+  
   m = m %>% group_by(YEAR) %>%
     mutate(CPMH.10.DAY.MVG.AVG = rollmean(x=CPMH, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
@@ -527,36 +527,39 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
   pic = system.file(image_name)
   sheet_name = createSheet(wb, image_name)
   
-  jpeg(image_name, width=700, height=400) #, res=100) #, width=50, height=50, res=300)
+  jpeg(image_name, width=800, height=1000) #, res=100) #, width=50, height=50, res=300)
   
-    #c('DATE', 'YEAR.MONTH', 'C.CASES', 'D.CASES', 'E.CASES', 'F.CASES', 'G.CASES', 'W.CASES', 'TOTAL.ODD.BALL')
+  #c('DATE', 'YEAR.MONTH', 'C.CASES', 'D.CASES', 'E.CASES', 'F.CASES', 'G.CASES', 'W.CASES', 'TOTAL.ODD.BALL')
   
   x = p[, c('DATE', 'YEAR.MONTH', 'C.CASES.10.DAY.MVG.AVG', 'D.CASES.10.DAY.MVG.AVG', 'E.CASES.10.DAY.MVG.AVG', 
             'F.CASES.10.DAY.MVG.AVG', 'G.CASES.10.DAY.MVG.AVG', 'W.CASES.10.DAY.MVG.AVG', 'TOTAL.ODD.BALL.10.DAY.MVG.AVG')]
   melted = melt(x, c('DATE', 'YEAR.MONTH'))
   
   l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
-  l + geom_point(aes(group=YEAR.MONTH), size=0.5) +
+  one = l + geom_point(aes(group=YEAR.MONTH), size=0.5) +
     geom_line(aes(group=YEAR.MONTH), size=0.25) +
     facet_wrap(~variable, ncol=1, scales='free_y') +
-    geom_smooth(aes(group=variable, colour=variable)) +
+    geom_smooth(aes(group=variable, colour=variable), se=FALSE) +
     theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
     scale_y_continuous(labels=comma) +
-    labs(title='Ten Day Moving Avg Case Production by Case Line', 
-         x='Date', y='Cases Produced')
+    labs(title='Case Production by Case Line', 
+         x='Date', y='Cases Produced (10 Day Moving Avg)')
   
+  x = p[, c('DATE', 'YEAR.MONTH', 'C.HOURS.10.DAY.MVG.AVG', 'D.HOURS.10.DAY.MVG.AVG', 'E.HOURS.10.DAY.MVG.AVG', 
+            'F.HOURS.10.DAY.MVG.AVG', 'G.HOURS.10.DAY.MVG.AVG', 'W.HOURS.10.DAY.MVG.AVG', 'TOTAL.ODD.BALL.HOURS.10.DAY.MVG.AVG')]
+  melted = melt(x, c('DATE', 'YEAR.MONTH'))
   
-  g = ggplot(data=lines, aes(x=factor(Year.Month), y=Three.Month.Mvg.Avg.CPMH, group=Line))
-  two = g + geom_point() + facet_wrap(~Line, ncol=1, scales='free_y') +
-    geom_line(size=1, aes(colour=Line)) + 
+  l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+  two = l + geom_point(aes(group=YEAR.MONTH), size=0.5) +
+    geom_line(aes(group=YEAR.MONTH), size=0.25) +
+    facet_wrap(~variable, ncol=1, scales='free_y') +
+    geom_smooth(aes(group=variable, colour=variable), se=FALSE) +
     theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
-    geom_smooth(aes(group=Line), se=F, colour='black', size=0.5) +
     scale_y_continuous(labels=comma) +
-    labs(title='Three Month Moving Average of Monthly CPMH by Case Line', 
-         x='Year & Month', y='Case Per Man Hour')
+    labs(title='Hours Production by Case Line', 
+         x='Date', y='Hours (10 Day Moving Avg)')
   
-  
-  
+  grid.arrange(one, two, ncol=2)
   dev.off()
   
   addPicture(image_name, sheet_name)
@@ -633,7 +636,7 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
   mean_monthly = mean(fixed$TOTAL.ODD.BALL.HOURS, na.rm=TRUE)
   o = ggplot(data=fixed, aes(x=YEAR.MONTH, y=TOTAL.ODD.BALL.HOURS, group=YEAR.MONTH))
   two = o + geom_bar(stat='sum', aes(group=YEAR.MONTH), fill='lightgreen', 
-               size=1, colour='black') + 
+                     size=1, colour='black') + 
     theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) + 
     geom_smooth(size=1, se=F, aes(group=YEAR.MONTH)) +
     scale_y_continuous(labels=comma) + 
@@ -682,7 +685,6 @@ append_archive_monthly_data = function(x) {
 
 #str(production)
 qplot(data=production, x=DATE, y=YTD.CASES.TOTAL, geom='point')
-
 
 
 
