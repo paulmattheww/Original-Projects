@@ -492,17 +492,6 @@ write_analysis_to_file(production_appended, file_path)
 
 
 
-print('Below is for STL moving files')
-
-from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
-to = file_path = paste0("//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Production/", 'stl_', file_name, sep='')
-moveRenameFile(from, to)
-
-
-
-
-
-
 
 
 write_plots_to_file = function(production_appended, file_path, this_month=1) {
@@ -520,11 +509,6 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
   p_this_month = filter(p, MONTH==this_month)
   
   
-  
-  
-  
-  B.PICK.BOTTLES
-  BPMH.B.BOTTLE
   
   # Cases by Line
   wb = loadWorkbook(file_path)
@@ -570,45 +554,35 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
   
   
   
-  
-  # Cases Produced & CPMH
+  # Case Production Summary
   wb = loadWorkbook(file_path)
-  
-  image_name = 'Total_Cases_CPMH.png'
+  image_name = 'Case_Production_Summary.png'
   pic = system.file(image_name)
   sheet_name = createSheet(wb, image_name)
   
-  jpeg(image_name, width=1000, height=600) #, res=100) #, width=50, height=50, res=300)
+  jpeg(image_name, width=1004, height=745) #, res=100) #, width=50, height=50, res=300)
   
-  mean_monthly_cases = mean(p$CASES.TOTAL, na.rm=TRUE)
-  g <- ggplot(data=p, aes(x=DOTM, y=CASES.TOTAL, group=YEAR.MONTH))
-  cases = g + geom_point(aes(group=YEAR.MONTH)) +
-    facet_wrap(~YEAR.MONTH, nrow=1) + 
-    geom_smooth(aes(group=YEAR.MONTH), size=0.001, colour='lightgrey') +
-    geom_line(aes(x=DOTM, y=CASES.TOTAL.10.DAY.MVG.AVG, group=YEAR.MONTH), 
-              colour='lightgreen', size=1.5) +
+  x = p[, c('DATE', 'YEAR.MONTH', 'CASES.TOTAL.10.DAY.MVG.AVG', 'CPMH.10.DAY.MVG.AVG',
+            'CASES.STL.10.DAY.MVG.AVG', 
+            'CASES.COLUMBIA.10.DAY.MVG.AVG', 'CASES.KC.TRANSFER.10.DAY.MVG.AVG',
+            'CASES.CAPE.10.DAY.MVG.AVG')]
+  melted = melt(x, c('DATE', 'YEAR.MONTH'))
+  o = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+  o + geom_point(aes(group=YEAR.MONTH), fill='lightgreen', 
+                 size=2, colour='black') +
+    facet_wrap(~variable, scales='free_y', ncol=2) +
+    geom_smooth(aes(group=variable), se=F, colour='black') + 
+    geom_line(aes(group=variable, colour=variable), alpha=0.3) +
     scale_y_continuous(labels=comma) + 
-    labs(title='Number of Cases Produced by Month w/ 10 Day Moving Avg.',
-         x="Day of the Month", y="Total Cases Produced") +
-    geom_hline(yintercept=mean_monthly_cases, linetype="longdash") 
-  
-  mean_monthly_cpmh = mean(p$CPMH, na.rm=TRUE)
-  g <- ggplot(data=p, aes(x=DOTM, y=CPMH, group=YEAR.MONTH))
-  cpmh = g + geom_point(aes(group=YEAR.MONTH)) +
-    facet_wrap(~YEAR.MONTH, nrow=1) + 
-    geom_smooth(aes(group=YEAR.MONTH), size=0.001, colour='lightgrey') +
-    geom_line(aes(x=DOTM, y=CPMH.10.DAY.MVG.AVG, group=YEAR.MONTH), 
-              colour='yellow', size=1.5) +
-    scale_y_continuous(labels=comma) + 
-    labs(title='CPMH by Month w/ 10 Day Moving Avg.',
-         x="Day of the Month", y="Cases per Man Hour") +
-    geom_hline(yintercept=mean_monthly_cpmh, linetype="longdash") 
-  suppressWarnings(grid.arrange(cases, cpmh, ncol=1))
+    labs(title='Case Production Summary',
+         x="Date") +
+    theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) 
   
   dev.off()
-  
   addPicture(image_name, sheet_name)
   saveWorkbook(wb, file_path)
+  
+
   
   
 
@@ -629,7 +603,7 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
     geom_smooth(size=1, se=F, aes(group=YEAR.MONTH)) +
     scale_y_continuous(labels=comma) + 
     labs(title='Total Oddball Cases by Month',
-         x="Year/Month", y="Total Odd Ball Hours") +
+         x="Year/Month", y="Total Odd Ball cASES") +
     geom_hline(yintercept=mean_monthly, linetype="longdash") +
     geom_jitter()
   
@@ -681,46 +655,139 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
   saveWorkbook(wb, file_path)
   
   
-
-  A.B.RESTOCK.CASES
   
-  BOTTLES.STL.REGION
-  BPMH.TOTAL
-  TOTAL.EMPS.TEMPS.10.DAY.MVG.AVG
-  TRUCKS.TOTAL.10.DAY.MVG.AVG
-  TRUCKS.KEG.10.DAY.MVG.AVG
-  TRUCKS.PACKAGE.10.DAY.MVG.AVG
-  KEGS.TOTAL.REGION.10.DAY.MVG.AVG
-  STOPS.TOTAL.10.DAY.MVG.AVG
-  RETURNS.INVOICE.TOTAL.10.DAY.MVG.AVG
-  RETURNS.CASES.10.DAY.MVG.AVG
-  NUMBER.WAVES.10.DAY.MVG.AVG
-  SORTER.RUN.TIME..HOURS..10.DAY.MVG.AVG
-  JACKPOT.CASES.10.DAY.MVG.AVG
-  NON.CONVEYABLE.10.DAY.MVG.AVG
-  PALLET.PICKS.10.DAY.MVG.AVG
-  LOADING.HOURS.10.DAY.MVG.AVG
-  MULTI.READS.10.DAY.MVG.AVG
-  NO.READS.10.DAY.MVG.AVG
-  RESTOCK.HOURS
+  
+  
+  # Trucks Summary
+  wb = loadWorkbook(file_path)
+  image_name = 'Truck_Summary.png'
+  pic = system.file(image_name)
+  sheet_name = createSheet(wb, image_name)
+  
+  jpeg(image_name, width=900, height=700) #, res=100) #, width=50, height=50, res=300)
+  
+  x = p[, c('DATE', 'YEAR.MONTH', 'TRUCKS.TOTAL.10.DAY.MVG.AVG', 'TRUCKS.PACKAGE.10.DAY.MVG.AVG', 'TRUCKS.KEG.10.DAY.MVG.AVG',
+            'STOPS.TOTAL.10.DAY.MVG.AVG')]
+  melted = melt(x, c('DATE', 'YEAR.MONTH'))
+  o = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+  o + geom_point(aes(group=YEAR.MONTH), fill='lightgreen', 
+                 size=2, colour='black') +
+    facet_wrap(~variable, scales='free_y', ncol=2) +
+    geom_smooth(aes(group=variable), se=F, colour='black') + 
+    geom_line(aes(group=variable, colour=variable), alpha=0.3) +
+    scale_y_continuous(labels=comma) + 
+    labs(title='Trucks Summary',
+         x="Date") +
+    theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1))
+  
+  dev.off()
+  addPicture(image_name, sheet_name)
+  saveWorkbook(wb, file_path)
+
+
+  
+  
+  
+  # Ops Summary
+  wb = loadWorkbook(file_path)
+  image_name = 'Ops_Summary.png'
+  pic = system.file(image_name)
+  sheet_name = createSheet(wb, image_name)
+  
+  jpeg(image_name, width=1004, height=745) #, res=100) #, width=50, height=50, res=300)
+  
+  x = p[, c('DATE', 'YEAR.MONTH', 'NUMBER.WAVES.10.DAY.MVG.AVG', 'AVG.CASES.PER.WAVE.10.DAY.MVG.AVG',
+            'SORTER.RUN.TIME..HOURS..10.DAY.MVG.AVG', 'JACKPOT.CASES.10.DAY.MVG.AVG',
+            'NON.CONVEYABLE.10.DAY.MVG.AVG', 'PALLET.PICKS.10.DAY.MVG.AVG', 
+            'LOADING.HOURS.10.DAY.MVG.AVG', 'RECIRCULATION.CASES.10.DAY.MVG.AVG', 
+            'MULTI.READS.10.DAY.MVG.AVG', 'NO.READS.10.DAY.MVG.AVG')]
+  melted = melt(x, c('DATE', 'YEAR.MONTH'))
+  o = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+  o + geom_point(aes(group=YEAR.MONTH), fill='lightgreen', 
+                 size=2, colour='black') +
+    facet_wrap(~variable, scales='free_y', ncol=2) +
+    geom_smooth(aes(group=variable), se=F, colour='black') + 
+    geom_line(aes(group=variable, colour=variable), alpha=0.3) +
+    scale_y_continuous(labels=comma) + 
+    labs(title='Operations Summary',
+         x="Date") +
+    theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) 
+  
+  dev.off()
+  addPicture(image_name, sheet_name)
+  saveWorkbook(wb, file_path)
+  
+  
+  
+  
+  
+  
+  
+  # Labor Summary
+  wb = loadWorkbook(file_path)
+  image_name = 'Labor_Summary.png'
+  pic = system.file(image_name)
+  sheet_name = createSheet(wb, image_name)
+  
+  jpeg(image_name, width=1004, height=745) #, res=100) #, width=50, height=50, res=300)
+  
+  x = p[, c('DATE', 'YEAR.MONTH', 'TOTAL.HOURS.10.DAY.MVG.AVG', 'TOTAL.EMPS.TEMPS.10.DAY.MVG.AVG', 
+            'REG.HOURS.10.DAY.MVG.AVG', 'OT.HOURS.10.DAY.MVG.AVG')]
+  melted = melt(x, c('DATE', 'YEAR.MONTH'))
+  o = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+  o + geom_point(aes(group=YEAR.MONTH), fill='lightgreen', 
+                 size=2, colour='black') +
+    facet_wrap(~variable, scales='free_y', ncol=2) +
+    geom_smooth(aes(group=variable), se=F, colour='black') + 
+    geom_line(aes(group=variable, colour=variable), alpha=0.3) +
+    scale_y_continuous(labels=comma) + 
+    labs(title='Labor Summary',
+         x="Date") +
+    theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) 
+  
+  dev.off()
+  addPicture(image_name, sheet_name)
+  saveWorkbook(wb, file_path)
+  
+  
+  
+  
+  
+  # Returns Summary
+  wb = loadWorkbook(file_path)
+  image_name = 'Returns_Summary.png'
+  pic = system.file(image_name)
+  sheet_name = createSheet(wb, image_name)
+  
+  jpeg(image_name, width=875, height=400) 
+  
+  x = p[, c('DATE', 'YEAR.MONTH', 'RETURNS.INVOICE.TOTAL.10.DAY.MVG.AVG', 'RETURNS.CASES.10.DAY.MVG.AVG')]
+  melted = melt(x, c('DATE', 'YEAR.MONTH'))
+  o = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+  o + geom_point(aes(group=YEAR.MONTH), fill='lightgreen', 
+                 size=2, colour='black') +
+    facet_wrap(~variable, scales='free_y', ncol=2) +
+    geom_smooth(aes(group=variable), se=F, colour='black') + 
+    geom_line(aes(group=variable, colour=variable), alpha=0.3) +
+    scale_y_continuous(labels=comma) + 
+    labs(title='Returns Summary',
+         x="Date") +
+    theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) 
+  
+  dev.off()
+  addPicture(image_name, sheet_name)
+  saveWorkbook(wb, file_path)
+  
+  print('Finished printing plots to file')
 }
 
 
 
+print('Below is for STL moving files')
 
-
-
-
-
-
-append_archive_monthly_data = function(x) {
-  
-}
-
-
-
-
-
+from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
+to = file_path = paste0("//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Production/", 'stl_', file_name, sep='')
+moveRenameFile(from, to)
 
 
 
@@ -729,36 +796,4 @@ append_archive_monthly_data = function(x) {
 
 
 #write.csv(production, file='C:/Users/pmwash/Desktop/R_files/Data Input/Living Documents/STL Production Report Daily Data Archive.csv')
-
-
-
-#str(production)
-qplot(data=production, x=DATE, y=YTD.CASES.TOTAL, geom='point')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
