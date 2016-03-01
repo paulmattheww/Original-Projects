@@ -415,15 +415,17 @@ aggregate_monthly_averages_totals = function(production_appended, report_month='
   t = production_appended
   
   
-  t_melt = melt(t, id=c('MONTH', 'YEAR'))  #, 'YEAR'))
-  #t_melt = filter(t_melt, variable != 'DATE' | variable != 'MONTH' | variable != 'YEAR')
+  t_melt = melt(t, id=c('MONTH', 'YEAR'))  
   t_melt$value = as.numeric(t_melt$value)
   
   t_sums = dcast(t_melt, MONTH + YEAR ~ variable, function(x) round(sum(x, na.rm=TRUE), 2))
+  
+  #   #check
+  #   check = t_melt %>% filter(variable=='CASES.TOTAL' & YEAR==2016)
+  #   sum(check$value)
+  
   colnames(t_sums) = sapply(colnames(t_sums), function(x) paste0('SUM.', x))
-  row.names(t_sums) = c('JANUARY 2015', 'FEBRUARY 2015', 'MARCH 2015', 'APRIL 2015', 'MAY 2015', 'JUNE 2015', 
-                        'JULY 2015', 'AUGUST 2015', 'SEPTEMBER 2015', 'OCTOBER 2015', 'NOVEMBER 2015', 'DECEMBER 2015',
-                        'JANUARY 2016')
+  row.names(t_sums) = paste0(as.character(t_sums$SUM.YEAR), sep='-', as.character(t_sums$SUM.MONTH))
   
   t_sums = t_sums[, c('SUM.CASES.TOTAL', 'SUM.BOTTLES.STL.REGION', 'SUM.MISPICKS', 
                       'SUM.TOTAL.ERRORS', 'SUM.O.S.CASES', 'SUM.O.S.BOTTLES', 
@@ -437,9 +439,7 @@ aggregate_monthly_averages_totals = function(production_appended, report_month='
   
   t_avgs = dcast(t_melt, MONTH +  YEAR ~ variable, function(x) round(mean(x, na.rm=TRUE), 4))
   colnames(t_avgs) = sapply(colnames(t_avgs), function(x) paste0('AVG.', x))
-  row.names(t_avgs) = c('JANUARY 2015', 'FEBRUARY 2015', 'MARCH 2015', 'APRIL 2015', 'MAY 2015', 'JUNE 2015', 
-                        'JULY 2015', 'AUGUST 2015', 'SEPTEMBER 2015', 'OCTOBER 2015', 'NOVEMBER 2015', 'DECEMBER 2015',
-                        'JANUARY 2016')
+  row.names(t_avgs) = paste0(as.character(t_avgs$AVG.YEAR), sep='-', as.character(t_avgs$AVG.MONTH))
   
   t_avgs = t_avgs[, c('AVG.CPMH.OT.ADJUSTED', 'AVG.CPMH', 'AVG.CASES.TOTAL', 
                       'AVG.TOTAL.EMPS.TEMPS', 'AVG.TOTAL.ODD.BALL', 'AVG.BOTTLES.STL.REGION', 'AVG.TOTAL.ODD.BALL.HOURS')]
@@ -453,13 +453,14 @@ aggregate_monthly_averages_totals = function(production_appended, report_month='
             'ODD.BALL.CASES', 'AVG.ODD.BALL.CASES', 'ODD.BALL.HOURS', 'AVG.ODD.BALL.HOURS')
   t_combined = t_combined[, order]
   
-  this_month = 'JAN'
-  t_combined = t_combined[which(substrLeft(row.names(t_combined), 3) %in% this_month), ]
+  this_month = '-1'
+  t_combined = t_combined[which(substrRight(row.names(t_combined), 2) %in% this_month), ]
   
   T_combined = data.frame(t(t_combined))
+  names(T_combined) = c('EOM.2015', 'EOM.2016')
   
-  this = T_combined$JANUARY.2016
-  last = T_combined$JANUARY.2015
+  this = T_combined$EOM.2016
+  last = T_combined$EOM.2015
   T_combined$PERCENT.CHANGE = round((this - last) / last, 4)
   T_combined = T_combined[, c(2, 1, 3)]
   
@@ -470,11 +471,6 @@ monthly_summary = aggregate_monthly_averages_totals(production_appended)
 
 
 
-
-
-generate_yoy_percent_change = function(x) {
-  
-}
 
 
 
@@ -489,23 +485,173 @@ write_analysis_to_file = function(production_appended, file_path) {
   write.xlsx(p, file=file_path, sheet='Raw Data', append=TRUE)
 }
 
-file_path = 'C:/Users/pmwash/Desktop/R_files/Data Output/production_report_2015.xlsx'
+file_name = 'production_report_january_2016.xlsx'
+file_path = paste0('C:/Users/pmwash/Desktop/R_files/Data Output/', file_name)
 
 write_analysis_to_file(production_appended, file_path)
 
 
 
 print('Below is for STL moving files')
-file_name = 'production_report_2015.xlsx'
+
 from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
-to = paste0("//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Production/", 'stl_', file_name, sep='')
+to = file_path = paste0("//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Production/", 'stl_', file_name, sep='')
 moveRenameFile(from, to)
 
 
 
 
 
-write_plots_to_file = function(file_path)
+
+
+
+write_plots_to_file = function(production_appended, file_path, this_month=1) {
+  setwd('C:/Users/pmwash/Desktop/R_files/Data Output/Plots')
+  
+  p = production_appended
+  p$DATE = as.Date(strptime(p$DATE, format='%m/%d/%Y'))
+  dotm = as.numeric(as.character(substrRight(p$DATE, 2)))
+  p$DOTM = dotm
+  p$INDEX = 1:length(p$DATE)
+  
+  ym = as.character(paste0(p$YEAR, '-', p$MONTH))
+  p$YEAR.MONTH = suppressWarnings(factor(ym, levels=ym))
+  
+  p_this_month = filter(p, MONTH==this_month)
+  
+  
+  # YTD Cases
+  wb = loadWorkbook(file_path)
+  
+  image_name = 'Cases_By_Line.png'
+  pic = system.file(image_name)
+  sheet_name = createSheet(wb, image_name)
+  
+  jpeg(image_name, width=700, height=400) #, res=100) #, width=50, height=50, res=300)
+  
+    #c('DATE', 'YEAR.MONTH', 'C.CASES', 'D.CASES', 'E.CASES', 'F.CASES', 'G.CASES', 'W.CASES', 'TOTAL.ODD.BALL')
+  
+  x = p[, c('DATE', 'YEAR.MONTH', 'C.CASES.10.DAY.MVG.AVG', 'D.CASES.10.DAY.MVG.AVG', 'E.CASES.10.DAY.MVG.AVG', 
+            'F.CASES.10.DAY.MVG.AVG', 'G.CASES.10.DAY.MVG.AVG', 'W.CASES.10.DAY.MVG.AVG', 'TOTAL.ODD.BALL.10.DAY.MVG.AVG')]
+  melted = melt(x, c('DATE', 'YEAR.MONTH'))
+  
+  l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+  l + geom_point(aes(group=YEAR.MONTH), size=0.5) +
+    geom_line(aes(group=YEAR.MONTH), size=0.25) +
+    facet_wrap(~variable, ncol=1, scales='free_y') +
+    geom_smooth(aes(group=variable, colour=variable)) +
+    theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+    scale_y_continuous(labels=comma) +
+    labs(title='Ten Day Moving Avg Case Production by Case Line', 
+         x='Date', y='Cases Produced')
+  
+  
+  g = ggplot(data=lines, aes(x=factor(Year.Month), y=Three.Month.Mvg.Avg.CPMH, group=Line))
+  two = g + geom_point() + facet_wrap(~Line, ncol=1, scales='free_y') +
+    geom_line(size=1, aes(colour=Line)) + 
+    theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+    geom_smooth(aes(group=Line), se=F, colour='black', size=0.5) +
+    scale_y_continuous(labels=comma) +
+    labs(title='Three Month Moving Average of Monthly CPMH by Case Line', 
+         x='Year & Month', y='Case Per Man Hour')
+  
+  
+  
+  dev.off()
+  
+  addPicture(image_name, sheet_name)
+  saveWorkbook(wb, file_path)
+  
+  
+  
+  
+  
+  # Cases Produced & CPMH
+  wb = loadWorkbook(file_path)
+  
+  image_name = 'Total_Cases_CPMH.png'
+  pic = system.file(image_name)
+  sheet_name = createSheet(wb, image_name)
+  
+  jpeg(image_name, width=1000, height=600) #, res=100) #, width=50, height=50, res=300)
+  
+  mean_monthly_cases = mean(p$CASES.TOTAL, na.rm=TRUE)
+  g <- ggplot(data=p, aes(x=DOTM, y=CASES.TOTAL, group=YEAR.MONTH))
+  cases = g + geom_point(aes(group=YEAR.MONTH)) +
+    facet_wrap(~YEAR.MONTH, nrow=1) + 
+    geom_smooth(aes(group=YEAR.MONTH), size=0.001, colour='lightgrey') +
+    geom_line(aes(x=DOTM, y=CASES.TOTAL.10.DAY.MVG.AVG, group=YEAR.MONTH), 
+              colour='lightgreen', size=1.5) +
+    scale_y_continuous(labels=comma) + 
+    labs(title='Number of Cases Produced by Month w/ 10 Day Moving Avg.',
+         x="Day of the Month", y="Total Cases Produced") +
+    geom_hline(yintercept=mean_monthly_cases, linetype="longdash") 
+  
+  mean_monthly_cpmh = mean(p$CPMH, na.rm=TRUE)
+  g <- ggplot(data=p, aes(x=DOTM, y=CPMH, group=YEAR.MONTH))
+  cpmh = g + geom_point(aes(group=YEAR.MONTH)) +
+    facet_wrap(~YEAR.MONTH, nrow=1) + 
+    geom_smooth(aes(group=YEAR.MONTH), size=0.001, colour='lightgrey') +
+    geom_line(aes(x=DOTM, y=CPMH.10.DAY.MVG.AVG, group=YEAR.MONTH), 
+              colour='yellow', size=1.5) +
+    scale_y_continuous(labels=comma) + 
+    labs(title='CPMH by Month w/ 10 Day Moving Avg.',
+         x="Day of the Month", y="Cases per Man Hour") +
+    geom_hline(yintercept=mean_monthly_cpmh, linetype="longdash") 
+  suppressWarnings(grid.arrange(cases, cpmh, ncol=1))
+  
+  dev.off()
+  
+  addPicture(image_name, sheet_name)
+  saveWorkbook(wb, file_path)
+  
+  
+  
+  
+  # Oddball Summary
+  wb = loadWorkbook(file_path)
+  
+  image_name = 'Oddball_Cases_Hours.png'
+  pic = system.file(image_name)
+  sheet_name = createSheet(wb, image_name)
+  
+  jpeg(image_name, width=800, height=850) 
+  
+  mean_monthly = mean(p$TOTAL.ODD.BALL, na.rm=TRUE)
+  o = ggplot(data=p, aes(x=YEAR.MONTH, y=TOTAL.ODD.BALL, group=YEAR.MONTH))
+  one = o + geom_bar(stat='sum', aes(group=YEAR.MONTH), fill='lightblue', 
+                     size=1, colour='black') + 
+    theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) + 
+    geom_smooth(size=1, se=F, aes(group=YEAR.MONTH)) +
+    scale_y_continuous(labels=comma) + 
+    labs(title='Total Oddball Cases by Month',
+         x="Year/Month", y="Total Odd Ball Hours") +
+    geom_hline(yintercept=mean_monthly, linetype="longdash") +
+    geom_jitter()
+  
+  fixed = p %>% filter(TOTAL.ODD.BALL.HOURS < 100)
+  mean_monthly = mean(fixed$TOTAL.ODD.BALL.HOURS, na.rm=TRUE)
+  o = ggplot(data=fixed, aes(x=YEAR.MONTH, y=TOTAL.ODD.BALL.HOURS, group=YEAR.MONTH))
+  two = o + geom_bar(stat='sum', aes(group=YEAR.MONTH), fill='lightgreen', 
+               size=1, colour='black') + 
+    theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) + 
+    geom_smooth(size=1, se=F, aes(group=YEAR.MONTH)) +
+    scale_y_continuous(labels=comma) + 
+    labs(title='Total Oddball Hours by Month',
+         x="Year/Month", y="Total Odd Ball Hours") +
+    geom_hline(yintercept=mean_monthly, linetype="longdash") +
+    geom_jitter()
+  
+  grid.arrange(one, two, ncol=1)
+  
+  dev.off()
+  
+  addPicture(image_name, sheet_name)
+  saveWorkbook(wb, file_path)
+  
+  
+  
+}
 
 
 
