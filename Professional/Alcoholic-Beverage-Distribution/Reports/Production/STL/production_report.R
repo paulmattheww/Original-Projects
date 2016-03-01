@@ -520,21 +520,24 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
   p_this_month = filter(p, MONTH==this_month)
   
   
-  # YTD Cases
+  
+  
+  
+  B.PICK.BOTTLES
+  BPMH.B.BOTTLE
+  
+  # Cases by Line
   wb = loadWorkbook(file_path)
   
   image_name = 'Cases_By_Line.png'
   pic = system.file(image_name)
   sheet_name = createSheet(wb, image_name)
   
-  jpeg(image_name, width=800, height=1000) #, res=100) #, width=50, height=50, res=300)
-  
-  #c('DATE', 'YEAR.MONTH', 'C.CASES', 'D.CASES', 'E.CASES', 'F.CASES', 'G.CASES', 'W.CASES', 'TOTAL.ODD.BALL')
+  jpeg(image_name, width=800, height=1000) 
   
   x = p[, c('DATE', 'YEAR.MONTH', 'C.CASES.10.DAY.MVG.AVG', 'D.CASES.10.DAY.MVG.AVG', 'E.CASES.10.DAY.MVG.AVG', 
             'F.CASES.10.DAY.MVG.AVG', 'G.CASES.10.DAY.MVG.AVG', 'W.CASES.10.DAY.MVG.AVG', 'TOTAL.ODD.BALL.10.DAY.MVG.AVG')]
   melted = melt(x, c('DATE', 'YEAR.MONTH'))
-  
   l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
   one = l + geom_point(aes(group=YEAR.MONTH), size=0.5) +
     geom_line(aes(group=YEAR.MONTH), size=0.25) +
@@ -548,7 +551,6 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
   x = p[, c('DATE', 'YEAR.MONTH', 'C.HOURS.10.DAY.MVG.AVG', 'D.HOURS.10.DAY.MVG.AVG', 'E.HOURS.10.DAY.MVG.AVG', 
             'F.HOURS.10.DAY.MVG.AVG', 'G.HOURS.10.DAY.MVG.AVG', 'W.HOURS.10.DAY.MVG.AVG', 'TOTAL.ODD.BALL.HOURS.10.DAY.MVG.AVG')]
   melted = melt(x, c('DATE', 'YEAR.MONTH'))
-  
   l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
   two = l + geom_point(aes(group=YEAR.MONTH), size=0.5) +
     geom_line(aes(group=YEAR.MONTH), size=0.25) +
@@ -559,7 +561,7 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
     labs(title='Hours Production by Case Line', 
          x='Date', y='Hours (10 Day Moving Avg)')
   
-  grid.arrange(one, two, ncol=2)
+  suppressWarnings(grid.arrange(one, two, ncol=2))
   dev.off()
   
   addPicture(image_name, sheet_name)
@@ -609,11 +611,10 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
   saveWorkbook(wb, file_path)
   
   
-  
-  
+
+
   # Oddball Summary
   wb = loadWorkbook(file_path)
-  
   image_name = 'Oddball_Cases_Hours.png'
   pic = system.file(image_name)
   sheet_name = createSheet(wb, image_name)
@@ -644,7 +645,6 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
          x="Year/Month", y="Total Odd Ball Hours") +
     geom_hline(yintercept=mean_monthly, linetype="longdash") +
     geom_jitter()
-  
   grid.arrange(one, two, ncol=1)
   
   dev.off()
@@ -654,6 +654,55 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
   
   
   
+  
+  # Hours Summary
+  wb = loadWorkbook(file_path)
+  image_name = 'Man_Hours.png'
+  pic = system.file(image_name)
+  sheet_name = createSheet(wb, image_name)
+  
+  jpeg(image_name, width=577, height=845) #, res=100) #, width=50, height=50, res=300)
+    
+  x = p[, c('DATE', 'YEAR.MONTH', 'TOTAL.HOURS.10.DAY.MVG.AVG', 'REG.HOURS.10.DAY.MVG.AVG', 'OT.HOURS.10.DAY.MVG.AVG')]
+  melted = melt(x, c('DATE', 'YEAR.MONTH'))
+  o = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+  o + geom_point(aes(group=YEAR.MONTH), fill='lightgreen', 
+                     size=2, colour='black') +
+    facet_wrap(~variable, scales='free_y', ncol=1) +
+    geom_smooth(aes(group=variable), se=F, colour='black') + 
+    geom_line(aes(group=variable, colour=variable)) +
+    scale_y_continuous(labels=comma) + 
+    labs(title='Man Hours Summary',
+         x="Year/Month", y="Man Hours") +
+    theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1))
+  
+  dev.off()
+  addPicture(image_name, sheet_name)
+  saveWorkbook(wb, file_path)
+  
+  
+
+  A.B.RESTOCK.CASES
+  
+  BOTTLES.STL.REGION
+  BPMH.TOTAL
+  TOTAL.EMPS.TEMPS.10.DAY.MVG.AVG
+  TRUCKS.TOTAL.10.DAY.MVG.AVG
+  TRUCKS.KEG.10.DAY.MVG.AVG
+  TRUCKS.PACKAGE.10.DAY.MVG.AVG
+  KEGS.TOTAL.REGION.10.DAY.MVG.AVG
+  STOPS.TOTAL.10.DAY.MVG.AVG
+  RETURNS.INVOICE.TOTAL.10.DAY.MVG.AVG
+  RETURNS.CASES.10.DAY.MVG.AVG
+  NUMBER.WAVES.10.DAY.MVG.AVG
+  SORTER.RUN.TIME..HOURS..10.DAY.MVG.AVG
+  JACKPOT.CASES.10.DAY.MVG.AVG
+  NON.CONVEYABLE.10.DAY.MVG.AVG
+  PALLET.PICKS.10.DAY.MVG.AVG
+  LOADING.HOURS.10.DAY.MVG.AVG
+  MULTI.READS.10.DAY.MVG.AVG
+  NO.READS.10.DAY.MVG.AVG
+  RESTOCK.HOURS
 }
 
 
