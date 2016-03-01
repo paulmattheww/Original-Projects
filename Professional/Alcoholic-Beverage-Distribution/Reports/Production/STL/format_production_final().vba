@@ -5,7 +5,7 @@ Sub format_production()
         ws.Columns("A:ZZ").Font.Size = 9
         ws.Activate
         Range("A1").Activate
-        Selection.AutoFilter
+        ' Selection.AutoFilter
         
         ActiveWindow.DisplayGridlines = False
         ws.Columns("A:ZZ").AutoFit
@@ -28,3 +28,4 @@ Sub format_production()
     Next ws
     
 End Sub
+
