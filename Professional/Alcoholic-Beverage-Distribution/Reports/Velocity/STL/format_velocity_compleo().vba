@@ -1,5 +1,6 @@
 Sub FormatCompleoVelocity()
     '' Be sure that you have separated bottles and cases BEFORE running
+    '' Size and Description are under ONE COLUMN
     '' Be sure there are three rows before header row
     '' There should be nothing past column I
     '' Add in SORT functionality soon
