@@ -1,6 +1,9 @@
 Sub FormatCompleoVelocity()
     '' Be sure that you have separated bottles and cases BEFORE running
     '' Be sure there are three rows before header row
+    '' There should be nothing past column I
+    '' Add in SORT functionality soon
+    
     Dim ws As Worksheet, Rng As Range, cell As Range
     
     Set ws = Worksheets(1)
@@ -28,7 +31,7 @@ Sub FormatCompleoVelocity()
     
     ws.Columns(1).NumberFormat = "####"
     ws.Columns(3).NumberFormat = "####.#0"
-    ws.Columns(4).NumberFormat = "####"
+    ws.Columns(4).NumberFormat = "####.#0"
     ws.Columns(5).NumberFormat = "####"
     ws.Columns(6).NumberFormat = "####"
     ws.Columns(7).NumberFormat = "####"
@@ -41,3 +44,4 @@ Sub FormatCompleoVelocity()
     
     
 End Sub
+
