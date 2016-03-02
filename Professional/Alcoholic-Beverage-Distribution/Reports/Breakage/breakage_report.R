@@ -11,7 +11,7 @@ library(tidyr)
 library(lubridate)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 
-
+print('Make sure all quereis are DATE and WAREHOUSE accurate; Sales from Diver too')
 print('(1) Run pwbreakage for house and time frame & replace data')
 print('(2) Acquire sales data from Diver and update file')
 print('(3) Acquire Supplier breakage using suppbreaka')
@@ -22,7 +22,7 @@ print('(4) Merge history with current data')
 print('Read in STL data; do not change column headers')
 print('Next time you run this delete the files at the paths below')
 breaks = read.csv("C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/PWBREAKAGE_STL.csv", header=TRUE) 
-sales = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/sales_history_for_breakage_report.csv', header=TRUE)
+sales = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/sales_history_for_breakage_report.csv', header=TRUE) # ensure it is for correct house
 supplier = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/suppbreaka.csv', header=TRUE)
 supplier_history = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/supplier_history_for_breakage.csv', header=TRUE) # n eed to append 
 history = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Input Files for Reports/Breakage/breakage_detailed_history.csv', header=TRUE) # need to append from the by class function
@@ -192,6 +192,11 @@ warehouse_breakage_by_item = function(breaks) {
 }
 
 warehouse_breakage = warehouse_breakage_by_item(breaks)
+
+
+
+
+
 
 
 
@@ -432,11 +437,11 @@ calculate_percent_sales = function(master_dataset, ytd_sales, current_sales) {
 
 print('Check to be sure these are correctly associated')
 tail(sales[,c('YTD.Sales', 'Sales')], 1)
-ytd_sales = tail(sales$YTD.Sales, 1)
+ytd_sales = tail(sales$YTD.Sales, 1); tail(sales, 1)
 current_sales = tail(sales$Sales, 1)
 
 tail(sales[,c('YTD.Sales', 'Sales')], 13)
-ytd_sales_lastyr = head(tail(sales$YTD.Sales, 13), 1)
+ytd_sales_lastyr = head(tail(sales$YTD.Sales, 13), 1); head(tail(sales, 13), 1)
 current_sales_lastyr = head(tail(sales$Sales, 13), 1)
 
 master_dataset = calculate_percent_sales(master_dataset, ytd_sales, current_sales)
