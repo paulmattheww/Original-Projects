@@ -17,7 +17,8 @@ Sub production_report_gather()
         
     Application.ScreenUpdating = False
     Application.EnableEvents = False
-
+    
+    ' Ensure key value date index columns are there, and all else is cleared
     target_path = "C:\Users\pmwash\Desktop\Disposable Docs\Testing Folder\Output\input_production_report.xlsx" ' Where the data is going
     
     directory = "C:\Users\pmwash\Desktop\Disposable Docs\Testing Folder\" ' Where the data is coming from
