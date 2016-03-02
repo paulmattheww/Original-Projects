@@ -18,7 +18,7 @@ Sub production_report_gather()
     Application.ScreenUpdating = False
     Application.EnableEvents = False
 
-    target_path = "C:\Users\pmwash\Desktop\Disposable Docs\Testing Folder\Output\test.xlsx" ' Where the data is going
+    target_path = "C:\Users\pmwash\Desktop\Disposable Docs\Testing Folder\Output\input_production_report.xlsx" ' Where the data is going
     
     directory = "C:\Users\pmwash\Desktop\Disposable Docs\Testing Folder\" ' Where the data is coming from
     
