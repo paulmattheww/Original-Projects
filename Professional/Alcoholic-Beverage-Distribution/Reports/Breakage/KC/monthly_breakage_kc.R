@@ -62,12 +62,12 @@ breakage_by_class_incidents = function(breaks) {
   moneyShot1$Reason.Code = ifelse(reason == 2, "Sales (2)", 
                                   ifelse(reason == 3, "Warehouse (3)",
                                          ifelse(reason==4, "Driver (4)", 
-                                                ifelse(reason==5, "Columbia (5)", ""))))
+                                                ifelse(reason==5, "Springfield (5)", ""))))
   names(moneyShot1) =c("", "Liquor (1)", "Wine (2)", "Beer (3)", "Non-Alc (4)")
   invert1 = data.frame(t(moneyShot1))
-  names(invert1) = c('Sales (2)', 'Warehouse (3)', 'Driver (4)', 'Columbia (5)')
+  names(invert1) = c('Sales (2)', 'Warehouse (3)', 'Driver (4)', 'Springfield (5)')
   invert1 = invert1[-c(1) ,]
-  invert1 = invert1[, c('Sales (2)', 'Driver (4)', 'Warehouse (3)', 'Columbia (5)')]
+  invert1 = invert1[, c('Sales (2)', 'Driver (4)', 'Warehouse (3)', 'Springfield (5)')]
   print(invert1)
 }
 
@@ -87,12 +87,12 @@ breakage_by_class_cost = function(breaks) {
   moneyShot2$Reason.Code = ifelse(reason == 2, "Sales (2)", 
                                   ifelse(reason == 3, "Warehouse (3)",
                                          ifelse(reason==4, "Driver (4)", 
-                                                ifelse(reason==5, "Columbia (5)", ""))))
+                                                ifelse(reason==5, "Springfield (5)", ""))))
   names(moneyShot2) =c("", "Liquor (1)", "Wine (2)", "Beer (3)", "Non-Alc (4)")
   invert2 = data.frame(t(moneyShot2))
-  names(invert2) = c("Sales (2)", "Warehouse (3)", "Driver (4)", "Columbia (5)")
+  names(invert2) = c("Sales (2)", "Warehouse (3)", "Driver (4)", "Springfield (5)")
   invert2 = invert2[-c(1) ,]
-  invert2 = invert2[, c("Sales (2)", "Driver (4)", "Warehouse (3)", "Columbia (5)")]
+  invert2 = invert2[, c("Sales (2)", "Driver (4)", "Warehouse (3)", "Springfield (5)")]
   print(invert2)
 }
 
@@ -114,11 +114,11 @@ breakage_by_class_cases = function(breaks) {
   moneyShot3$Reason.Code = ifelse(reason == 2, "Sales (2)", 
                                   ifelse(reason == 3, "Warehouse (3)",
                                          ifelse(reason==4, "Driver (4)", 
-                                                ifelse(reason==5, "Columbia (5)", ""))))
+                                                ifelse(reason==5, "Springfield (5)", ""))))
   names(moneyShot3) =c("", "Cases.Broken")
   moneyShot3
   invert3 = data.frame(t(moneyShot3))
-  names(invert3) = c('Sales (2)', 'Warehouse (3)', 'Driver (4)', 'Columbia (5)')
+  names(invert3) = c('Sales (2)', 'Warehouse (3)', 'Driver (4)', 'Springfield (5)')
   invert3 = invert3[-c(1) ,]
   print(invert3)
 }
@@ -145,7 +145,7 @@ append_breakage_history = function(history, incident_summary, cost_summary, year
   names(combined) = names(history)
   
   new_history = rbind(history, combined)
-  write.csv(new_history, 'C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/breakage_detailed_history.csv')
+  write.csv(new_history, 'C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/KC/breakage_detailed_history_kc.csv')
   
   new_history[, c(4:11)] = sapply(new_history[, c(4:11)], function(x) as.numeric(as.character(x)))
   
@@ -164,16 +164,18 @@ appended_dataset = append_breakage_history(history, incident_summary, cost_summa
 
 
 append_supplier_breakage_history = function(supplier, supplier_history) {
-  dat = as400Date(supplier$X.RDATE)
-  supplier$Month = month.name[month(dat)]
-  supplier$Year = year(dat)
+  s = supplier
   
-  current = aggregate(EXT_COST ~ Year + Month, data=supplier, FUN=sum)
+  dat = as400Date(s$X.RDATE)
+  s$Month = month.name[month(dat)]
+  s$Year = year(dat)
+  
+  current = aggregate(EXT_COST ~ Year + Month, data=s, FUN=sum)
   names(current) = names(supplier_history)
   current$Supplier.Breakage = abs(current$Supplier.Breakage)
   
   new_supplier_history = rbind(supplier_history, current)
-  write.csv(new_supplier_history, 'C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/supplier_history_for_breakage.csv')
+  write.csv(new_supplier_history, 'C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/KC/supplier_history_for_breakage_kc.csv')
   
   print(new_supplier_history)
 }
@@ -345,19 +347,23 @@ driver_breakage_item = driver_breakage_by_item(breaks)
 
 calculate_ytd = function(appended_dataset) {
   library(dplyr)
-  master = appended_dataset %>% group_by(Year, Type) %>% 
+  a_d = appended_dataset
+  names(a_d) = c('Type', 'Year', 'Month', 'Sales.Incidents', 'Driver.Incidents', 'Warehouse.Incidents', 
+                 'Springfield.Incidents', 'Sales.Cost', 'Driver.Cost', 'Warehouse.Cost', 'Springfield.Cost')
+  
+  master = a_d %>% group_by(Year, Type) %>% 
     mutate(YTD.Sales.Incidents=cumsum(Sales.Incidents),
            YTD.Driver.Incidents=cumsum(Driver.Incidents),
            YTD.Warehouse.Incidents=cumsum(Warehouse.Incidents),
-           YTD.Columbia.Incidents=cumsum(Columbia.Incidents),
+           YTD.Springfield.Incidents=cumsum(Springfield.Incidents),
            YTD.Sales.Cost=cumsum(Sales.Cost),
            YTD.Driver.Cost=cumsum(Driver.Cost),
            YTD.Warehouse.Cost=cumsum(Warehouse.Cost),
-           YTD.Columbia.Cost=cumsum(Columbia.Cost))
+           YTD.Springfield.Cost=cumsum(Springfield.Cost))
   master = data.frame(master)
   
-  master$Total.Incidents = abs(master$Sales.Incidents + master$Driver.Incidents + master$Warehouse.Incidents + master$Columbia.Incidents)
-  master$Total.Cost = abs(master$Sales.Cost + master$Driver.Cost + master$Warehouse.Cost + master$Columbia.Cost)
+  master$Total.Incidents = abs(master$Sales.Incidents + master$Driver.Incidents + master$Warehouse.Incidents + master$Springfield.Incidents)
+  master$Total.Cost = abs(master$Sales.Cost + master$Driver.Cost + master$Warehouse.Cost + master$Springfield.Cost)
   
   print(master)
 }
