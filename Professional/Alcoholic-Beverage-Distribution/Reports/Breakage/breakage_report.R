@@ -8,6 +8,7 @@ library(reshape2)
 library(scales)
 library(xlsx)
 library(tidyr)
+library(lubridate)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 
 
@@ -19,20 +20,32 @@ print('(4) Merge history with current data')
 
 
 print('Read in STL data; do not change column headers')
-breaks = read.csv("C:/Users/pmwash/Desktop/R_Files/Data Input/PWBREAKAGE_STL.csv", header=TRUE) 
-sales = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/sales_history_for_breakage_report.csv', header=TRUE)
-supplier = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/suppbreaka.csv', header=TRUE)
-supplier_history = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/supplier_history_for_breakage.csv', header=TRUE)
-history = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/breakage_detailed_history.csv', header=TRUE)
+print('Next time you run this delete the files at the paths below')
+breaks = read.csv("C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/PWBREAKAGE_STL.csv", header=TRUE) 
+sales = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/sales_history_for_breakage_report.csv', header=TRUE)
+supplier = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/suppbreaka.csv', header=TRUE)
+supplier_history = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/supplier_history_for_breakage.csv', header=TRUE) # n eed to append 
+history = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Input Files for Reports/Breakage/breakage_detailed_history.csv', header=TRUE) # need to append from the by class function
 
 
-the_year = 2016
-the_month = 'January'
+print('Change these')
+this_year = 2016
+this_month = 'February'
 
 # print('Read in KC data, do not chagen column headers')
 # breaks = read.csv("C:/Users/pmwash/Desktop/R_Files/Data Input/PWBREAKAGE_KC.csv", header=TRUE) 
 
 
+print('Pre-process data')
+
+pre_process_breaks = function(breaks) {
+  breaks$CASES = round(breaks$X.RCASE + (breaks$X.RBOTT / breaks$X.RQPC), 2)
+  breaks$MONTH = paste0(substrLeft(dat, 4), '-', substrLeft(substrRight(dat, 5), 2))
+  breaks$DATE = dat = as400Date(breaks$X.RDATE)
+  breaks
+}
+
+breaks = pre_process_breaks(breaks)
 
 
 print('Create functions for use in breakage analysis')
@@ -101,6 +114,40 @@ breakage_by_class_cases = function(breaks) {
 case_summary = breakage_by_class_cases(breaks)
 
 
+
+
+
+append_breakage_history = function(history, incident_summary, cost_summary, year=2016, month='February') {
+  
+  combined = cbind(incident_summary, cost_summary[, c(1:4)])
+  combined$Type = row.names(combined)
+  row.names(combined) = NULL
+  combined$Year = year
+  combined$Month = month
+  combined = combined[, c(9:11, 1:8)]
+  names(combined) = names(history)
+  
+  new_history = rbind(history, combined)
+  write.csv(new_history, 'C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/breakage_detailed_history.csv')
+  
+  new_history
+}
+
+
+history = append_breakage_history(history, incident_summary, cost_summary, year=this_year, month=this_month)
+
+
+
+
+append_supplier_breakage_history = function(supplier, supplier_history) {
+  supplier$MONTH = month.name[month(as400Date(supplier$X.RDATE))]
+
+  
+}
+
+
+
+
 warehouse_breakage_by_item = function(breaks) {
   library(dplyr)
   breaks$CASES = round(breaks$X.RCASE + (breaks$X.RBOTT / breaks$X.RQPC), 2)
@@ -119,6 +166,8 @@ warehouse_breakage_by_item = function(breaks) {
 }
 
 warehouse_breakage = warehouse_breakage_by_item(breaks)
+
+
 
 
 driver_breakage_by_item = function(breaks) {
