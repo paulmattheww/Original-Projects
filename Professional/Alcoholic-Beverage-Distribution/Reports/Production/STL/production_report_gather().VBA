@@ -19,9 +19,9 @@ Sub production_report_gather()
     Application.EnableEvents = False
     
     ' Ensure key value date index columns are there, and all else is cleared
-    target_path = "C:\Users\pmwash\Desktop\Disposable Docs\Testing Folder\Output\input_production_report.xlsx" ' Where the data is going
+    target_path = "C:\Users\pmwash\Desktop\Disposable Docs\Production Data\Output\input_production_report.xlsx" ' Where the data is going
     
-    directory = "C:\Users\pmwash\Desktop\Disposable Docs\Testing Folder\" ' Where the data is coming from
+    directory = "C:\Users\pmwash\Desktop\Disposable Docs\Production Data\" ' Where the data is coming from
     
     Set source = CreateObject("Scripting.FileSystemObject")
     Set file_list = source.GetFolder(directory)
