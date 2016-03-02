@@ -302,7 +302,7 @@ driver_breakage_item = driver_breakage_by_item(breaks)
 #   combo$Year = year
 #   combo$Month = month
 #   combo = combo[,c(9:10, 1:8)]
-#   names(combo) = c('Year', 'Month', 'Sales.Incidents', 'Driver.Incidents', 'Warehouse.Incidents', 'Columbia.Incidents',
+#   names(combo) = c('Year', 'Month', 'Sales.Incidents', 'Driver.Incidents', 'Warehouse.Incidents', 'Springfield.Incidents',
 #                    'Sales.Cost', 'Driver.Cost', 'Warehouse.Cost', 'Columbia.Cost')
 #   combo = cbind(rownames(combo), combo)
 #   rownames(combo) = NULL
@@ -388,17 +388,17 @@ calculate_delta = function(master_dataset) {
   m$delta.Sales.Incidents = yoy_pct_chg(m$Sales.Incidents)
   m$delta.Driver.Incidents = yoy_pct_chg(m$Driver.Incidents)
   m$delta.Warehouse.Incidents = yoy_pct_chg(m$Warehouse.Incidents)
-  m$delta.Columbia.Incidents = yoy_pct_chg(m$Columbia.Incidents)
+  m$delta.Columbia.Incidents = yoy_pct_chg(m$Springfield.Incidents)
   
   m$delta.Sales.Cost = yoy_pct_chg(m$Sales.Cost)
   m$delta.Driver.Cost = yoy_pct_chg(m$Driver.Cost)
   m$delta.Warehouse.Cost = yoy_pct_chg(m$Warehouse.Cost)
-  m$delta.Columbia.Cost = yoy_pct_chg(m$Columbia.Cost)
+  m$delta.Columbia.Cost = yoy_pct_chg(m$Springfield.Cost)
   
   m$delta.Total.Incidents = yoy_pct_chg(m$Total.Incidents)
   m$delta.Total.Cost = yoy_pct_chg(m$Total.Cost)
   
-  write.csv(m, 'C:/Users/pmwash/Desktop/R_files/Data Output/backup_of_breakage_data.csv')
+  write.csv(m, 'C:/Users/pmwash/Desktop/R_files/Data Output/backup_of_breakage_data_kc.csv')
   
   print(m)
 }
@@ -448,14 +448,14 @@ calculate_percent_sales = function(master_dataset, ytd_sales, current_sales) {
   m$Sales.Break.Percent.Sales = round(m$Sales.Cost / current_sales, 6)
   m$Driver.Break.Percent.Sales = round(m$Driver.Cost / current_sales, 6)
   m$Warehouse.Break.Percent.Sales = round(m$Warehouse.Cost / current_sales, 6)
-  m$Columbia.Break.Percent.Sales = round(m$Columbia.Cost / current_sales, 6)
+  m$Springfield.Break.Percent.Sales = round(m$Springfield.Cost / current_sales, 6)
   
   m$YTD.Sales.Break.Percent.Sales = round(m$YTD.Sales.Cost / ytd_sales, 6)
   m$YTD.Driver.Break.Percent.Sales = round(m$YTD.Driver.Cost / ytd_sales, 6)
   m$YTD.Warehouse.Break.Percent.Sales = round(m$YTD.Warehouse.Cost / ytd_sales, 6)
-  m$YTD.Columbia.Break.Percent.Sales = round(m$YTD.Columbia.Cost / ytd_sales, 6)
+  m$YTD.Springfield.Break.Percent.Sales = round(m$YTD.Springfield.Cost / ytd_sales, 6)
   
-  write.csv(m, 'C:/Users/pmwash/Desktop/R_files/Data Output/backup_of_breakage_data.csv')
+  write.csv(m, 'C:/Users/pmwash/Desktop/R_files/Data Output/backup_of_breakage_data_kc.csv')
   
   print(m)
 }
@@ -528,27 +528,27 @@ create_monthly_summary = function(master_dataset, month='January', year=2016) {
   
   cost_warehouse = aggregate(Warehouse.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   cost_driver = aggregate(Driver.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
-  cost_columbia = aggregate(Columbia.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
+  cost_Springfield = aggregate(Springfield.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
 
   cost_warehouse_ytd = aggregate(YTD.Warehouse.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   cost_driver_ytd = aggregate(YTD.Driver.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
-  cost_columbia_ytd = aggregate(YTD.Columbia.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
+  cost_Springfield_ytd = aggregate(YTD.Springfield.Cost ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   
   incidents_warehouse = aggregate(Warehouse.Incidents ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   incidents_driver = aggregate(Driver.Incidents ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
-  incidents_columbia = aggregate(Columbia.Incidents ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
+  incidents_Springfield = aggregate(Springfield.Incidents ~ Month + Year, data=this_month, FUN=function(x) round(sum(x), 2))
   
   
   summary = merge(cost_warehouse, cost_driver, by=c('Month', 'Year'))
-  summary = merge(summary, cost_columbia, by=c('Month', 'Year'))
+  summary = merge(summary, cost_Springfield, by=c('Month', 'Year'))
   
   summary = merge(summary, cost_warehouse_ytd, by=c('Month', 'Year'))
   summary = merge(summary, cost_driver_ytd, by=c('Month', 'Year'))
-  summary = merge(summary, cost_columbia_ytd, by=c('Month', 'Year'))
+  summary = merge(summary, cost_Springfield_ytd, by=c('Month', 'Year'))
   
   summary = merge(summary, incidents_warehouse, by=c('Month', 'Year'))
   summary = merge(summary, incidents_driver, by=c('Month', 'Year'))
-  summary = merge(summary, incidents_columbia, by=c('Month', 'Year'))
+  summary = merge(summary, incidents_Springfield, by=c('Month', 'Year'))
   
   
   t_summary = data.frame(t(summary))
@@ -632,9 +632,9 @@ prepare_summary = function(supplier_for_summary, monthly_summary, current_sales,
   summary = rbind(summary, for_append)
   rownames(summary) = NULL
   
-  summary$x = factor(summary$x, levels=c('Total.Cost.Warehouse.Driver', 'Warehouse.Cost', 'Driver.Cost', 'Columbia.Cost', 'Supplier.Cost', 
-                                         'YTD.Total.Cost.Warehouse.Driver', 'YTD.Warehouse.Cost', 'YTD.Driver.Cost', 'YTD.Columbia.Cost', 
-                                         'Warehouse.Incidents', 'Driver.Incidents', 'Columbia.Incidents'))
+  summary$x = factor(summary$x, levels=c('Total.Cost.Warehouse.Driver', 'Warehouse.Cost', 'Driver.Cost', 'Springfield.Cost', 'Supplier.Cost', 
+                                         'YTD.Total.Cost.Warehouse.Driver', 'YTD.Warehouse.Cost', 'YTD.Driver.Cost', 'YTD.Springfield.Cost', 
+                                         'Warehouse.Incidents', 'Driver.Incidents', 'Springfield.Incidents'))
   
   
   summary = summary %>% arrange(x)
