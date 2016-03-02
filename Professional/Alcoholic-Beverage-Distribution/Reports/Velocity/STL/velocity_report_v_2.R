@@ -1,53 +1,49 @@
 
-print('Velocity Report')
+print('Velocity Report STL')
 
-############
+
 print('Load necessary libraries')
 library(dplyr)
-library(XLConnect)
+library(xlsx)
+source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 
-print('Create functions for later use')
-substrRight = function(x, n){
-  substr(x, nchar(x)-n+1, nchar(x))
-}
-substrLeft = function(x, n){
-  substr(x, 1, n)
-}
-as400Date = function(x) {
-  date = as.character(x)
-  date = substrRight(date, 6)
-  date = as.character((strptime(date, "%y%m%d")))
-  date
-}
-countUnique = function(x) {
-  length(unique(x))
-}
-moveRenameFile = function(from, to) {
-  destination = dirname(to)
-  if (!isTRUE(file.info(destination)$isdir)) dir.create(destination, recursive=TRUE)
-  file.rename(from = from,  to = to)
-}
-headTail = function(x) {
-  h <- head(x)
-  t <- tail(x)
-  print(h)
-  print(t)
-}
-############
+
+print('(1) AS400 - run for COMP = 2 & 3 for STL and 1 & 5 for KC')
+print('(2) Open Compleo from Citrix; format and extract the text file; save as ASCII UTF 8 to desktop Compleo folder')
+print('(3) Check column D, find "CASE", and then copy from the first occurrence down to new file')
+print('(4) Input files are velocity_disc_cases.csv and velocity_disc_bottles.csv; sort and check them; ensure numeric format for D & E cols')
+
+
+
 
 print('Declare production days and time period; put time period on output file name')
 productionDays = 17
+rawBtlTtl = 9822.94
+rawCsTtl = 220898
 timeFrame = '1/1/16 - 1/31/16 for Companies 2 & 3'
 
 print('Read in Velocity report from AS400, accessed through Compleo and pre-formatted in Excel:
       Make sure rows below data have all been deleted, and headers (above col names) are nixed')
-setwd("C:/Users/pmwash/Desktop/R_Files/Data Input")
-btls = read.csv('velocity_disc_bottles.csv', header=TRUE)
+btls = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/velocity_disc_bottles.csv', header=TRUE, na.strings=NA)
 names(btls) = c('ITEM.NUMBER', 'DESCRIPTION', 'BTL.SALES', 'PICK.FREQUENCY', 'CASE.LOCATION',
                  'BTL.LOCATION', 'BULK.LOCATION', 'BTLS.ON.HAND')
-cases = read.csv('velocity_disc_cases.csv', header=TRUE)
+cases = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/velocity_disc_cases.csv', header=TRUE, na.strings=NA)
 names(cases) = c('ITEM.NUMBER', 'DESCRIPTION', 'CASE.SALES', 'PICK.FREQUENCY', 'CASE.LOCATION',
                  'BTL.LOCATION', 'BULK.LOCATION', 'BTLS.ON.HAND')
+headTail(btls)
+headTail(cases)
+
+#######
+print('AVOID BUGS: Check sums from raw input data')
+btlTot = sum(btls$BTL.SALES, na.rm=T)
+csTot = sum(cases$CASE.SALES, na.rm=T)
+paste('Bottle total after reading in data is ', btlTot, 
+      ' when before it was ', rawBtlTtl,
+      'Case total after reading in data is ', csTot,
+      ' when before it was ', rawCsTtl)
+paste(' Bottles OK?: ', btlTot == rawBtlTtl) 
+paste(' Cases OK?: ', csTot == rawCsTtl)
+#######
 
 print('Classify lines')
 csLine = substrLeft(cases$CASE.LOCATION, 1)
@@ -160,6 +156,7 @@ g.line = cases %>% filter(CASE.LINE=='G-LINE') %>% arrange(desc(CASE.SALES), ITE
 wine.room = cases %>% filter(CASE.LINE=='WINE ROOM') %>% arrange(desc(CASE.SALES), ITEM.NUMBER)
 a.btl.line = btls %>% filter(BTL.LINE=='A-RACK') %>% arrange(desc(BTL.SALES), ITEM.NUMBER)
 b.btl.line = btls %>% filter(BTL.LINE=='B-RACK') %>% arrange(desc(BTL.SALES), ITEM.NUMBER)
+oddballBtls = btls %>% filter(BTL.LINE=='ODDBALL') %>% arrange(desc(BTL.SALES), ITEM.NUMBER)
 keg.room = cases %>% filter(IS.KEG=='YES') %>% arrange(desc(CASE.SALES), ITEM.NUMBER)
 
 
@@ -174,6 +171,11 @@ itemsPerLine = aggregate(DESCRIPTION ~ CASE.LINE, data=cases, FUN=countUnique)
 names(itemsPerLine) = c('CASE.LINE', 'NUMBER.UNIQUE.ITEMS')
 lineSummary = merge(caseMovementByLine, itemsPerLine, by='CASE.LINE')
 btlSales = aggregate(BTL.SALES~BTL.LINE, data=btls, FUN=sum)
+# # #########
+# print('Remove positives and add them up')
+# b = ifelse(btls$BTL.LINE=='ODDBALL' & btls$BTL.SALES>0, as.numeric(btls$BTL.SALES),0)
+# sum(b,na.rm=T)
+# # #########
 names(btlSales) = c('CASE.LINE', 'BTL.SALES')
 lineSummary = merge(lineSummary, btlSales, by='CASE.LINE', all=TRUE)
 lineSummary$PERCENT.TTL.BTLS = round(lineSummary$BTL.SALES / sum(lineSummary$BTL.SALES, na.rm=TRUE), 2)
@@ -183,13 +185,22 @@ lineSummary = lineSummary[,c('CASE.LINE', 'CASE.SALES', 'PERCENT.TTL.CASES',
 lineSummary = arrange(lineSummary, -CASE.SALES)
 lineSummary
 
+##########
+print('AVOID BUGS: Check that totals match input files')
+finalCs = sum(lineSummary$CASE.SALES, na.rm=T)
+finalBtl = sum(lineSummary$BTL.SALES, na.rm=T)
+paste('Cases OK?: ', finalCs == rawCsTtl, 'Final Cases = ', finalCs)
+paste('Bottles OK?: ', finalBtl == rawBtlTtl, 'Final Bottles = ', finalBtl)
+##########
 
 print('Print results to a file for distribution. Make sure file name is equal to the file output name before running moveRenameFile()')
 setwd("C:/Users/pmwash/Desktop/R_Files/Data Output")
-file_name = 'velocity_stl_01012016-01312016.xlsx'
+library(xlsx)
+file_name = 'velocity_stl_02012016-02292016.xlsx'
 write.xlsx(lineSummary, file=file_name, sheetName='Line Summary')
 write.xlsx(a.btl.line, file=file_name, sheetName='A Rack', append=TRUE)
 write.xlsx(b.btl.line, file=file_name, sheetName='B Rack', append=TRUE)
+write.xlsx(oddballBtls, append=TRUE, file=file_name, sheetName='Oddball Bottles')
 write.xlsx(c.line, append=TRUE, file=file_name, sheetName='C Line')
 write.xlsx(d.line, append=TRUE, file=file_name, sheetName='D Line')
 write.xlsx(e.line, append=TRUE, file=file_name, sheetName='E Line')
@@ -197,8 +208,7 @@ write.xlsx(f.line, append=TRUE, file=file_name, sheetName='F Line')
 write.xlsx(g.line, append=TRUE, file=file_name, sheetName='G Line')
 write.xlsx(keg.room, append=TRUE, file=file_name, sheetName='Keg Room')
 write.xlsx(wine.room, append=TRUE, file=file_name, sheetName='Wine Room')
-write.xlsx(oddball, append=TRUE, file=file_name, sheetName='Oddball')
-
+write.xlsx(oddball, append=TRUE, file=file_name, sheetName='Oddball Cases')
 
 print('STOP and run the VBA code to format the report for distribution. Make sure file output name matches the final branch of the file paths below')
 
