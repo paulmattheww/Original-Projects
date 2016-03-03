@@ -18,6 +18,8 @@ Sub production_report_gather_kc()
         
     Application.ScreenUpdating = False
     Application.EnableEvents = False
+    Application.AskToUpdateLinks = False
+    Application.DisplayAlerts = False
     
     ' Ensure key value date index columns are there, and all else is cleared
     target_path = "C:\Users\pmwash\Desktop\Disposable Docs\Production Data\Output\input_production_report.xlsx" ' Where the data is going
@@ -32,7 +34,7 @@ Sub production_report_gather_kc()
         Set wb = Workbooks.Open(file)
         Set t_wb = Workbooks.Open(target_path)
         
-        last_row = Cells(Rows.Count, "A").End(xlUp).Row + 1 ' Sheets(1).Cells(Rows.Count, "A").End(xlUp).Row + 1
+        last_row = Cells(Rows.Count, "A").End(xlUp).Row + 1
         
         wb.Activate
         wb.Sheets("Summary").Range("I5:J40").Copy
