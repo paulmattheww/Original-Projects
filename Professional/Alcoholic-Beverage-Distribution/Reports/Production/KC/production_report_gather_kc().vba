@@ -43,7 +43,7 @@ Sub production_report_gather_kc()
         
         t_wb.Worksheets(1).Range("D" & last_row).Select
         Selection = "1"
-        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=36, Trend:=False
+        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=37, Trend:=False
         
     Next file
     
@@ -56,15 +56,15 @@ Sub production_report_gather_kc()
         last_row = Cells(Rows.Count, "A").End(xlUp).Row + 1
     
         wb.Activate
-        wb.Sheets("Summary").Range("A5:B41").Copy
+        wb.Sheets("Summary").Range("A3:B41").Copy
         t_wb.Activate
         t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, SkipBlanks:=False
         
         t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 39) = wb.Name
         
         t_wb.Worksheets(1).Range("D" & last_row).Select
-        Selection = "54"
-        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=75, Trend:=False
+        Selection = "38"
+        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=76, Trend:=False
         
         wb.Close False
         t_wb.Close True
@@ -87,8 +87,8 @@ Sub production_report_gather_kc()
         t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 35) = wb.Name
         
         t_wb.Worksheets(1).Range("D" & last_row).Select
-        Selection = "103"
-        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=109, Trend:=False
+        Selection = "77"
+        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=113, Trend:=False
         
         wb.Close False
         t_wb.Close True
