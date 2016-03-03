@@ -1,58 +1,34 @@
 print('Velocity Report for Kansas City')
 
-############
 print('Load necessary libraries')
 library(dplyr)
-library(XLConnect)
+library(xlsx)
+source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 
-print('Create functions for later use')
-substrRight = function(x, n){
-  substr(x, nchar(x)-n+1, nchar(x))
-}
-substrLeft = function(x, n){
-  substr(x, 1, n)
-}
-as400Date = function(x) {
-  date = as.character(x)
-  date = substrRight(date, 6)
-  date = as.character((strptime(date, "%y%m%d")))
-  date
-}
-countUnique = function(x) {
-  length(unique(x))
-}
-moveRenameFile = function(from, to) {
-  destination = dirname(to)
-  if (!isTRUE(file.info(destination)$isdir)) dir.create(destination, recursive=TRUE)
-  file.rename(from = from,  to = to)
-}
-headTail = function(x) {
-  h <- head(x)
-  t <- tail(x)
-  print(h)
-  print(t)
-}
-############
+
+print('(1) AS400 - run for COMP = 2 & 3 for STL and 1 & 5 for KC; document totals and save files separately')
+print('(2) Open Compleo from Citrix; format and extract the text file; save as ASCII UTF 8 to desktop Compleo folder')
+print('(3) Check column D, find "CASE", and then copy from the first occurrence down to new file')
+print('(4) Input files are velocity_disc_cases.csv and velocity_disc_bottles.csv; sort and check them; ensure numeric format for D & E cols')
+
 
 print('Declare production days and time period; put time period on output file name')
-productionDays = 18
-timeFrame = '1/1/16 - 1/31/16 for Companies 1 & 5'
+productionDays = 16
+rawBtlTtl = 6095.62
+rawCsTtl = 154113
+timeFrame = '2/1/16 - 2/29/16 for Companies 1 & 5'
 
 print('Read in Velocity report from AS400, accessed through Compleo and pre-formatted in Excel:
       Make sure rows below data have all been deleted, and headers (above col names) are nixed')
-setwd("C:/Users/pmwash/Desktop/R_Files/Data Input")
-btls = read.csv('bottle_velocity_kc.csv', header=TRUE)
+btls = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Velocity/KC/velocity_disc_bottles_kc.csv', header=TRUE, na.strings=NA)
 names(btls) = c('ITEM.NUMBER', 'DESCRIPTION', 'BTL.SALES', 'PICK.FREQUENCY', 'CASE.LOCATION',
                 'BTL.LOCATION', 'BULK.LOCATION', 'BTLS.ON.HAND')
-btls = btls %>% arrange(-BTL.SALES)
-cases = read.csv('case_velocity_kc.csv', header=TRUE)
+cases = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Velocity/KC/velocity_disc_cases_kc.csv', header=TRUE, na.strings=NA)
 names(cases) = c('ITEM.NUMBER', 'DESCRIPTION', 'CASE.SALES', 'PICK.FREQUENCY', 'CASE.LOCATION',
                  'BTL.LOCATION', 'BULK.LOCATION', 'BTLS.ON.HAND')
-cases = cases %>% arrange(-CASE.SALES)
-
-
-headTail(cases)
 headTail(btls)
+headTail(cases)
+
 
 
 print('Classify lines')
@@ -192,7 +168,7 @@ lineSummary
 
 print('Print results to a file for distribution. Make sure file name is equal to the file output name before running moveRenameFile()')
 setwd("C:/Users/pmwash/Desktop/R_Files/Data Output")
-file_name = 'velocity_kc_01012016-01312016.xlsx'
+file_name = 'velocity_kc_02012016-02292016.xlsx'
 write.xlsx(lineSummary, file=file_name, sheetName='Line Summary')
 write.xlsx(a.btl.line, file=file_name, sheetName='A Rack', append=TRUE)
 write.xlsx(b.btl.line, file=file_name, sheetName='B Rack', append=TRUE)
