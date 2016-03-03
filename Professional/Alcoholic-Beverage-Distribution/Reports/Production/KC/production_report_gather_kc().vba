@@ -39,7 +39,7 @@ Sub production_report_gather_kc()
         wb.Activate
         wb.Sheets("Summary").Range("I5:J40").Copy
         t_wb.Activate
-        t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, SkipBlanks:=False
+        t_wb.Worksheets(1).Range("A2").PasteSpecial Paste:=xlValues, SkipBlanks:=False
         
         t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 37) = wb.Name
         
@@ -90,7 +90,7 @@ Sub production_report_gather_kc()
         
         t_wb.Worksheets(1).Range("D" & last_row).Select
         Selection = "77"
-        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=115, Trend:=False
+        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=114, Trend:=False
         
         wb.Close False
         t_wb.Close True
