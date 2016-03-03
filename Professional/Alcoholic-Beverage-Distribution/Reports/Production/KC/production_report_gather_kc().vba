@@ -82,7 +82,7 @@ Sub production_report_gather_kc()
         last_row = Cells(Rows.Count, "A").End(xlUp).Row + 1
         
         wb.Activate
-        wb.Sheets("Summary").Range("D5:E40").Copy
+        wb.Sheets("Summary").Range("D3:E40").Copy
         t_wb.Activate
         t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, SkipBlanks:=False
         
@@ -90,7 +90,7 @@ Sub production_report_gather_kc()
         
         t_wb.Worksheets(1).Range("D" & last_row).Select
         Selection = "77"
-        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=113, Trend:=False
+        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=115, Trend:=False
         
         wb.Close False
         t_wb.Close True
