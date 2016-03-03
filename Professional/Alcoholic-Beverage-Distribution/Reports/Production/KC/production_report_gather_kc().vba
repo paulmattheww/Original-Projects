@@ -28,26 +28,6 @@ Sub production_report_gather_kc()
     
     Set source = CreateObject("Scripting.FileSystemObject")
     Set file_list = source.GetFolder(directory)
- 
-    For Each file In file_list.Files
-        
-        Set wb = Workbooks.Open(file)
-        Set t_wb = Workbooks.Open(target_path)
-        
-        last_row = Cells(Rows.Count, "A").End(xlUp).Row + 1
-        
-        wb.Activate
-        wb.Sheets("Summary").Range("I5:J40").Copy
-        t_wb.Activate
-        t_wb.Worksheets(1).Range("A2").PasteSpecial Paste:=xlValues, SkipBlanks:=False
-        
-        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 37) = wb.Name
-        
-        t_wb.Worksheets(1).Range("D" & last_row).Select
-        Selection = "1"
-        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=37, Trend:=False
-        
-    Next file
     
     
     For Each file In file_list.Files
@@ -58,20 +38,21 @@ Sub production_report_gather_kc()
         last_row = Cells(Rows.Count, "A").End(xlUp).Row + 1
     
         wb.Activate
-        wb.Sheets("Summary").Range("A3:B41").Copy
+        wb.Sheets("Summary").Range("I3:J40").Copy
         t_wb.Activate
         t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, SkipBlanks:=False
         
         t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 39) = wb.Name
         
         t_wb.Worksheets(1).Range("D" & last_row).Select
-        Selection = "38"
-        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=76, Trend:=False
+        Selection = "1"
+        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=38, Trend:=False
         
         wb.Close False
         t_wb.Close True
         
     Next file
+    
     
     
     For Each file In file_list.Files
@@ -86,11 +67,36 @@ Sub production_report_gather_kc()
         t_wb.Activate
         t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, SkipBlanks:=False
         
-        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 35) = wb.Name
+        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 37) = wb.Name
+        
+        t_wb.Worksheets(1).Range("D" & last_row).Select
+        Selection = "39"
+        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=76, Trend:=False
+        
+        wb.Close False
+        t_wb.Close True
+        
+    Next file
+    
+    
+    
+    For Each file In file_list.Files
+        
+        Set wb = Workbooks.Open(file)
+        Set t_wb = Workbooks.Open(target_path)
+        
+        last_row = Cells(Rows.Count, "A").End(xlUp).Row + 1
+        
+        wb.Activate
+        wb.Sheets("Summary").Range("A3:B41").Copy
+        t_wb.Activate
+        t_wb.Worksheets(1).Range("A" & last_row).PasteSpecial Paste:=xlValues, SkipBlanks:=False
+        
+        t_wb.Worksheets(1).Range("C" & last_row & ":C" & last_row + 38) = wb.Name
         
         t_wb.Worksheets(1).Range("D" & last_row).Select
         Selection = "77"
-        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=114, Trend:=False
+        Selection.DataSeries Rowcol:=xlColumns, Type:=xlLinear, Date:=xlDay, Step:=1, Stop:=115, Trend:=False
         
         wb.Close False
         t_wb.Close True
