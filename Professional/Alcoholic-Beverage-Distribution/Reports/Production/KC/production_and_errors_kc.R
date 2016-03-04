@@ -18,7 +18,7 @@ library(reshape2)
 library(stringr)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 raw_data = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Input Files for Reports/Production/KC/input_production_report_kc.csv', header=TRUE)
-
+# headTail(raw_data)
 
 
 print('Prepare the data')
@@ -38,15 +38,16 @@ tidy_production_data = function(raw_data) {
               direction = 'wide')
   
   row.names(r) = toupper(as.character(r[,1]))
-  r = r[,-c(1)]
+  r = r[-c(1), ]
+  r = r[, -c(1)]
   
-  row.names(r) = sapply(rownames(r), function(x)gsub('\\s+', '.',x))
+  row.names(r) = sapply(row.names(r), function(x)gsub('\\s+', '.',x))
   names(r) = str_extract(as.character(names(r)), '[0-9]+-[0-9]+-[0-9]+')
-  
+  #r = r[, -c(105)]
+
   tidy_data = r 
-  
+
   t_tidy_data = data.frame(t(tidy_data))
-  t_tidy_data = t_tidy_data[, -c(1)]
   
   the_names = c('BOTTLE.HOURS', 'C.100.CASES', 'C.100.HOURS', 'C.200.CASES', 'C.200.HOURS', 
                 'C.300/400.CASES', 'C.300/400.HOURS', 'W.CASES', 'W.HOURS', 'R.ODD.BALL', 
@@ -98,11 +99,14 @@ tidy_production_data = function(raw_data) {
 }
 
 production = tidy_production_data(raw_data)
-#write.csv(production, file='C:/Users/pmwash/Desktop/R_files/Data Input/Living Documents/STL Production Report Daily Data Archive.csv')
+# headTail(production)
+
+#write.csv(last_year, file='M:/Operations Intelligence/Monthly Reports/Production/Production History/KC Production Report Daily Data Archivex.csv')
+
 
 
 append_archive_daily_data = function(production) {
-  path = '//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Production/Production History/STL Production Report Daily Data Archive.csv'
+  path = 'M:/Operations Intelligence/Monthly Reports/Production/Production History/KC Production Report Daily Data Archive.csv'
   
   history = read.csv(path, header=TRUE)
   names(history) = names(production)
@@ -129,73 +133,55 @@ generate_cumsums = function(production_appended) {
   p = p %>% group_by(YEAR) %>% 
     mutate(YTD.CASES.TOTAL=cumsum(CASES.TOTAL))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.CASES.STL=cumsum(CASES.STL))
+    mutate(YTD.CASES.KC=cumsum(CASES.KC))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.CASES.KC.TRANSFER=cumsum(CASES.KC.TRANSFER))
+    mutate(YTD.CASES.STL.TRANSFER=cumsum(CASES.STL.TRANSFER))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.CASES.COLUMBIA=cumsum(CASES.COLUMBIA))
+    mutate(YTD.CASES.SPRINGFIELD=cumsum(CASES.SPRINGFIELD))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.CASES.CAPE=cumsum(CASES.CAPE))
+    mutate(YTD.BOTTLES=cumsum(BOTTLES))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.BOTTLES.STL.REGION=cumsum(BOTTLES.STL.REGION))
+    mutate(YTD.BOTTLES.KC=cumsum(BOTTLES.KC))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.BOTTLES.STL=cumsum(BOTTLES.STL))
+    mutate(YTD.BOTTLES.SPRINGFIELD=cumsum(BOTTLES.SPRINGFIELD))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.BOTTLES.COLUMBIA=cumsum(BOTTLES.COLUMBIA))
+    mutate(YTD.HOURS.TOTAL=cumsum(HOURS.TOTAL))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.BOTTLES.CAPE=cumsum(BOTTLES.CAPE))
-  p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.KEGS.TOTAL.REGION=cumsum(KEGS.TOTAL.REGION))
-  p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.TOTAL.HOURS=cumsum(TOTAL.HOURS))
-  p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.REG.HOURS=cumsum(REG.HOURS))
+    mutate(YTD.REGULAR.HOURS=cumsum(REGULAR.HOURS))
   p = p %>% group_by(YEAR) %>% 
     mutate(YTD.OT.HOURS=cumsum(OT.HOURS))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.ABSENT.EMPS=cumsum(ABSENT.EMPS))
+    mutate(YTD.ABSENT.EMPS=cumsum(ABSENT.EMPLOYEES))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.STOPS.TOTAL=cumsum(STOPS.TOTAL))
+    mutate(YTD.STOPS.KC.TOTAL=cumsum(STOPS.KC.TOTAL))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.STOPS.STL=cumsum(STOPS.STL))
+    mutate(YTD.STOPS.SPRINGFIELD=cumsum(STOPS.SPRINGFIELD))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.STOPS.CAPE=cumsum(STOPS.CAPE))
+    mutate(YTD.ERRORS.TOTAL=cumsum(ERRORS.TOTAL))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.STOPS.COLUMBIA=cumsum(STOPS.COLUMBIA))
+    mutate(YTD.RETURNS.CASES=cumsum(RETURNS.CASES))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.TOTAL.ERRORS=cumsum(TOTAL.ERRORS))
+    mutate(YTD.RETURNS.BOTTLES=cumsum(RETURNS.BOTTLES))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.RETURNS.INVOICE.TOTAL=cumsum(RETURNS.INVOICE.TOTAL))
+    mutate(YTD.C.100.CASES=cumsum(C.100.CASES))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.C.CASES=cumsum(C.CASES))
+    mutate(YTD.C.200.CASES=cumsum(C.200.CASES))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.D.CASES=cumsum(D.CASES))
+    mutate(YTD.C.300.400.CASES=cumsum(C.300.400.CASES))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.E.CASES=cumsum(E.CASES))
+    mutate(YTD.W.CASES=cumsum(W.CASES))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.F.CASES=cumsum(F.CASES))
+    mutate(YTD.R.ODD.BALL.CASES=cumsum(R.ODD.BALL))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.G.CASES=cumsum(G.CASES))
-  p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.ODD.BALL.CASES=cumsum(TOTAL.ODD.BALL))
+    mutate(YTD.UNKNOWN.CASES=cumsum(UNKNOWN.CASES))
   p = p %>% group_by(YEAR) %>% 
     mutate(YTD.NON.CONVEYABLE.CASES=cumsum(NON.CONVEYABLE))
   p = p %>% group_by(YEAR) %>% 
     mutate(YTD.PALLET.PICKS.CASES=cumsum(PALLET.PICKS))
   p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.SORTER.RUN.TIME..HOURS.=cumsum(SORTER.RUN.TIME..HOURS.))
-  p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.NO.READS=cumsum(NO.READS))
-  p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.MULTI.READS=cumsum(MULTI.READS))
-  p = p %>% group_by(YEAR) %>% 
     mutate(YTD.JACKPOT.CASES=cumsum(JACKPOT.CASES))
   p = p %>% group_by(YEAR) %>% 
     mutate(YTD.JACKPOT.HAND.SCAN=cumsum(JACKPOT.HAND.SCAN))
-  p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.NO.READS=cumsum(NO.READS))
-  p = p %>% group_by(YEAR) %>% 
-    mutate(YTD.RECIRCULATION.CASES=cumsum(RECIRCULATION.CASES))
   p = p %>% group_by(YEAR) %>% 
     mutate(YTD.NUMBER.WAVES=cumsum(NUMBER.WAVES))
   
@@ -208,7 +194,7 @@ generate_cumsums = function(production_appended) {
 production_appended = generate_cumsums(production_appended)
 
 
-
+# good til here so far
 
 generate_moving_avgs = function(production_appended) {
   m = production_appended
@@ -218,69 +204,47 @@ generate_moving_avgs = function(production_appended) {
   m = m %>% group_by(YEAR) %>%
     mutate(CASES.TOTAL.10.DAY.MVG.AVG = rollmean(x=CASES.TOTAL, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(CASES.STL.10.DAY.MVG.AVG = rollmean(x=CASES.STL, 10, align='right', fill=NA))
+    mutate(CASES.KC.10.DAY.MVG.AVG = rollmean(x=CASES.KC, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(CASES.KC.TRANSFER.10.DAY.MVG.AVG = rollmean(x=CASES.KC.TRANSFER, 10, align='right', fill=NA))
+    mutate(CASES.STL.TRANSFER.10.DAY.MVG.AVG = rollmean(x=CASES.STL.TRANSFER, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(CASES.COLUMBIA.10.DAY.MVG.AVG = rollmean(x=CASES.COLUMBIA, 10, align='right', fill=NA))
+    mutate(CASES.SPRINGFIELD.10.DAY.MVG.AVG = rollmean(x=CASES.SPRINGFIELD, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(CASES.CAPE.10.DAY.MVG.AVG = rollmean(x=CASES.CAPE, 10, align='right', fill=NA))
+    mutate(BOTTLES.10.DAY.MVG.AVG = rollmean(x=BOTTLES, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(BOTTLES.STL.REGION.10.DAY.MVG.AVG = rollmean(x=BOTTLES.STL.REGION, 10, align='right', fill=NA))
+    mutate(HOURS.TOTAL.10.DAY.MVG.AVG = rollmean(x=HOURS.TOTAL, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(KEGS.TOTAL.REGION.10.DAY.MVG.AVG = rollmean(x=KEGS.TOTAL.REGION, 10, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(TOTAL.HOURS.10.DAY.MVG.AVG = rollmean(x=TOTAL.HOURS, 10, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(REG.HOURS.10.DAY.MVG.AVG = rollmean(x=REG.HOURS, 10, align='right', fill=NA))
+    mutate(REGULAR.HOURS.10.DAY.MVG.AVG = rollmean(x=REGULAR.HOURS, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
     mutate(OT.HOURS.10.DAY.MVG.AVG = rollmean(x=OT.HOURS, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(TOTAL.EMPS.TEMPS.10.DAY.MVG.AVG = rollmean(x=TOTAL.EMPS.TEMPS, 10, align='right', fill=NA))
+    mutate(EMPS.TEMPS.ON.HAND.10.DAY.MVG.AVG = rollmean(x=EMPS.TEMPS.ON.HAND, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(TRUCKS.TOTAL.10.DAY.MVG.AVG = rollmean(x=TRUCKS.TOTAL, 10, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(TRUCKS.PACKAGE.10.DAY.MVG.AVG = rollmean(x=TRUCKS.PACKAGE, 10, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(TRUCKS.KEG.10.DAY.MVG.AVG = rollmean(x=TRUCKS.KEG, 10, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(STOPS.TOTAL.10.DAY.MVG.AVG = rollmean(x=STOPS.TOTAL, 10, align='right', fill=NA))
+    mutate(TRUCKS.KC.TOTAL.10.DAY.MVG.AVG = rollmean(x=TRUCKS.KC.TOTAL, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
     mutate(COMPLETION.TIME.10.DAY.MVG.AVG = rollmean(x=COMPLETION.TIME, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(RETURNS.INVOICE.TOTAL.10.DAY.MVG.AVG = rollmean(x=RETURNS.INVOICE.TOTAL, 10, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
     mutate(RETURNS.CASES.10.DAY.MVG.AVG = rollmean(x=RETURNS.CASES, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(C.CASES.10.DAY.MVG.AVG = rollmean(x=C.CASES, 10, align='right', fill=NA))
+    mutate(C.100.CASES.10.DAY.MVG.AVG = rollmean(x=C.100.CASES, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(C.HOURS.10.DAY.MVG.AVG = rollmean(x=C.HOURS, 10, align='right', fill=NA))
+    mutate(C.100.HOURS.10.DAY.MVG.AVG = rollmean(x=C.100.HOURS, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(CPMH.C.10.DAY.MVG.AVG = rollmean(x=CPMH.C, 10, align='right', fill=NA))
+    mutate(C.100.CPMH.10.DAY.MVG.AVG = rollmean(x=C.100.CPMH, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(D.CASES.10.DAY.MVG.AVG = rollmean(x=D.CASES, 10, align='right', fill=NA))
+    mutate(C.200.CASES.10.DAY.MVG.AVG = rollmean(x=C.200.CASES, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(D.HOURS.10.DAY.MVG.AVG = rollmean(x=D.HOURS, 10, align='right', fill=NA))
+    mutate(C.200.HOURS.10.DAY.MVG.AVG = rollmean(x=C.200.HOURS, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(CPMH.D.10.DAY.MVG.AVG = rollmean(x=CPMH.D, 10, align='right', fill=NA))
+    mutate(C.200.CPMH.10.DAY.MVG.AVG = rollmean(x=C.200.CPMH, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(E.CASES.10.DAY.MVG.AVG = rollmean(x=E.CASES, 10, align='right', fill=NA))
+    mutate(C.300.400.CASES.10.DAY.MVG.AVG = rollmean(x=C.300.400.CASES, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(E.HOURS.10.DAY.MVG.AVG = rollmean(x=E.HOURS, 10, align='right', fill=NA))
+    mutate(C.300.400.HOURS.10.DAY.MVG.AVG = rollmean(x=C.300.400.HOURS, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(CPMH.E.10.DAY.MVG.AVG = rollmean(x=CPMH.E, 10, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(F.CASES.10.DAY.MVG.AVG = rollmean(x=F.CASES, 10, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(F.HOURS.10.DAY.MVG.AVG = rollmean(x=F.HOURS, 10, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(CPMH.F.10.DAY.MVG.AVG = rollmean(x=CPMH.F, 10, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(G.CASES.10.DAY.MVG.AVG = rollmean(x=G.CASES, 10, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(G.HOURS.10.DAY.MVG.AVG = rollmean(x=G.HOURS, 10, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(CPMH.G.10.DAY.MVG.AVG = rollmean(x=CPMH.G, 10, align='right', fill=NA))
+    mutate(C.300.400.CPMH.10.DAY.MVG.AVG = rollmean(x=C.300.400.CPMH, 10, align='right', fill=NA))
+  
+
   m = m %>% group_by(YEAR) %>%
     mutate(W.CASES.10.DAY.MVG.AVG = rollmean(x=W.CASES, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
@@ -292,7 +256,7 @@ generate_moving_avgs = function(production_appended) {
   m = m %>% group_by(YEAR) %>%
     mutate(PALLET.PICKS.10.DAY.MVG.AVG = rollmean(x=PALLET.PICKS, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(SORTER.RUN.TIME..HOURS..10.DAY.MVG.AVG = rollmean(x=SORTER.RUN.TIME..HOURS., 10, align='right', fill=NA))
+    mutate(SORTER.RUN.TIME.HOURS.10.DAY.MVG.AVG = rollmean(x=SORTER.RUN.TIME.HOURS, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
     mutate(NO.READS.10.DAY.MVG.AVG = rollmean(x=NO.READS, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
@@ -302,19 +266,13 @@ generate_moving_avgs = function(production_appended) {
   m = m %>% group_by(YEAR) %>%
     mutate(JACKPOT.HAND.SCAN.10.DAY.MVG.AVG = rollmean(x=JACKPOT.HAND.SCAN, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(RECIRCULATION.CASES.10.DAY.MVG.AVG = rollmean(x=RECIRCULATION.CASES, 10, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(NUMBER.ID.GROUPS.10.DAY.MVG.AVG = rollmean(x=NUMBER.ID.GROUPS, 10, align='right', fill=NA))
+    mutate(NUMBER.ID.GROUPS.10.DAY.MVG.AVG = rollmean(x=NO.ID.GROUPS, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
     mutate(NUMBER.WAVES.10.DAY.MVG.AVG = rollmean(x=NUMBER.WAVES, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(TOTAL.WAVE.PARTS.10.DAY.MVG.AVG = rollmean(x=TOTAL.WAVE.PARTS, 10, align='right', fill=NA))
+    mutate(ODD.BALL.BOTTLES.10.DAY.MVG.AVG = rollmean(x=ODD.BALL.BOTTLES, 10, align='right', fill=NA))
   m = m %>% group_by(YEAR) %>%
-    mutate(AVG.CASES.PER.WAVE.10.DAY.MVG.AVG = rollmean(x=AVG.CASES.PER.WAVE, 10, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(TOTAL.ODD.BALL.10.DAY.MVG.AVG = rollmean(x=TOTAL.ODD.BALL, 10, align='right', fill=NA))
-  m = m %>% group_by(YEAR) %>%
-    mutate(TOTAL.ODD.BALL.HOURS.10.DAY.MVG.AVG = rollmean(x=TOTAL.ODD.BALL.HOURS, 10, align='right', fill=NA))
+    mutate(ODD.BALL.BOTTLE.HOURS.10.DAY.MVG.AVG = rollmean(x=ODD.BALL.BOTTLE.HOURS, 10, align='right', fill=NA))
   
   m = data.frame(m)
   
@@ -327,7 +285,7 @@ production_appended = generate_moving_avgs(production_appended)
 
 
 
-aggregate_monthly_averages_totals = function(production_appended, this_month='-2') {
+aggregate_monthly_averages_totals = function(production_appended, report_month='-2') {
   t = production_appended
   
   
@@ -343,10 +301,10 @@ aggregate_monthly_averages_totals = function(production_appended, this_month='-2
   colnames(t_sums) = sapply(colnames(t_sums), function(x) paste0('SUM.', x))
   row.names(t_sums) = paste0(as.character(t_sums$SUM.YEAR), sep='-', as.character(t_sums$SUM.MONTH))
   
-  t_sums = t_sums[, c('SUM.CASES.TOTAL', 'SUM.BOTTLES.STL.REGION', 'SUM.MISPICKS', 
-                      'SUM.TOTAL.ERRORS', 'SUM.O.S.CASES', 'SUM.O.S.BOTTLES', 
-                      'SUM.TOTAL.HOURS', 'SUM.OT.HOURS', 'SUM.TOTAL.ODD.BALL.HOURS',
-                      'SUM.RETURNS.CASES', 'SUM.TOTAL.ODD.BALL')]
+  t_sums = t_sums[, c('SUM.CASES.TOTAL', 'SUM.BOTTLES', 'SUM.MISPICKS.TOTAL', 
+                      'SUM.ERRORS.TOTAL', 'SUM.OVER.SHORT.CASES', 'SUM.OVER.SHORT.B.LINE', 
+                      'SUM.HOURS.TOTAL', 'SUM.OT.HOURS', 'SUM.R.ODDBALL.HOURS',
+                      'SUM.RETURNS.CASES', 'SUM.R.ODD.BALL')]
   names(t_sums) = c('CASES', 'BOTTLES', 'MISPICKS', 
                     'ERRORS', 'O.S.CASES', 'O.S.BOTTLES', 
                     'MAN.HOURS', 'OVERTIME.HOURS', 'ODD.BALL.HOURS',
@@ -358,7 +316,7 @@ aggregate_monthly_averages_totals = function(production_appended, this_month='-2
   row.names(t_avgs) = paste0(as.character(t_avgs$AVG.YEAR), sep='-', as.character(t_avgs$AVG.MONTH))
   
   t_avgs = t_avgs[, c('AVG.CPMH.OT.ADJUSTED', 'AVG.CPMH', 'AVG.CASES.TOTAL', 
-                      'AVG.TOTAL.EMPS.TEMPS', 'AVG.TOTAL.ODD.BALL', 'AVG.BOTTLES.STL.REGION', 'AVG.TOTAL.ODD.BALL.HOURS')]
+                      'AVG.EMPS.TEMPS.ON.HAND', 'AVG.R.ODD.BALL', 'AVG.BOTTLES', 'AVG.R.ODDBALL.HOURS')]
   names(t_avgs) = c('CPMH.OT.ADJ', 'CPMH', 'AVG.CASES', 
                     'AVG.EMPLOYEES.ON.HAND', 'AVG.ODD.BALL.CASES', 'AVG.BOTTLES', 'AVG.ODD.BALL.HOURS')
   
@@ -369,7 +327,7 @@ aggregate_monthly_averages_totals = function(production_appended, this_month='-2
             'ODD.BALL.CASES', 'AVG.ODD.BALL.CASES', 'ODD.BALL.HOURS', 'AVG.ODD.BALL.HOURS')
   t_combined = t_combined[, order]
   
-  t_combined = t_combined[which(substrRight(row.names(t_combined), 2) %in% this_month), ]
+  t_combined = t_combined[which(substrRight(row.names(t_combined), 2) %in% report_month), ]
   
   T_combined = data.frame(t(t_combined))
   names(T_combined) = c('EOM.2015', 'EOM.2016')
@@ -382,7 +340,7 @@ aggregate_monthly_averages_totals = function(production_appended, this_month='-2
   T_combined
 }
 
-monthly_summary = aggregate_monthly_averages_totals(production_appended, report_month='FEBRUARY')
+monthly_summary = aggregate_monthly_averages_totals(production_appended, report_month='-2')
 
 
 
