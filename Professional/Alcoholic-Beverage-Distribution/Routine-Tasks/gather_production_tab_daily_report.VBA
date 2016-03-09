@@ -87,6 +87,9 @@ Sub gather_production_tab_daily_report_kc()
         
     Application.ScreenUpdating = False
     Application.EnableEvents = False
+    Application.AskToUpdateLinks = False
+    Application.DisplayAlerts = False
+
     
     target_path = "C:\Users\pmwash\Desktop\Disposable Docs\Production Data\Output\process_output.xlsx" ' Where the data is going
     
