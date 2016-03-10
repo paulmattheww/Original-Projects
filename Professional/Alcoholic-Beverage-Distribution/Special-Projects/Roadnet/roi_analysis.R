@@ -67,8 +67,8 @@ g + geom_point(aes(group=variable)) +
 cat('Information from SMEs
     \n
     Joe Luna 
-      * High cases / low stops
-      * No more than 37 stops (check with Joe)
+    * High cases / low stops
+    * No more than 37 stops (check with Joe)
     ')
 kc_18_ft_capacity = 580
 kc_53_ft_capacity = 1500
@@ -82,10 +82,10 @@ cat('Roadnet ROI Analysis: Drivers Only \n
     COSTS \n
     Routing & Dispatching Cost Savings \n
     Cell Phones 
-      -S5 Phones 
-      -Annual Plan 
-      -Data Plan 
-      -Insurance/Replacements \n
+    -S5 Phones 
+    -Annual Plan 
+    -Data Plan 
+    -Insurance/Replacements \n
     \n
     SAVINGS \n
     Routing Time
@@ -106,10 +106,10 @@ cat('Roadnet ROI Analysis: With Telematics \n
     Routing & Dispatching Cost Savings \n
     Telematics
     Cell Phones 
-      -S5 Phones 
-      -Annual Plan 
-      -Data Plan 
-      -Insurance/Replacements \n
+    -S5 Phones 
+    -Annual Plan 
+    -Data Plan 
+    -Insurance/Replacements \n
     \n
     SAVINGS \n
     Routing Time
@@ -154,11 +154,11 @@ stl_18_ft_capacity = 600
 stl_keg_18_ft_capacity = 90 #barrels
 
 spfd_cases_per_bin = #from Rick
-
-
-
-cat('Adapt VBA code to get production tab of Daily Report
-    Two months worth of data should suffice')
+  
+  
+  
+  cat('Adapt VBA code to get production tab of Daily Report
+      Two months worth of data should suffice')
 
 
 
@@ -175,7 +175,7 @@ format_route_data = function(routes) {
   routes = routes %>% arrange(Date)
   routes
 }  
- 
+
 clean_routes = format_route_data(routes)
 
 
@@ -192,16 +192,33 @@ merge_customers_routes = function(clean_routes, customers) {
 customers_routes = merge_customers_routes(clean_routes, customers)
 
 
-long_long
-lat = customers_routes$Latitude
-long = customers_routes$Longitude
-cust = customers_routes$Customer
-cases = customers_routes$Cases
+
+# lat = customers_routes$Latitude
+# long = customers_routes$Longitude
+# cust = customers_routes$Customer
+# cases = customers_routes$Cases
+# 
+# Missouri = get_map(location='missouri', maptype='roadmap', source='google', zoom=7)
+# mo_base_map = ggmap(Missouri, extent='panel', 
+#                     base_layer=ggplot(data=customers_routes, 
+#                                       aes(x=Longitude, y=Latitude)))
+# 
+# mo_base_map + geom_point()
+
+
+
+
+lat_long = customers_routes[, c('Latitude', 'Longitude')]
+lat_long = unique(lat_long)
+lat = lat_long$Latitude
+long = lat_long$Longitude
 
 Missouri = get_map(location='missouri', maptype='roadmap', source='google', zoom=7)
 mo_base_map = ggmap(Missouri, extent='panel', 
-                    base_layer=ggplot(data=customers_routes, 
-                                      aes(x=unique(Longitude), y=unique(Latitude))))
+                    base_layer=ggplot(data=lat_long, 
+                                      aes(x=Longitude, y=Latitude)))
+
+mo_base_map + geom_point()
 
 
 
