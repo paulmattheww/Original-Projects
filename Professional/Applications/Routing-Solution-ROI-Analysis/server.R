@@ -11,17 +11,19 @@ simulate_data = function(percent_saved_fuel, percent_saved_driver_compensation, 
                          opportunity_equip_maint_improve = 0,
                          opportunity_analyst_resources_improve = 0,
                          opportunity_router_resources_improve = 0,
-                         roadnet_telematics = 0) {
+                         roadnet_telematics = 0,
+                         negotiations = 79002.12) {
 
-  roadnet_yearly = 79002.12
+  roadnet_yearly = negotiations
   roadnet_telematics_monthly =  round(roadnet_telematics / 12, 2) # 19173 if using, 0 else
-  roadnet_monthly = 6583.51 + roadnet_telematics_monthly # roadnet_yearly == roadnet_monthly * 12
+  roadnet_monthly = round(roadnet_yearly / 12, 2) + roadnet_telematics_monthly # roadnet_yearly == roadnet_monthly * 12
   roadnet_consulting = 2100
   roadnet_onsite_conversion = 7150
   roadnet_insights = 5700
+  roadnet_telematics_unit_cost = 70 * 288 # from Joe P a while back
   
   non_recurring_inflator = non_recurring_inflator # IT WILL PROBABLY GO OVER BUDGET AND TIMELINE
-  non_recurring = (roadnet_consulting + roadnet_onsite_conversion + roadnet_insights) * non_recurring_inflator
+  non_recurring = (roadnet_consulting + roadnet_onsite_conversion + roadnet_insights + roadnet_telematics_unit_cost) * non_recurring_inflator
   
   n_drivers = 70
   cell_ins_yearly = 25 * n_drivers  # $25 per user per year
@@ -127,7 +129,7 @@ shinyServer(
     roi_data = reactive({
       r = simulate_data(percent_saved_fuel=input$fuel, percent_saved_driver_compensation=input$driver, p_truck_gone=input$truck, non_recurring_inflator=input$inflator,
                              opportunity_equip_maint_improve = input$maintenance, opportunity_analyst_resources_improve = input$analyst, opportunity_router_resources_improve = input$router,
-                             roadnet_telematics = input$telematics) #19173 per year, will 
+                             roadnet_telematics = input$telematics, negotiations=input$negotiations) #19173 per year, will 
       return(r)
     })
     
@@ -145,6 +147,10 @@ shinyServer(
         ggtitle(expression(atop('Accumulated Costs vs. Accumulated Savings of Roadnet', 
                                 atop(italic('Manipulate Assumptions Using Sliders'))))) +
         labs(y='Dollars')
+    })
+    
+    output$data = renderDataTable({
+      roi_data()
     })
     
 })
