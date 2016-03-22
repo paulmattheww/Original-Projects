@@ -64,6 +64,11 @@ shinyUI(fluidPage(
           numericInput("router",
                        label="Anticipated Savings to Router's Time ($/mo):",
                        value=0))),
+      
+      tabPanel('Key Outputs', 
+               downloadButton('download_data', 'Download Version'),
+               h3('Raw ROI at end of year 3:'), 
+               p(textOutput('net_savings_year_3'))),
         
 
     br()
