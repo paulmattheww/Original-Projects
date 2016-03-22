@@ -7,10 +7,19 @@ shinyUI(fluidPage(
     plotOutput('plot1'),
     
     tabsetPanel(
-      tabPanel('Data', 
+      tabPanel('Facts & Assumptions', 
+               h3('Facts & Assumptions'),
+               p('KC mileage data was unavailable at the time of data gather. 
+                  This increases uncertainty surrounding being capable of 
+                  combining routes that are underutilized by capacity and proximity alone. 
+                  It is still likely that overall capacity utilization will increase, even amongst crowded routes.'),
+               p('Rural routes are more difficult to combine, even on a daily basis, 
+                 due to the large number of miles that they travel per day.')),
+      
+      tabPanel('Reactively Generated Data', 
                 dataTableOutput('data')),
     
-      tabPanel('Parameters',
+      tabPanel('User-Set Parameters',
         fluidRow(
           numericInput("negotiations",
                        label="Negotiate Annual Roadnet Fee w/o Telematics (Quote of $79,002/yr):",
