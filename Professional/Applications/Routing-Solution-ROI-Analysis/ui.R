@@ -7,14 +7,27 @@ shinyUI(fluidPage(
     plotOutput('plot1'),
     
     tabsetPanel(
-      tabPanel('Facts & Assumptions', 
-               h3('Facts & Assumptions'),
+      tabPanel('Key Considerations', 
+               h3('Key Considerations'),
                p('KC mileage data was unavailable at the time of data gather. 
                   This increases uncertainty surrounding being capable of 
                   combining routes that are underutilized by capacity and proximity alone. 
                   It is still likely that overall capacity utilization will increase, even amongst crowded routes.'),
                p('Rural routes are more difficult to combine, even on a daily basis, 
-                 due to the large number of miles that they travel per day.')),
+                 due to the large number of miles that they travel per day.'),
+               p('While it will be more expensive to do Telematics, we are have considerably less 
+                 certainty on fuel savings if we do not have it. We will also have less visibility into 
+                 driving habits of associates'),
+               p('Currently, Ops data is sub-optimally organized. Roadnet will solve many
+                 of our operational data issues, and will lay the foundation for further exploration.
+                 It will also create a wonderful foundation for a BI tool, and will likely work in concert with said tool.'),
+               p('There are definitive plans to replace the AS400 with a new ERP system. Currently routing is done through 
+                 the AS400, so if we do not move forward with Roadnet then we will still need to 
+                 identify a solution for routing in the new system. '),
+               p('There is likely to be many behavioral implications with Roadnet. We will need 
+                 new onboarding paperwork, cell software orientation, and an initial meeting with 
+                 all drivers to ensure they know how things will change. We will also
+                 need to set up new SOPs for routers to maintain data, and establish expectations/responsibilities.')),
       
       tabPanel('Reactively Generated Data', 
                 dataTableOutput('data')),
@@ -65,10 +78,15 @@ shinyUI(fluidPage(
                        label="Anticipated Savings to Router's Time ($/mo):",
                        value=0))),
       
-      tabPanel('Key Outputs', 
+      tabPanel('Key Outputs',
+               h3('Key Outputs'),
+               br(),
                downloadButton('download_data', 'Download Version'),
-               h3('Raw ROI at end of year 3:'), 
-               p(textOutput('net_savings_year_3'))),
+               br(),
+               h4('Raw ROI at end of year 3:'), 
+               p(textOutput('net_savings_year_3')),
+               br()
+               ),
         
 
     br()
