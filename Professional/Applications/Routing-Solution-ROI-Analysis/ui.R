@@ -24,7 +24,7 @@ shinyUI(fluidPage(
                p('There are definitive plans to replace the AS400 with a new ERP system. Currently routing is done through 
                  the AS400, so if we do not move forward with Roadnet then we will still need to 
                  identify a solution for routing in the new system. '),
-               p('There is likely to be many behavioral implications with Roadnet. We will need 
+               p('There are likely to be many behavioral implications with Roadnet. We will need 
                  new onboarding paperwork, cell software orientation, and an initial meeting with 
                  all drivers to ensure they know how things will change. We will also
                  need to set up new SOPs for routers to maintain data, and establish expectations/responsibilities.')),
@@ -32,7 +32,7 @@ shinyUI(fluidPage(
       tabPanel('Reactively Generated Data', 
                 dataTableOutput('data')),
     
-      tabPanel('User-Set Parameters',
+      tabPanel('User-Defined Parameters',
         fluidRow(
           numericInput("negotiations",
                        label="Negotiate Annual Roadnet Fee w/o Telematics (Quote of $79,002/yr):",
@@ -67,11 +67,11 @@ shinyUI(fluidPage(
                        value=0),
           
           numericInput("maintenance",
-                       label="Anticipated Savings on Maintenance ($/mo):",
+                       label="Anticipated Maintenance Savings ($/mo):",
                        value=0),
           
           numericInput("analyst",
-                       label="Value of Having Vital Operational Data & Advanced Analytics ($/mo):",
+                       label="Value of Organized Operational Data & Advanced Analytics ($/mo):",
                        value=0),
           
           numericInput("router",
