@@ -159,11 +159,13 @@ shinyServer(
     })
     
     output$download_data = downloadHandler(
-      filename = function() paste0('roadnet', '_', input$negotiations, '_', 'fuel_', input$fuel, '_driver', input$driver, '_telematics', input$telematics, '.csv'),
+      filename = function() paste0('roadnet_', round(input$negotiations), '_fuel_', round(input$fuel*100), '_driver_', round(input$driver*100), '_telematics_', round(input$telematics), '.csv', sep=''),
       content = function(file) {
         write.csv(roi_data(), file)
       }
     )
+    
+    
     
 })
     
