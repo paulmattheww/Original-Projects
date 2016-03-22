@@ -116,6 +116,7 @@ simulate_data = function(percent_saved_fuel, percent_saved_driver_compensation, 
   
   roi_data = mutate(roi_data, Accumulated.Costs=cumsum(Total.Costs),
                     Accumulated.Savings=cumsum(Total.Savings))
+  roi_data$Net.Savings = round(roi_data$Accumulated.Savings - roi_data$Accumulated.Costs, 2)
   roi_data = data.frame(roi_data)
   
   roi_data 
@@ -152,6 +153,17 @@ shinyServer(
     output$data = renderDataTable({
       roi_data()
     })
+    
+    output$net_savings_year_3 = reactive({
+      tail(roi_data()[, 'Net.Savings'], 1)
+    })
+    
+    output$download_data = downloadHandler(
+      filename = function() paste0('roadnet', '_', input$negotiations, '_', 'fuel_', input$fuel, '_driver', input$driver, '_telematics', input$telematics, '.csv'),
+      content = function(file) {
+        write.csv(roi_data(), file)
+      }
+    )
     
 })
     
