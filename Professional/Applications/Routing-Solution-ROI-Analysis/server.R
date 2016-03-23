@@ -39,7 +39,7 @@ simulate_data = function(percent_saved_fuel, percent_saved_driver_compensation, 
   
   truck_lease_monthly = 963 * p_truck_gone# first lease up is L6355 in KC it is yearly renewed
   
-  truck_insurance_yearly = 1000 + 1231 # 1000 per truck per year for insurance; 1231 for prop taxes, weighted avg bn kc stl
+  truck_insurance_yearly = 1400 + 1231 # 1000 per truck per year for insurance; 1231 for prop taxes, weighted avg bn kc stl
   truck_insurance_monthly = (truck_insurance_yearly / 12) * p_truck_gone  # from Tom
   
   maps_savings = 1063
@@ -155,17 +155,25 @@ shinyServer(
     })
     
     output$net_savings_year_3 = reactive({
-      tail(roi_data()[, 'Net.Savings'], 1)
+      net = round(as.numeric(tail(roi_data()[, 'Net.Savings'], 1)))
+      net = scales::dollar(net)
     })
     
-    output$download_data = downloadHandler(
-      filename = function() paste0('roadnet_', round(input$negotiations), '_fuel_', round(input$fuel*100), '_driver_', round(input$driver*100), '_telematics_', round(input$telematics), '.csv', sep=''),
+    output$downloadData = downloadHandler(
+      filename = function() { paste('roadnet_', as.character(round(input$negotiations)), 
+                                   '_fuel_', as.character(round(input$fuel*100)), 
+                                   '_driver_', as.character(round(input$driver*100)), 
+                                   '_telematics_', as.character(round(input$telematics)), '.csv', sep='')
+        },
       content = function(file) {
-        write.csv(roi_data(), file)
+        write.csv(roi_data(), file, row.names=FALSE)
       }
     )
     
-    
+    output$months_to_roi = reactive({
+      counter = ifelse(roi_data()[, 'Net.Savings'] < 0, 1, 0)
+      sum(counter)
+    })
     
 })
     
