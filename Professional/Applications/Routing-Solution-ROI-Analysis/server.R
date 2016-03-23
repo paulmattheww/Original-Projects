@@ -26,6 +26,7 @@ simulate_data = function(percent_saved_fuel, percent_saved_driver_compensation, 
   non_recurring = (roadnet_consulting + roadnet_onsite_conversion + roadnet_insights + roadnet_telematics_unit_cost) * non_recurring_inflator
   
   n_drivers = 70
+  
   cell_ins_yearly = 25 * n_drivers  # $25 per user per year
   cell_ins_monthly = round(cell_ins_yearly / 12, 2)
   upgrade_cost_per_phone = 50       # price changed, iPhone is $.99
@@ -54,7 +55,7 @@ simulate_data = function(percent_saved_fuel, percent_saved_driver_compensation, 
   fuel_savings_monthly = round(fuel_savings_yearly / 12, 2)
   
   percent_saved_driver_compensation = percent_saved_driver_compensation
-  ly_total_comp = 4281082
+  ly_total_comp = 5450219#4281082
   driver_compensation_savings_yearly = ly_total_comp * percent_saved_driver_compensation
   driver_compensation_savings_monthly = round(driver_compensation_savings_yearly / 12, 2)
   
@@ -96,8 +97,10 @@ simulate_data = function(percent_saved_fuel, percent_saved_driver_compensation, 
   cost4 = roi_data$One.Time.Expenses
   
   roi_data$Savings.Fuel.Consumption = fuel_savings_monthly
+  roi_data[c(1:4), c(7)] = 0 # won't see fuel savings until we go live + 1 month
   benefit1 = roi_data$Savings.Fuel.Consumption
   roi_data$Savings.Driver.Compensation = driver_compensation_savings_monthly
+  roi_data[c(1:4), c(8)] = 0 # won't see drv comp savings until we go live + 1 month
   benefit2 = roi_data$Savings.Driver.Compensation
   roi_data$Savings.Truck.Lease = truck_lease_monthly 
   roi_data[c(1:12), 'Savings.Truck.Lease'] = 0 # Lease is not up until March 17
@@ -119,6 +122,7 @@ simulate_data = function(percent_saved_fuel, percent_saved_driver_compensation, 
   roi_data$Net.Savings = round(roi_data$Accumulated.Savings - roi_data$Accumulated.Costs, 2)
   roi_data = data.frame(roi_data)
   
+  
   roi_data 
 }
 
@@ -129,7 +133,7 @@ shinyServer(
    
     roi_data = reactive({
       r = simulate_data(percent_saved_fuel=input$fuel, percent_saved_driver_compensation=input$driver, p_truck_gone=input$truck, non_recurring_inflator=input$inflator,
-                             opportunity_equip_maint_improve = input$maintenance, opportunity_analyst_resources_improve = input$analyst, opportunity_router_resources_improve = input$router,
+                             opportunity_equip_maint_improve = input$safety, opportunity_analyst_resources_improve = input$analyst, opportunity_router_resources_improve = input$router,
                              roadnet_telematics = input$telematics, negotiations=input$negotiations) #19173 per year, will 
       return(r)
     })
@@ -173,6 +177,23 @@ shinyServer(
     output$months_to_roi = reactive({
       counter = ifelse(roi_data()[, 'Net.Savings'] < 0, 1, 0)
       ifelse(sum(counter)==45, 'ROI will not be realized before 2020; potentially not at all.', sum(counter))
+    })
+    
+    output$miles_saved_per_truck = reactive({
+      
+      percent_saved_fuel = input$fuel #LEVER
+      
+      ly_fuel_consumption_gal = 524570
+      price_per_gallon = 2.53 * 1.08
+      miles_per_gallon = 6.5
+      
+      fuel_savings_gallons = ly_fuel_consumption_gal * percent_saved_fuel
+      fuel_savings_miles = fuel_savings_gallons * miles_per_gallon
+      fuel_savings_miles_per_truck = fuel_savings_miles / 70
+      fuel_savings_miles_per_truck_per_day = round(fuel_savings_miles_per_truck / 207, 1)
+      
+      fuel_savings_miles_per_truck_per_day
+      
     })
     
 })
