@@ -17,7 +17,7 @@ shinyUI(fluidPage(
                  due to the large number of miles that they travel per day.'),
                p('While it will be more expensive to do Telematics, we are have considerably less 
                  certainty on fuel savings if we do not have it. We will also have less visibility into 
-                 driving habits of associates'),
+                 driving habits of associates.'),
                p('Currently, Ops data is sub-optimally organized. Roadnet will solve many
                  of our operational data issues, and will lay the foundation for further exploration.
                  It will also create a wonderful foundation for a BI tool, and will likely work in concert with said tool.'),
@@ -75,16 +75,20 @@ shinyUI(fluidPage(
                        value=0),
           
           numericInput("router",
-                       label="Anticipated Savings to Router's Time ($/mo):",
+                       label="Anticipated Savings -OR- Costs to Router's Time ($/mo):",
                        value=0))),
       
       tabPanel('Key Outputs',
                h3('Key Outputs'),
                br(),
-               downloadButton('download_data', 'Download Version'),
+               downloadButton('downloadData', 'Download Version'),
+               br(),
                br(),
                h4('Raw ROI at end of year 3:'), 
                p(textOutput('net_savings_year_3')),
+               br(),
+               h4('Months Til Positive Cash Flow:'), 
+               p(textOutput('months_to_roi')),
                br()
                ),
         
