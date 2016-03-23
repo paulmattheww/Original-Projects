@@ -172,7 +172,7 @@ shinyServer(
     
     output$months_to_roi = reactive({
       counter = ifelse(roi_data()[, 'Net.Savings'] < 0, 1, 0)
-      sum(counter)
+      ifelse(sum(counter)==45, 'ROI will not be realized before 2020; potentially not at all.', sum(counter))
     })
     
 })
