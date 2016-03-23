@@ -9,9 +9,14 @@ shinyUI(fluidPage(
     tabsetPanel(
       tabPanel('Key Considerations', 
                h3('Key Considerations'),
+               p('This tool can be used in negotiations by running what-if scenarios in real time.'),
+               p('Finance\'s numbers for total statewide driver compensation is $5.45MM, 
+                 however initial numbers were estimated at $4.2MM.'),
+               p('Last year we consumed 524,570 gallons of diesel at a weighted average price of 
+                 $2.54/gal. This analysis assumes 8% inflation over this price per gallon.'),
                p('KC mileage data was unavailable at the time of data gather. 
                  This increases uncertainty surrounding being capable of 
-                 combining routes that are underutilized by capacity and proximity alone. 
+                 combining entire routes that are underutilized by capacity & route proximity alone. 
                  It is still likely that overall capacity utilization will increase, even amongst crowded routes.'),
                p('Rural routes are more difficult to combine, even on a daily basis, 
                  due to the large number of miles that they travel per day.'),
@@ -27,7 +32,10 @@ shinyUI(fluidPage(
                p('There are likely to be many behavioral implications with Roadnet. We will need 
                  new onboarding paperwork, cell software orientation, and an initial meeting with 
                  all drivers to ensure they know how things will change. We will also
-                 need to set up new SOPs for routers to maintain data, and establish expectations/responsibilities.')),
+                 need to set up new SOPs for routers to maintain data, and establish expectations/responsibilities.'),
+               p('STL drivers are paid by the case; this incentive may not align with the goal of saving fuel.'),
+               p('Sales cut-offs will need to be uniformly enforced statewide. Currently STL is more 
+                 lenient than KC.')),
       
       tabPanel('Reactively Generated Data', 
                dataTableOutput('data')),
@@ -64,15 +72,15 @@ shinyUI(fluidPage(
                                value=1.0),
                    
                    numericInput("telematics",
-                                label="Annual Telematics Cost ($19,171):",
+                                label="Annual Telematics Cost ($19,171 or $0):",
                                 value=0),
                    
-                   numericInput("maintenance",
-                                label="Anticipated Equipment Maintenance Savings ($/mo):",
+                   numericInput("safety",
+                                label="Anticipated Savings from Improved Safety ($/mo):",
                                 value=0),
                    
                    numericInput("analyst",
-                                label="Value of Organized Operational Data & Advanced Analytics ($/mo):",
+                                label="Value of Improved Data Organization & Advanced Analytics ($/mo):",
                                 value=0),
                    
                    numericInput("router",
@@ -85,11 +93,14 @@ shinyUI(fluidPage(
                downloadButton('downloadData', 'Download Version'),
                br(),
                br(),
-               h4('Un-Discounted ROI at end of year 3:'), 
+               h4('Return at end of year 3:'), 
                p(textOutput('net_savings_year_3')),
                br(),
-               h4('Months Til Positive Cash Flow:'), 
+               h4('Number of months til positive returns:'), 
                p(textOutput('months_to_roi')),
+               br(),
+               h4('Number of miles saved per truck per production day:'), 
+               p(textOutput('miles_saved_per_truck')),
                br())
       ),
       
