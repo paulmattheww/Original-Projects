@@ -83,10 +83,10 @@ shinyUI(fluidPage(
                                value=0),
                    
                    sliderInput("truck",
-                               "Probability of 1 Truck Off Road by March 2017:",
+                               "Number of Trucks Off Road by March 2017:",
                                min=0.00,
-                               max=1.00,
-                               value=0.7),
+                               max=2.00,
+                               value=1.0),
                    
                    sliderInput("inflator",
                                "Initial Implementation & Consulting Cost Inflator:",
