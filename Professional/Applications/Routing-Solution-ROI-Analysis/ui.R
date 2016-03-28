@@ -9,7 +9,10 @@ shinyUI(fluidPage(
     tabsetPanel(
       tabPanel('Key Considerations', 
                h3('Key Considerations'),
-               p('This tool can be used in negotiations by running what-if scenarios in real time.'),
+               p('This tool can be used in negotiations by running what-if scenarios in real time, even with
+                 the vendor present.'),
+               p('All figures in this model were carefully procured from Subject-Matter Experts. All
+                 arithmetic has been checked for accuracy.'),
                p('Statewide driver compensation in 2015 was $5.45MM, 
                  which was used as a base for percentage delivery savings. However, it is assumed
                  that STL will not see the same savings due to the fact that drivers are 
@@ -22,8 +25,9 @@ shinyUI(fluidPage(
                  This increases uncertainty surrounding being capable of 
                  combining entire routes that are underutilized by capacity & route proximity alone. 
                  It is still likely that overall capacity utilization will increase, even amongst crowded routes.'),
-               p('Rural routes are more difficult to combine, even on a daily basis, 
-                 due to the large number of miles that they travel per day.'),
+               p('Rural routes are more difficult to combine 
+                 due to the large number of miles that they travel per day and time-constraints
+                 placed on the number of hours drivers are allowed to work by law.'),
                p('While it will be more expensive to do Telematics, we have considerably less 
                  certainty on fuel savings if we do not have it. We will also have less visibility into 
                  driving habits of associates. The number of Telematics units is a variable that can
@@ -43,7 +47,12 @@ shinyUI(fluidPage(
                  need to set up new SOPs for routers to maintain data, and establish expectations/responsibilities.'),
                p('Sales cut-offs will need to be uniformly enforced statewide in order 
                  for the system to be used to its fullest potential. Currently STL is more 
-                 lenient than KC.')),
+                 lenient than KC.'),
+               p('Our first truck lease is not up until March of 2017. If we are to get one truck off 
+                 the road by this date then we will see an increased savings from April 2017 forward. 
+                 The probability figure will discount these savings through simple multiplication.
+                 Eliminating one truck is not a critical necesary condition to realizing an ROI,
+                 and is much less important than we originally estimated.')),
       
       tabPanel('Reactively Generated Data', 
                dataTableOutput('data')),
@@ -57,13 +66,13 @@ shinyUI(fluidPage(
                    
                    sliderInput("fuel",
                                "Annual % Savings in Fuel Consumption (KC assumed to save 0.3 gal for every 1 gal saved in STL):",
-                               min=-0.01,
+                               min=0.00,
                                max=0.15,
                                value=0.10),
                    
                    sliderInput("driver",
                                "Annual % Savings in Driver Hours (All houses except STL):",
-                               min=-0.01,
+                               min=0.00,
                                max=0.15,
                                value=0.028),
                    
@@ -75,21 +84,21 @@ shinyUI(fluidPage(
                    
                    sliderInput("truck",
                                "Probability of 1 Truck Off Road by March 2017:",
-                               min=0.01,
-                               max=0.99,
+                               min=0.00,
+                               max=1.00,
                                value=0.7),
                    
                    sliderInput("inflator",
-                               "Implementation & Consulting Cost Inflator:",
+                               "Initial Implementation & Consulting Cost Inflator:",
                                min=1.0,
                                max=2.0,
                                value=1.0),
                    
                    sliderInput("interest",
-                               "Interest Rate for Net Present Value:",
+                               "Interest Rate for Net Present Value (Opportunity Cost of Foregone Returns from Alternative Investments):",
                                min=0,
-                               max=0.10,
-                               value=0.06),
+                               max=0.20,
+                               value=0.08),
                    
                    numericInput("safety",
                                 label="Value of Organizational Clarity surrounding routing portion of ERP project ($/mo):",
