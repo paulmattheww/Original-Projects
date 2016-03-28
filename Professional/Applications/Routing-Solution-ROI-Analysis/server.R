@@ -20,7 +20,7 @@ simulate_data = function(percent_saved_fuel, percent_saved_driver_compensation, 
   roadnet_yearly = negotiations
   n_telematics_units = n_telematics_units
   # roadnet_telematics_monthly =  round(roadnet_telematics / 12, 2) # 19173 if using, 0 else
-  roadnet_telematics_monthly_per_truck = 19171 / 12 / 70 # total / 70 quoted trucks
+  roadnet_telematics_monthly_per_truck = 19171 / 12 / 70 # total / 70 quoted trucks / 12 months
   roadnet_telematics_monthly = round(roadnet_telematics_monthly_per_truck * n_telematics_units, 2)  # yearly / 12 monoths / 70 units quoted at 19171
   
   
@@ -163,6 +163,8 @@ simulate_data = function(percent_saved_fuel, percent_saved_driver_compensation, 
                     Present.Value.Accumulated.Savings=cumsum(Present.Value.Total.Savings))
   roi_data$Present.Value.Net.Savings = round(roi_data$Present.Value.Accumulated.Savings - roi_data$Present.Value.Accumulated.Costs, 2)
   
+  roi_data[c(1), 'Roadnet.Subscription'] = 0
+  
   roi_data 
 }
 
@@ -192,7 +194,7 @@ shinyServer(
         scale_y_continuous(labels=dollar) +
         ggtitle(expression(atop('Present Value Accumulated Costs vs. Present Value Accumulated Savings of Roadnet', 
                                 atop(italic('Manipulate Assumptions Using Sliders'))))) +
-        labs(y='Dollars')
+        labs(y='2016 Dollars')
     })
     
     output$data = renderDataTable({
