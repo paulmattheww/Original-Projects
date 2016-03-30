@@ -2,11 +2,14 @@ library(shiny)
 library(shinydashboard)
 
 
-dashboardPage(
-  dashboardHeader(title='Operations Dashboard'),
+dashboardPage(skin='red',
+  dashboardHeader(title='Operations Intelligence Dashboard',
+                  titleWidth = 350),
   
-  dashboardSidebar(
+  dashboardSidebar(width=250,
     sidebarMenu(
+      selectInput('house', 'Choose House',
+                  choice=c('Saint Louis', 'Kansas City')),
       menuItem('Dashboard', tabName='dashboard', icon=icon('dashboard')),
       menuItem('Plots', tabName='plots', icon=icon('bar-chart-o')),
       menuItem('Production', tabName='production', icon=icon('th')),
@@ -17,18 +20,25 @@ dashboardPage(
   ),
   
   dashboardBody(
-    # boxes need be in row or column
+    
     tabItems(
-      # first tab content
+      
       tabItem(tabName='dashboard',
-              fluidRow(
-                box(title='Operations Intelligence Dashboard', solidHeader=TRUE, status='primary', collapsable=TRUE)
+              
+              fluidRow( 
+                valueBoxOutput('cases_delivered'),
+                
+                valueBoxOutput('cpmh'),
+                
+                valueBoxOutput('total_breakage'),
+                
+                valueBoxOutput('ytd_breakage')
               )
       ),
       
       tabItem(tabName='production', 
               fluidRow(
-                box('Test2')
+                box(title='Test2', solidHeader=TRUE, status='primary', collapsable=TRUE, background='black')
               )
       )
     )
