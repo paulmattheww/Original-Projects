@@ -3,7 +3,7 @@ library(shinydashboard)
 
 
 dashboardPage(skin='red',
-  dashboardHeader(title='Operations Intelligence Dashboard',
+  dashboardHeader(title='Operations VP/Director Dashboard',
                   titleWidth = 350),
   
   dashboardSidebar(width=250,
@@ -27,12 +27,45 @@ dashboardPage(skin='red',
               
               fluidRow( 
                 valueBoxOutput('cases_delivered'),
+                valueBoxOutput('cases_delivered_ly'),
+                valueBoxOutput('cases_delivered_delta'),
                 
                 valueBoxOutput('cpmh'),
+                valueBoxOutput('cpmh_ly'),
+                valueBoxOutput('cpmh_delta'),
+                
+                valueBoxOutput('man_hours'),
+                valueBoxOutput('man_hours_ly'),
+                valueBoxOutput('man_hours_delta'),
+                
+                valueBoxOutput('errors'),
+                valueBoxOutput('errors_ly'),
+                valueBoxOutput('errors_delta'),
                 
                 valueBoxOutput('total_breakage'),
+                valueBoxOutput('total_breakage_ly'),
+                valueBoxOutput('total_breakage_delta'),
                 
-                valueBoxOutput('ytd_breakage')
+                valueBoxOutput('driver_breakage'),
+                valueBoxOutput('driver_breakage_ly'),
+                valueBoxOutput('driver_breakage_delta')
+                
+              )
+      ),
+      
+      tabItem(tabName='plots',
+              
+              fluidRow(
+                plotOutput('cum_breakage_plot')
+              )),
+      
+      tabItem(tabName='breakage', 
+              
+              fluidRow(
+                selectInput('driver_warehouse', 'Warehouse or Driver Breakage',
+                            choice=c('Warehouse', 'Drivers')),
+                
+                dataTableOutput('breakage_data')
               )
       ),
       
