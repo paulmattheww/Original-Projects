@@ -15,7 +15,10 @@ dashboardPage(skin='red',
       menuItem('Production', tabName='production', icon=icon('wrench')),
       menuItem('Breakage', tabName='breakage', icon=icon('trash')),
       menuItem('Unsaleables', tabName='unsaleables', icon=icon('exclamation-triangle')),
-      menuItem('Velocity', tabName='velocity', icon=icon('flag-checkered'))
+      menuItem('Velocity', tabName='velocity', icon=icon('flag-checkered'),
+               menuSubItem('Saint Louis', tabName='STL'),
+               menuSubItem('Kansas City', tabName='KC'),
+               menuSubItem('Summary', tabName='velocity_summary'))
     )
   ),
   
@@ -82,14 +85,21 @@ dashboardPage(skin='red',
       tabItem(tabName='unsaleables',
               
               fluidRow(
+                selectInput('unsaleables_variable', 'View Dumps, Returns or Total',
+                            choice=c('Total Unsaleables by Case', 'Total Unsaleables by Dollar',
+                                     'Dumps by Case', 'Dumps by Dollar', 
+                                     'Returns by Case', 'Returns by Dollar' )),
+                
+                plotOutput('unsaleable_plot'),
+                
                 selectInput('unsaleables_facet', 'View Unsaleables by...',
-                            choice=c('Item', 'Supplier', 'Customer')),
+                            choice=c('Item', 'Supplier')), #'Customer' out
                 
                 dataTableOutput('unsaleable_data')
               )
       ),
       
-      tabItem(tabName='velocity', 
+      tabItem(tabName='STL', 
               valueBoxOutput('g_line_cases'),
               valueBoxOutput('g_line_percent'),
               valueBoxOutput('g_line_unique'),
@@ -124,12 +134,49 @@ dashboardPage(skin='red',
               
               valueBoxOutput('b_line_btls'),
               valueBoxOutput('b_line_percent'),
-              valueBoxOutput('b_line_unique'),
+              valueBoxOutput('b_line_unique')
               
-              fluidRow(
-                dataTableOutput('velocity_summary'))
+              
               
       ),
+      
+      tabItem(tabName='KC', 
+              valueBoxOutput('c_100'),
+              valueBoxOutput('c_100_percent'),
+              valueBoxOutput('c_100_unique'),
+              
+              valueBoxOutput('c_200'),
+              valueBoxOutput('c_200_percent'),
+              valueBoxOutput('c_200_unique'),
+              
+              valueBoxOutput('c_300'),
+              valueBoxOutput('c_300_percent'),
+              valueBoxOutput('c_300_unique'),
+              
+              valueBoxOutput('c_400'),
+              valueBoxOutput('c_400_percent'),
+              valueBoxOutput('c_400_unique'),
+              
+              valueBoxOutput('odd'),
+              valueBoxOutput('odd_percent'),
+              valueBoxOutput('odd_unique'),
+              
+              valueBoxOutput('wine'),
+              valueBoxOutput('wine_percent'),
+              valueBoxOutput('wine_unique')#,
+              
+#               valueBoxOutput('a_rack'),
+#               valueBoxOutput('a_rack_percent'),
+#               valueBoxOutput('a_rack_unique'),
+#               
+#               valueBoxOutput('b_rack'),
+#               valueBoxOutput('b_rack_percent'),
+#               valueBoxOutput('b_rack_unique')
+      ),
+      
+      
+      tabItem(tabName='velocity_summary',
+              dataTableOutput('velocity_summary')),
       
       tabItem(tabName='production', 
               fluidRow(
