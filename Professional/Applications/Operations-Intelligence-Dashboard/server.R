@@ -5,6 +5,7 @@ library(xlsx)
 library(scales)
 library(ggplot2)
 library(ggthemes)
+library(gridExtra)
 
 
 stl_production_summary = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/stl_production_dashboard_summary.csv', header=TRUE)
@@ -26,8 +27,22 @@ stl_breakage_master = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Ope
 kc_breakage_master = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/kc_breakage_master_dataset_feb16.csv', header=TRUE)
 
 unsaleables_items = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/unsaleables_items.csv', header=TRUE)
+# unsaleables_items = unsaleables_items %>% arrange(-CASES.UNSALEABLE)
+
 unsaleables_suppliers = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/unsaleables_suppliers.csv', header=TRUE)
-unsaleables_customers = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/unsaleables_customers.csv', header=TRUE)
+# unsaleables_suppliers = unsaleables_suppliers %>% arrange(-CASES.UNSALEABLE)
+
+# unsaleables_customers = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/unsaleables_customers.csv', header=TRUE)
+# unsaleables_customers = unsaleables_customers %>% arrange(-CASES.RETURNED)
+
+top_15_unsaleable_supplier = head(unsaleables_suppliers, 15)
+top_15_unsaleable_supplier$SUPPLIER = factor(top_15_unsaleable_supplier$SUPPLIER, levels=top_15_unsaleable_supplier$SUPPLIER)
+
+top_15_unsaleable_items = head(unsaleables_items, 15)
+top_15_unsaleable_items$DESCRIPTION = factor(top_15_unsaleable_items$DESCRIPTION, levels=top_15_unsaleable_items$DESCRIPTION)
+
+# top_15_unsaleable_customers = head(unsaleables_customers, 15)
+# top_15_unsaleable_customers$CUSTOMER = factor(top_15_unsaleable_customers$SUPPLIER, levels=top_15_unsaleable_customers$CUSTOMER)
 
 stl_velocity_summary = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/stl_velocity_summary_feb16.csv', header=TRUE)
 kc_velocity_summary = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/kc_velocity_summary_feb16.csv', header=TRUE)
@@ -335,6 +350,12 @@ shinyServer(
     })
     
     
+    
+    
+    
+    
+    
+    
     # for breakage report tab
    
     output$breakage_data = renderDataTable({
@@ -358,6 +379,90 @@ shinyServer(
     
     # for unsaleables tab
     
+    top15_suppliers = renderDataTable({
+      x = ifelse(1 == 1, 
+             top_15_unsaleable_supplier, top_15_unsaleable_supplier)
+      x
+    })
+    
+    top15_items = renderDataTable({
+      y = ifelse(input$unsaleables_facet=='Item', 
+             top_15_unsaleable_items, top_15_unsaleable_items)
+      y
+    })
+    
+    
+    
+    
+    
+  
+      
+    output$unsaleable_plot = renderPlot({
+      y_axis2 = reactive({
+        if(input$unsaleables_variable=='Dumps by Case') {
+          y_axis2 = top_15_unsaleable_supplier$CASES.DUMPED
+        }
+        if(input$unsaleables_variable=='Dumps by Dollar') {
+          y_axis2 = top_15_unsaleable_supplier$COST.DUMPED
+        }
+        if(input$unsaleables_variable=='Total Unsaleables by Case') {
+          y_axis2 = top_15_unsaleable_supplier$CASES.UNSALEABLE
+        }
+        if(input$unsaleables_variable=='Total Unsaleables by Dollar') {
+          y_axis2 = top_15_unsaleable_supplier$COST.UNSALEABLE
+        }
+        if(input$unsaleables_variable=='Returns by Case') {
+          y_axis2 = top_15_unsaleable_supplier$CASES.RETURNED
+        }
+        if(input$unsaleables_variable=='Returns by Dollar') {
+          y_axis2 = top_15_unsaleable_supplier$COST.RETURNED
+        }
+        y_axis2
+      })
+      
+      y_axis3 = reactive({
+        if(input$unsaleables_variable=='Dumps by Case') {
+          y_axis3 = top_15_unsaleable_items$CASES.DUMPED
+        }
+        if(input$unsaleables_variable=='Dumps by Dollar') {
+          y_axis3 = top_15_unsaleable_items$COST.DUMPED
+        }
+        if(input$unsaleables_variable=='Total Unsaleables by Case') {
+          y_axis3 = top_15_unsaleable_items$CASES.UNSALEABLE
+        }
+        if(input$unsaleables_variable=='Total Unsaleables by Dollar') {
+          y_axis3 = top_15_unsaleable_items$COST.UNSALEABLE
+        }
+        if(input$unsaleables_variable=='Returns by Case') {
+          y_axis3 = top_15_unsaleable_items$CASES.RETURNED
+        }
+        if(input$unsaleables_variable=='Returns by Dollar') {
+          y_axis3 = top_15_unsaleable_items$COST.RETURNED
+        }
+        
+        y_axis3
+      })
+      
+      g = ggplot(data=top_15_unsaleable_supplier, aes(x=SUPPLIER, y=y_axis2()))
+      x = g + geom_bar(aes(x=SUPPLIER, fill=factor(DIRECTOR)), stat='identity') + 
+        theme(legend.position='bottom', axis.text.x=element_text(angle=90,hjust=1)) +
+        scale_y_continuous(labels=comma) +
+        labs(title='Top 15 Unsaleables by Supplier') + 
+        coord_flip()
+      
+      p = ggplot(data=top_15_unsaleable_items, aes(x=DESCRIPTION, y=y_axis3()))
+      y = p + geom_bar(stat='identity', aes(fill=DIRECTOR)) + 
+        theme(legend.position='bottom', axis.text.x=element_text(angle=90,hjust=1)) +
+        scale_y_continuous(labels=comma) +
+        labs(title='Top 15 Unsaleables by Item') + 
+        coord_flip()
+      
+      z = grid.arrange(x, y, nrow=1)
+      
+      print(z)
+    })
+    
+    
     output$unsaleable_data = renderDataTable({
       if(input$unsaleables_facet=='Item') { 
         data = unsaleables_items
@@ -365,9 +470,7 @@ shinyServer(
       if(input$unsaleables_facet=='Supplier') {
         data = unsaleables_suppliers
       }
-      if(input$unsaleables_facet=='Customer') {
-        data = unsaleables_customers
-      }
+
       data
     })
     
@@ -518,6 +621,137 @@ shinyServer(
         scales::comma((round(stl_velocity_summary[stl_velocity_summary$CASE.LINE %in% 'B-RACK', 6]))),  
         'Unique Items', icon=icon('barcode'))
     })
+    
+    # kc begins velocity
+    
+    output$c_100 = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'C-100', 2]))),  
+        'C-100 Cases', icon=icon('cubes'), color='olive')
+    })
+    output$c_100_percent = renderValueBox({
+      valueBox(
+        scales::percent((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'C-100', 3], 4))),  
+        'Percent Total Cases', icon=icon('pie-chart'), color='olive')
+    })
+    output$c_100_unique = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'C-100', 6]))),  
+        'Unique Items', icon=icon('barcode'), color='olive')
+    })
+    
+    output$c_200 = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'C-200', 2]))),  
+        'C-200 Cases', icon=icon('cubes'), color='olive')
+    })
+    output$c_200_percent = renderValueBox({
+      valueBox(
+        scales::percent((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'C-200', 3], 4))),  
+        'Percent Total Cases', icon=icon('pie-chart'), color='olive')
+    })
+    output$c_200_unique = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'C-200', 6]))),  
+        'Unique Items', icon=icon('barcode'), color='olive')
+    })
+    
+    output$c_300 = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'C-300', 2]))),  
+        'C-300 Cases', icon=icon('cubes'), color='olive')
+    })
+    output$c_300_percent = renderValueBox({
+      valueBox(
+        scales::percent((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'C-300', 3], 4))),  
+        'Percent Total Cases', icon=icon('pie-chart'), color='olive')
+    })
+    output$c_300_unique = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'C-300', 6]))),  
+        'Unique Items', icon=icon('barcode'), color='olive')
+    })
+    
+    output$c_400 = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'C-400', 2]))),  
+        'C-400 Cases', icon=icon('cubes'), color='olive')
+    })
+    output$c_400_percent = renderValueBox({
+      valueBox(
+        scales::percent((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'C-400', 3], 4))),  
+        'Percent Total Cases', icon=icon('pie-chart'), color='olive')
+    })
+    output$c_400_unique = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'C-400', 6]))),  
+        'Unique Items', icon=icon('barcode'), color='olive')
+    })
+    
+    output$odd = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'ODDBALL', 2]))),  
+        'Oddball Cases', icon=icon('cubes'), color='olive')
+    })
+    output$odd_percent = renderValueBox({
+      valueBox(
+        scales::percent((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'ODDBALL', 3], 4))),  
+        'Percent Total Cases', icon=icon('pie-chart'), color='olive')
+    })
+    output$odd_unique = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'ODDBALL', 6]))),  
+        'Unique Items', icon=icon('barcode'), color='olive')
+    })
+    
+    output$wine = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'WINE ROOM', 2]))),  
+        'Wine Room Cases', icon=icon('cubes'), color='olive')
+    })
+    output$wine_percent = renderValueBox({
+      valueBox(
+        scales::percent((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'WINE ROOM', 3], 4))),  
+        'Percent Total Cases', icon=icon('pie-chart'), color='olive')
+    })
+    output$wine_unique = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'WINE ROOM', 6]))),  
+        'Unique Items', icon=icon('barcode'), color='olive')
+    })
+    
+    output$a_rack = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'A-RACK', 4]))),  
+        'A Rack Bottles', icon=icon('cubes'), color='olive')
+    })
+    output$a_rack_percent = renderValueBox({
+      valueBox(
+        scales::percent((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'A-RACK', 5], 4))),  
+        'Percent Total Bottles', icon=icon('pie-chart'), color='olive')
+    })
+    output$a_rack_unique = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'A-RACK', 6]))),  
+        'Unique Items', icon=icon('barcode'), color='olive')
+    })
+    
+    output$b_rack = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'B-RACK']))),  
+        'B Rack Bottles', icon=icon('cubes'), color='olive')
+    })
+    output$b_rack_percent = renderValueBox({
+      valueBox(
+        scales::percent((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'B-RACK', 5], 4))),  
+        'Percent Total Bottles', icon=icon('pie-chart'), color='olive')
+    })
+    output$b_rack_unique = renderValueBox({
+      valueBox(
+        scales::comma((round(kc_velocity_summary[kc_velocity_summary$CASE.LINE %in% 'B-RACK', 6]))),  
+        'Unique Items', icon=icon('barcode'), color='olive')
+    })
+    
     
     
     
