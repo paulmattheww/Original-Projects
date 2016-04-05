@@ -6,38 +6,19 @@ library(ggplot2)
 
 
 print('Define functions necessary for analysis.')
-headTail = function(x) {
-  h <- head(x)
-  t <- tail(x)
-  print(h)
-  print(t)
-}
-as400Date <- function(x) {
-  date <- as.character(x)
-  date <- substrRight(date, 6)
-  date <- as.character((strptime(date, "%y%m%d")))
-  date
-}
-substrRight <- function(x, n){
-  substr(x, nchar(x)-n+1, nchar(x))
-}
-substrLeft <- function(x, n){
-  substr(x, 1, n)
-}
-countUnique <- function(x) {
-  length(unique(x))
-}
+source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
+cat('C:\Users\pmwash\Desktop\R_files\Data Input\Input Files for Reports\Unsaleables')
 
 
-print('Returns & Spoilage: pwmtc1 & pwrct1 by house')
-setwd("C:/Users/pmwash/Desktop/R_files/Data Input")
+print('Returns & Spoilage: pwunsale & pwrct1 by house')
 
 print('Be sure to re-run both queries. Gain access to query before replacing these file objects in memory')
 timeFrame = 'Jan. 1 2015 to Dec. 31 2015'
-rct = read.csv('rct1.csv', header=TRUE, na.strings=NA)
-mtc = read.csv('mtc1.csv', header=TRUE, na.strings=NA)
+rct = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Input Files for Reports/Unsaleables/pwrct1.csv', header=TRUE, na.strings=NA)
+mtc = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Input Files for Reports/Unsaleables/pwunsale.csv', header=TRUE, na.strings=NA) #replaces mtc1 same query
 headTail(rct)
 headTail(mtc)
+
 
 print('Create dates & months in both files')
 rct$DATE = as400Date(rct$X.RDATE)
@@ -85,6 +66,12 @@ mtc$CASES = round(qty / qpc, 2)
 print('Check names.')
 headTail(mtc);headTail(rct)
 
+
+later1 = paste0('MTC sum of CASES.RETURNED = ', sum(mtc$CASES, na.rm=T))
+later2 = paste0('RCT sum of EXT.COST (unsaleables) = ', sum(rct$EXT.COST, na.rm=T))
+later3 = paste0('RCT sum of CASES.UNSALEABLE = ', sum(rct$CASES.UNSALEABLE, na.rm=T))
+
+later1; later2; later3
 
 # ############
 # print('Investigate duplicates in raw files')
@@ -134,14 +121,14 @@ cases_unsale_returns = merge(cases_unsale, item_returns, by='ITEM.NO', all=TRUE)
 
 
 
-print('Sanity check: The numbers should not match yet')
+print('CHECKPOINT 1 - Sanity check: The numbers should not match yet')
 head(cases_unsale_returns, 20)
 x = sum(cases_unsale_returns$CASES.RETURNED, na.rm=T)
 y = sum(cases_unsale_returns$CASES.UNSALEABLE, na.rm=T)
 paste('Do these match the originals?', 
       'Returned & Total Unsaleable:  ', 
       x,'       ', y)
-
+later1; later2; later3
 
 
 cost_returns = aggregate(X.MCOS. ~ X.MINP., data=mtc, FUN=sum)
@@ -161,7 +148,7 @@ y = sum(accumulator$CASES.UNSALEABLE, na.rm=T)
 paste('Do these match the originals?', 
       'Returned & Total Unsaleable:           ', 
       x,'       ', y)
-
+later1; later2; later3
 
 
 cost_unsale = aggregate(EXT.COST ~ X.RPRD., data=rct, FUN=function(x) round(sum(x), 2))
@@ -180,7 +167,7 @@ y = sum(accumulator$CASES.UNSALEABLE, na.rm=T)
 paste('Do these match the originals?', 
       'Returned & Total Unsaleable:           ', 
       x,'       ', y)
-
+later1; later2; later3
 
 
 
@@ -196,8 +183,19 @@ accumulator$AVG.CASES.UNSALEABLE = accumulator$AVG.CASES.UNSALEABLE*(-1)
 
 headTail(accumulator) #ensure all are positive
 
-accumulator$COST.DUMPED = accumulator$COST.UNSALEABLE - accumulator$COST.RETURNED
-accumulator$CASES.DUMPED = accumulator$CASES.UNSALEABLE - accumulator$CASES.RETURNED
+accumulator$COST.DUMPED = accumulator$COST.UNSALEABLE - ifelse(is.na(accumulator$COST.RETURNED), 
+                                                               0, accumulator$COST.RETURNED)
+# x_check = accumulator$COST.UNSALEABLE - accumulator$COST.RETURNED
+# sum(x_check, na.rm=T)
+# sum(accumulator$COST.DUMPED)
+
+accumulator$CASES.DUMPED = accumulator$CASES.UNSALEABLE - ifelse(is.na(accumulator$CASES.RETURNED),
+                                                                 0, accumulator$CASES.RETURNED)
+# x_check = accumulator$CASES.UNSALEABLE - accumulator$CASES.RETURNED
+# sum(x_check, na.rm=T)
+# sum(accumulator$CASES.DUMPED)
+
+
 accumulator = accumulator %>% arrange(desc(COST.UNSALEABLE))
 accumulator = accumulator[,c('ITEM.NO', 'DESCRIPTION', 'CLASS', 'SUPPLIER.NO', 'SUPPLIER',
                              'CASES.UNSALEABLE', 'CASES.RETURNED', 'CASES.DUMPED',
@@ -216,7 +214,7 @@ paste('Cases returned:       ', one,
       'Cases unsaleable:     ', three,
       '                   ',
       'Cost unsaleable:      ', four)
-
+later1; later2; later3
 
 
 
@@ -258,7 +256,7 @@ paste('Cases returned:       ', one,
       'Cases unsaleable:     ', three,
       '                   ',
       'Cost unsaleable:      ', four)
-
+later1; later2; later3
 
 
 
@@ -297,7 +295,7 @@ two = sum(customers$COST.RETURNED)
 paste('Cases returned:       ', one, 
       '                   ',
       'Cost returned:        ', two)
-
+later1
 
 
 
@@ -340,6 +338,34 @@ paste('Cases returned:       ', one,
       '                   ',
       'Cost unsaleable:        ', two)
 
+later1; later2; later3
+
+
+
+
+directors = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/supplier_director_lookup_table_as_of_02102016.csv')
+directors = directors[, c(2:3)]
+names(directors) = c('SUPPLIER.NO', 'DIRECTOR')
+
+
+a = accumulator
+accumulator = merge(a, directors, by='SUPPLIER.NO')
+sum(accumulator$CASES.UNSALEABLE)
+aggregate(COST.UNSALEABLE~DIRECTOR, data=accumulator, FUN=sum)
+
+ck_accumulator = merge(a, directors, by='SUPPLIER.NO', all_x=TRUE)
+sum(ck_accumulator$CASES.UNSALEABLE)
+aggregate(COST.UNSALEABLE~DIRECTOR, data=ck_accumulator, FUN=sum)
+
+dir_check = accumulator %>% filter(DIRECTOR=='STL SITES, JILL') %>%
+  select(one_of('ITEM.NO', 'DESCRIPTION', 'SUPPLIER', 'COST.UNSALEABLE', 'COST.RETURNED', 'COST.DUMPED'))
+
+
+
+
+s = supplier_accumulator
+supplier_accumulator = merge(supplier_accumulator, directors, by='SUPPLIER.NO')
+ck_supplier_accumulator = merge(supplier_accumulator, directors, by='SUPPLIER.NO')
 
 
 
@@ -364,27 +390,42 @@ print('#############')
 print('Write items and suppliers to Excel document; make sure to delete old ones first
       The formatting macro is on GitHub')
 setwd("C:/Users/pmwash/Desktop/R_files/Data Output")
-file_name = 'returned_dumped_2015_all_Missouri.xlsx'
+file_name = '03_unsaleables_returns_dumps_march_2016.xlsx'
 write.xlsx(accumulator, file=file_name, sheet='Item Summary')
 write.xlsx(supplier_accumulator, file=file_name, sheet='Supplier Summary', append=TRUE)
 write.xlsx(customers, file=file_name, sheet='Customer Returns Summary', append=TRUE)
-write.xlsx(monthly_accumulator, file=file_name, sheet='Time Series', append=TRUE)
+# write.xlsx(directors, file=file_name, sheet='Director Lookup Table', append=TRUE)
+# write.xlsx(monthly_accumulator, file=file_name, sheet='Time Series', append=TRUE)
 
 
 
 print('STOP and run the VBA code to format the report for distribution. Make sure file output name matches the final branch of the file paths below')
+source("C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R")
 
 
-print('Below is for KC moving files')
-from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
-to = paste0('M:/Operations Intelligence/Monthly Reports/Unsaleables/', file_name, sep='')
-moveRenameFile(from, to)
+
+
 
 
 print('Below is for STL moving files')
 from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
 to = paste0("//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Unsaleables/", file_name, sep='')
 moveRenameFile(from, to)
+
+
+print('Save as... *_kcversion.xlsx')
+
+
+file_name = paste0(file_name, '03_unsaleables_returns_dumps_march_2016_kcversion.xlsx')
+print('Below is for KC moving files')
+from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
+to = paste0('M:/Operations Intelligence/Monthly Reports/Unsaleables/', file_name, sep='')
+moveRenameFile(from, to)
+
+
+
+
+
 
 
 
