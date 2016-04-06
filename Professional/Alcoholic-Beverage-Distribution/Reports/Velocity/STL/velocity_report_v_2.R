@@ -17,19 +17,23 @@ print('(4) Input files are velocity_disc_cases.csv and velocity_disc_bottles.csv
 
 
 print('Declare production days and time period; put time period on output file name')
-productionDays = 17
-rawBtlTtl = 9822.94
-rawCsTtl = 220898
-timeFrame = '1/1/16 - 1/31/16 for Companies 2 & 3'
+productionDays = 19
+rawBtlTtl = 11885.9
+rawCsTtl = 251956
+timeFrame = '3/1/16 - 3/31/16 for Companies 2 & 3'
 
 print('Read in Velocity report from AS400, accessed through Compleo and pre-formatted in Excel:
       Make sure rows below data have all been deleted, and headers (above col names) are nixed')
-btls = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/velocity_disc_bottles.csv', header=TRUE, na.strings=NA)
+btls = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Velocity/STL/velocity_disc_bottles.csv', header=TRUE, na.strings=NA)
 names(btls) = c('ITEM.NUMBER', 'DESCRIPTION', 'BTL.SALES', 'PICK.FREQUENCY', 'CASE.LOCATION',
                  'BTL.LOCATION', 'BULK.LOCATION', 'BTLS.ON.HAND')
-cases = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/velocity_disc_cases.csv', header=TRUE, na.strings=NA)
+btls$BTL.SALES = as.numeric(btls$BTL.SALES)
+
+cases = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Velocity/STL/velocity_disc_cases.csv', header=TRUE, na.strings=NA)
 names(cases) = c('ITEM.NUMBER', 'DESCRIPTION', 'CASE.SALES', 'PICK.FREQUENCY', 'CASE.LOCATION',
                  'BTL.LOCATION', 'BULK.LOCATION', 'BTLS.ON.HAND')
+cases$CASE.SALES = as.numeric(cases$CASE.SALES)
+
 headTail(btls)
 headTail(cases)
 
@@ -160,17 +164,33 @@ oddballBtls = btls %>% filter(BTL.LINE=='ODDBALL') %>% arrange(desc(BTL.SALES), 
 keg.room = cases %>% filter(IS.KEG=='YES') %>% arrange(desc(CASE.SALES), ITEM.NUMBER)
 
 
-print('Aggregate a summary page for report')
 caseMovementByLine = aggregate(CASE.SALES ~ CASE.LINE, data=cases, FUN=sum) 
-caseMovementByLine = arrange(caseMovementByLine, -CASE.SALES)
+caseMovementByLine[caseMovementByLine$CASE.LINE %in% 'ODDBALL', 2] = sum(oddball$CASE.SALES, na.rm=TRUE)
+
 cs = caseMovementByLine$CASE.SALES
 total = sum(caseMovementByLine$CASE.SALES)
 caseMovementByLine$PERCENT.TTL.CASES = round(cs / total, 3)
+caseMovementByLine = arrange(caseMovementByLine, -CASE.SALES)
+
 caseMovementByLine
+
 itemsPerLine = aggregate(DESCRIPTION ~ CASE.LINE, data=cases, FUN=countUnique)
 names(itemsPerLine) = c('CASE.LINE', 'NUMBER.UNIQUE.ITEMS')
+
 lineSummary = merge(caseMovementByLine, itemsPerLine, by='CASE.LINE')
 btlSales = aggregate(BTL.SALES~BTL.LINE, data=btls, FUN=sum)
+
+
+
+
+print('Aggregate a summary page for report')
+
+# estimated_oddball_backing_out_kegs = caseMovementByLine[caseMovementByLine$CASE.LINE %in% 'ODDBALL', 2] - sum(keg.room$CASE.SALES) 
+# sum(caseMovementByLine$CASE.SALES) - sum(keg.room$CASE.SALES) 
+
+
+
+
 # # #########
 # print('Remove positives and add them up')
 # b = ifelse(btls$BTL.LINE=='ODDBALL' & btls$BTL.SALES>0, as.numeric(btls$BTL.SALES),0)
@@ -187,16 +207,16 @@ lineSummary
 
 ##########
 print('AVOID BUGS: Check that totals match input files')
-finalCs = sum(lineSummary$CASE.SALES, na.rm=T)
+finalCs = sum(lineSummary$CASE.SALES, na.rm=T) 
 finalBtl = sum(lineSummary$BTL.SALES, na.rm=T)
-paste('Cases OK?: ', finalCs == rawCsTtl, 'Final Cases = ', finalCs)
+paste('Cases OK?: ', finalCs == rawCsTtl - sum(keg.room$CASE.SALES, na.rm=T), 'Final Cases = ', finalCs)
 paste('Bottles OK?: ', finalBtl == rawBtlTtl, 'Final Bottles = ', finalBtl)
 ##########
 
 print('Print results to a file for distribution. Make sure file name is equal to the file output name before running moveRenameFile()')
 setwd("C:/Users/pmwash/Desktop/R_Files/Data Output")
 library(xlsx)
-file_name = 'velocity_stl_02012016-02292016.xlsx'
+file_name = 'velocity_stl_03012016-03312016.xlsx'
 write.xlsx(lineSummary, file=file_name, sheetName='Line Summary')
 write.xlsx(a.btl.line, file=file_name, sheetName='A Rack', append=TRUE)
 write.xlsx(b.btl.line, file=file_name, sheetName='B Rack', append=TRUE)
