@@ -13,10 +13,10 @@ print('(4) Input files are velocity_disc_cases.csv and velocity_disc_bottles.csv
 
 
 print('Declare production days and time period; put time period on output file name')
-productionDays = 16
-rawBtlTtl = 6095.62
-rawCsTtl = 154113
-timeFrame = '2/1/16 - 2/29/16 for Companies 1 & 5'
+productionDays = 19
+rawBtlTtl = 7311.59 #7048.91
+rawCsTtl = 178089 #175151
+timeFrame = '3/1/16 - 3/31/16 for Companies 1 & 5'
 
 print('Read in Velocity report from AS400, accessed through Compleo and pre-formatted in Excel:
       Make sure rows below data have all been deleted, and headers (above col names) are nixed')
@@ -128,7 +128,7 @@ headTail(btls)
 
 
 print('Filter lines out from totals')
-oddball = cases %>% filter(CASE.LINE=='ODDBALL') %>% arrange(desc(CASE.SALES), ITEM.NUMBER)
+oddball = cases %>% filter(CASE.LINE=='ODDBALL' & IS.KEG=='NO') %>% arrange(desc(CASE.SALES), ITEM.NUMBER)
 c100.line = cases %>% filter(CASE.LINE=='C-100') %>% arrange(desc(CASE.SALES), ITEM.NUMBER)
 c200.line = cases %>% filter(CASE.LINE=='C-200') %>% arrange(desc(CASE.SALES), ITEM.NUMBER)
 c300.line = cases %>% filter(CASE.LINE=='C-300') %>% arrange(desc(CASE.SALES), ITEM.NUMBER)
@@ -147,6 +147,9 @@ oddballBtls = btls %>% filter(BTL.LINE=='ODDBALL') %>% arrange(desc(BTL.SALES), 
 
 print('Aggregate a summary page for report')
 caseMovementByLine = aggregate(CASE.SALES ~ CASE.LINE, data=cases, FUN=sum) 
+
+caseMovementByLine[caseMovementByLine$CASE.LINE %in% 'ODDBALL', 2] = sum(oddball$CASE.SALES, na.rm=TRUE)
+
 caseMovementByLine = arrange(caseMovementByLine, -CASE.SALES)
 cs = caseMovementByLine$CASE.SALES
 total = sum(caseMovementByLine$CASE.SALES)
@@ -168,7 +171,7 @@ lineSummary
 
 print('Print results to a file for distribution. Make sure file name is equal to the file output name before running moveRenameFile()')
 setwd("C:/Users/pmwash/Desktop/R_Files/Data Output")
-file_name = 'velocity_kc_02012016-02292016.xlsx'
+file_name = 'velocity_kc_03012016-03312016.xlsx'
 write.xlsx(lineSummary, file=file_name, sheetName='Line Summary')
 write.xlsx(a.btl.line, file=file_name, sheetName='A Rack', append=TRUE)
 write.xlsx(b.btl.line, file=file_name, sheetName='B Rack', append=TRUE)
