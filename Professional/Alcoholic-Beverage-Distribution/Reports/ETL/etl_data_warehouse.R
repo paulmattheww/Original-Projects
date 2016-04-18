@@ -287,7 +287,7 @@ off_day_etl = function(deliveries) {
                                                  ifelse(n_ship_days>=3, 'Tier 1', 'Tier 4'))))
   
   off_day_deliveries = off_day_deliveries[, c('Date', 'Customer', 'Tier', 'Cases', 'Dollars', 'Salesperson', 'Priority', 'Warehouse', 'Invoice')]
-  off_day_deliveries$Month = month(off_day_deliveries$Date)
+  off_day_deliveries$Month = month(off_day_deliveries$Date, label=TRUE, abbr=FALSE)
   off_day_deliveries$Year = year(off_day_deliveries$Date)
   
   off_day_deliveries
@@ -307,23 +307,77 @@ headTail(off_days, 50)
 write.csv(off_days, 'N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/Output/deliveries_upload.csv')
 
 
-# Sub format_off_day()
-# Dim ws As Worksheet
-# 
-# For Each ws In ActiveWorkbook.Worksheets
-# ws.Columns("A:ZZ").Font.Size = 9
-# ws.Columns("A:ZZ").AutoFit
-# ws.Activate
-# Range("A1").Activate
-# Selection.AutoFilter
-# ActiveWindow.DisplayGridlines = False
-# ws.Columns("A:ZZ").AutoFit
-# ws.Rows("1:999999").RowHeight = 11.5
-# Application.ErrorCheckingOptions.BackgroundChecking = False
-# ws.Cells.Replace "#N/A", "", xlWhole
-# Next ws
-# 
-# End Sub
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+etl_po_lines = function(po) {
+  library(lubridate)
+  library(dplyr)
+  
+  names(po) = c('PO', 'Date', 'Product', 'Supplier', 'Ordered', 'Received', 'Cost', 'Warehouse')
+  
+  po$Date = as400Date(po$Date)
+  po$Month = month(po$Date, label=TRUE, abbr=FALSE)
+  po$Year = year(po$Date)
+  
+  whse = po$Warehouse
+  po$Warehouse = ifelse(whse==1, 'KC', 
+                        ifelse(whse==2, 'STL', 
+                               ifelse(whse==3, 'COL', 
+                                      ifelse(whse==4, 'CAPE', 
+                                             ifelse(whse==5, 'SPFD', '')))))
+  
+  po = arrange(po, Date)
+  
+  po
+}
+
+
+po = read.csv('N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/po_lines.csv', header=TRUE); head(po)
+
+po_lines = etl_po_lines(po)
+headTail(po_lines, 50)
+
+
+
+write.csv(po_lines, 'N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/Output/po_lines_upload.csv')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
