@@ -9,16 +9,17 @@ shinyUI(fluidPage(
   
   mainPanel(
     plotOutput('plot1'),
+    
+    selectInput('product_selection',
+                label='Select Version of Product to Simulate',
+                choices=c('Cloud Routing Only'='C-R', 'On-Premise Routing Only'='OP-R',
+                          'Cloud Routing Dispatch Mobile'='C-RDM', 'On-Premise Routing Dispatch Mobile'='OP-RDM'),
+                selected='C-RDM'),
       
-      tabPanel('User-Defined Parameters',
+      tabsetPanel(
+        tabPanel('User-Defined Parameters',
                fluidRow(
                  column(12, wellPanel(
-                   selectInput('product_selection',
-                               label='Select Version of Product to Simulate',
-                               choices=c('Cloud Routing Only'='C-R', 'On-Premise Routing Only'='OP-R',
-                                         'Cloud Routing Dispatch Mobile'='C-RDM', 'On-Premise Routing Dispatch Mobile'='OP-RDM'),
-                               selected='Cloud Routing Only'),
-            
                    
                    sliderInput("fuel",
                                "Annual % Savings in Fuel Consumption (KC assumed to save 0.3 gal for every 1 gal saved in STL):",
@@ -54,7 +55,7 @@ shinyUI(fluidPage(
                                "Interest Rate for Net Present Value (Opportunity Cost of Foregone Returns from Alternative Investments):",
                                min=0,
                                max=0.20,
-                               value=0.08),
+                               value=0.2),
                    
                    numericInput("safety",
                                 label="Value of Organizational Clarity surrounding routing portion of ERP project ($/mo):",
@@ -80,6 +81,8 @@ shinyUI(fluidPage(
                br(),
                downloadButton('downloadData', 'Download Version'),
                br(), #discounted_net_savings_year_3
+               h4('Yearly Roadnet Subscription Expense:'), 
+               p(textOutput('yearly_cost')),
                br(),
                h4('Net present value at end of year 3:'), 
                p(textOutput('discounted_net_savings_year_3')),
@@ -96,7 +99,7 @@ shinyUI(fluidPage(
                h4('Minutes saved per driver per day:'), 
                p(textOutput('delivery_hours_saved')),
                br())
-      ),
+      )),
       
       
       br()
