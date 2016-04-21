@@ -20,7 +20,7 @@ shinyServer(
       if(input$product_selection == 'C-RDM'){
         r = simulate_cloud_full(percent_saved_fuel=input$fuel, percent_saved_driver_compensation=input$driver, p_truck_gone=input$truck, non_recurring_inflator=input$inflator,
                           opportunity_equip_maint_improve = input$safety, opportunity_analyst_resources_improve = input$analyst, opportunity_router_resources_improve = input$router,
-                          roadnet_telematics = 19171, negotiations=72650.40, n_telematics_units=input$n_telematics_units,
+                          roadnet_telematics = 19171, negotiations=72650.4, n_telematics_units=input$n_telematics_units,
                           interest_rate_input = input$interest) 
       }
       if(input$product_selection == 'C-R'){
@@ -29,13 +29,13 @@ shinyServer(
                                 roadnet_telematics = 19171, negotiations=42848.4, n_telematics_units=input$n_telematics_units,
                                 interest_rate_input = input$interest) 
       }
-      if(input$product_selection == 'OP-R'){
+      if(input$product_selection == 'OP-RDM'){
         r = simulate_op_full(percent_saved_fuel=input$fuel, percent_saved_driver_compensation=input$driver, p_truck_gone=input$truck, non_recurring_inflator=input$inflator,
                                 opportunity_equip_maint_improve = input$safety, opportunity_analyst_resources_improve = input$analyst, opportunity_router_resources_improve = input$router,
                                 roadnet_telematics = 19171, negotiations=68896, n_telematics_units=input$n_telematics_units,
                                 interest_rate_input = input$interest) 
       }
-      if(input$product_selection == 'OP-RDM'){
+      if(input$product_selection == 'OP-R'){
         r = simulate_op_stripped(percent_saved_fuel=input$fuel, percent_saved_driver_compensation=input$driver, p_truck_gone=input$truck, non_recurring_inflator=input$inflator,
                                 opportunity_equip_maint_improve = input$safety, opportunity_analyst_resources_improve = input$analyst, opportunity_router_resources_improve = input$router,
                                 roadnet_telematics = 19171, negotiations=38598, n_telematics_units=input$n_telematics_units,
@@ -124,6 +124,17 @@ shinyServer(
       
       minutes_saved_per_employee_per_day
     })
+    
+    
+    output$yearly_cost = reactive({
+      x = ifelse(input$product_selection=='C-RDM', 72650,
+             ifelse(input$product_selection=='C-R', 42848,
+                    ifelse(input$product_selection=='OP-RDM', 68896, 38598)))
+      x = scales::dollar(x)
+      x
+    })
+    
+    
     
 })
     
