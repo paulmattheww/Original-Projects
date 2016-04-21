@@ -509,8 +509,8 @@ simulate_op_stripped = function(percent_saved_fuel, percent_saved_driver_compens
   roadnet_monthly = round(roadnet_yearly / 12, 2) + roadnet_telematics_monthly # roadnet_yearly == roadnet_monthly * 12
   
   
-  roadnet_consulting = 2100
-  roadnet_onsite_conversion = 7150
+  roadnet_consulting = 0
+  roadnet_onsite_conversion = 14400 # roadnet implementation charge
   
   roadnet_telematics_unit_cost = n_telematics_units * 288 # from Joe P a while back
   
