@@ -130,7 +130,8 @@ etl_breakage = function(brk) {
                                                               ifelse(r == 3 & w == 3, 'Warehouse COL', 
                                                                      ifelse(is.na(w) & r == 3, 'Warehouse UNSPECIFIED',
                                                                             ifelse(is.na(w) & r == 4, 'Driver UNSPECIFIED',
-                                                                                   ifelse(is.na(w) & r == 5, 'Driver MMO', 'UNSPECIFIED')))))))))))
+                                                                                   ifelse(is.na(w) & r == 5, 'Driver MMO',
+                                                                                          ifelse(r == 7, 'Supplier','UNSPECIFIED'))))))))))))
                     
   brk$Warehouse = ifelse(w == 2, 'STL', 
                          ifelse(w == 1, 'KC', 
@@ -336,7 +337,7 @@ etl_po_lines = function(po) {
   library(lubridate)
   library(dplyr)
   
-  names(po) = c('PO', 'Date', 'Product', 'Supplier', 'Ordered', 'Received', 'Cost', 'Warehouse')
+  names(po) = c('PO', 'Line', 'Date', 'Product', 'Supplier', 'Ordered', 'Received', 'Cost', 'Warehouse')
   
   po$Date = as400Date(po$Date)
   po$Month = month(po$Date, label=TRUE, abbr=FALSE)
@@ -363,6 +364,244 @@ headTail(po_lines, 50)
 
 
 write.csv(po_lines, 'N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/Output/po_lines_upload.csv')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+etl_transfers = function(transfers) {
+  library(lubridate)
+  
+  t = transfers
+  
+  names(t) = c('Date', 'Priority', 'Product', 'Cost', 'Cases', 'Warehouse', 'Supplier', 'Customer')
+  
+  whse = t$Warehouse
+  
+  t$Date = dat = as400Date(t$Date)
+  t$Month = month(dat, label=TRUE, abbr=FALSE)
+  t$Year = year(dat)
+  
+  t$Warehouse = ifelse(whse==1, 'KC', 
+                        ifelse(whse==2, 'STL', 
+                               ifelse(whse==3, 'COL', 
+                                      ifelse(whse==4, 'CAPE', 
+                                             ifelse(whse==5, 'SPFD', '')))))
+  
+  t
+}
+
+transfers = read.csv('N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/transfers.csv', header=TRUE); head(transfers)
+
+transfers = etl_transfers(transfers)
+headTail(transfers, 50)
+
+
+
+write.csv(transfers, 'N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/Output/transfers_upload.csv')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+etl_empty_keg_transfers = function(empty_keg_transfers) {
+  library(lubridate)
+  
+  t = empty_keg_transfers
+  
+  names(t) = c('Date', 'Product', 'Class', 'Cost', 'Kegs', 'Warehouse', 'Customer')
+  
+  whse = t$Warehouse
+  cls = t$Class
+  
+  t$Date = dat = as400Date(t$Date)
+  t$Month = month(dat, label=TRUE, abbr=FALSE)
+  t$Year = year(dat)
+  
+  t$Warehouse = ifelse(whse==1, 'KC', 
+                       ifelse(whse==2, 'STL', 
+                              ifelse(whse==3, 'COL', 
+                                     ifelse(whse==4, 'CAPE', 
+                                            ifelse(whse==5, 'SPFD', '')))))
+  
+  t$Class = ifelse(cls == 53, 'Keg Wine',
+                   ifelse(cls == 59, 'Keg Cider', 
+                          ifelse(cls == 85, 'Keg Beer', 
+                                 ifelse(cls == 86, 'Keg Beer', 
+                                        ifelse(cls == 87, 'Keg Beer Non-Deposit', 
+                                               ifelse(cls == 88, 'Keg Beer High Alcohol', 'Not Specified'))))))
+  
+  t
+}
+
+empty_keg_transfers = read.csv('N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/empty_keg_transfers.csv', header=TRUE); head(empty_keg_transfers)
+
+empty_keg_transfers = etl_empty_keg_transfers(empty_keg_transfers)
+headTail(empty_keg_transfers, 50)
+
+
+
+write.csv(empty_keg_transfers, 'N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/Output/empty_keg_transfers_upload.csv')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#pwoos is backup for pwoostock
+
+etl_out_of_stock = function(out_of_stock) {
+  library(lubridate)
+  
+  t = out_of_stock
+  
+  names(t) = c('Date', 'Product', 'Warehouse', 'Cost', 'Cases', 'Back.Orders.Cases', 
+               'YTD.Sales.Cases', 'Cases.On.Order', 'Cases.On.Hand', 'Cases.Reserved')
+  
+  t$Cost = round(t$Cost, 2)
+  
+  whse = t$Warehouse
+  
+  t$Date = dat = as400Date(t$Date)
+  t$Month = month(dat, label=TRUE, abbr=FALSE)
+  t$Year = year(dat)
+  
+  t = arrange(t, Product, Date)
+  
+  t$Warehouse = ifelse(whse==1, 'KC', 
+                       ifelse(whse==2, 'STL', 
+                              ifelse(whse==3, 'COL', 
+                                     ifelse(whse==4, 'CAPE', 
+                                            ifelse(whse==5, 'SPFD', '')))))
+  
+  headTail(t, 50)
+  t %>% filter(Cases.Reserved > 0) %>% arrange(desc(Product))
+  t %>% filter(Back.Orders.Cases > 0) %>% arrange(desc(Back.Orders.Cases), desc(Product))
+  
+  t
+}
+
+out_of_stock = read.csv('N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/out_of_stock.csv', header=TRUE); head(out_of_stock)
+
+out_of_stock = etl_out_of_stock(out_of_stock)
+headTail(out_of_stock, 50)
+
+
+
+write.csv(out_of_stock, 'N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/Output/out_of_stock_upload.csv')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
