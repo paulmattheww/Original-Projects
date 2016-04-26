@@ -17,6 +17,7 @@ Sub generate_driver_forms()
         Dim CustRoute As String
         Dim CustStop As String
         Dim CustIsOP As String
+        Dim Warehouse As String
         
                 
         Application.ScreenUpdating = False
@@ -36,6 +37,7 @@ Sub generate_driver_forms()
             CustRoute = Sheets("Locations").Cells(i, 10)
             CustStop = Sheets("Locations").Cells(i, 39)
             CustIsOP = Sheets("Locations").Cells(i, 37)
+            Warehouse = Sheets("Locations").Cells(i, 9)
         
             'Write out the second sheet using the variables
         
@@ -49,10 +51,10 @@ Sub generate_driver_forms()
             Sheets("Driver Form").Cells(8, 2) = CustStop
             Sheets("Driver Form").Cells(10, 1) = CustIsOP
     
-            file_name = CustRoute & CustStop & CustName & ".pdf"
+            file_name = CustRoute & "_" & CustStop & "_" & CustName & ".pdf"
             
             ActiveWorkbook.ActiveSheet.ExportAsFixedFormat Type:=xlTypePDF, _
-            Filename:="C:\Users\pmwash\Desktop\R_files\Data Output\" & file_name, _
+            Filename:="C:\Users\pmwash\Desktop\Roadnet Implementation\Data\Generate Forms for Drivers\Output\" & file_name, _
             OpenAfterPublish:=False
     
     
@@ -61,6 +63,8 @@ Sub generate_driver_forms()
     
     
 End Sub
+
+
 
 
 
