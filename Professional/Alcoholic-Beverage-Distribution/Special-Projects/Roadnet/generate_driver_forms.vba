@@ -4,7 +4,6 @@ Sub generate_driver_forms()
         Dim i               As Long
         Dim last_row        As Long
         Dim last_col        As Long
-        Dim row             As Range
         Dim file_name       As String
         
         ' Variables to move
@@ -27,7 +26,9 @@ Sub generate_driver_forms()
         last_col = Cells(1, Columns.Count).End(xlToLeft).Column
         
     
-        For i = 2 To 9747 ' last_row               ' 5 ' for testing
+        For i = 134 To 9747 ' last_row               ' 5 ' for testing
+            On Error Resume Next
+            
             'Store variables for efficiency
         
             CustID = Sheets("Locations").Cells(i, 1)
@@ -53,7 +54,9 @@ Sub generate_driver_forms()
             Sheets("Driver Form").Cells(8, 2) = CustStop
             Sheets("Driver Form").Cells(10, 1) = CustIsOP
     
-            file_name = Warehouse & "_" & CustRoute & "_" & CustStop & "_" & CustName & ".pdf"
+            file_name = Warehouse & "_" & CustRoute & "_" & CustStop & "_" & CustName & "_" & i & ".pdf"
+            
+            Sheets("Driver Form").Activate
             
             ActiveWorkbook.ActiveSheet.ExportAsFixedFormat Type:=xlTypePDF, _
             Filename:="C:\Users\pmwash\Desktop\Roadnet Implementation\Data\Generate Forms for Drivers\Output\" & file_name, _
@@ -65,6 +68,10 @@ Sub generate_driver_forms()
     
     
 End Sub
+
+
+
+
 
 
 
