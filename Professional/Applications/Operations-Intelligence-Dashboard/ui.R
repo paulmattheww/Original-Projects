@@ -3,22 +3,37 @@ library(shinydashboard)
 
 
 dashboardPage(skin='red',
-  dashboardHeader(title='Operations VP/Director Dashboard',
+  dashboardHeader(title='Operations Dashboard',
                   titleWidth = 350),
   
-  dashboardSidebar(width=250,
+  dashboardSidebar(width=300,
     sidebarMenu(
-      selectInput('house', 'Choose House',
+      selectInput('house', 'Warehouse',
                   choice=c('Saint Louis', 'Kansas City')),
+      dateRangeInput('dates', label = 'Date Range', 
+                     start='2015-03-01', end='2015-03-31',
+                     min='2015-01-01', max=as.character(strptime(Sys.Date(), format='%Y-%m-%d'))),
       menuItem('Dashboard', tabName='dashboard', icon=icon('dashboard')),
-      menuItem('Plots', tabName='plots', icon=icon('bar-chart-o')),
-      menuItem('Production', tabName='production', icon=icon('wrench')),
       menuItem('Breakage', tabName='breakage', icon=icon('trash')),
-      menuItem('Unsaleables', tabName='unsaleables', icon=icon('exclamation-triangle')),
+      menuItem('Unsaleables', tabName='unsaleables', icon=icon('exclamation-triangle'),
+               menuSubItem('Top 15 Items/Suppliers', tabName='top_15_plot'),
+               menuSubItem('Detailed Data', tabName='unsaleable_detail')),
       menuItem('Velocity', tabName='velocity', icon=icon('flag-checkered'),
                menuSubItem('Saint Louis', tabName='STL'),
                menuSubItem('Kansas City', tabName='KC'),
-               menuSubItem('Summary', tabName='velocity_summary'))
+               menuSubItem('Summary', tabName='velocity_summary')),
+      menuItem('Plots', tabName='plots', icon=icon('bar-chart-o')),
+      menuItem('Production', tabName='production', icon=icon('wrench')),
+      menuItem('Route Execution', tabName='routes', icon=icon('wrench')),
+      menuItem('Trucks & Equipment', tabName='trucks', icon=icon('wrench')),
+      menuItem('Transfers', tabName='transfers', icon=icon('wrench')),
+      menuItem('Off-Day Deliveries', tabName='off_day', icon=icon('wrench')),
+      menuItem('Returns', tabName='returns', icon=icon('wrench')),
+      menuItem('Man Hours', tabName='man_hours', icon=icon('wrench')),
+      menuItem('Inventory Receipts', tabName='receipts', icon=icon('wrench')),
+      menuItem('Empty Keg Transfers', tabName='empty_kegs', icon=icon('wrench')),
+      menuItem('Inventory Adjustments', tabName='adjustments', icon=icon('wrench')),
+      menuItem('Out of Stock', tabName='oos', icon=icon('wrench'))
     )
   ),
   
@@ -72,17 +87,17 @@ dashboardPage(skin='red',
       
       tabItem(tabName='breakage', 
               
-              fluidRow(
-                selectInput('driver_warehouse', 'Warehouse or Driver Breakage',
-                            choice=c('Warehouse', 'Drivers')),
-                
-                wellPanel(plotOutput('cum_breakage_plot')),
-                
-                dataTableOutput('breakage_data')
-              )
+              
+              selectInput('driver_warehouse', 'Warehouse or Driver Breakage',
+                          choice=c('Warehouse', 'Drivers')),
+              
+              wellPanel(plotOutput('cum_breakage_plot')),
+              
+              dataTableOutput('breakage_data')
+              
       ),
       
-      tabItem(tabName='unsaleables',
+      tabItem(tabName='top_15_plot',
               
               fluidRow(
                 selectInput('unsaleables_variable', 'View Dumps, Returns or Total',
@@ -90,14 +105,16 @@ dashboardPage(skin='red',
                                      'Dumps by Case', 'Dumps by Dollar', 
                                      'Returns by Case', 'Returns by Dollar' )),
                 
-                plotOutput('unsaleable_plot'),
+                plotOutput('unsaleable_plot')
                 
-                selectInput('unsaleables_facet', 'View Unsaleables by...',
-                            choice=c('Item', 'Supplier')), #'Customer' out
-                
-                dataTableOutput('unsaleable_data')
               )
       ),
+      
+      tabItem(tabName='unsaleable_detail',
+              selectInput('unsaleables_facet', 'View Unsaleables by...',
+                          choice=c('Item', 'Supplier')), #'Customer' out
+              
+              dataTableOutput('unsaleable_data')),
       
       tabItem(tabName='STL', 
               valueBoxOutput('g_line_cases'),
@@ -176,13 +193,11 @@ dashboardPage(skin='red',
       
       
       tabItem(tabName='velocity_summary',
-              dataTableOutput('velocity_summary')),
-      
-      tabItem(tabName='production', 
-              fluidRow(
-                box(title='Test2', solidHeader=TRUE, status='primary', collapsable=TRUE, background='black')
-              )
-      )
+              dataTableOutput('velocity_summary'))#,
+    
+#       tabItem(tabName='production', 
+#               plotOutput('cases_by_line')
+      # )
     )
   )
 )
