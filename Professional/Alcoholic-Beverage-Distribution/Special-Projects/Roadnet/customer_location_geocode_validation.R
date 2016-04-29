@@ -249,7 +249,7 @@ headTail(seven)
 headTail(eight)
 
 
-
+#rebuilt = rbind(one, two, three, four, five, six, six_f_up, seven, eight)
 combined = rbind(one, two, three, four, five, six, six_f_up, seven, eight)
 
 namez = c('Company', 'Customer', 'Name', 'Address', 'City', 'State', 'Zip', 'Route', 'Latitude', 'Longitude', 'Verified.Lat', 'Verified.Lon')
@@ -266,30 +266,6 @@ headTail(combined)
 #combined = read.csv('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/combined_unverified_geocodes.csv', header=TRUE)
 
 
-# 
-# google_lat = combined$Verified.Lat
-# google_lon = combined$Verified.Lon
-# original_lat = combined$Latitude
-# original_lon = combined$Longitude
-# 
-
-
-# 
-# file_name = 'test'
-# png(file=paste0('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Maps/', file_name), width=1011, height=764)
-# 
-# Missouri = get_map(location='missouri', source='google', zoom=7, maptype='roadmap', color='bw') 
-# mo_base_map = ggmap(Missouri, extent='panel', 
-#                     base_layer=ggplot(data=combined, 
-#                                       aes(x=Avg.Longitude, y=Avg.Latitude)))
-# mo_base_map + geom_point(aes(x=Avg.Longitude, y=Avg.Latitude, group=Route, colour=factor(Route), size=Avg.Cases)) + 
-#   theme(legend.position='right') +
-#   borders('county', 'missouri') + geom_density_2d(aes(colour=Avg.Cases), alpha=0.5) + 
-#   labs(title='NOVEMBER/DECEMBER: Geographic Centers of Routes w/ Capacity Utilization < 45% & Stops < 18')
-# 
-# dev.off()
-
-
 
 combined$Warehouse.Route = whse_rte = paste0(combined$Company, '_', combined$Route)
 countUnique(whse_rte)
@@ -303,38 +279,205 @@ names(combined) = lapply(names(combined), as.character)
 
 
 
+#Missouri = get_map(location='missouri', source='google', zoom=7, maptype='roadmap', color='bw') 
 
-Missouri = get_map(location='missouri', source='google', zoom=7, maptype='roadmap', color='bw') 
+two_times = 2 * length(combined)
 
-for(i in 1:length(combined)) {
+for(i in 1:two_times) {
   file_name_i = paste0(names(combined[i]))
-  df_i = combined[[i]]
-  location_labels_df_i = df_i$Name
   
-  center_of_route = c(mean(df_i$Latitude, na.rm=T), mean(df_i$Longitude, na.rm=T))
-
+  df_i = combined[[i]]
+  df_i = df_i %>% filter(Latitude > 36 | Latitude < 50)
+  df_i = na.omit(df_i)
+  df_i = df_i %>% filter(Longitude > -97 | Longitude > -92)
+  df_i[,c('Latitude', 'Longitude', 'Verified.Lat', 'Verified.Lon')] = as.numeric(round(df_i[,c('Latitude', 'Longitude', 'Verified.Lat', 'Verified.Lon')], 6))
+  
   base_map = get_map(location=c(lon=mean(df_i$Longitude, na.rm=T), lat=mean(df_i$Latitude, na.rm=T)), 
-                          zoom='auto', maptype='roadmap', color='bw') 
+                     zoom='auto', maptype='roadmap', color='bw')
+  g_base_map = get_map(location=c(lon=mean(df_i$Verified.Lon, na.rm=T), lat=mean(df_i$Verified.Lat, na.rm=T)), 
+                       zoom='auto', maptype='roadmap', color='bw')
   
   map_df_i = ggmap(base_map, extent='panel', 
-                           base_layer=ggplot(data=df_i, 
-                                             aes(x=Longitude, y=Latitude)))
+                   base_layer=ggplot(data=df_i, aes(x=Longitude, y=Latitude)))
+  g_map_df_i = ggmap(g_base_map, extent='panel', 
+                     base_layer=ggplot(data=df_i, aes(x=Verified.Lon, y=Verified.Lat)))
   
-  png(file=paste0('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Maps/existing_geocodes_', file_name_i, '.png'), width=1680, height=1028)
+  
+  # Generate and print map for geocodes we already had in AS400
+  png(file=paste0('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Maps/', file_name_i, '_as400_existing_geocodes.png'), 
+      width=1680, height=1028)
   
   map_existing_df_i = map_df_i + 
     geom_point(aes(x=Longitude, y=Latitude), colour='black', size=2) +
-    labs(title=paste0('Warehouse/Route: ', file_name_i, ' - Existing Geocodes - Please Verify w/ Driver for Accuracy'), 
+    labs(title=paste0('Warehouse_Route: ', file_name_i, ' - AS400 Existing Geocodes - Please Verify w/ Driver for Accuracy'), 
          x='Longitude', y='Latitude') +
     geom_label_repel(data=df_i, aes(x=Longitude, y=Latitude, label=Name), 
                      fill='white', box.padding=unit(0.4, 'lines'),
-                     label.padding=unit(0.115, 'lines'), label.size=0.2,
-                     segment.color='black', segment.size=0.05, alpha=0.3,
+                     label.padding=unit(0.115, 'lines'), label.size=0.5,
+                     segment.color='black', segment.size=0.05, alpha=0.7,
                      arrow=arrow(length = unit(0.01, 'npc'))) +
     theme(legend.position='none') +
     borders('county', 'missouri') 
   
-  map_existing_df_i
+  print(map_existing_df_i)
+  
+  dev.off()
+  
+  
+  
+  png(file=paste0('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Maps/', file_name_i, '_google_generated_geocodes.png'), 
+      width=1680, height=1028)
+  
+  map_google_df_i = g_map_df_i + 
+    geom_point(aes(x=Verified.Lon, y=Verified.Lat), colour='black', size=2) +
+    labs(title=paste0('Warehouse_Route: ', file_name_i, ' - Google Address Generated Geocodes - Compare Quality of Geocode to Existing'), 
+         x='Longitude', y='Latitude') +
+    geom_label_repel(data=df_i, aes(x=Verified.Lon, y=Verified.Lat, label=Name), 
+                     fill='white', box.padding=unit(0.4, 'lines'),
+                     label.padding=unit(0.115, 'lines'), label.size=0.5,
+                     segment.color='black', segment.size=0.05, alpha=0.7,
+                     arrow=arrow(length = unit(0.01, 'npc'))) +
+    theme(legend.position='none') +
+    borders('county', 'missouri') 
+  
+  print(map_google_df_i)
   
   dev.off()
 }
+
+
+
+
+
+
+
+
+
+# testing 
+
+i = 31
+
+file_name_i = paste0(names(combined[i]))
+df_i = combined[[i]]
+df_i = df_i %>% filter(Latitude > 36 | Latitude < 50)
+df_i = na.omit(df_i)
+df_i = df_i %>% filter(Longitude > -97 | Longitude > -92)
+df_i[,c('Latitude', 'Longitude', 'Verified.Lat', 'Verified.Lon')] = as.numeric(round(df_i[,c('Latitude', 'Longitude', 'Verified.Lat', 'Verified.Lon')], 6))
+
+base_map = get_map(location=c(lon=mean(df_i$Longitude, na.rm=T), lat=mean(df_i$Latitude, na.rm=T)), 
+                       zoom='auto', source='osm')
+g_base_map = get_map(location=c(lon=mean(df_i$Verified.Lon, na.rm=T), lat=mean(df_i$Verified.Lat, na.rm=T)), 
+                         zoom='auto', source='osm')
+
+map_df_i = ggmap(base_map, extent='panel', 
+                     base_layer=ggplot(data=df_i, aes(x=Longitude, y=Latitude)))
+g_map_df_i = ggmap(g_base_map, extent='panel', 
+                       base_layer=ggplot(data=df_i, aes(x=Verified.Lon, y=Verified.Lat)))
+
+
+# Generate and print map for geocodes we already had in AS400
+png(file=paste0('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Maps/', file_name_i, '_as400_existing_geocodes.png'), 
+    width=1680, height=1028)
+
+map_existing_df_i = map_df_i + 
+  geom_point(aes(x=Longitude, y=Latitude), colour='black', size=2) +
+  labs(title=paste0('Warehouse_Route: ', file_name_i, ' - AS400 Existing Geocodes - Please Verify w/ Driver for Accuracy'), 
+       x='Longitude', y='Latitude') +
+  geom_label_repel(data=df_i, aes(x=Longitude, y=Latitude, label=Name), 
+                   fill='white', box.padding=unit(0.4, 'lines'),
+                   label.padding=unit(0.115, 'lines'), label.size=0.5,
+                   segment.color='black', segment.size=0.05, alpha=0.7,
+                   arrow=arrow(length = unit(0.01, 'npc'))) +
+  theme(legend.position='none') +
+  borders('county', 'missouri') 
+
+print(map_existing_df_i)
+
+dev.off()
+
+
+
+png(file=paste0('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Maps/', file_name_i, '_google_generated_geocodes.png'), 
+    width=1680, height=1028)
+
+map_google_df_i = g_map_df_i + 
+  geom_point(aes(x=Verified.Lon, y=Verified.Lat), colour='black', size=2) +
+  labs(title=paste0('Warehouse_Route: ', file_name_i, ' - Google Address Generated Geocodes - Compare Quality of Geocode to Existing'), 
+       x='Longitude', y='Latitude') +
+  geom_label_repel(data=df_i, aes(x=Verified.Lon, y=Verified.Lat, label=Name), 
+                   fill='white', box.padding=unit(0.4, 'lines'),
+                   label.padding=unit(0.115, 'lines'), label.size=0.5,
+                   segment.color='black', segment.size=0.05, alpha=0.7,
+                   arrow=arrow(length = unit(0.01, 'npc'))) +
+  theme(legend.position='none') +
+  borders('county', 'missouri') 
+
+print(map_google_df_i)
+
+dev.off()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+test = combined[[46]]
+location_labels_test = test$Name
+
+center = c(mean(test$Latitude, na.rm=T), mean(test$Longitude, na.rm=T))
+zoom = 10
+
+# Missouri_test = GetMap(center=center, zoom=zoom, maptype='roadmap')
+Missouri_test = get_map(location=c(lon=mean(test$Longitude, na.rm=T), lat=mean(test$Latitude, na.rm=T)), 
+                        zoom='auto', maptype='roadmap', color='bw') 
+
+mo_base_map_test = ggmap(Missouri_test, extent='panel', 
+                    base_layer=ggplot(data=test, 
+                                      aes(x=Longitude, y=Latitude)))
+
+old_and_new_test = mo_base_map_test + 
+  geom_point(aes(x=Longitude, y=Latitude), colour='black', size=2) +
+  labs(title=paste0('Warehouse/Route: ', file_name_i, ' - Existing Geocodes - Verify w/ Driver for Accuracy'), 
+       x='Longitude', y='Latitude') +
+  geom_label_repel(data=test, aes(x=Longitude, y=Latitude, label=Name), 
+                   fill='white', box.padding=unit(0.4, 'lines'),
+                   label.padding=unit(0.115, 'lines'), label.size=0.18,
+                   segment.color='black', segment.size=0.05, alpha=0.7,
+                   arrow=arrow(length = unit(0.01, 'npc'))) +
+  theme(legend.position='none') +
+  borders('county', 'missouri') 
+  
+old_and_new_test
+
+
+
+
+
+
+
+
