@@ -1,4 +1,6 @@
-print('Monthly Breakage KC')
+print('Monthly Breakage for Kansas City')
+
+rm(list=ls())
 
 print('Load in necessary libraries')
 library(XLConnect)
@@ -16,6 +18,7 @@ print('(1) Run pwbreakage for house and time frame & replace data')
 print('(2) Acquire sales data from Diver and update file')
 print('(3) Acquire Supplier breakage using suppbreaka')
 print('(4) Merge history with current data')
+print('(5) Make sure Supplier history and Breakage history does not have index column')
 
 
 
@@ -27,9 +30,16 @@ supplier_history = read.csv('C:/Users/pmwash/Desktop/R_Files/Data Input/Input Fi
 history = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Input Files for Reports/Breakage/KC/breakage_detailed_history_kc.csv', header=TRUE) # need to append from the by class function
 
 
+headTail(breaks); headTail(sales); headTail(supplier); headTail(supplier_history); headTail(history)
+
+
+print('Prevent Errors')
+sum_ext_cost_breaks = sum(breaks$EXT_COST, na.rm=TRUE)
+
+
 print('Change these')
 this_year = 2016
-this_month = 'February'
+this_month = 'April'
 
 # print('Read in KC data, do not chagen column headers')
 # breaks = read.csv("C:/Users/pmwash/Desktop/R_Files/Data Input/PWBREAKAGE_KC.csv", header=TRUE) 
@@ -161,7 +171,7 @@ appended_dataset = append_breakage_history(history, incident_summary, cost_summa
 
 
 
-
+# work on solution so first row need not be deleted manually
 
 append_supplier_breakage_history = function(supplier, supplier_history) {
   s = supplier
@@ -240,107 +250,6 @@ driver_breakage_by_item = function(breaks) {
 }
 
 driver_breakage_item = driver_breakage_by_item(breaks)
-
-
-
-
-
-
-
-#################
-
-
-
-
-
-
-# breakage_supplier_cost = function(supplier) {
-#   total_supplier_breakage = round(abs(sum(supplier$EXT_COST, na.rm=TRUE)), 2)
-#   print(total_supplier_breakage)
-# }
-# 
-# supplier_breakage = breakage_supplier_cost(supplier)
-
-
-
-
-
-
-
-
-
-
-
-# append_supplier_records = function(supplier_breakage, supplier_history, month='January', year=2016) {
-#   old = supplier_history
-#   new = data.frame(year, month, supplier_breakage)
-#   names(new) = c('Year', 'Month', 'Supplier.Breakage')
-#   appended = rbind(old, new)
-#   
-#   write.csv(appended, 'C:/Users/pmwash/Desktop/R_files/Data Output/save_as_____supplier_history_for_breakage.csv')
-#   print(appended)
-# }
-# 
-# print('Check to make sure there are no duplicates')
-# supplier_breakage = append_supplier_records(supplier_breakage, supplier_history)
-# #if goes wrong, use this to delete last row duplicated:
-# #supplier_breakage = supplier_breakage[-c(14)]
-
-
-
-
-
-
-
-
-
-
-
-
-# combine_incidents_cost = function(incident_summary, cost_summary, month='January', year=2016) {
-#   combo = cbind(incident_summary, cost_summary)
-#   combo$Year = year
-#   combo$Month = month
-#   combo = combo[,c(9:10, 1:8)]
-#   names(combo) = c('Year', 'Month', 'Sales.Incidents', 'Driver.Incidents', 'Warehouse.Incidents', 'Springfield.Incidents',
-#                    'Sales.Cost', 'Driver.Cost', 'Warehouse.Cost', 'Columbia.Cost')
-#   combo = cbind(rownames(combo), combo)
-#   rownames(combo) = NULL
-#   colnames(combo) = c('Type', 'Year', 'Month', 'Sales.Incidents', 'Driver.Incidents', 'Warehouse.Incidents', 'Columbia.Incidents',
-#                       'Sales.Cost', 'Driver.Cost', 'Warehouse.Cost', 'Columbia.Cost')
-#   print(combo)
-# }
-# 
-# current = combine_incidents_cost(incident_summary, cost_summary)
-# 
-# 
-# append_old_new = function(history, current) {
-#   appended = rbind(history, current)
-#   write.csv(appended, 'C:/Users/pmwash/Desktop/R_files/Data Output/save_as____breakage_detailed_history.csv')
-#   appended[,c(4)] = as.numeric(appended[,c(4)])
-#   appended[,c(5)] = as.numeric(appended[,c(5)])
-#   appended[,c(6)] = as.numeric(appended[,c(6)])
-#   appended[,c(7)] = as.numeric(appended[,c(7)])
-#   appended[,c(8)] = as.numeric(appended[,c(8)])
-#   appended[,c(9)] = as.numeric(appended[,c(9)])
-#   appended[,c(10)] = as.numeric(appended[,c(10)])
-#   appended[,c(11)] = as.numeric(appended[,c(11)])
-#   
-#   print(appended)
-# }
-# 
-# print('Check to make sure there are only 4 lines per month/year')
-# appended_dataset = append_old_new(history, current)
-# # appended_dataset = appended_dataset[-c(245:248),]
-###############
-
-
-
-
-
-
-
-
 
 
 
@@ -464,10 +373,12 @@ print('Check to be sure these are correctly associated')
 tail(sales[,c('YTD.Sales', 'Sales')], 1)
 ytd_sales = tail(sales$YTD.Sales, 1); tail(sales, 1)
 current_sales = tail(sales$Sales, 1)
+current_sales
 
 tail(sales[,c('YTD.Sales', 'Sales')], 13)
 ytd_sales_lastyr = head(tail(sales$YTD.Sales, 13), 1); head(tail(sales, 13), 1)
 current_sales_lastyr = head(tail(sales$Sales, 13), 1)
+current_sales_lastyr
 
 master_dataset = calculate_percent_sales(master_dataset, ytd_sales, current_sales)
 
@@ -651,7 +562,7 @@ prepare_summary = function(supplier_for_summary, monthly_summary, current_sales,
   print(summary)
 }
 
-breakage_summary = prepare_summary(supplier_for_summary, monthly_summary, current_sales, ytd_sales, current_sales_lastyr, ytd_sales_lastyr, the_year, the_month)
+breakage_summary = prepare_summary(supplier_for_summary, monthly_summary, current_sales, ytd_sales, current_sales_lastyr, ytd_sales_lastyr, the_year=this_year, the_month=this_month)
 # str(breakage_summary)
 
 
@@ -664,9 +575,9 @@ breakage_summary = prepare_summary(supplier_for_summary, monthly_summary, curren
 
 
 
-
+# CHANGE MONTH IN NAME OF FILE
 print('Write to a file for presentation and distribution')
-file_name = 'breakage_report_feb_2016.xlsx'
+file_name = 'kc_breakage_report_apr_2016.xlsx'
 write.xlsx(breakage_summary, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Summary')
 write.xlsx(warehouse_breakage, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Warehouse Breakage by Item', append=TRUE)
 write.xlsx(driver_breakage_item, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Driver Breakage by Item', append=TRUE)
@@ -680,24 +591,10 @@ write.xlsx(master_dataset, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Out
 
 
 
-
-
-
-
-print('Below is for STL moving files')
-
+print('Below is for KC moving files')
 from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
-to = paste0("//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Breakage/", 'stl_', file_name, sep='')
+to = paste0('M:/Operations Intelligence/Monthly Reports/Breakage/', file_name, sep='')
 moveRenameFile(from, to)
-
-
-# print('Save as... *_kcversion.xlsx')
-# 
-# file_name = '01_unsaleables_returns_dumps_january_2016_kcversion.xlsx'
-# print('Below is for KC moving files')
-# from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
-# to = paste0('M:/Operations Intelligence/Monthly Reports/Unsaleables/', file_name, sep='')
-# moveRenameFile(from, to)
 
 
 
@@ -752,7 +649,7 @@ insert_breakage_plots = function(master_dataset) {
     theme(legend.position='none', axis.text.x=element_text(angle=90, hjust=1)) + 
     geom_smooth(aes(group=Type), colour="black", se=FALSE) +
     labs(title="Monthly Warehouse Breakage",
-         x="Month", y="Dollars ($)") + facet_wrap(~Type+Year, ncol=6, scales='free') +
+         x="Month", y="Dollars ($)") + facet_wrap(~Type+Year, ncol=6, scales='free_y') +
     scale_y_continuous(labels=dollar)
   print(one)
   
@@ -767,7 +664,7 @@ insert_breakage_plots = function(master_dataset) {
     theme(legend.position='none', axis.text.x=element_text(angle=90, hjust=1)) + 
     geom_smooth(aes(group=Type), colour="black", se=FALSE) +
     labs(title="Driver Warehouse Breakage",
-         x="Month", y="Dollars ($)") + facet_wrap(~Type+Year, ncol=6, scales='free') +
+         x="Month", y="Dollars ($)") + facet_wrap(~Type+Year, ncol=6, scales='free_y') +
     scale_y_continuous(labels=dollar)
   print(two)
   
