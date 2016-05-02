@@ -33,6 +33,9 @@ history = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Input Files for R
 headTail(breaks); headTail(sales); headTail(supplier); headTail(supplier_history); headTail(history)
 
 
+breaks = breaks %>% filter(X.RCODE != 1)
+
+
 print('Prevent Errors')
 sum_ext_cost_breaks = sum(breaks$EXT_COST, na.rm=TRUE)
 
@@ -88,11 +91,13 @@ incident_summary = breakage_by_class_incidents(breaks)
 
 
 breakage_by_class_cost = function(breaks) {
-  breaks$EXT_COST = as.numeric(as.character(breaks$EXT_COST))
-  spread2 = aggregate(EXT_COST ~ X.RCODE + PTYPE, data=breaks, FUN=function(x) abs(round(sum(x), 2)))
+  b = breaks
+  b$EXT_COST = as.numeric(as.character(b$EXT_COST))
+  spread2 = aggregate(EXT_COST ~ X.RCODE + PTYPE, data=b, FUN=function(x) abs(round(sum(x), 2)))
   spread2 = data.frame(spread2)
   moneyShot2 = spread(spread2, PTYPE, EXT_COST)
   names(moneyShot2) = c("Reason.Code", "Liquor (1)", "Wine (2)", "Beer (3)", "Non-Alc (4)")
+  
   reason = moneyShot2$Reason.Code
   moneyShot2$Reason.Code = ifelse(reason == 2, "Sales (2)", 
                                   ifelse(reason == 3, "Warehouse (3)",
@@ -126,10 +131,11 @@ breakage_by_class_cases = function(breaks) {
                                          ifelse(reason==4, "Driver (4)", 
                                                 ifelse(reason==5, "Springfield (5)", ""))))
   names(moneyShot3) =c("", "Cases.Broken")
-  moneyShot3
+  # moneyShot3
   invert3 = data.frame(t(moneyShot3))
   names(invert3) = c('Sales (2)', 'Warehouse (3)', 'Driver (4)', 'Springfield (5)')
   invert3 = invert3[-c(1) ,]
+
   print(invert3)
 }
 
@@ -165,7 +171,7 @@ append_breakage_history = function(history, incident_summary, cost_summary, year
 print('Check for duplicates & delete first column')
 appended_dataset = append_breakage_history(history, incident_summary, cost_summary, year=this_year, month=this_month)
 
-
+# appended_dataset = history
 
 
 
@@ -194,7 +200,7 @@ print('Check for duplicates & delete first column')
 supplier_history = append_supplier_breakage_history(supplier, supplier_history)
 
 
-
+# supplier_history = supplier_history
 
 
 
@@ -427,12 +433,14 @@ supplier_for_summary = create_supplier_summary(supplier_history, month=this_mont
 
 
 
+# #########
+# x = filter(breaks, X.RCODE==3)
+# x
+# sum(x$EXT_COST)
 
 
 
-
-
-create_monthly_summary = function(master_dataset, month='January', year=2016) {
+create_monthly_summary = function(master_dataset, month='April', year=2016) {
   library(dplyr)
   lastyr = year-1
   this_month = master_dataset %>% filter(Month == month) %>% filter(Year == year | Year == lastyr)
@@ -1318,15 +1326,31 @@ print('################################')
 # 
 # 
 # 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
+#
+
+
+
+
+
+
+
+
+
+
+
+# for checking 
+
+x = breaks %>% arrange(desc(EXT_COST))
+
+aggregate(EXT_COST ~ X.RCODE, data=x, FUN=sum)
+
+
+
+
+
+
+
+
+
+
+
