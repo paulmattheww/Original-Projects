@@ -6,6 +6,10 @@ library(ggplot2)
 library(ggrepel)
 library(directlabels)
 library(RgoogleMaps)
+library(dplyr)
+library(geosphere)
+source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
+
 
 cus = read.csv('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/customer_geocodes.csv', header=TRUE)
 headTail(cus)
@@ -261,9 +265,14 @@ combined = combined %>% filter(OOB=='N') %>% select(one_of(namez))
 
 
 
-headTail(combined)
 #write.csv(combined, 'C:/Users/pmwash/Desktop/Roadnet Implementation/Data/combined_unverified_geocodes.csv')
 #combined = read.csv('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/combined_unverified_geocodes.csv', header=TRUE)
+# combined$X = NULL
+headTail(combined, 500)
+
+
+
+
 
 
 
@@ -275,27 +284,57 @@ whse_rte = names(combined)
 
 names(combined) = lapply(names(combined), as.character)
 
+headTail(combined)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 
 #Missouri = get_map(location='missouri', source='google', zoom=7, maptype='roadmap', color='bw') 
 
-two_times = 2 * length(combined)
+#two_times = 2 * length(combined)
 
-for(i in 1:two_times) {
+
+print('Start at 178 tomorrow')
+for(i in 180:length(combined)) {
   file_name_i = paste0(names(combined[i]))
   
   df_i = combined[[i]]
-  df_i = df_i %>% filter(Latitude > 36 | Latitude < 50)
   df_i = na.omit(df_i)
+  
+  df_i = df_i %>% filter(Latitude > 36 | Latitude < 50)
   df_i = df_i %>% filter(Longitude > -97 | Longitude > -92)
-  df_i[,c('Latitude', 'Longitude', 'Verified.Lat', 'Verified.Lon')] = as.numeric(round(df_i[,c('Latitude', 'Longitude', 'Verified.Lat', 'Verified.Lon')], 6))
+  df_i = df_i %>% filter(Verified.Lat > 36 | Verified.Lat < 50)
+  df_i = df_i %>% filter(Verified.Lon > -97 | Verified.Lon > -92)
+  #df_i[,c('Latitude', 'Longitude', 'Verified.Lat', 'Verified.Lon')] = as.numeric(round(df_i[,c('Latitude', 'Longitude', 'Verified.Lat', 'Verified.Lon')], 6))
   
   base_map = get_map(location=c(lon=mean(df_i$Longitude, na.rm=T), lat=mean(df_i$Latitude, na.rm=T)), 
-                     zoom='auto', maptype='roadmap', color='bw')
+                     zoom='auto', source='osm')
   g_base_map = get_map(location=c(lon=mean(df_i$Verified.Lon, na.rm=T), lat=mean(df_i$Verified.Lat, na.rm=T)), 
-                       zoom='auto', maptype='roadmap', color='bw')
+                       zoom='auto', source='osm')
   
   map_df_i = ggmap(base_map, extent='panel', 
                    base_layer=ggplot(data=df_i, aes(x=Longitude, y=Latitude)))
@@ -353,26 +392,168 @@ for(i in 1:two_times) {
 
 
 
+
+
+
+
+#locations = read.csv('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/combined_unverified_geocodes.csv', header=TRUE)
+
+headTail(locations, 500)
+
+
+print('Gather the most "off" ones so team will not have to through so many maps')
+options(scipen=999)
+locations$Latitude = round(as.numeric(locations$Latitude), 6)
+
+unverified = locations %>% filter(is.na(Latitude) | is.na(Longitude) |
+                                       is.na(Verified.Lat) | is.na(Verified.Lon))
+headTail(unverified)
+
+
+addresses = paste0(unverified$Address, ' ', unverified$City, ' ', unverified$State, ' ', unverified$Zip, ' USA')
+
+# lat_lon = geocode(addresses)
+lat_lon = lat_lon[, c(2, 1)]
+
+now_verified = cbind(unverified[, c(1:10)], lat_lon)
+names(now_verified) = names(unverified)
+
+now_verified = now_verified[, c('Customer', 'Verified.Lat', 'Verified.Lon')]
+
+cust = now_verified$Customer
+lat = now_verified$Verified.Lat
+lon = now_verified$Verified.Lon
+
+missing_locations = locations
+missing_locations = missing_locations %>% filter(Customer %in% cust) %>%
+  select(one_of(c('Company', 'Customer', 'Name', 'Address', 'City', 'State', 'Zip', 'Route', 'Latitude', 'Longitude')))
+
+not_missing_anymore = merge(missing_locations, now_verified, by='Customer', all=TRUE)
+
+
+
+
+locations = locations %>% filter(!Customer %in% cust)
+all_locations = rbind(locations, not_missing_anymore)
+
+
+
+for(i in 1:length(missing_locations$Customer)) {
+  
+  if(missing_locations$Customer[i] %in% now_verified$Customer) {
+    print('Yes')
+  } else {
+    print('No')
+  }
+  
+}
+  
+  for(i in 1:length(now_verified$Customer))
+  
+  
+  if(missing_locations$Customer[i] %in% cust) {
+    missing_locations$Verified.Lat[i] = lat
+    missing_locations$Verified.Lon[i] = lon
+}
+
+
+
+
+locations = locations %>% filter(Latitude > 36 | Latitude < 50 | 
+                                   Longitude > -97 | Longitude > -92 |
+                                   Verified.Lat > 36 | Verified.Lat < 50 |
+                                   Verified.Lon > -97 | Verified.Lon > -92)
+
+
+
+
+
+
+locations$Warehouse.Route = whse_rte = paste0(locations$Company, '_', locations$Route)
+countUnique(whse_rte)
+
+locations = split(locations, locations$Warehouse.Route)
+
+
+headTail(locations)
+
+#compute distance
+ll_existing = data.frame(cbind(locations$Latitude, locations$Longitude))
+ll_google = data.frame(cbind(locations$Verified.Lat, locations$Verified.Lon))
+
+locations$Distance.Error = distm(ll_existing, ll_google, fun=distHaversine)
+
+locations %>% filter(is.na(Latitude) | is.na(Longitude) |
+                      is.na(Verified.Lat) | is.na(Verified.Lon))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+tail(combined, 10)
+
+
 # testing 
 
-i = 31
+i = 181
 
 file_name_i = paste0(names(combined[i]))
+
 df_i = combined[[i]]
-df_i = df_i %>% filter(Latitude > 36 | Latitude < 50)
 df_i = na.omit(df_i)
+
+df_i = df_i %>% filter(Latitude > 36 | Latitude < 50)
 df_i = df_i %>% filter(Longitude > -97 | Longitude > -92)
-df_i[,c('Latitude', 'Longitude', 'Verified.Lat', 'Verified.Lon')] = as.numeric(round(df_i[,c('Latitude', 'Longitude', 'Verified.Lat', 'Verified.Lon')], 6))
+
+df_i = df_i %>% filter(Verified.Lat > 36 | Verified.Lat < 50)
+df_i = df_i %>% filter(Verified.Lon > -97 | Verified.Lon > -92)
+
+#df_i[,c('Latitude', 'Longitude', 'Verified.Lat', 'Verified.Lon')] = as.numeric(round(df_i[,c('Latitude', 'Longitude', 'Verified.Lat', 'Verified.Lon')], 6))
 
 base_map = get_map(location=c(lon=mean(df_i$Longitude, na.rm=T), lat=mean(df_i$Latitude, na.rm=T)), 
-                       zoom='auto', source='osm')
+                   zoom='auto', source='osm')
 g_base_map = get_map(location=c(lon=mean(df_i$Verified.Lon, na.rm=T), lat=mean(df_i$Verified.Lat, na.rm=T)), 
-                         zoom='auto', source='osm')
+                     zoom='auto', source='osm')
 
 map_df_i = ggmap(base_map, extent='panel', 
-                     base_layer=ggplot(data=df_i, aes(x=Longitude, y=Latitude)))
+                 base_layer=ggplot(data=df_i, aes(x=Longitude, y=Latitude)))
 g_map_df_i = ggmap(g_base_map, extent='panel', 
-                       base_layer=ggplot(data=df_i, aes(x=Verified.Lon, y=Verified.Lat)))
+                   base_layer=ggplot(data=df_i, aes(x=Verified.Lon, y=Verified.Lat)))
 
 
 # Generate and print map for geocodes we already had in AS400
@@ -415,8 +596,6 @@ map_google_df_i = g_map_df_i +
 print(map_google_df_i)
 
 dev.off()
-
-
 
 
 
