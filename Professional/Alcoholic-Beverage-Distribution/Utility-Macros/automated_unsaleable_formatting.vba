@@ -12,10 +12,11 @@ Sub FormatUnsaleablesReport()
     Application.ScreenUpdating = False
     Application.EnableEvents = False
 
-    book = "C:\Users\pmwash\Desktop\R_files\Data Output\" & mnth & "_" _
-                & day & "_" & yr & "_unsaleables_returns_dumps.xlsx"
+    path = "C:\Users\pmwash\Desktop\R_files\Data Output\" & mnth & "_" & day & "_" & yr & "_unsaleables_returns_dumps.xlsx"
+                
+    book = Workbooks(path).Activate
     
-    For Each ws In ActiveWorkbook.Worksheets
+    For Each ws In book.Worksheets
     
         ws.Columns(1).Delete shift:=xlLeft
         ws.Columns("A:ZZ").Font.Size = 9
