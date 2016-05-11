@@ -8,6 +8,7 @@ library(directlabels)
 library(RgoogleMaps)
 library(dplyr)
 library(geosphere)
+library(reshape2)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 
 
@@ -398,8 +399,8 @@ for(i in 180:length(combined)) {
 
 #locations = read.csv('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/combined_unverified_geocodes.csv', header=TRUE)
 
-headTail(locations, 500)
-
+headTail(locations)
+#unique(locations$Company)
 
 print('Gather the most "off" ones so team will not have to through so many maps')
 options(scipen=999)
@@ -414,6 +415,7 @@ addresses = paste0(unverified$Address, ' ', unverified$City, ' ', unverified$Sta
 
 # lat_lon = geocode(addresses)
 lat_lon = lat_lon[, c(2, 1)]
+
 
 now_verified = cbind(unverified[, c(1:10)], lat_lon)
 names(now_verified) = names(unverified)
@@ -433,58 +435,156 @@ not_missing_anymore = merge(missing_locations, now_verified, by='Customer', all=
 
 
 
-locations = locations %>% filter(!Customer %in% cust)
-all_locations = rbind(locations, not_missing_anymore)
+never_missing = locations %>% filter(!Customer %in% cust)
+headTail(never_missing)
+
+
+all_locations = rbind(never_missing, not_missing_anymore)
+
+unique(all_locations$Company)
+
+all_locations$Warehouse.Route = whse_rte = paste0(all_locations$Company, '_', all_locations$Route)
+
+
+print('SEND DATA TO PYTHON FOR HAVERSINE FORMULA')
+###########
+### DO NOT DO AGAIN ### #write.csv(all_locations, file('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/verified_locations_all.csv', encoding="UTF-8"))
+###########
+print('READ DATA BACK IN FROM PYTHON PROCESSING ROUTINE')
+
+#all_locations = read.csv('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/verified_locations_all.csv', header=TRUE)
+all_locations = all_locations[,-c(1)]
+headTail(all_locations, 50)
+
+
+# check = filter(all_locations, Customer==614)
+# base_map = get_map(location=c(lon=check$Longitude, lat=check$Latitude), 
+#                    zoom='auto', source='google', maptype='road')
+# 
+# 
+# customer_map = ggmap(base_map, extent='panel', 
+#                  base_layer=ggplot(data=check, aes(x=Longitude, y=Latitude))) 
+# 
+# customer_map = customer_map + 
+#   geom_point(aes(x=Longitude, y=Latitude), colour='blue', size=4) +
+#   geom_point(aes(x=Verified.Lon, y=Verified.Lat), colour='red', size=4) +
+#   labs(title=paste0('CHECK COORDINATES'), 
+#        x='Longitude', y='Latitude') +
+#   geom_label_repel(data=check, aes(x=Longitude, y=Latitude, label=Name), 
+#                    fill='white', box.padding=unit(0.4, 'lines'),
+#                    label.padding=unit(0.115, 'lines'), label.size=0.5,
+#                    segment.color='black', segment.size=0.05, alpha=0.7,
+#                    arrow=arrow(length = unit(0.01, 'npc'))) +
+#   geom_label_repel(data=check, aes(x=Verified.Lon, y=Verified.Lat, label=Name), 
+#                    fill='white', box.padding=unit(0.4, 'lines'),
+#                    label.padding=unit(0.115, 'lines'), label.size=0.5,
+#                    segment.color='black', segment.size=0.05, alpha=0.7,
+#                    arrow=arrow(length = unit(0.01, 'npc'))) +
+#   theme(legend.position='none') +
+#   borders('county', 'missouri') 
+# 
+# print(customer_map)
+# 
+#   
 
 
 
-for(i in 1:length(missing_locations$Customer)) {
+
+
+check_addresses = all_locations %>% filter(Check.Address=='Y')
+headTail(check_addresses)
+
+#write.csv(all_locations, file('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/verified_locations_all_BACKUP.csv', encoding="UTF-8"))
+
+headTail(all_locations, 50)
+
+a_lat = all_locations$Latitude
+g_lat = all_locations$Verified.Lat
+a_lon = all_locations$Longitude
+g_lon = all_locations$Verified.Lon
+decision = all_locations$G.or.A
   
-  if(missing_locations$Customer[i] %in% now_verified$Customer) {
-    print('Yes')
-  } else {
-    print('No')
-  }
   
-}
-  
-  for(i in 1:length(now_verified$Customer))
-  
-  
-  if(missing_locations$Customer[i] %in% cust) {
-    missing_locations$Verified.Lat[i] = lat
-    missing_locations$Verified.Lon[i] = lon
-}
+all_locations$Latitude.Final = ifelse(decision == 'G', g_lat, a_lat)
+all_locations$Longitude.Final = ifelse(decision == 'G', g_lon, a_lon)
 
+headTail(all_locations)
+##write.csv(all_locations, file('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/verified_locations_all_BACKUP.csv', encoding="UTF-8"))
 
+# 
+# 
+# for_bob_check = all_locations %>% filter(Check.Address == 'Y' | Latitude.Final < 36 | Longitude.Final > -89) %>% arrange(Latitude.Final)
+# for_bob_check = for_bob_check[, c(1:8, 13:19)]
+# headTail(for_bob_check)
+# #for_bob_check$Latitude.Final
+# #write.csv(for_bob_check, file('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/iffy_locations_for_bob_to_review.csv', encoding="UTF-8"))
 
-
-locations = locations %>% filter(Latitude > 36 | Latitude < 50 | 
-                                   Longitude > -97 | Longitude > -92 |
-                                   Verified.Lat > 36 | Verified.Lat < 50 |
-                                   Verified.Lon > -97 | Verified.Lon > -92)
 
 
 
 
 
 
-locations$Warehouse.Route = whse_rte = paste0(locations$Company, '_', locations$Route)
-countUnique(whse_rte)
+print("TIME TO SATISFICE AND ACCEPT GEOCODES WE HAVE")
 
-locations = split(locations, locations$Warehouse.Route)
+for_zip = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/locations_for_new_geocodes.csv', header=TRUE)
+for_zip$Warehouse.Route = paste0(for_zip$Warehouse, '_', for_zip$Route)
+headTail(for_zip)
+
+satisfice = all_locations[, c('Customer', 'Latitude.Final', 'Longitude.Final', 'Warehouse.Route', 'Check.Address')]
+names(satisfice) = c('Customer.ID', 'Latitude.Final', 'Longitude.Final', 'Warehouse.Route', 'Check.Address')
+satisfice$Warehouse.Route.Customer = paste0(satisfice$Warehouse.Route, '_', satisfice$Customer)
+satisfice = satisfice[, c('Customer.ID', 'Latitude.Final', 'Longitude.Final', 'Check.Address', 'Warehouse.Route.Customer')]
+headTail(satisfice)
+
+final_geocodes = merge(for_zip, satisfice, by='Customer.ID', all=TRUE)
+library(stringr)
+final_geocodes$Ship.Flag = as.character(str_pad(final_geocodes$Ship.Flag, 7, pad='0'))
+headTail(final_geocodes, 10)
+
+##
+print('PERFORM CHECK BEFORE SENDING TO CSV')
+x = countUnique(for_zip$Customer.ID)
+y = length(for_zip$Customer.ID)
+x == y #confirms are unique
 
 
-headTail(locations)
 
-#compute distance
-ll_existing = data.frame(cbind(locations$Latitude, locations$Longitude))
-ll_google = data.frame(cbind(locations$Verified.Lat, locations$Verified.Lon))
 
-locations$Distance.Error = distm(ll_existing, ll_google, fun=distHaversine)
 
-locations %>% filter(is.na(Latitude) | is.na(Longitude) |
-                      is.na(Verified.Lat) | is.na(Verified.Lon))
+#write.csv(final_geocodes, file('C:/Users/pmwash/Desktop/Roadnet Implementation/Data/final_customer_coordinates.csv', encoding="UTF-8"))
+
+
+
+
+
+
+
+
+
+
+split_verified = split(all_locations, all_locations$Warehouse.Route)
+
+
+headTail(split_verified, 20)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
