@@ -238,33 +238,45 @@ write.csv(cust, 'N:/Operations Intelligence/Monthly Reports/Data/Reporting/Trans
 
 # query is pw_offday
 
+deliveries = read.csv("N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/pw_offday.csv", header=TRUE); head(deliveries)
+weeklookup = read.csv("N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/pw_offday_weeklookup.csv", header=TRUE)
+
+
+
 off_day_etl = function(deliveries, weeklookup) {
   library(lubridate)
   library(dplyr)
   library(stringr)
+  source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
   
-  names(deliveries) = c('Date', 'Invoice', 'Customer', 'Call', 'Priority', 
-                        'Warehouse', 'Cases', 'Dollars', 'Ship', 'Salesperson', 
-                        'Ad.Member', 'Merchandising', 'Ship.Week', 'On.Premise', 
-                        'Customer.Setup')
+  d = deliveries
+  w = weeklookup
   
-  date = deliveries$Date = as400Date(deliveries$Date)
-  weekday = deliveries$Weekday = wday(date, label=TRUE, abbr=TRUE)
-  week = deliveries$Ship.Week
+  names(d) = c('Date', 'Invoice', 'Customer', 'Call', 'Priority', 
+               'Warehouse', 'Cases', 'Dollars', 'Ship', 'Salesperson', 
+               'Ship.Week.Plan', 'Merchandising', 'On.Premise', 
+               'Customer.Setup')
+  
+  date = d$Date = as400Date(d$Date)
+  w$Date = as.character(strptime(weeklookup$Date, format="%m/%d/%Y"))
+
+  d = merge(d, w, by='Date', all_x=TRUE)
+  
+  weekday = d$Weekday = wday(date, label=TRUE, abbr=TRUE)
+  week_plan = d$Ship.Week.Plan
+  week_shipped = d$Ship.Week
   month = month(date)
-  setup_month = str_pad(as.character(deliveries$Customer.Setup), 4, pad='0')
+  setup_month = str_pad(as.character(d$Customer.Setup), 4, pad='0')
   setup_month = month(as.numeric(substrLeft(setup_month, 2)))
   year = year(date)
-  s = substrRight(as.character(deliveries$Customer.Setup), 2)
+  s = substrRight(as.character(d$Customer.Setup), 2)
   this_century = as.numeric(s) < 20
   setup_year = ifelse(this_century == TRUE, 
          as.numeric(as.character(paste0("20", s))), 
          as.numeric(as.character(paste0("19", s))))
-    
-  days = as.character(deliveries$Ship)
-  days = deliveries$Ship = str_pad(days, 7, pad='0')
+  days = as.character(d$Ship)
+  days = d$Ship = str_pad(days, 7, pad='0')
   
-  deliveries = merge(deliveries, weeklookup, by='Date', all_x=TRUE)
   
   mon =  ifelse(substrLeft(substrRight(days, 7), 1) == 1, 'M', '_')
   tue = ifelse(substrLeft(substrRight(days, 6), 1) == 1, 'T', '_')
@@ -273,49 +285,71 @@ off_day_etl = function(deliveries, weeklookup) {
   fri = ifelse(substrLeft(substrRight(days, 3), 1) == 1, 'F', '_')
   sat = ifelse(substrLeft(substrRight(days, 2), 1) == 1, 'S', '_')
   sun = ifelse(substrRight(days, 1) == 1, 'S', '_')
+
+  d$Delivery.Days = deldays = paste0(mon, tue, wed, thu, fri, sat, sun)
+  d$Customer.Setup = paste0(str_pad(as.character(setup_month), 2, pad=0), '-', as.character(setup_year))
   
-  deliveries$Delivery.Days = deldays = paste0(mon, tue, wed, thu, fri, sat, sun)
+  if (week_plan == 'A' | week_plan == 'B') {
+    if (week_plan != week_shipped) {
+      off = 'Y'
+    } else if (week_plan == week_shipped) {
+        off = ifelse(mon=='M' & weekday=='Mon', 'N', 
+                     ifelse(tue=='T' & weekday=='Tues', 'N',
+                            ifelse(wed=='W' & weekday=='Wed', 'N', 
+                                   ifelse(thu=='R' & weekday=='Thurs', 'N',
+                                          ifelse(fri=='F' & weekday=='Fri', 'N', 
+                                                 ifelse(sat=='S' & weekday=='Sat', 'N', 
+                                                        ifelse(sun=='S' & weekday=='Sun', 'N', 'Y')))))))
+    } 
+  } else if (week_plan == '') {
+      off = ifelse(mon=='M' & weekday=='Mon', 'N', 
+                   ifelse(tue=='T' & weekday=='Tues', 'N',
+                          ifelse(wed=='W' & weekday=='Wed', 'N', 
+                                 ifelse(thu=='R' & weekday=='Thurs', 'N',
+                                        ifelse(fri=='F' & weekday=='Fri', 'N', 
+                                               ifelse(sat=='S' & weekday=='Sat', 'N', 
+                                                      ifelse(sun=='S' & weekday=='Sun', 'N', 'Y')))))))
+  } else {
+      off = 'N'
+  }
+
+  d$Off.Day = off
+   
   
-  deliveries$Weekday = weekday = wday(deliveries$Invoice.Date, label=TRUE)
+  off_day_d = d %>% filter(Off.Day == 'Y')
+  rm(d)
+  #headTail(off_day_d, 100)
   
-  deliveries$Off.Day = ifelse(mon=='Y' & weekday=='Mon', 'N',
-                              ifelse(tue=='Y' & weekday=='Tues', 'N',
-                                     ifelse(wed=='Y' & weekday=='Wed', 'N',
-                                            ifelse(thu=='Y' & weekday=='Thurs', 'N',
-                                                   ifelse(fri=='Y' & weekday=='Fri', 'N',
-                                                          ifelse(sat=='Y' & weekday=='Sat', 'N',
-                                                                 ifelse(sun=='Y' & weekday=='Sun', 'N', 'Y')))))))
+  whse = off_day_d$Warehouse
+  call = off_day_d$Call
+  ad_mem = as.character(off_day_d$Ad.Member)
   
-  off_day_deliveries = deliveries %>% filter(Off.Day == 'Y')
-  
-  whse = off_day_deliveries$Warehouse
-  call = off_day_deliveries$Call
-  ad_mem = as.character(off_day_deliveries$Ad.Member)
-  
-  off_day_deliveries$Warehouse = ifelse(whse==1, 'KC', 
+  off_day_d$Warehouse = ifelse(whse==1, 'KC', 
                                         ifelse(whse==2, 'STL', 
                                                ifelse(whse==3, 'COL', 
                                                       ifelse(whse==4, 'CAPE', 
                                                              ifelse(whse==5, 'SPFD', '')))))
   
-  off_day_deliveries$Call = ifelse(call==1, 'Customer Call', 
+  off_day_d$Call = ifelse(call==1, 'Customer Call', 
                                    ifelse(call==2, 'ROE/EDI',
                                           ifelse(call==3, 'Salesperson Call',
                                                  ifelse(call==4, 'Telesales', 'Not Specified'))))
   
-  ship_flag = off_day_deliveries$Ship
+  ship_flag = off_day_d$Ship
   n_ship_days = sapply(strsplit(ship_flag, split=''), function(x) sum(as.numeric(x)))
   
-  off_day_deliveries$Tier = ifelse(ad_mem=='A' | ad_mem=='B', 'Tier 4', 
+  off_day_d$Tier = ifelse(ad_mem=='A' | ad_mem=='B', 'Tier 4', 
                                    ifelse(n_ship_days==1 & (ad_mem!='A' | ad_mem!='B'), 'Tier 3',
                                           ifelse(n_ship_days==2, 'Tier 2',
                                                  ifelse(n_ship_days>=3, 'Tier 1', 'Tier 4'))))
   
-  off_day_deliveries = off_day_deliveries[, c('Date', 'Customer', 'Tier', 'Cases', 'Dollars', 'Salesperson', 'Priority', 'Warehouse', 'Invoice')]
-  off_day_deliveries$Month = month(off_day_deliveries$Date, label=TRUE, abbr=FALSE)
-  off_day_deliveries$Year = year(off_day_deliveries$Date)
+  #headTail(off_day_d)
+
+  off_day_d = off_day_d[, c('Date', 'Customer', 'Tier', 'Cases', 'Dollars', 'Salesperson', 'Priority', 'Warehouse', 'Invoice')]
+  off_day_d$Month = month(off_day_d$Date, label=TRUE, abbr=FALSE)
+  off_day_d$Year = year(off_day_d$Date)
   
-  off_day_deliveries
+  off_day_d
   
 }
 
