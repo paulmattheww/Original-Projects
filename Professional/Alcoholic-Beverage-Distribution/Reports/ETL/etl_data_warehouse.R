@@ -13,8 +13,9 @@ etl_returns = function(returns) {
   
   names(returns) = c('Date', 'Product', 'Customer', 'Supplier', 'Cases', 'Cost', 'Warehouse')
   
-  #returns$Cases = -1 * returns$Cases
-  returns$Cost = -1 * returns$Cost
+  returns$Cases = round(-1 * returns$Cases, 2)
+  returns$Cost = round(-1 * returns$Cost, 2)
+  
   returns$Date = as400Date(returns$Date)
   returns$Month = month(returns$Date, label=TRUE, abbr=FALSE)
   returns$Year = year(returns$Date)
@@ -28,7 +29,7 @@ etl_returns = function(returns) {
   returns
 }
 
-returns = read.csv('N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/returns.csv', header=TRUE)
+returns = read.csv('N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/pw_returns.csv', header=TRUE)
 
 returns = etl_returns(returns)
 headTail(returns)
@@ -56,11 +57,14 @@ etl_unsaleables = function(rct) {
   library(lubridate)
   source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
   
-  names(rct) = c('Date', 'ProductID', 'Cases', 'Cost', 'Size', 'SupplierID', 'Class', 'Warehouse')
+  names(rct) = c('Date', 'Product', 'Cases', 'Cost', 'Supplier', 'Class', 'Warehouse')
   
   rct$Date = as400Date(rct$Date)
   rct$Month = month(rct$Date, label=TRUE, abbr=FALSE)
   rct$Year = year(rct$Date)
+  
+  rct$Cases = round(-1 * rct$Cases, 2)
+  rct$Cost = round(-1 * rct$Cost, 2)
   
   rct$Warehouse = ifelse(rct$Warehouse == 2, 'STL', 'KC')
   
@@ -83,11 +87,12 @@ etl_unsaleables = function(rct) {
                                                                                                                        ifelse(class>=90, 'Non-Alcoholic', 'XXXXXXXXXXXXX'))))))))))))))))
   
   
-  rct
+  rct = arrange(rct, Date)
   
 }
 
-rct = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Data Warehousing/pw_unsell.csv', header=TRUE, na.strings=NA)
+rct = read.csv('N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/pw_unsell.csv', header=TRUE, na.strings=NA)
+headTail(rct)
 
 unsaleables = etl_unsaleables(rct)
 headTail(unsaleables)
@@ -153,7 +158,7 @@ etl_breakage = function(brk) {
 }  
 
 
-brk = read.csv('N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/breakage.csv', header=TRUE)
+brk = read.csv('N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/pw_breaks.csv', header=TRUE)
 
 breakage = etl_breakage(brk)
 headTail(breakage)
@@ -233,26 +238,45 @@ write.csv(cust, 'N:/Operations Intelligence/Monthly Reports/Data/Reporting/Trans
 
 # query is pw_offday
 
-off_day_etl = function(deliveries) {
+off_day_etl = function(deliveries, weeklookup) {
   library(lubridate)
   library(dplyr)
+  library(stringr)
   
-  names(deliveries) = c('Date', 'Invoice', 'Customer', 'Call', 'Priority', 'Warehouse', 'Cases', 'Dollars', 'Ship', 'Salesperson', 'Ad.Member')
+  names(deliveries) = c('Date', 'Invoice', 'Customer', 'Call', 'Priority', 
+                        'Warehouse', 'Cases', 'Dollars', 'Ship', 'Salesperson', 
+                        'Ad.Member', 'Merchandising', 'Ship.Week', 'On.Premise', 
+                        'Customer.Setup')
   
   date = deliveries$Date = as400Date(deliveries$Date)
   weekday = deliveries$Weekday = wday(date, label=TRUE, abbr=TRUE)
-  
-  library(stringr)
+  week = deliveries$Ship.Week
+  month = month(date)
+  setup_month = str_pad(as.character(deliveries$Customer.Setup), 4, pad='0')
+  setup_month = month(as.numeric(substrLeft(setup_month, 2)))
+  year = year(date)
+  s = substrRight(as.character(deliveries$Customer.Setup), 2)
+  this_century = as.numeric(s) < 20
+  setup_year = ifelse(this_century == TRUE, 
+         as.numeric(as.character(paste0("20", s))), 
+         as.numeric(as.character(paste0("19", s))))
+    
   days = as.character(deliveries$Ship)
-  deliveries$Ship = days = str_pad(days, 7, pad='0')
+  days = deliveries$Ship = str_pad(days, 7, pad='0')
   
-  deliveries$Mon = mon =  ifelse(substrLeft(substrRight(days, 7), 1) == 1, "Y", "N")
-  deliveries$Tue = tue = ifelse(substrLeft(substrRight(days, 6), 1) == 1, "Y", "N")
-  deliveries$Wed = wed =  ifelse(substrLeft(substrRight(days, 5), 1) == 1, "Y", "N")
-  deliveries$Thu = thu =  ifelse(substrLeft(substrRight(days, 4), 1) == 1, "Y", "N")
-  deliveries$Fri = fri = ifelse(substrLeft(substrRight(days, 3), 1) == 1, "Y", "N")
-  deliveries$Sat = sat = ifelse(substrLeft(substrRight(days, 2), 1) == 1, "Y", "N")
-  deliveries$Sun = sun = ifelse(substrRight(days, 1) == 1, "Y", "N")
+  deliveries = merge(deliveries, weeklookup, by='Date', all_x=TRUE)
+  
+  mon =  ifelse(substrLeft(substrRight(days, 7), 1) == 1, 'M', '_')
+  tue = ifelse(substrLeft(substrRight(days, 6), 1) == 1, 'T', '_')
+  wed =  ifelse(substrLeft(substrRight(days, 5), 1) == 1, 'W', '_')
+  thu =  ifelse(substrLeft(substrRight(days, 4), 1) == 1, 'R', '_')
+  fri = ifelse(substrLeft(substrRight(days, 3), 1) == 1, 'F', '_')
+  sat = ifelse(substrLeft(substrRight(days, 2), 1) == 1, 'S', '_')
+  sun = ifelse(substrRight(days, 1) == 1, 'S', '_')
+  
+  deliveries$Delivery.Days = deldays = paste0(mon, tue, wed, thu, fri, sat, sun)
+  
+  deliveries$Weekday = weekday = wday(deliveries$Invoice.Date, label=TRUE)
   
   deliveries$Off.Day = ifelse(mon=='Y' & weekday=='Mon', 'N',
                               ifelse(tue=='Y' & weekday=='Tues', 'N',
@@ -297,10 +321,13 @@ off_day_etl = function(deliveries) {
 
 
 
-deliveries = read.csv("C:/Users/pmwash/Desktop/Disposable Docs/deliveries.csv", header=TRUE)
+deliveries = read.csv("N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/pw_offday.csv", header=TRUE)
+weeklookup = read.csv("N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/pw_offday_weeklookup.csv", header=TRUE)
 
+headTail(deliveries)
+headTail(weeklookup)
 
-off_days = off_day_etl(deliveries)
+off_days = off_day_etl(deliveries, weeklookup)
 headTail(off_days, 50)
 
 
@@ -400,7 +427,7 @@ etl_transfers = function(transfers) {
   t
 }
 
-transfers = read.csv('N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/transfers.csv', header=TRUE); head(transfers)
+transfers = read.csv('N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/pw_trnsfer.csv', header=TRUE); head(transfers)
 
 transfers = etl_transfers(transfers)
 headTail(transfers, 50)
@@ -571,7 +598,11 @@ write.csv(out_of_stock, 'N:/Operations Intelligence/Monthly Reports/Data/Reporti
 
 
 
+# pw_custpups
 
+
+
+# pw_slstakes
 
 
 
