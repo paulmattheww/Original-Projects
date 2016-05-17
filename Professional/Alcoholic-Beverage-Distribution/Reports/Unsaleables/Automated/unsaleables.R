@@ -397,16 +397,16 @@ mon = month(Sys.Date(), TRUE, FALSE)
 yr = year(Sys.Date())
 day = day(Sys.Date())
 
-setwd("C:/Users/pmwash/Desktop/R_files/Data Output")
+#setwd("C:/Users/pmwash/Desktop/R_files/Data Output")
 file_name = paste0(mon, '_', day, '_', yr, '_unsaleables_returns_dumps.xlsx')
 file_path = paste0('N:/Operations Intelligence/Monthly Reports/Unsaleables/Data/', file_name)
 
 write.xlsx(accumulator, file=file_path, sheet='Item Summary')
 write.xlsx(supplier_accumulator, file=file_path, sheet='Supplier Summary', append=TRUE)
-write.xlsx(customers, file=file_path, sheet='Customer Returns Summary', append=TRUE)
+# write.xlsx(customers, file=file_path, sheet='Customer Returns Summary', append=TRUE)
 # write.xlsx(directors, file=file_path, sheet='Director Lookup Table', append=TRUE)
 # write.xlsx(monthly_accumulator, file=file_path, sheet='Time Series', append=TRUE)
-
+print('MTD UNSALEABLE REPORT COMPLETE -- RUNNING VBA CODE')
 
 # KC
 # 
@@ -420,8 +420,8 @@ write.xlsx(customers, file=file_path, sheet='Customer Returns Summary', append=T
 
 
 
-print('STOP and run the VBA code to format the report for distribution. Make sure file output name matches the final branch of the file paths below')
-source("C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R")
+#print('STOP and run the VBA code to format the report for distribution. Make sure file output name matches the final branch of the file paths below')
+#source("C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R")
 
 
 
