@@ -106,12 +106,13 @@ dashboardPage(skin='red',
       tabItem(tabName='breakage'),
       
       tabItem(tabName='breakage_summary', 
-              p(h2('Summary of Breakage for Time Period Selected')),
+              p(h1('Breakage Summary')),
               wellPanel(
-                plotOutput('plot_breakage_summary'))),
+                plotOutput('plot_breakage_summary')),
+              dataTableOutput('breakage_pivot')),
       
       tabItem(tabName='breakage_by_product',
-              p(h3('Most Broken Products:')),
+              p(h1('Most Broken Products:')),
               selectInput('driver_warehouse', 'Warehouse or Driver Breakage',
                           choice=c('Warehouse', 'Drivers')),
               
@@ -119,11 +120,11 @@ dashboardPage(skin='red',
               dataTableOutput('breakage_by_product')),
       
       tabItem(tabName='atomic_breakage',
-              p(h3('Atomic Level Data, This Year:')),
+              p(h1('Atomic Level Data, This Year:')),
               dataTableOutput('atomic_breakage')),
       
       tabItem(tabName='atomic_breakage_ly',
-              p(h3('Atomic Level Data, Last Year:')),
+              p(h1('Atomic Level Data, Last Year:')),
               dataTableOutput('atomic_breakage_ly')),
       
      
@@ -131,7 +132,7 @@ dashboardPage(skin='red',
       ## ________ unsaleables ________ ##
       
       tabItem(tabName='top_10_plot',
-              p(h2('Top Unsaleables by Product & Supplier')),
+              p(h1('Top Unsaleables by Product & Supplier')),
               wellPanel(plotOutput('top_10_plot')),
               selectInput('unsaleables_facet', 
                           h4('View Details by Supplier or by Item'),
@@ -139,11 +140,11 @@ dashboardPage(skin='red',
               dataTableOutput('unsaleable_summary_data')),
       
       tabItem(tabName='atomic_unsaleables',
-              p(h3('Atomic Level Data, This Year:')),
+              p(h1('Atomic Level Data, This Year:')),
               dataTableOutput('atomic_unsaleables')),
       
       tabItem(tabName='atomic_unsaleables_ly',
-              p(h3('Atomic Level Data, Last Year:')),
+              p(h1('Atomic Level Data, Last Year:')),
               dataTableOutput('atomic_unsaleables_ly')),
       
       
