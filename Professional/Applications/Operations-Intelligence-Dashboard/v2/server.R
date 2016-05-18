@@ -336,6 +336,16 @@ shinyServer(
       t
     })
     
+    brk_for_graphs_ly = reactive({
+      q = paste0("SELECT * FROM T_Breakage 
+                 WHERE Date BETWEEN #",
+                 start_date_ly(), 
+                 "# AND #", 
+                 end_date_ly(), "#")
+      t = sqlQuery(odbc_connection, query=q)
+      t
+    })
+    
     ## ________________get summary of breakage________________ ##
     output$total_breakage = renderValueBox({
       x = t_breakage()
@@ -439,27 +449,8 @@ shinyServer(
       brk_prod()
     })
     
-    
-    
-    # break_plot_title = reactive({
-    #   if(input$house=='Saint Louis' & input$driver_warehouse=='Warehouse'){
-    #     title = 'YTD Breakage, STL Warehouse'
-    #   }
-    #   if(input$house=='Saint Louis' & input$driver_warehouse=='Drivers'){
-    #     title = 'YTD Breakage, STL Drivers'
-    #   }
-    #   if(input$house=='Kansas City' & input$driver_warehouse=='Warehouse'){
-    #     title = 'YTD Breakage, KC Warehouse'
-    #   }
-    #   if(input$house=='Kansas City' & input$driver_warehouse=='Drivers'){
-    #     title = 'YTD Breakage, KC Drivers'
-    #   }
-    #   title
-    # })
-    
-    
+
     ## ________________breakage plots________________ ##
-    
     output$plot_breakage_summary = renderPlot({
       x = brk_for_graphs()
       x = x %>% filter(Cost>0)
@@ -474,8 +465,9 @@ shinyServer(
               axis.text.x=element_text(angle=90, hjust=1)) + 
         labs(title='Breakage Summary',
              x="Month", y="Dollars") +
-        facet_wrap(~Type, nrow=2) +
-        scale_y_continuous(labels=dollar)
+        facet_wrap(Type~Year, nrow=1) +
+        scale_y_continuous(labels=dollar) +
+        geom_jitter()
       print(p)
     })
     
@@ -527,10 +519,42 @@ shinyServer(
               axis.text.x=element_text(angle=90, hjust=1)) + 
         labs(title='Top Breakage Items by Cases',
              x="Product", y="Cases") +
-        scale_y_continuous(labels=comma)
+        scale_y_continuous(labels=comma) 
       
       print(grid.arrange(d, c, i, nrow=1))
     })
+    
+    
+    output$breakage_pivot = renderDataTable({
+      all = brk_for_graphs()
+      all_ly = brk_for_graphs_ly()
+      
+      all = all %>% filter(Type != 'UNSPECIFIED')
+      all_ly = all_ly %>% filter(Type != 'UNSPECIFIED')
+      
+      one = aggregate(Cost ~ Type, data=all, FUN=function(x) round(sum(x)))
+      two = aggregate(Cases ~ Type, data=all, FUN=function(x) round(sum(x), 1))
+      all = merge(one, two, by='Type', all=TRUE)
+      all = arrange(all, desc(Cost))
+      names(all) = c('Type', 'TY.Cost', 'TY.Cases')
+      
+      one_ly = aggregate(Cost ~ Type, data=all_ly, FUN=function(x) round(sum(x)))
+      two_ly = aggregate(Cases ~ Type, data=all_ly, FUN=function(x) round(sum(x), 1))
+      all_ly = merge(one_ly, two_ly, by='Type', all_ly=TRUE)
+      all_ly = arrange(all_ly, desc(Cost))
+      names(all_ly) = c('Type', 'LY.Cost', 'LY.Cases')
+
+      all = merge(all, all_ly, by='Type', all=TRUE)
+      all$YOY.Change.Cost = scales::percent((round((all$TY.Cost - all$LY.Cost) / all$LY.Cost, 4)))
+      all$YOY.Change.Cases = scales::percent((round((all$TY.Cases - all$LY.Cases) / all$LY.Cases, 4)))
+      all$TY.Cost = scales::dollar((all$TY.Cost))
+      all$LY.Cost = scales::dollar((all$LY.Cost))
+      all = all[, c('Type', 'TY.Cost', 'LY.Cost', 'YOY.Change.Cost', 'TY.Cases', 'LY.Cases', 'YOY.Change.Cases')]
+      all = all %>% arrange(desc(YOY.Change.Cost))
+
+      all
+    })
+    
     
     
     # google how to close rodbc unused handle X
@@ -703,7 +727,7 @@ shinyServer(
       z = t_unsaleables() # add (type, director, class) (month, year, date)
       
       if(input$unsaleables_facet=='Product') {
-        data = melt(z, id='Product', measure.var=c('Cases', 'Cost'))
+        data = melt(z, id=c('Product', 'Supplier'), measure.var=c('Cases', 'Cost'))
         data = dcast(data, Product ~ variable, function(x) round(sum(x)))
         names(data) = c('Product', 'Cases', 'Cost')
         data = data %>% arrange(desc(Cost))
@@ -719,6 +743,7 @@ shinyServer(
         data = data %>% arrange(desc(Cost))
       }
       data = data[,c(1, 3, 2)]
+      data$Cost = scales::dollar((data$Cost))
       data
     })
 
@@ -732,6 +757,24 @@ shinyServer(
     
     
     ################################################################################
+    
+    
+    # break_plot_title = reactive({
+    #   if(input$house=='Saint Louis' & input$driver_warehouse=='Warehouse'){
+    #     title = 'YTD Breakage, STL Warehouse'
+    #   }
+    #   if(input$house=='Saint Louis' & input$driver_warehouse=='Drivers'){
+    #     title = 'YTD Breakage, STL Drivers'
+    #   }
+    #   if(input$house=='Kansas City' & input$driver_warehouse=='Warehouse'){
+    #     title = 'YTD Breakage, KC Warehouse'
+    #   }
+    #   if(input$house=='Kansas City' & input$driver_warehouse=='Drivers'){
+    #     title = 'YTD Breakage, KC Drivers'
+    #   }
+    #   title
+    # })
+    
     
     
     # y_axis2 = reactive({
