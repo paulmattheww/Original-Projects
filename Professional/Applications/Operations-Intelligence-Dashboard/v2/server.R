@@ -455,6 +455,7 @@ shinyServer(
       x = brk_for_graphs()
       x = x %>% filter(Cost>0)
       x = x %>% filter(Type != 'UNSPECIFIED')
+      x = x %>% filter(Type != 'Supplier')
       x$Month = factor(x$Month, levels=unique(x$Month))
       
       p = ggplot(x, aes(Month, y=Cost, fill=factor(Type)))
@@ -530,7 +531,9 @@ shinyServer(
       all_ly = brk_for_graphs_ly()
       
       all = all %>% filter(Type != 'UNSPECIFIED')
+      all = all %>% filter(Type != 'Supplier')
       all_ly = all_ly %>% filter(Type != 'UNSPECIFIED')
+      all_ly = all_ly %>% filter(Type != 'Supplier')
       
       one = aggregate(Cost ~ Type, data=all, FUN=function(x) round(sum(x)))
       two = aggregate(Cases ~ Type, data=all, FUN=function(x) round(sum(x), 1))
