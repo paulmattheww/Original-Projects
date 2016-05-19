@@ -3,6 +3,113 @@ source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 
 
 
+print('This is a time series summary of Production',
+      'no other way unless we want to store a fuck ton of data')
+# first run VBA to collect data, then R script to do it up right
+
+
+etl_production = function(stl, kc) {
+  library(timeDate)
+  
+  k = kc
+  s = stl
+  colnames(k) = paste0('KC.', colnames(k))
+  colnames(s) = paste0('STL.', colnames(s))
+  colnames(k)[1] = 'DATE'
+  colnames(s)[1] = 'DATE'
+  k$KC.YEAR = NA
+  k$KC.MONTH = NA
+  
+  k$DATE = as.character(strptime(k$DATE, '%m/%d/%Y'))
+  s$DATE = as.character(strptime(s$DATE, '%m/%d/%Y'))
+  
+  state = merge(s, k, by='DATE', all=TRUE)
+  colnames(state) = ifelse(grepl('YEAR', colnames(state)), 'YEAR', 
+                           ifelse(grepl('SEASON', colnames(state)), 'SEASON',
+                                  ifelse(grepl('MONTH', colnames(state)), 'MONTH', colnames(state))))
+  
+  state = state[, colSums(is.na(state)) < nrow(state)]
+  names(state) = gsub("\\.", "", names(state))
+  
+  dat = state$DATE
+  state$MONTH = month(dat, TRUE, FALSE)
+  month = month(dat)
+  state$YEAR = year(dat)
+  state$SEASON = ifelse(month==1 | month==2 |month==3, "Winter", 
+                              ifelse(month==4 | month==5 | month==6, "Spring",
+                                     ifelse(month==7 | month==8 | month==9, "Summer",
+                                            ifelse(month==10 | month==11 | month==12, "Fall", ""))))
+  state$WEEKDAY = wday(dat, TRUE, FALSE)
+  state$DOTM = dom = mday(dat)
+  dom = as.numeric(dom)
+  state$DOTY = yday(dat)
+  state$WEEKNUM = week(dat)
+  fd = NULL
+  
+  for(i in 1:length(dom)) {
+    j = i - 1
+    if(i == 1) {
+      fd[i] = 'YES'
+    } else if (dom[i] > dom[j]) {
+      fd[i] = 'NO'
+    } else {
+      fd[i] = 'YES'
+    }
+    fd
+  }
+  state$FIRSTDAYOFMONTH = fd
+  
+  ld = NULL
+  
+  for(i in 1:length(dom)) {
+    j = i + 1
+    
+    if(i == 1) {
+      ld[i] = 'NO'
+    } else if (j > length(dom)) {
+      ld[i] = 'YES'
+    } else if (dom[i] > dom[j]) {
+      ld[i] = 'YES'
+    } else if (dom[i] < 20) {
+      ld[i] = 'NO'
+    } else {
+      ld[i] = 'NO'
+    }
+    ld
+  }
+  state$LASTDAYOFMONTH = ld
+  #head(state[, c('DATE', 'LASTDAYOFMONTH')], 70)
+  print(state)
+  
+}
+
+
+path_stl = 'N:/Operations Intelligence/Monthly Reports/Production/Production History/STL Production Report Daily Data Archive.csv'
+path_kc = 'M:/Operations Intelligence/Monthly Reports/Production/Production History/KC Production Report Daily Data Archive.csv'
+stl = read.csv(path_stl, header=TRUE)
+kc = read.csv(path_kc, header=TRUE)
+
+production = etl_production(stl=stl, kc=kc)
+headTail(production)
+
+write.csv(production, 'N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/Output/production_ts_upload.csv', na='', row.names=FALSE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 print('prepare unsaleables for upload to warehouse')
 
@@ -57,7 +164,7 @@ etl_unsaleables = function(rct) {
   library(lubridate)
   source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
   
-  names(rct) = c('Date', 'Product', 'Cases', 'Cost', 'Supplier', 'Class', 'Warehouse')
+  names(rct) = c('Date', 'Product.ID', 'Product', 'Cases', 'Cost', 'Supplier.ID', 'Supplier', 'Class', 'Warehouse')
   
   rct$Date = as400Date(rct$Date)
   rct$Month = month(rct$Date, label=TRUE, abbr=FALSE)
@@ -84,7 +191,7 @@ etl_unsaleables = function(rct) {
                                                                                                   ifelse(class==86, 'Beer & Cider', 
                                                                                                          ifelse(class==87, 'Beer & Cider',
                                                                                                                 ifelse(class==88, 'Beer & Cider', 
-                                                                                                                       ifelse(class>=90, 'Non-Alcoholic', 'XXXXXXXXXXXXX'))))))))))))))))
+                                                                                                                       ifelse(class>=90, 'Non-Alcoholic', 'NOT SPECIFIED'))))))))))))))))
   
   
   rct = arrange(rct, Date)
@@ -120,7 +227,7 @@ write.csv(unsaleables, 'N:/Operations Intelligence/Monthly Reports/Data/Reportin
 etl_breakage = function(brk) {
   library(lubridate)
   
-  names(brk) = c('Date', 'Product ID', 'Cases', 'Cost', 'Type', 'Warehouse')
+  names(brk) = c('Date', 'Product ID', 'Product', 'Cases', 'Cost', 'Type', 'Warehouse')
   
   r = brk$Type
   w = brk$Warehouse
@@ -237,11 +344,11 @@ write.csv(cust, 'N:/Operations Intelligence/Monthly Reports/Data/Reporting/Trans
 
 
 # query is pw_offday
+# 
+# deliveries = read.csv("N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/pw_offday.csv", header=TRUE); head(deliveries)
+# weeklookup = read.csv("N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/pw_offday_weeklookup.csv", header=TRUE)
 
-deliveries = read.csv("N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/pw_offday.csv", header=TRUE); head(deliveries)
-weeklookup = read.csv("N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/pw_offday_weeklookup.csv", header=TRUE)
-
-
+# next time may 16 - x already got 15th
 
 off_day_etl = function(deliveries, weeklookup) {
   library(lubridate)
@@ -289,7 +396,7 @@ off_day_etl = function(deliveries, weeklookup) {
   d$Delivery.Days = deldays = paste0(mon, tue, wed, thu, fri, sat, sun)
   d$Customer.Setup = paste0(str_pad(as.character(setup_month), 2, pad=0), '-', as.character(setup_year))
   
-  if (week_plan == 'A' | week_plan == 'B') {
+  if (week_plan != '') {
     if (week_plan != week_shipped) {
       off = 'Y'
     } else if (week_plan == week_shipped) {
@@ -319,38 +426,58 @@ off_day_etl = function(deliveries, weeklookup) {
   off_day_d = d %>% filter(Off.Day == 'Y')
   rm(d)
   #headTail(off_day_d, 100)
-  
+  week_plan = off_day_d$Ship.Week.Plan
   whse = off_day_d$Warehouse
   call = off_day_d$Call
-  ad_mem = as.character(off_day_d$Ad.Member)
-  
+
   off_day_d$Warehouse = ifelse(whse==1, 'KC', 
-                                        ifelse(whse==2, 'STL', 
-                                               ifelse(whse==3, 'COL', 
-                                                      ifelse(whse==4, 'CAPE', 
-                                                             ifelse(whse==5, 'SPFD', '')))))
+                               ifelse(whse==2, 'STL', 
+                                      ifelse(whse==3, 'COL', 
+                                             ifelse(whse==4, 'CAPE', 
+                                                    ifelse(whse==5, 'SPFD', '')))))
   
   off_day_d$Call = ifelse(call==1, 'Customer Call', 
-                                   ifelse(call==2, 'ROE/EDI',
-                                          ifelse(call==3, 'Salesperson Call',
-                                                 ifelse(call==4, 'Telesales', 'Not Specified'))))
+                          ifelse(call==2, 'ROE/EDI',
+                                 ifelse(call==3, 'Salesperson Call',
+                                        ifelse(call==4, 'Telesales', 'Not Specified'))))
   
   ship_flag = off_day_d$Ship
   n_ship_days = sapply(strsplit(ship_flag, split=''), function(x) sum(as.numeric(x)))
   
-  off_day_d$Tier = ifelse(ad_mem=='A' | ad_mem=='B', 'Tier 4', 
-                                   ifelse(n_ship_days==1 & (ad_mem!='A' | ad_mem!='B'), 'Tier 3',
-                                          ifelse(n_ship_days==2, 'Tier 2',
-                                                 ifelse(n_ship_days>=3, 'Tier 1', 'Tier 4'))))
+  off_day_d$Tier = ifelse(week_plan=='A' | week_plan=='B', 'Tier 4', 
+                          ifelse(n_ship_days==1 & (week_plan!='A' | week_plan!='B'), 'Tier 3',
+                                 ifelse(n_ship_days==2, 'Tier 2',
+                                        ifelse(n_ship_days>=3, 'Tier 1', 'Tier 4'))))
   
-  #headTail(off_day_d)
-
-  off_day_d = off_day_d[, c('Date', 'Customer', 'Tier', 'Cases', 'Dollars', 'Salesperson', 'Priority', 'Warehouse', 'Invoice')]
-  off_day_d$Month = month(off_day_d$Date, label=TRUE, abbr=FALSE)
   off_day_d$Year = year(off_day_d$Date)
   
-  off_day_d
+  new = off_day_d$Customer.Setup
+  now_m = month(off_day_d$Month)
+  now_y = off_day_d$Year
   
+  setup_monthx = str_pad(as.character(off_day_d$Customer.Setup), 4, pad='0')
+  setup_monthx = month(as.numeric(substrLeft(setup_monthx, 2)))
+  sx = substrRight(as.character(off_day_d$Customer.Setup), 2)
+  this_centuryx = as.numeric(sx) < 20
+  setup_yearx = ifelse(this_centuryx == TRUE, 
+                      as.numeric(as.character(paste0("20", sx))), 
+                      as.numeric(as.character(paste0("19", sx))))
+  
+  
+  off_day_d$New.Customer = ifelse(setup_monthx == now_m & setup_yearx == now_y, 'YES', 'NO')
+  
+  #off_day_d = filter(off_day_d, New.Customer != 'YES')
+  
+  off_day_d = off_day_d[, c('Date', 'Invoice', 'Call', 'Salesperson', 'Customer', 
+                            'New.Customer', 'On.Premise', 'Tier', 'Cases', 'Dollars', 
+                            'Priority', 'Warehouse', 'Weekday',
+                            'Delivery.Days', 'Month', 'DOTM', 'Year', 'Week',
+                            'Ship.Week', 'Ship.Week.Plan', 'Merchandising')]
+  
+  
+  off_day_d # headTail(off_day_d, 30)
+  # write.csv(off_day_d, 'N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/Output/deliveries_upload2.csv')
+
 }
 
 
