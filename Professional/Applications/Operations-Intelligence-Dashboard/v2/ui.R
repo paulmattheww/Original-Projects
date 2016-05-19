@@ -10,6 +10,7 @@ dashboardPage(skin='red',
     sidebarMenu(
       selectInput('house', 'Warehouse',
                   choice=c('Saint Louis', 'Kansas City')),
+      
       dateRangeInput('dates', 
                      label = 'Date Range', 
                      start='2016-01-01', 
@@ -17,7 +18,14 @@ dashboardPage(skin='red',
                      min='2015-01-01', 
                      max=as.character(strptime(Sys.Date(), format='%Y-%m-%d')),
                      format='mm/dd/yyyy'),
+      
       menuItem('Dashboard', tabName='dashboard', icon=icon('dashboard')),
+      
+      menuItem('Production', tabName='production', icon=icon('truck'),
+               menuSubItem('Breakage Summary', tabName='production_summary'),
+               # menuSubItem('Breakage by Product', tabName='breakage_by_product'),
+               menuSubItem('Atomic Level, This Year', tabName='atomic_production'),
+               menuSubItem('Atomic Level, Last Year', tabName='atomic_production_ly')),
       
       menuItem('Breakage', tabName='breakage', icon=icon('trash'),
                menuSubItem('Breakage Summary', tabName='breakage_summary'),
@@ -37,7 +45,7 @@ dashboardPage(skin='red',
                menuSubItem('Summary', tabName='velocity_summary')),
       
       menuItem('Plots', tabName='plots', icon=icon('bar-chart-o')),
-      menuItem('Production', tabName='production', icon=icon('wrench')),
+      #menuItem('Production', tabName='production', icon=icon('wrench')),
       menuItem('Route Execution', tabName='routes', icon=icon('wrench')),
       menuItem('Trucks & Equipment', tabName='trucks', icon=icon('wrench')),
       menuItem('Transfers', tabName='transfers', icon=icon('wrench')),
@@ -62,10 +70,6 @@ dashboardPage(skin='red',
                 valueBoxOutput('cases_delivered_ly'),
                 valueBoxOutput('cases_delivered_delta'),
                 
-                valueBoxOutput('oddball_cases'),
-                valueBoxOutput('oddball_cases_ly'),
-                valueBoxOutput('oddball_cases_delta'),
-                
                 valueBoxOutput('cpmh'),
                 valueBoxOutput('cpmh_ly'),
                 valueBoxOutput('cpmh_delta'),
@@ -78,13 +82,17 @@ dashboardPage(skin='red',
                 valueBoxOutput('employees_on_hand_ly'),
                 valueBoxOutput('employees_on_hand_delta'),
                 
-                valueBoxOutput('errors'),
-                valueBoxOutput('errors_ly'),
-                valueBoxOutput('errors_delta'),
-                
                 valueBoxOutput('total_breakage'),
                 valueBoxOutput('total_breakage_ly'),
                 valueBoxOutput('total_breakage_delta'),
+                
+                valueBoxOutput('oddball_cases'),
+                valueBoxOutput('oddball_cases_ly'),
+                valueBoxOutput('oddball_cases_delta'),
+                
+                valueBoxOutput('errors'),
+                valueBoxOutput('errors_ly'),
+                valueBoxOutput('errors_delta'),
                 
                 valueBoxOutput('driver_breakage'),
                 valueBoxOutput('driver_breakage_ly'),
