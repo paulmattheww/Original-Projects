@@ -31,7 +31,7 @@ reporting_db = 'N:/Operations Intelligence/Monthly Reports/Data/Reporting/Report
 
 odbc_connection = odbcConnectAccess2007(reporting_db)
 
-#x = sqlQuery(odbc_connection, "SELECT * FROM T_Breakage WHERE Warehouse = 'STL' AND Date BETWEEN #06/01/2015# AND #03/31/2016#")
+# x = sqlQuery(odbc_connection, "SELECT * FROM TS_Production WHERE Date BETWEEN #06/01/2015# AND #03/31/2016#")
 # head(x)
 # t_returns = sqlFetch(odbc_connection, "T_Returns")
 # t_breakage = sqlFetch(odbc_connection, "T_Breakage")
@@ -110,174 +110,189 @@ shinyServer(
     
     
     
-    ############################################################################
-
+    ## ________________production________________ ##
+    
+    ## ________________query for production________________ ##
+    query_production = reactive({
+      q = paste0("SELECT *FROM TS_Production WHERE Date BETWEEN #",
+                        format(input$dates[1], "%m/%d/%Y"), "# AND #",
+                        format(input$dates[2], "%m/%d/%Y"), "#")
+      q
+    })
+    
+    query_production_ly = reactive({
+      q = paste0("SELECT *FROM TS_Production WHERE Date BETWEEN #",
+                 start_date_ly(), "# AND #", end_date_ly(), "#")
+      q
+    })
+    
+    ## ________________get production data________________ ##
+    t_production = reactive({
+      t = sqlQuery(odbc_connection, query=query_production())
+      t
+    })
+    
+    t_production_ly = reactive({
+      t = sqlQuery(odbc_connection, query=query_production_ly())
+      t
+    })
+    
+    ## ________________get summary of production________________ ##
+    
+    cs_ship = reactive({
+      x = t_production()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(sum(x$STLCASESTOTAL, na.rm=TRUE)),
+                   round(sum(x$KCCASESTOTAL, na.rm=TRUE)))
+      val
+    })
+    
+    cs_ship_ly = reactive({
+      x = t_production_ly()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(sum(x$STLCASESTOTAL, na.rm=TRUE)),
+                   round(sum(x$KCCASESTOTAL, na.rm=TRUE)))
+      val
+    })
     
     output$cases_delivered = renderValueBox({
       valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((stl_production_summary[1, 2])), 
-               scales::comma((kc_production_summary[1, 2]))), 
-        'Cases Shipped', icon=icon('truck')
+        scales::comma((cs_ship())), 'Cases Shipped', icon=icon('truck')
       )
     })
     
     output$cases_delivered_ly = renderValueBox({
       valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((stl_production_summary[1, 3])), 
-               scales::comma((kc_production_summary[1, 3]))), 
-        'Cases Shipped LY', icon=icon('truck')
+        scales::comma((cs_ship_ly())), 'Cases Shipped LY', icon=icon('truck')
       )
     })
-    
+
     output$cases_delivered_delta = renderValueBox({
+      x = round((cs_ship() - cs_ship_ly()) / cs_ship_ly(), 4)
+      x = scales::percent((x))
       valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::percent((round(stl_production_summary[1, 4], 4))), 
-               scales::percent((round(kc_production_summary[1, 4], 4)))), 
-        'Year-Over-Year Change', icon=icon('truck')
+        x, 'Year-Over-Year Change', icon=icon('truck')
       )
+    })
+
+    
+    
+    ## ________________cpmh________________ ##
+    cpmh = reactive({
+      x = t_production()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(mean(x$STLCPMHOTADJUSTED, na.rm=TRUE), 2),
+                   round(mean(x$KCCPMHOTADJUSTED, na.rm=TRUE), 2))
+      val
+    })
+    
+    cpmh_ly = reactive({
+      x = t_production_ly()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(mean(x$STLCPMHOTADJUSTED, na.rm=TRUE), 2),
+                   round(mean(x$KCCPMHOTADJUSTED, na.rm=TRUE), 2))
+      val
     })
     
     output$cpmh = renderValueBox({
       valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((round(stl_production_summary[5, 2], 2))), 
-               scales::comma((round(kc_production_summary[5, 2], 2)))), 
-        'Cases / Man Hour', icon=icon('gears')
+        scales::comma((cpmh())), 'CPMH OT Adjusted', icon=icon('gears')
       )
     })
-    
+
     output$cpmh_ly = renderValueBox({
       valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((round(stl_production_summary[5, 3], 2))), 
-               scales::comma((round(kc_production_summary[5, 3], 2)))), 
-        'Cases / Man Hour LY', icon=icon('gears')
+        scales::comma((cpmh_ly())), 'CPMH OT Adjusted LY', icon=icon('gears')
       )
     })
-    
+
     output$cpmh_delta = renderValueBox({
+      x = round((cpmh() - cpmh_ly()) / cpmh_ly(), 4)
+      x = scales::percent((x))
       valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::percent((round(stl_production_summary[5, 4], 4))), 
-               scales::percent((round(kc_production_summary[5, 4], 4)))), 
-        'Year-Over-Year Change', icon=icon('gears')
+        x, 'Year-Over-Year Change', icon=icon('gears')
       )
+    })
+
+    
+    
+    
+    ## ________________man hours________________ ##
+    man_hours = reactive({
+      x = t_production()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(sum(x$STLTOTALHOURS, na.rm=TRUE)),
+                   round(sum(x$KCHOURSTOTAL, na.rm=TRUE)))
+      val
     })
     
-    output$errors = renderValueBox({
-      valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((stl_production_summary[9, 2])), 
-               scales::comma((round(kc_production_summary[9, 2], 2)))), 
-        'Errors', icon=icon('frown-o')
-      )
+    man_hours_ly = reactive({
+      x = t_production_ly()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(sum(x$STLTOTALHOURS, na.rm=TRUE)),
+                   round(sum(x$KCHOURSTOTAL, na.rm=TRUE)))
+      val
     })
     
-    output$errors_ly = renderValueBox({
-      valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((stl_production_summary[9, 3])), 
-               scales::comma((round(kc_production_summary[9, 3], 2)))), 
-        'Errors LY', icon=icon('frown-o')
-      )
-    })
-    
-    output$errors_delta = renderValueBox({
-      valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::percent((round(stl_production_summary[9, 4], 4))), 
-               scales::percent((round(kc_production_summary[9, 4], 4)))), 
-        'Year-Over-Year Change', icon=icon('frown-o')
-      )
-    })
     
     output$man_hours = renderValueBox({
       valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((round(stl_production_summary[7, 2]))), 
-               scales::comma((round(kc_production_summary[7, 2])))), 
-        'Man Hours', icon=icon('users')
+        scales::comma((man_hours())), 'Man Hours', icon=icon('user')
       )
     })
     
     output$man_hours_ly = renderValueBox({
       valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((round(stl_production_summary[7, 3]))), 
-               scales::comma((round(kc_production_summary[7, 3])))), 
-        'Man Hours LY', icon=icon('users')
+        scales::comma((man_hours_ly())), 'Man Hours LY', icon=icon('user')
       )
     })
     
     output$man_hours_delta = renderValueBox({
+      x = round((man_hours() - man_hours_ly()) / man_hours_ly(), 4)
+      x = scales::percent((x))
       valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::percent((round(stl_production_summary[7, 4], 4))), 
-               scales::percent((round(kc_production_summary[7, 4], 4)))), 
-        'Year-Over-Year Change', icon=icon('users')
+        x, 'Year-Over-Year Change', icon=icon('user')
       )
+    })
+    
+    
+    
+    ## ________________avg employees on hand________________ ##
+    avg_emps = reactive({
+      x = t_production()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(mean(x$STLTOTALEMPSTEMPS, na.rm=TRUE), 1),
+                   round(mean(x$KCEMPSTEMPSONHAND, na.rm=TRUE), 1))
+      val
+    })
+    
+    avg_emps_ly = reactive({
+      x = t_production_ly()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(mean(x$STLTOTALEMPSTEMPS, na.rm=TRUE), 1),
+                   round(mean(x$KCEMPSTEMPSONHAND, na.rm=TRUE), 1))
+      val
     })
     
     output$employees_on_hand = renderValueBox({
       valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((round(stl_production_summary[8, 2]))), 
-               scales::comma((round(kc_production_summary[8, 2])))), 
-        'Avg Employees On Hand', icon=icon('user')
+        scales::comma((avg_emps())), 'Avg Employees On Hand', icon=icon('users')
       )
     })
     
     output$employees_on_hand_ly = renderValueBox({
       valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((round(stl_production_summary[8, 3]))), 
-               scales::comma((round(kc_production_summary[8, 3])))), 
-        'Avg Employees On Hand LY', icon=icon('user')
+        scales::comma((avg_emps_ly())), 'Avg Employees On Hand LY', icon=icon('users')
       )
     })
     
     output$employees_on_hand_delta = renderValueBox({
+      x = round((avg_emps() - avg_emps_ly()) / avg_emps_ly(), 4)
+      x = scales::percent((x))
       valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::percent((round(stl_production_summary[8, 4], 4))), 
-               scales::percent((round(kc_production_summary[8, 4], 4)))), 
-        'Year-Over-Year Change', icon=icon('user')
+        x, 'Year-Over-Year Change', icon=icon('users')
       )
     })
-    
-    output$oddball_cases = renderValueBox({
-      valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((round(stl_production_summary[13, 2]))), 
-               scales::comma((round(kc_production_summary[13, 2])))), 
-        'Oddball Cases', icon=icon('random')
-      )
-    })
-    
-    output$oddball_cases_ly = renderValueBox({
-      valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((round(stl_production_summary[13, 3]))), 
-               scales::comma((round(kc_production_summary[13, 3])))), 
-        'Oddball Cases LY', icon=icon('random')
-      )
-    })
-    
-    output$oddball_cases_delta = renderValueBox({
-      valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::percent((round(stl_production_summary[13, 4], 4))), 
-               scales::percent((round(kc_production_summary[13, 4], 4)))), 
-        'Year-Over-Year Change', icon=icon('random')
-      )
-    })
-    
-    
-    
-    ######## TESTING DB BELOW
     
    
     ## ________________get breakage queries for both years________________ ##
@@ -654,7 +669,7 @@ shinyServer(
       )
     })
     
-    ########
+    
     ## ________________top unsaleables by supplier product director________________ ##
     output$top_10_plot = renderPlot({
      
@@ -726,6 +741,7 @@ shinyServer(
     })
     
     
+    ## ________________summary of unsaleables________________ ##
     output$unsaleable_summary_data = renderDataTable({
       z = t_unsaleables() # add (type, director, class) (month, year, date)
       
@@ -910,6 +926,172 @@ shinyServer(
     #   print(p)
     # })
     # 
+    
+    
+    ############################################################################
+    
+    
+    # output$cases_delivered = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::comma((stl_production_summary[1, 2])), 
+    #            scales::comma((kc_production_summary[1, 2]))), 
+    #     'Cases Shipped', icon=icon('truck')
+    #   )
+    # })
+    # 
+    # output$cases_delivered_ly = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::comma((stl_production_summary[1, 3])), 
+    #            scales::comma((kc_production_summary[1, 3]))), 
+    #     'Cases Shipped LY', icon=icon('truck')
+    #   )
+    # })
+    # 
+    # output$cases_delivered_delta = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::percent((round(stl_production_summary[1, 4], 4))), 
+    #            scales::percent((round(kc_production_summary[1, 4], 4)))), 
+    #     'Year-Over-Year Change', icon=icon('truck')
+    #   )
+    # })
+    # 
+    # output$cpmh = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::comma((round(stl_production_summary[5, 2], 2))), 
+    #            scales::comma((round(kc_production_summary[5, 2], 2)))), 
+    #     'Cases / Man Hour', icon=icon('gears')
+    #   )
+    # })
+    # 
+    # output$cpmh_ly = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::comma((round(stl_production_summary[5, 3], 2))), 
+    #            scales::comma((round(kc_production_summary[5, 3], 2)))), 
+    #     'Cases / Man Hour LY', icon=icon('gears')
+    #   )
+    # })
+    # 
+    # output$cpmh_delta = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::percent((round(stl_production_summary[5, 4], 4))), 
+    #            scales::percent((round(kc_production_summary[5, 4], 4)))), 
+    #     'Year-Over-Year Change', icon=icon('gears')
+    #   )
+    # })
+    
+    output$errors = renderValueBox({
+      valueBox(
+        ifelse(input$house=='Saint Louis', 
+               scales::comma((stl_production_summary[9, 2])), 
+               scales::comma((round(kc_production_summary[9, 2], 2)))), 
+        'Errors', icon=icon('frown-o')
+      )
+    })
+    
+    output$errors_ly = renderValueBox({
+      valueBox(
+        ifelse(input$house=='Saint Louis', 
+               scales::comma((stl_production_summary[9, 3])), 
+               scales::comma((round(kc_production_summary[9, 3], 2)))), 
+        'Errors LY', icon=icon('frown-o')
+      )
+    })
+    
+    output$errors_delta = renderValueBox({
+      valueBox(
+        ifelse(input$house=='Saint Louis', 
+               scales::percent((round(stl_production_summary[9, 4], 4))), 
+               scales::percent((round(kc_production_summary[9, 4], 4)))), 
+        'Year-Over-Year Change', icon=icon('frown-o')
+      )
+    })
+    
+    # output$man_hours = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::comma((round(stl_production_summary[7, 2]))), 
+    #            scales::comma((round(kc_production_summary[7, 2])))), 
+    #     'Man Hours', icon=icon('users')
+    #   )
+    # })
+    # 
+    # output$man_hours_ly = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::comma((round(stl_production_summary[7, 3]))), 
+    #            scales::comma((round(kc_production_summary[7, 3])))), 
+    #     'Man Hours LY', icon=icon('users')
+    #   )
+    # })
+    # 
+    # output$man_hours_delta = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::percent((round(stl_production_summary[7, 4], 4))), 
+    #            scales::percent((round(kc_production_summary[7, 4], 4)))), 
+    #     'Year-Over-Year Change', icon=icon('users')
+    #   )
+    # })
+    # 
+    # output$employees_on_hand = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::comma((round(stl_production_summary[8, 2]))), 
+    #            scales::comma((round(kc_production_summary[8, 2])))), 
+    #     'Avg Employees On Hand', icon=icon('user')
+    #   )
+    # })
+    # 
+    # output$employees_on_hand_ly = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::comma((round(stl_production_summary[8, 3]))), 
+    #            scales::comma((round(kc_production_summary[8, 3])))), 
+    #     'Avg Employees On Hand LY', icon=icon('user')
+    #   )
+    # })
+    # 
+    # output$employees_on_hand_delta = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::percent((round(stl_production_summary[8, 4], 4))), 
+    #            scales::percent((round(kc_production_summary[8, 4], 4)))), 
+    #     'Year-Over-Year Change', icon=icon('user')
+    #   )
+    # })
+    # 
+    output$oddball_cases = renderValueBox({
+      valueBox(
+        ifelse(input$house=='Saint Louis', 
+               scales::comma((round(stl_production_summary[13, 2]))), 
+               scales::comma((round(kc_production_summary[13, 2])))), 
+        'Oddball Cases', icon=icon('random')
+      )
+    })
+    
+    output$oddball_cases_ly = renderValueBox({
+      valueBox(
+        ifelse(input$house=='Saint Louis', 
+               scales::comma((round(stl_production_summary[13, 3]))), 
+               scales::comma((round(kc_production_summary[13, 3])))), 
+        'Oddball Cases LY', icon=icon('random')
+      )
+    })
+    
+    output$oddball_cases_delta = renderValueBox({
+      valueBox(
+        ifelse(input$house=='Saint Louis', 
+               scales::percent((round(stl_production_summary[13, 4], 4))), 
+               scales::percent((round(kc_production_summary[13, 4], 4)))), 
+        'Year-Over-Year Change', icon=icon('random')
+      )
+    })
     
     
     
