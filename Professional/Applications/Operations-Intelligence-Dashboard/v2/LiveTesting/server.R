@@ -1,8 +1,9 @@
+
+# runApp('N:/Operations Intelligence/Monthly Reports/Applications/Code/OpsDashboard')
+
 # server.R
 
-print('THIS IS THE TESTING VERSION')
-
-# runApp('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Testing')
+print('THIS IS THE GO LIVE TESTING VERSION')
 
 library(shiny)
 library(shinydashboard)
@@ -16,6 +17,7 @@ library(dplyr)
 library(RODBC)
 library(DT)
 library(lubridate)
+
 
 substrRight = function(x, n){
   substr(x, nchar(x)-n+1, nchar(x))
@@ -115,8 +117,8 @@ shinyServer(
     ## ________________query for production________________ ##
     query_production = reactive({
       q = paste0("SELECT *FROM TS_Production WHERE Date BETWEEN #",
-                        format(input$dates[1], "%m/%d/%Y"), "# AND #",
-                        format(input$dates[2], "%m/%d/%Y"), "#")
+                 format(input$dates[1], "%m/%d/%Y"), "# AND #",
+                 format(input$dates[2], "%m/%d/%Y"), "#")
       q
     })
     
@@ -166,7 +168,7 @@ shinyServer(
         scales::comma((cs_ship_ly())), 'Cases Shipped LY', icon=icon('truck')
       )
     })
-
+    
     output$cases_delivered_delta = renderValueBox({
       x = round((cs_ship() - cs_ship_ly()) / cs_ship_ly(), 4)
       x = scales::percent((x))
@@ -174,7 +176,7 @@ shinyServer(
         x, 'Year-Over-Year Change', icon=icon('truck')
       )
     })
-
+    
     
     
     ## ________________cpmh________________ ##
@@ -199,13 +201,13 @@ shinyServer(
         scales::comma((cpmh())), 'CPMH OT Adjusted', icon=icon('gears')
       )
     })
-
+    
     output$cpmh_ly = renderValueBox({
       valueBox(
         scales::comma((cpmh_ly())), 'CPMH OT Adjusted LY', icon=icon('gears')
       )
     })
-
+    
     output$cpmh_delta = renderValueBox({
       x = round((cpmh() - cpmh_ly()) / cpmh_ly(), 4)
       x = scales::percent((x))
@@ -213,7 +215,7 @@ shinyServer(
         x, 'Year-Over-Year Change', icon=icon('gears')
       )
     })
-
+    
     
     
     
@@ -294,7 +296,73 @@ shinyServer(
       )
     })
     
-   
+    
+    ## ________________raw errors________________ ##
+    tot_err = reactive({
+      x = t_production()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(sum(x$STLRAWCASEERRORS, na.rm=TRUE) + sum(x$STLRAWBOTTLEERRORS, na.rm=TRUE), 1),
+                   round(sum(x$KCTOTALRAWCASEERRORS, na.rm=TRUE) + sum(x$KCTOTALRAWBOTTLEERRORS, na.rm=TRUE), 1))
+      val
+    })
+    
+    tot_err_ly = reactive({
+      x = t_production_ly()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(sum(x$STLRAWCASEERRORS, na.rm=TRUE) + sum(x$STLRAWBOTTLEERRORS, na.rm=TRUE), 1),
+                   round(sum(x$KCTOTALRAWCASEERRORS, na.rm=TRUE) + sum(x$KCTOTALRAWBOTTLEERRORS, na.rm=TRUE), 1))
+      val
+    })
+    output$errors = renderValueBox({
+      valueBox(
+        scales::comma((tot_err())),'Raw Errors', icon=icon('frown-o')
+      )
+    })
+    
+    output$errors_ly = renderValueBox({
+      valueBox(
+        scales::comma((tot_err_ly())),'Raw Errors LY', icon=icon('frown-o')
+      )
+    })
+    
+    output$errors_delta = renderValueBox({
+      x = round((tot_err() - tot_err_ly()) / tot_err_ly(), 4)
+      x = scales::percent((x))
+      valueBox(
+        x, 'Year-Over-Year Change', icon=icon('frown-o')
+      )
+    })
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    #### END PRODUCTION
+    
     ## ________________get breakage queries for both years________________ ##
     query_brk = reactive({
       q = ifelse(input$house == 'Saint Louis', 
@@ -406,7 +474,7 @@ shinyServer(
     output$atomic_breakage_ly = renderDataTable({
       t_breakage_ly()
     })
-
+    
     ## ________________calculate yoy change breakage________________ ##
     output$total_breakage_delta = renderValueBox({
       y = t_breakage_ly()
@@ -464,7 +532,7 @@ shinyServer(
       brk_prod()
     })
     
-
+    
     ## ________________breakage plots________________ ##
     output$plot_breakage_summary = renderPlot({
       x = brk_for_graphs()
@@ -512,9 +580,9 @@ shinyServer(
       
       g = ggplot(y, aes(x=Product, y=Instances))
       i = g + geom_bar(stat='identity', 
-                        size=0.5, 
-                        alpha=0.7,
-                        fill='red') +
+                       size=0.5, 
+                       alpha=0.7,
+                       fill='red') +
         theme(legend.position='none', 
               axis.text.x=element_text(angle=90, hjust=1)) + 
         labs(title='Top Breakage Items by Instances',
@@ -528,9 +596,9 @@ shinyServer(
       
       ge = ggplot(z, aes(x=Product, y=Cases))
       c = ge + geom_bar(stat='identity', 
-                       size=0.5, 
-                       alpha=0.7,
-                       fill='blue') +
+                        size=0.5, 
+                        alpha=0.7,
+                        fill='blue') +
         theme(legend.position='none', 
               axis.text.x=element_text(angle=90, hjust=1)) + 
         labs(title='Top Breakage Items by Cases',
@@ -561,7 +629,7 @@ shinyServer(
       all_ly = merge(one_ly, two_ly, by='Type', all_ly=TRUE)
       all_ly = arrange(all_ly, desc(Cost))
       names(all_ly) = c('Type', 'LY.Cost', 'LY.Cases')
-
+      
       all = merge(all, all_ly, by='Type', all=TRUE)
       all$YOY.Change.Cost = scales::percent((round((all$TY.Cost - all$LY.Cost) / all$LY.Cost, 4)))
       all$YOY.Change.Cases = scales::percent((round((all$TY.Cases - all$LY.Cases) / all$LY.Cases, 4)))
@@ -569,7 +637,7 @@ shinyServer(
       all$LY.Cost = scales::dollar((all$LY.Cost))
       all = all[, c('Type', 'TY.Cost', 'LY.Cost', 'YOY.Change.Cost', 'TY.Cases', 'LY.Cases', 'YOY.Change.Cases')]
       all = all %>% arrange(desc(YOY.Change.Cost))
-
+      
       all
     })
     
@@ -579,7 +647,7 @@ shinyServer(
     
     
     
-
+    
     
     #### below has not past testing
     
@@ -604,7 +672,7 @@ shinyServer(
                         format(input$dates[2], "%m/%d/%Y"), "#"))
       q
     })
-
+    
     query_unsale_ly = reactive({
       q = ifelse(input$house == 'Saint Louis',
                  paste0("SELECT *
@@ -621,20 +689,20 @@ shinyServer(
                         end_date_ly(), "#"))
       q
     })
-
-
-
+    
+    
+    
     ## ________________get unsaleables data________________ ##
     t_unsaleables = reactive({
       t = sqlQuery(odbc_connection, query=query_unsale())
       t
     })
-
+    
     t_unsaleables_ly = reactive({
       t = sqlQuery(odbc_connection, query=query_unsale_ly())
       t
     })
-
+    
     ## ________________get summary of unsaleables________________ ##
     output$total_unsaleables = renderValueBox({
       valueBox(
@@ -642,23 +710,23 @@ shinyServer(
         'Unsaleables', icon=icon('trash-o')
       )
     })
-
+    
     output$total_unsaleables_ly = renderValueBox({
       valueBox(
         scales::dollar((round(sum(t_unsaleables_ly()[, 'Cost'], na.rm=TRUE)))),
         'Unsaleables LY', icon=icon('trash-o')
       )
     })
-
+    
     ## ________________render atomic level data to output________________ ##
     output$atomic_unsaleables = renderDataTable({
       t_unsaleables()
     })
-
+    
     output$atomic_unsaleables_ly = renderDataTable({
       t_unsaleables_ly()
     })
-
+    
     ## ________________calculate yoy change________________ ##
     output$total_unsaleables_delta = renderValueBox({
       x = round(sum(t_unsaleables()[, 'Cost']))
@@ -672,7 +740,7 @@ shinyServer(
     
     ## ________________top unsaleables by supplier product director________________ ##
     output$top_10_plot = renderPlot({
-     
+      
       u = t_unsaleables()
       u = u[, c('Supplier', 'Cases', 'Cost')]
       u = melt(u, id='Supplier')
@@ -684,7 +752,7 @@ shinyServer(
       u = head(u, 10)
       u$Supplier = factor(u$Supplier, levels=u$Supplier)
       
- 
+      
       g = ggplot(data=u, aes(x=factor(Supplier), y=Cost))
       one = g + geom_bar(stat='identity', fill='blue') + 
         theme(legend.position='none', 
@@ -702,9 +770,9 @@ shinyServer(
         labs(title='Top 10 Unsaleables by Supplier (Cases)',
              x = 'Supplier') + 
         coord_flip()
-
-
-
+      
+      
+      
       z = t_unsaleables()
       z = z[, c('Product', 'Cases', 'Cost')]
       z = melt(z, id='Product')#, measzre.var=c('Cases', 'Cost'))
@@ -765,10 +833,10 @@ shinyServer(
       data$Cost = scales::dollar((data$Cost))
       data
     })
-
-
-
-
+    
+    
+    
+    
     
     
     
@@ -985,32 +1053,32 @@ shinyServer(
     #   )
     # })
     
-    output$errors = renderValueBox({
-      valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((stl_production_summary[9, 2])), 
-               scales::comma((round(kc_production_summary[9, 2], 2)))), 
-        'Errors', icon=icon('frown-o')
-      )
-    })
-    
-    output$errors_ly = renderValueBox({
-      valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((stl_production_summary[9, 3])), 
-               scales::comma((round(kc_production_summary[9, 3], 2)))), 
-        'Errors LY', icon=icon('frown-o')
-      )
-    })
-    
-    output$errors_delta = renderValueBox({
-      valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::percent((round(stl_production_summary[9, 4], 4))), 
-               scales::percent((round(kc_production_summary[9, 4], 4)))), 
-        'Year-Over-Year Change', icon=icon('frown-o')
-      )
-    })
+    # output$errors = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::comma((stl_production_summary[9, 2])), 
+    #            scales::comma((round(kc_production_summary[9, 2], 2)))), 
+    #     'Errors', icon=icon('frown-o')
+    #   )
+    # })
+    # 
+    # output$errors_ly = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::comma((stl_production_summary[9, 3])), 
+    #            scales::comma((round(kc_production_summary[9, 3], 2)))), 
+    #     'Errors LY', icon=icon('frown-o')
+    #   )
+    # })
+    # 
+    # output$errors_delta = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::percent((round(stl_production_summary[9, 4], 4))), 
+    #            scales::percent((round(kc_production_summary[9, 4], 4)))), 
+    #     'Year-Over-Year Change', icon=icon('frown-o')
+    #   )
+    # })
     
     # output$man_hours = renderValueBox({
     #   valueBox(
@@ -1104,7 +1172,7 @@ shinyServer(
       }
       production
     })
- 
+    
     
     output$cum_ot_hours = renderPlot({
       p = ggplot(production(), aes(factor(YEAR.MONTH)))
@@ -1118,7 +1186,7 @@ shinyServer(
     
     
     # for breakage report tab
-   
+    
     # output$breakage_data = renderDataTable({
     #   if(input$house=='Saint Louis' & input$driver_warehouse=='Warehouse') {
     #     data = stl_breakage_warehouse
@@ -1134,8 +1202,8 @@ shinyServer(
     #   }
     #   data
     # })
-
-
+    
+    
     
     
     # for unsaleables tab
@@ -1156,8 +1224,8 @@ shinyServer(
     
     
     
-  
-      
+    
+    
     # output$unsaleable_plot = renderPlot({
     #   y_axis2 = reactive({
     #     if(input$unsaleables_variable=='Dumps by Case') {
@@ -1532,5 +1600,4 @@ shinyServer(
     
     
     
-})
-
+  })
