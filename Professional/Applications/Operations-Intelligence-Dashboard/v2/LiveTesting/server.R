@@ -131,11 +131,13 @@ shinyServer(
     ## ________________get production data________________ ##
     t_production = reactive({
       t = sqlQuery(odbc_connection, query=query_production())
+      
       t
     })
     
     t_production_ly = reactive({
       t = sqlQuery(odbc_connection, query=query_production_ly())
+     
       t
     })
     
@@ -313,6 +315,7 @@ shinyServer(
                    round(sum(x$KCTOTALRAWCASEERRORS, na.rm=TRUE) + sum(x$KCTOTALRAWBOTTLEERRORS, na.rm=TRUE), 1))
       val
     })
+    
     output$errors = renderValueBox({
       valueBox(
         scales::comma((tot_err())),'Raw Errors', icon=icon('frown-o')
@@ -337,6 +340,120 @@ shinyServer(
     
     
     
+    ## ________________oddballs________________ ##
+    tot_odd = reactive({
+      x = t_production()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(sum(x$STLTOTALODDBALL, na.rm=TRUE), 1),
+                   round(sum(x$KCRODDBALL, na.rm=TRUE), 1))
+      val
+    })
+    
+    tot_odd_ly = reactive({
+      x = t_production_ly()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(sum(x$STLTOTALODDBALL, na.rm=TRUE), 1),
+                   round(sum(x$KCODDBALLBOTTLES, na.rm=TRUE), 1))
+      val
+    })
+    output$oddball_cases = renderValueBox({
+      valueBox(
+        scales::comma((tot_odd())), 'Oddball Cases', icon=icon('random')
+      )
+    })
+    
+    output$oddball_cases_ly = renderValueBox({
+      valueBox(
+        scales::comma((tot_odd_ly())), 'Oddball Cases', icon=icon('random')
+      )
+    })
+    
+    output$oddball_cases_delta = renderValueBox({
+      x = round((tot_odd() - tot_odd_ly()) / tot_odd_ly(), 4)
+      x = scales::percent((x))
+      valueBox(
+        x, 'Year-Over-Year Change', icon=icon('random')
+      )
+    })
+    
+    
+    
+    
+    
+    
+    
+    ## ________________ case line plot ________________ ##
+    output$case_line_plot = renderPlot({
+      
+      x = t_production()
+      x$YEARMONTH = paste0(x$YEAR, '-', x$MONTH)
+      #x$YEARMONTH = factor(x$YEARMONTH, levels=unique(x$YEARMONTH))
+      
+      
+      if(input$house == 'Saint Louis') {
+        x = x[, c('DATE', 'YEARMONTH', 'STLCCASES', 'STLDCASES', 'STLECASES', 
+                  'STLFCASES', 'STLGCASES', 'STLWCASES', 'STLTOTALODDBALL')]
+        melted = melt(x, c('DATE', 'YEARMONTH'))
+        
+        l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+        a = l + geom_point(aes(group=YEARMONTH), size=0.1, alpha=0.2) +
+          geom_boxplot(aes(group=YEARMONTH), alpha=0.5) +
+          facet_wrap(~variable, ncol=1, scales='free_y') +
+          geom_smooth(aes(group=variable, colour=variable), se=FALSE, size=1.25, alpha=0.5, span=0.2) +
+          theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+          scale_y_continuous(labels=comma) +
+          labs(title='Daily Case Production by Case Line', 
+               x='Date', y='Cases Produced by Line')
+        
+        x = x[, c('DATE', 'YEARMONTH', 'STLCHOURS', 'STLDHOURS', 'STLEHOURS', 
+                  'STLFHOURS', 'STLGHOURS', 'STLWHOURS', 'STLTOTALODDBALLHOURS')]
+        melted = melt(x, c('DATE', 'YEARMONTH'))
+        l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+        b = l + geom_point(aes(group=YEARMONTH), size=0.1, alpha=0.2) +
+          geom_boxplot(aes(group=YEARMONTH), alpha=0.5) +
+          facet_wrap(~variable, ncol=1, scales='free_y') +
+          geom_smooth(aes(group=variable, colour=variable), se=FALSE, size=1.25, alpha=0.5, span=0.2) +
+          theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+          scale_y_continuous(labels=comma) +
+          labs(title='Daily Production Hours by Case Line', 
+               x='Date', y='Production Hours')
+        
+        print(suppressWarnings(grid.arrange(a, b, ncol=2)))
+        
+      } else {
+        x = x[, c('DATE', 'YEARMONTH', 'KCC100CASES', 'KCC200CASES', 'KCC300400CASES', 
+                  'KCWCASES', 'KCRODDBALL', 'KCODDBALLBOTTLES')]
+        melted = melt(x, c('DATE', 'YEARMONTH'))
+        
+        l = ggplot(data=melted, aes(x=YEARMONTH, y=value, group=variable))
+        one = l + geom_point(aes(group=YEARMONTH), size=0.1, alpha=0.2) +
+          geom_boxplot(aes(group=YEARMONTH), alpha=0.5) +
+          facet_wrap(~variable, ncol=1, scales='free_y') +
+          geom_smooth(aes(group=variable, colour=variable), se=FALSE, size=1.25, alpha=0.5, span=0.2) +
+          theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+          scale_y_continuous(labels=comma) +
+          labs(title='Daily Case Production by Case Line', 
+               x='Date', y='Cases Produced by Line')
+        
+        x = x[, c('DATE', 'YEARMONTH', 'KCC100HOURS', 'KCC200HOURS', 'KCC300400HOURS', 
+                  'KCWHOURS', 'KCRODDBALLHOURS', 'KCODDBALLBOTTLEHOURS')]
+        melted = melt(x, c('DATE', 'YEARMONTH'))
+        l = ggplot(data=melted, aes(x=YEARMONTH, y=value, group=variable))
+        two = l + geom_point(aes(group=YEARMONTH), size=0.1, alpha=0.2) +
+          geom_boxplot(aes(group=YEARMONTH), alpha=0.5) +
+          facet_wrap(~variable, ncol=1, scales='free_y') +
+          geom_smooth(aes(group=variable, colour=variable), se=FALSE, size=1.25, alpha=0.5, span=0.2) +
+          theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+          scale_y_continuous(labels=comma) +
+          labs(title='Daily Production Hours by Case Line', 
+               x='Date', y='Production Hours') 
+        
+        #grid.arrange(one, two, ncol=2)
+        
+        print(suppressWarnings(grid.arrange(one, two, ncol=2)))
+      }
+        
+    })
     
     
     
@@ -353,10 +470,7 @@ shinyServer(
     
     
     
-    
-    
-    
-    
+    # TRUCKS OTHOURS MILES 
     
     
     
@@ -1134,33 +1248,33 @@ shinyServer(
     #   )
     # })
     # 
-    output$oddball_cases = renderValueBox({
-      valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((round(stl_production_summary[13, 2]))), 
-               scales::comma((round(kc_production_summary[13, 2])))), 
-        'Oddball Cases', icon=icon('random')
-      )
-    })
-    
-    output$oddball_cases_ly = renderValueBox({
-      valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::comma((round(stl_production_summary[13, 3]))), 
-               scales::comma((round(kc_production_summary[13, 3])))), 
-        'Oddball Cases LY', icon=icon('random')
-      )
-    })
-    
-    output$oddball_cases_delta = renderValueBox({
-      valueBox(
-        ifelse(input$house=='Saint Louis', 
-               scales::percent((round(stl_production_summary[13, 4], 4))), 
-               scales::percent((round(kc_production_summary[13, 4], 4)))), 
-        'Year-Over-Year Change', icon=icon('random')
-      )
-    })
-    
+    # output$oddball_cases = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::comma((round(stl_production_summary[13, 2]))), 
+    #            scales::comma((round(kc_production_summary[13, 2])))), 
+    #     'Oddball Cases', icon=icon('random')
+    #   )
+    # })
+    # 
+    # output$oddball_cases_ly = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::comma((round(stl_production_summary[13, 3]))), 
+    #            scales::comma((round(kc_production_summary[13, 3])))), 
+    #     'Oddball Cases LY', icon=icon('random')
+    #   )
+    # })
+    # 
+    # output$oddball_cases_delta = renderValueBox({
+    #   valueBox(
+    #     ifelse(input$house=='Saint Louis', 
+    #            scales::percent((round(stl_production_summary[13, 4], 4))), 
+    #            scales::percent((round(kc_production_summary[13, 4], 4)))), 
+    #     'Year-Over-Year Change', icon=icon('random')
+    #   )
+    # })
+    # 
     
     
     production = reactive({
