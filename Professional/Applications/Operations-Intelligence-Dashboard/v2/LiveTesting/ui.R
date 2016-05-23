@@ -1,5 +1,11 @@
 library(shiny)
 library(shinydashboard)
+library(stringr)
+
+yr = year(Sys.Date())
+dat = paste0(as.character(str_pad(side='left', month(Sys.Date()), 2, '0')), '-01-', yr)
+end_last_month = as.Date(dat, '%m-%d-%Y') - 1 
+
 
 
 dashboardPage(skin='red',
@@ -14,21 +20,22 @@ dashboardPage(skin='red',
       dateRangeInput('dates', 
                      label = 'Date Range', 
                      start='2016-01-01', 
-                     end=Sys.Date(), 
+                     end=end_last_month, 
                      min='2015-01-01', 
-                     max=as.character(strptime(Sys.Date(), format='%Y-%m-%d')),
+                     max= '2016-04-30', #as.character(strptime(Sys.Date(), format='%Y-%m-%d')),
                      format='mm/dd/yyyy'),
       
-      menuItem('Dashboard', tabName='dashboard', icon=icon('dashboard')),
+      menuItem('Dashboard Homepage', tabName='dashboard', icon=icon('dashboard')),
       
       menuItem('Production', tabName='production', icon=icon('truck'),
-               menuSubItem('Breakage Summary', tabName='production_summary'),
-               # menuSubItem('Breakage by Product', tabName='breakage_by_product'),
+               menuSubItem('Production Summary', tabName='production_summary'),
+               menuSubItem('Time Series', tabName='production_timeseries'),
                menuSubItem('Atomic Level, This Year', tabName='atomic_production'),
                menuSubItem('Atomic Level, Last Year', tabName='atomic_production_ly')),
       
       menuItem('Breakage', tabName='breakage', icon=icon('trash'),
                menuSubItem('Breakage Summary', tabName='breakage_summary'),
+               menuSubItem('Time Series', tabName='breakage_timeseries'),
                menuSubItem('Breakage by Product', tabName='breakage_by_product'),
                menuSubItem('Atomic Level, This Year', tabName='atomic_breakage'),
                menuSubItem('Atomic Level, Last Year', tabName='atomic_breakage_ly')),
@@ -86,6 +93,10 @@ dashboardPage(skin='red',
                 valueBoxOutput('total_breakage_ly'),
                 valueBoxOutput('total_breakage_delta'),
                 
+                valueBoxOutput('driver_breakage'),
+                valueBoxOutput('driver_breakage_ly'),
+                valueBoxOutput('driver_breakage_delta'),
+                
                 valueBoxOutput('oddball_cases'),
                 valueBoxOutput('oddball_cases_ly'),
                 valueBoxOutput('oddball_cases_delta'),
@@ -94,10 +105,6 @@ dashboardPage(skin='red',
                 valueBoxOutput('errors_ly'),
                 valueBoxOutput('errors_delta'),
                 
-                valueBoxOutput('driver_breakage'),
-                valueBoxOutput('driver_breakage_ly'),
-                valueBoxOutput('driver_breakage_delta'),
-                
                 valueBoxOutput('total_unsaleables'),
                 valueBoxOutput('total_unsaleables_ly'),
                 valueBoxOutput('total_unsaleables_delta')
@@ -105,12 +112,28 @@ dashboardPage(skin='red',
               )
       ),
       
+      
+      
+      ## ________ production tab ________ ##
+      tabItem(tabName='production_summary', 
+              p(h1('Breakage Summary')),
+              wellPanel(
+                plotOutput('case_line_plot'))
+              ),
+      
+      
+      
+      
+      
+      ## ________ plots tab ________ ##
       tabItem(tabName='plots',
               
               fluidRow(
                 
               )),
       
+      
+      ## ________ breakage tab ________ ##
       tabItem(tabName='breakage'),
       
       tabItem(tabName='breakage_summary', 
