@@ -1,11 +1,10 @@
 
-# runApp('N:/Operations Intelligence/Monthly Reports/Applications/Code/OpsDashboard')
-
+# runApp('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Testing', launch.browser = TRUE)
+# source('N:/Operations Intelligence/Monthly Reports/Applications/Code/OpsDashboard/libs.R')
 # server.R
 
-print('THIS IS THE GO LIVE TESTING VERSION')
+print('TESTING VERSION NATIVE TO PAUL COMPUTER')
 
-library(shiny)
 library(shinydashboard)
 library(xlsx)
 library(scales)
@@ -15,8 +14,12 @@ library(gridExtra)
 library(reshape2)
 library(dplyr)
 library(RODBC)
-library(DT)
 library(lubridate)
+library(tidyr)
+library(stringr)
+library(shiny)
+#library(Rcpp)
+#library(ggvis)
 
 
 substrRight = function(x, n){
@@ -44,51 +47,6 @@ odbc_connection = odbcConnectAccess2007(reporting_db)
 
 
 #odbcCloseAll()
-
-
-######
-
-
-
-
-stl_production_summary = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/stl_production_dashboard_summary.csv', header=TRUE)
-kc_production_summary = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/kc_production_dashboard_summary.csv', header=TRUE)
-
-stl_production_data = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/stl_production_data_master.csv', header=TRUE)
-kc_production_data = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/kc_production_data_master.csv', header=TRUE)
-
-stl_breakage_summary = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/stl_breakage_dashboard_summary_feb16.csv', header=TRUE)
-kc_breakage_summary = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/kc_breakage_dashboard_summary_feb16.csv', header=TRUE)
-
-stl_breakage_driver = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/stl_breakage_driver_items_feb16.csv', header=TRUE)
-kc_breakage_driver = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/kc_breakage_driver_items_feb16.csv', header=TRUE)
-
-stl_breakage_warehouse = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/stl_breakage_warehouse_items_feb16.csv', header=TRUE)
-kc_breakage_warehouse = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/kc_breakage_warehouse_items_feb16.csv', header=TRUE)
-
-stl_breakage_master = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/stl_breakage_master_dataset_feb16.csv', header=TRUE)
-kc_breakage_master = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/kc_breakage_master_dataset_feb16.csv', header=TRUE)
-
-unsaleables_items = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/unsaleables_items.csv', header=TRUE)
-# unsaleables_items = unsaleables_items %>% arrange(-CASES.UNSALEABLE)
-
-unsaleables_suppliers = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/unsaleables_suppliers.csv', header=TRUE)
-# unsaleables_suppliers = unsaleables_suppliers %>% arrange(-CASES.UNSALEABLE)
-
-# unsaleables_customers = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/unsaleables_customers.csv', header=TRUE)
-# unsaleables_customers = unsaleables_customers %>% arrange(-CASES.RETURNED)
-
-top_15_unsaleable_supplier = head(unsaleables_suppliers, 15)
-top_15_unsaleable_supplier$SUPPLIER = factor(top_15_unsaleable_supplier$SUPPLIER, levels=top_15_unsaleable_supplier$SUPPLIER)
-
-top_15_unsaleable_items = head(unsaleables_items, 15)
-top_15_unsaleable_items$DESCRIPTION = factor(top_15_unsaleable_items$DESCRIPTION, levels=top_15_unsaleable_items$DESCRIPTION)
-
-# top_15_unsaleable_customers = head(unsaleables_customers, 15)
-# top_15_unsaleable_customers$CUSTOMER = factor(top_15_unsaleable_customers$SUPPLIER, levels=top_15_unsaleable_customers$CUSTOMER)
-
-stl_velocity_summary = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/stl_velocity_summary_feb16.csv', header=TRUE)
-kc_velocity_summary = read.csv('C:/Users/pmwash/Desktop/R_files/Applications/Operations Intelligence Dashboard/Data/kc_velocity_summary_feb16.csv', header=TRUE)
 
 
 
@@ -137,7 +95,7 @@ shinyServer(
     
     t_production_ly = reactive({
       t = sqlQuery(odbc_connection, query=query_production_ly())
-     
+      
       t
     })
     
@@ -377,82 +335,261 @@ shinyServer(
     })
     
     
+
+    ## ________________ ot hours summary ________________ ##
+    tot_ot_hours = reactive({
+      x = t_production()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(sum(x$STLOTHOURS, na.rm=TRUE), 1),
+                   round(sum(x$KCOTHOURS, na.rm=TRUE), 1))
+      val
+    })
+    
+    tot_ot_hours_ly = reactive({
+      x = t_production_ly()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(sum(x$STLOTHOURS, na.rm=TRUE), 1),
+                   round(sum(x$KCOTHOURS, na.rm=TRUE), 1))
+      val
+    })
+    output$ot_hours = renderValueBox({
+      valueBox(
+        scales::comma((tot_ot_hours())), 'OT Hours', icon=icon('flag')
+      )
+    })
+    
+    output$ot_hours_ly = renderValueBox({
+      valueBox(
+        scales::comma((tot_ot_hours_ly())), 'OT Hours LY', icon=icon('flag')
+      )
+    })
+    
+    output$ot_hours_delta = renderValueBox({
+      x = round((tot_ot_hours() - tot_ot_hours_ly()) / tot_ot_hours_ly(), 4)
+      x = scales::percent((x))
+      valueBox(
+        x, 'Year-Over-Year Change', icon=icon('flag')
+      )
+    })
+    
+    
+    
+    
+    ## ________________ trucks ________________ ##
+    avg_trucks = reactive({
+      x = t_production()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(mean(x$STLTRUCKSTOTAL, na.rm=TRUE), 1),
+                   round(mean(x$KCTRUCKSKCTOTAL, na.rm=TRUE), 1))
+      val
+    })
+    
+    avg_trucks_ly = reactive({
+      x = t_production_ly()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(mean(x$STLTRUCKSTOTAL, na.rm=TRUE), 1),
+                   round(mean(x$KCTRUCKSKCTOTAL, na.rm=TRUE), 1))
+      val
+    })
+    output$trucks = renderValueBox({
+      valueBox(
+        scales::comma((avg_trucks())), 'Avg Trucks', icon=icon('road')
+      )
+    })
+    
+    output$trucks_ly = renderValueBox({
+      valueBox(
+        scales::comma((avg_trucks_ly())), 'Avg Trucks LY', icon=icon('road')
+      )
+    })
+    
+    output$trucks_delta = renderValueBox({
+      x = round((avg_trucks() - avg_trucks_ly()) / avg_trucks_ly(), 4)
+      x = scales::percent((x))
+      valueBox(
+        x, 'Year-Over-Year Change', icon=icon('road')
+      )
+    })
+    
+    
+    
+    
+    
+    ## ________________ stops ________________ ##
+    avg_stops = reactive({
+      x = t_production()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(mean(x$STLSTOPSTOTAL, na.rm=TRUE), 1),
+                   round(mean(x$KCSTOPSKCTOTAL, na.rm=TRUE), 1))
+      val
+    })
+    
+    avg_stops_ly = reactive({
+      x = t_production_ly()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(mean(x$STLSTOPSTOTAL, na.rm=TRUE), 1),
+                   round(mean(x$KCSTOPSKCTOTAL, na.rm=TRUE), 1))
+      val
+    })
+    output$stops = renderValueBox({
+      valueBox(
+        scales::comma((avg_stops())), 'Avg Stops', icon=icon('share-alt')
+      )
+    })
+    
+    output$stops_ly = renderValueBox({
+      valueBox(
+        scales::comma((avg_stops_ly())), 'Avg Stops LY', icon=icon('share-alt')
+      )
+    })
+    
+    output$stops_delta = renderValueBox({
+      x = round((avg_stops() - avg_stops_ly()) / avg_stops_ly(), 4)
+      x = scales::percent((x))
+      valueBox(
+        x, 'Year-Over-Year Change', icon=icon('share-alt')
+      )
+    })
+    
+    
+    
+    
+    
+    
+    
+    ## ________________ loading_hours ________________ ##
+    avg_loading_hours = reactive({
+      x = t_production()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(mean(x$STLLOADINGHOURS, na.rm=TRUE), 1),
+                   round(mean(x$KCLOADINGHOURS, na.rm=TRUE), 1))
+      val
+    })
+    
+    avg_loading_hours_ly = reactive({
+      x = t_production_ly()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(mean(x$STLLOADINGHOURS, na.rm=TRUE), 1),
+                   round(mean(x$KCLOADINGHOURS, na.rm=TRUE), 1))
+      val
+    })
+    output$loading_hours = renderValueBox({
+      valueBox(
+        scales::comma((avg_loading_hours())), 'Avg Loading Hours', icon=icon('hourglass-end')
+      )
+    })
+    
+    output$loading_hours_ly = renderValueBox({
+      valueBox(
+        scales::comma((avg_loading_hours_ly())), 'Avg Loading Hours LY', icon=icon('hourglass-end')
+      )
+    })
+    
+    output$loading_hours_delta = renderValueBox({
+      x = round((avg_loading_hours() - avg_loading_hours_ly()) / avg_loading_hours_ly(), 4)
+      x = scales::percent((x))
+      valueBox(
+        x, 'Year-Over-Year Change', icon=icon('hourglass-end')
+      )
+    })
+    
+    
+    
+    #x$STLLOADINGHOURS
+    #x$STLRESTOCKHOURS
+    # TRUCKS OTHOURS MILES 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
     
     
     ## ________________ case line plot ________________ ##
-    output$case_line_plot = renderPlot({
+    output$case_line_plot = renderPlot(width = 1100, height = 800, {
+      p = t_production()
+      p$YEARMONTH = paste0(p$YEAR, '-', p$MONTH)
+      p$YEARMONTH = factor(p$YEARMONTH, levels=unique(p$YEARMONTH))
       
-      x = t_production()
-      x$YEARMONTH = paste0(x$YEAR, '-', x$MONTH)
-      #x$YEARMONTH = factor(x$YEARMONTH, levels=unique(x$YEARMONTH))
+      x = p[, c('DATE', 'YEARMONTH', 'STLCCASES', 'STLDCASES', 'STLECASES', 
+                'STLFCASES', 'STLGCASES', 'STLWCASES', 'STLTOTALODDBALL')]
+      names(x) = c('DATE', 'YEARMONTH', 'C-Cases', 'D-Cases', 'E-Cases', 
+                   'F-Cases', 'G-Cases', 'W-Cases', 'Oddball-Cases')
+      melted = melt(x, c('DATE', 'YEARMONTH'))
+      
+      l = ggplot(data=melted, aes(x=YEARMONTH, y=value, group=variable))
+      one = l + geom_jitter(aes(group=variable), size=0.1, alpha=0.2) +
+        geom_point(aes(group=variable), size=0.5, alpha=0.2) +
+        facet_wrap(~variable, ncol=1, scales='free_y') +
+        geom_smooth(aes(group=variable, colour=variable), se=TRUE, size=1.25, alpha=0.5, span=0.2) +
+        theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+        scale_y_continuous(labels=comma) +
+        labs(title='Daily Case Line Production STL', 
+             x='Date', y='Cases Produced by Line')
+      
+      x = p[, c('DATE', 'YEARMONTH', 'STLCHOURS', 'STLDHOURS', 'STLEHOURS', 
+                'STLFHOURS', 'STLGHOURS', 'STLWHOURS', 'STLTOTALODDBALLHOURS')]
+      names(x) = c('DATE', 'YEARMONTH', 'C-Hours', 'D-Hours', 'E-Hours', 
+                   'F-Hours', 'G-Hours', 'W-Hours', 'Oddball-Hours')
+      melted = melt(x, c('DATE', 'YEARMONTH'))
+      l = ggplot(data=melted, aes(x=YEARMONTH, y=value, group=variable))
+      two = l + geom_jitter(aes(group=variable), size=0.1, alpha=0.2) +
+        geom_point(aes(group=variable), size=0.5, alpha=0.2) +
+        facet_wrap(~variable, ncol=1, scales='free_y') +
+        geom_smooth(aes(group=variable, colour=variable), se=TRUE, size=1.25, alpha=0.5, span=0.2) +
+        theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+        scale_y_continuous(labels=comma) +
+        labs(title='Daily Case Line Hours STL', 
+             x='Date', y='Production Hours')
+      
+      x = p[, c('DATE', 'YEARMONTH', 'KCC100CASES', 'KCC200CASES', 'KCC300400CASES', 
+                'KCWCASES', 'KCRODDBALL', 'KCODDBALLBOTTLES')]
+      melted = melt(x, c('DATE', 'YEARMONTH'))
+      
+      l = ggplot(data=melted, aes(x=YEARMONTH, y=value, group=variable))
+      three = l + geom_jitter(aes(group=variable), size=0.1, alpha=0.2) +
+        geom_point(aes(group=variable), size=0.5, alpha=0.2) +
+        facet_wrap(~variable, ncol=1, scales='free_y') +
+        geom_smooth(aes(group=variable, colour=variable), se=TRUE, size=1.25, alpha=0.5, span=0.2) +
+        theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+        scale_y_continuous(labels=comma) +
+        labs(title='Daily Case Line Production KC', 
+             x='Date', y='Cases Produced by Line')
+      
+      x = p[, c('DATE', 'YEARMONTH', 'KCC100HOURS', 'KCC200HOURS', 'KCC300400HOURS', 
+                'KCWHOURS', 'KCRODDBALLHOURS', 'KCODDBALLBOTTLEHOURS')]
+      melted = melt(x, c('DATE', 'YEARMONTH'))
+      l = ggplot(data=melted, aes(x=YEARMONTH, y=value, group=variable))
+      four = l + geom_jitter(aes(group=variable), size=0.1, alpha=0.2) +
+        geom_point(aes(group=variable), size=0.5, alpha=0.2) +
+        facet_wrap(~variable, ncol=1, scales='free_y') +
+        geom_smooth(aes(group=variable, colour=variable), se=TRUE, size=1.25, alpha=0.5, span=0.2) +
+        theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+        scale_y_continuous(labels=comma) +
+        labs(title='Daily Case Line Hours KC', 
+             x='Date', y='Production Hours') 
       
       
-      if(input$house == 'Saint Louis') {
-        x = x[, c('DATE', 'YEARMONTH', 'STLCCASES', 'STLDCASES', 'STLECASES', 
-                  'STLFCASES', 'STLGCASES', 'STLWCASES', 'STLTOTALODDBALL')]
-        melted = melt(x, c('DATE', 'YEARMONTH'))
-        
-        l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
-        a = l + geom_point(aes(group=YEARMONTH), size=0.1, alpha=0.2) +
-          geom_boxplot(aes(group=YEARMONTH), alpha=0.5) +
-          facet_wrap(~variable, ncol=1, scales='free_y') +
-          geom_smooth(aes(group=variable, colour=variable), se=FALSE, size=1.25, alpha=0.5, span=0.2) +
-          theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
-          scale_y_continuous(labels=comma) +
-          labs(title='Daily Case Production by Case Line', 
-               x='Date', y='Cases Produced by Line')
-        
-        x = x[, c('DATE', 'YEARMONTH', 'STLCHOURS', 'STLDHOURS', 'STLEHOURS', 
-                  'STLFHOURS', 'STLGHOURS', 'STLWHOURS', 'STLTOTALODDBALLHOURS')]
-        melted = melt(x, c('DATE', 'YEARMONTH'))
-        l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
-        b = l + geom_point(aes(group=YEARMONTH), size=0.1, alpha=0.2) +
-          geom_boxplot(aes(group=YEARMONTH), alpha=0.5) +
-          facet_wrap(~variable, ncol=1, scales='free_y') +
-          geom_smooth(aes(group=variable, colour=variable), se=FALSE, size=1.25, alpha=0.5, span=0.2) +
-          theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
-          scale_y_continuous(labels=comma) +
-          labs(title='Daily Production Hours by Case Line', 
-               x='Date', y='Production Hours')
-        
-        print(suppressWarnings(grid.arrange(a, b, ncol=2)))
-        
-      } else {
-        x = x[, c('DATE', 'YEARMONTH', 'KCC100CASES', 'KCC200CASES', 'KCC300400CASES', 
-                  'KCWCASES', 'KCRODDBALL', 'KCODDBALLBOTTLES')]
-        melted = melt(x, c('DATE', 'YEARMONTH'))
-        
-        l = ggplot(data=melted, aes(x=YEARMONTH, y=value, group=variable))
-        one = l + geom_point(aes(group=YEARMONTH), size=0.1, alpha=0.2) +
-          geom_boxplot(aes(group=YEARMONTH), alpha=0.5) +
-          facet_wrap(~variable, ncol=1, scales='free_y') +
-          geom_smooth(aes(group=variable, colour=variable), se=FALSE, size=1.25, alpha=0.5, span=0.2) +
-          theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
-          scale_y_continuous(labels=comma) +
-          labs(title='Daily Case Production by Case Line', 
-               x='Date', y='Cases Produced by Line')
-        
-        x = x[, c('DATE', 'YEARMONTH', 'KCC100HOURS', 'KCC200HOURS', 'KCC300400HOURS', 
-                  'KCWHOURS', 'KCRODDBALLHOURS', 'KCODDBALLBOTTLEHOURS')]
-        melted = melt(x, c('DATE', 'YEARMONTH'))
-        l = ggplot(data=melted, aes(x=YEARMONTH, y=value, group=variable))
-        two = l + geom_point(aes(group=YEARMONTH), size=0.1, alpha=0.2) +
-          geom_boxplot(aes(group=YEARMONTH), alpha=0.5) +
-          facet_wrap(~variable, ncol=1, scales='free_y') +
-          geom_smooth(aes(group=variable, colour=variable), se=FALSE, size=1.25, alpha=0.5, span=0.2) +
-          theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
-          scale_y_continuous(labels=comma) +
-          labs(title='Daily Production Hours by Case Line', 
-               x='Date', y='Production Hours') 
-        
-        #grid.arrange(one, two, ncol=2)
-        
-        print(suppressWarnings(grid.arrange(one, two, ncol=2)))
-      }
-        
+      print(suppressWarnings(grid.arrange(one, two, three, four, ncol=4)))
+      
     })
     
     
@@ -467,10 +604,6 @@ shinyServer(
     
     
     
-    
-    
-    
-    # TRUCKS OTHOURS MILES 
     
     
     
@@ -558,7 +691,7 @@ shinyServer(
       x = x %>% filter(grepl('Warehouse', Type))
       valueBox(
         scales::dollar((round(sum(x[, 'Cost'], na.rm=TRUE)))), 
-        'Warehouse Breakage LY', icon=icon('trash-o')
+        'Warehouse Breakage LY', icon=icon('car')
       )
     })
     
@@ -567,7 +700,7 @@ shinyServer(
       x = x %>% filter(grepl('Driver', Type))
       valueBox(
         scales::dollar((round(sum(x[, 'Cost'], na.rm=TRUE)))), 
-        'Driver Breakage', icon=icon('trash-o')
+        'Driver Breakage', icon=icon('car')
       )
     })
     
@@ -576,7 +709,7 @@ shinyServer(
       x = x %>% filter(grepl('Driver', Type))
       valueBox(
         scales::dollar((round(sum(x[, 'Cost'], na.rm=TRUE)))), 
-        'Driver Breakage LY', icon=icon('trash-o')
+        'Driver Breakage LY', icon=icon('car')
       )
     })
     
