@@ -322,7 +322,7 @@ shinyServer(
     
     output$oddball_cases_ly = renderValueBox({
       valueBox(
-        scales::comma((tot_odd_ly())), 'Oddball Cases', icon=icon('random')
+        scales::comma((tot_odd_ly())), 'Oddball Cases LY', icon=icon('random')
       )
     })
     
@@ -412,6 +412,42 @@ shinyServer(
     })
     
     
+    ## ________________ jackpot ________________ ##
+    avg_jackpot = reactive({
+      x = t_production()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(mean(x$STLJACKPOTHANDSCAN, na.rm=TRUE), 1),
+                   round(mean(x$KCJACKPOTHANDSCAN, na.rm=TRUE), 1))
+      val
+    })
+    
+    avg_jackpot_ly = reactive({
+      x = t_production_ly()
+      val = ifelse(input$house == 'Saint Louis', 
+                   round(mean(x$STLJACKPOTHANDSCAN, na.rm=TRUE), 1),
+                   round(mean(x$KCJACKPOTHANDSCAN, na.rm=TRUE), 1))
+      val
+    })
+    output$avg_jackpot = renderValueBox({
+      valueBox(
+        scales::comma((avg_jackpot())), 'Avg Jackpot Handscan', icon=icon('cube')
+      )
+    })
+    
+    output$avg_jackpot_ly = renderValueBox({
+      valueBox(
+        scales::comma((avg_jackpot_ly())), 'Avg Jackpot Handscan LY', icon=icon('cube')
+      )
+    })
+    
+    output$avg_jackpot_delta = renderValueBox({
+      x = round((avg_jackpot() - avg_jackpot_ly()) / avg_jackpot_ly(), 4)
+      x = scales::percent((x))
+      valueBox(
+        x, 'Year-Over-Year Change', icon=icon('cube')
+      )
+    })
+    
     
     
     
@@ -461,27 +497,27 @@ shinyServer(
     avg_loading_hours = reactive({
       x = t_production()
       val = ifelse(input$house == 'Saint Louis', 
-                   round(mean(x$STLLOADINGHOURS, na.rm=TRUE), 1),
-                   round(mean(x$KCLOADINGHOURS, na.rm=TRUE), 1))
+                   round(sum(x$STLLOADINGHOURS, na.rm=TRUE), 1),
+                   round(sum(x$KCLOADINGHOURS, na.rm=TRUE), 1))
       val
     })
     
     avg_loading_hours_ly = reactive({
       x = t_production_ly()
       val = ifelse(input$house == 'Saint Louis', 
-                   round(mean(x$STLLOADINGHOURS, na.rm=TRUE), 1),
-                   round(mean(x$KCLOADINGHOURS, na.rm=TRUE), 1))
+                   round(sum(x$STLLOADINGHOURS, na.rm=TRUE), 1),
+                   round(sum(x$KCLOADINGHOURS, na.rm=TRUE), 1))
       val
     })
     output$loading_hours = renderValueBox({
       valueBox(
-        scales::comma((avg_loading_hours())), 'Avg Loading Hours', icon=icon('hourglass-end')
+        scales::comma((avg_loading_hours())), 'Loading Hours', icon=icon('hourglass-end')
       )
     })
     
     output$loading_hours_ly = renderValueBox({
       valueBox(
-        scales::comma((avg_loading_hours_ly())), 'Avg Loading Hours LY', icon=icon('hourglass-end')
+        scales::comma((avg_loading_hours_ly())), 'Loading Hours LY', icon=icon('hourglass-end')
       )
     })
     
@@ -498,6 +534,7 @@ shinyServer(
     #x$STLLOADINGHOURS
     #x$STLRESTOCKHOURS
     # TRUCKS OTHOURS MILES 
+    #KEGS
     
     
     
@@ -535,11 +572,12 @@ shinyServer(
                    'F-Cases', 'G-Cases', 'W-Cases', 'Oddball-Cases')
       melted = melt(x, c('DATE', 'YEARMONTH'))
       
-      l = ggplot(data=melted, aes(x=YEARMONTH, y=value, group=variable))
+      l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
       one = l + geom_jitter(aes(group=variable), size=0.1, alpha=0.2) +
         geom_point(aes(group=variable), size=0.5, alpha=0.2) +
         facet_wrap(~variable, ncol=1, scales='free_y') +
-        geom_smooth(aes(group=variable, colour=variable), se=TRUE, size=1.25, alpha=0.5, span=0.2) +
+        geom_smooth(aes(y=value, group=variable, colour=variable), 
+                    se=TRUE, size=1.25, alpha=0.5, span=0.2) +
         theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
         scale_y_continuous(labels=comma) +
         labs(title='Daily Case Line Production STL', 
@@ -550,11 +588,12 @@ shinyServer(
       names(x) = c('DATE', 'YEARMONTH', 'C-Hours', 'D-Hours', 'E-Hours', 
                    'F-Hours', 'G-Hours', 'W-Hours', 'Oddball-Hours')
       melted = melt(x, c('DATE', 'YEARMONTH'))
-      l = ggplot(data=melted, aes(x=YEARMONTH, y=value, group=variable))
+      l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
       two = l + geom_jitter(aes(group=variable), size=0.1, alpha=0.2) +
         geom_point(aes(group=variable), size=0.5, alpha=0.2) +
         facet_wrap(~variable, ncol=1, scales='free_y') +
-        geom_smooth(aes(group=variable, colour=variable), se=TRUE, size=1.25, alpha=0.5, span=0.2) +
+        geom_smooth(aes(group=variable, colour=variable), 
+                    se=TRUE, size=1.25, alpha=0.5, span=0.2) +
         theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
         scale_y_continuous(labels=comma) +
         labs(title='Daily Case Line Hours STL', 
@@ -562,13 +601,16 @@ shinyServer(
       
       x = p[, c('DATE', 'YEARMONTH', 'KCC100CASES', 'KCC200CASES', 'KCC300400CASES', 
                 'KCWCASES', 'KCRODDBALL', 'KCODDBALLBOTTLES')]
+      names(x) = c('DATE', 'YEARMONTH', 'C-100-Cases', 'c-200-Cases', 'C-300/400-Cases', 
+                   'W-Cases', 'Oddball-Cases', 'Oddball-Bottles')
       melted = melt(x, c('DATE', 'YEARMONTH'))
       
-      l = ggplot(data=melted, aes(x=YEARMONTH, y=value, group=variable))
+      l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
       three = l + geom_jitter(aes(group=variable), size=0.1, alpha=0.2) +
         geom_point(aes(group=variable), size=0.5, alpha=0.2) +
         facet_wrap(~variable, ncol=1, scales='free_y') +
-        geom_smooth(aes(group=variable, colour=variable), se=TRUE, size=1.25, alpha=0.5, span=0.2) +
+        geom_smooth(aes(group=variable, colour=variable), 
+                    se=TRUE, size=1.25, alpha=0.5, span=0.2) +
         theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
         scale_y_continuous(labels=comma) +
         labs(title='Daily Case Line Production KC', 
@@ -576,12 +618,15 @@ shinyServer(
       
       x = p[, c('DATE', 'YEARMONTH', 'KCC100HOURS', 'KCC200HOURS', 'KCC300400HOURS', 
                 'KCWHOURS', 'KCRODDBALLHOURS', 'KCODDBALLBOTTLEHOURS')]
+      names(x) = c('DATE', 'YEARMONTH', 'C-100-Hours', 'C-200-Hours', 'C-300/400-Hours', 
+                   'W-Hours', 'Oddball-Case-Hours', 'Oddball-Bottle-Hours')
       melted = melt(x, c('DATE', 'YEARMONTH'))
-      l = ggplot(data=melted, aes(x=YEARMONTH, y=value, group=variable))
+      l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
       four = l + geom_jitter(aes(group=variable), size=0.1, alpha=0.2) +
         geom_point(aes(group=variable), size=0.5, alpha=0.2) +
         facet_wrap(~variable, ncol=1, scales='free_y') +
-        geom_smooth(aes(group=variable, colour=variable), se=TRUE, size=1.25, alpha=0.5, span=0.2) +
+        geom_smooth(aes(group=variable, colour=variable), 
+                    se=TRUE, size=1.25, alpha=0.5, span=0.2) +
         theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
         scale_y_continuous(labels=comma) +
         labs(title='Daily Case Line Hours KC', 
@@ -596,6 +641,88 @@ shinyServer(
     
     
     
+    ## ________________ man hours plot ________________ ##
+    output$man_hours_plot = renderPlot(width = 1100, height = 800, {
+      p = t_production()
+      p$YEARMONTH = paste0(p$YEAR, '-', p$MONTH)
+      p$YEARMONTH = factor(p$YEARMONTH, levels=unique(p$YEARMONTH))
+      
+      x = p[, c('DATE', 'YEARMONTH', 'STLREGHOURS', 'STLOTHOURS','STLSENIORITYHOURS', 'STLCASUALHOURS')]
+      names(x) = c('DATE', 'YEARMONTH', 'Regular', 'Overtime','Seniority', 'Casual')
+      melted = melt(x, c('DATE', 'YEARMONTH'))
+      
+      l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+      one = l + geom_jitter(aes(group=variable), size=0.1, alpha=0.2) +
+        geom_point(aes(group=variable), size=0.5, alpha=0.2) +
+        facet_wrap(~variable, ncol=1, scales='free_y') +
+        geom_smooth(aes(y=value, group=variable, colour=variable), 
+                    se=TRUE, size=1.25, alpha=0.5, span=0.2) +
+        theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+        scale_y_continuous(labels=comma) +
+        labs(title='Man Hour Summary, STL', 
+             x='Date', y='Man Hours')
+      
+      x = p[, c('DATE', 'YEARMONTH', 'KCREGULARHOURS', 'KCOTHOURS', 'KCHOURSSENIORITY', 'KCHOURSCASUAL')]
+      names(x) = c('DATE', 'YEARMONTH', 'Regular', 'Overtime','Seniority', 'Casual')
+      melted = melt(x, c('DATE', 'YEARMONTH'))
+      
+      l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+      two = l + geom_jitter(aes(group=variable), size=0.1, alpha=0.2) +
+        geom_point(aes(group=variable), size=0.5, alpha=0.2) +
+        facet_wrap(~variable, ncol=1, scales='free_y') +
+        geom_smooth(aes(y=value, group=variable, colour=variable), 
+                    se=TRUE, size=1.25, alpha=0.5, span=0.2) +
+        theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+        scale_y_continuous(labels=comma) +
+        labs(title='Man Hour Summary, KC', 
+             x='Date', y='Man Hours')
+      
+      print(suppressWarnings(grid.arrange(one, two, ncol=2)))
+    
+    })
+    
+    
+    
+    
+    ## ________________ time allocation plot ________________ ##
+    output$time_allocation_plot = renderPlot(width = 1100, height = 800, {
+      p = t_production()
+      p$YEARMONTH = paste0(p$YEAR, '-', p$MONTH)
+      p$YEARMONTH = factor(p$YEARMONTH, levels=unique(p$YEARMONTH))
+      
+      x = p[, c('DATE', 'YEARMONTH', 'STLRESTOCKHOURS', 'STLLOADINGHOURS','STLKEGHOURS', 'STLSORTERRUNTIMEHOURS')]
+      names(x) = c('DATE', 'YEARMONTH', 'Restock-Hours', 'Loading-Hours','Keg-Hours', 'Sorter-Run-Time')
+      melted = melt(x, c('DATE', 'YEARMONTH'))
+      
+      l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+      one = l + geom_jitter(aes(group=variable), size=0.1, alpha=0.2) +
+        geom_point(aes(group=variable), size=0.5, alpha=0.2) +
+        facet_wrap(~variable, ncol=1, scales='free_y') +
+        geom_smooth(aes(y=value, group=variable, colour=variable), 
+                    se=TRUE, size=1.25, alpha=0.5, span=0.2) +
+        theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+        scale_y_continuous(labels=comma) +
+        labs(title='Man Hour Summary, STL', 
+             x='Date', y='Hours')
+      
+      x = p[, c('DATE', 'YEARMONTH', 'KCLOADINGHOURS', 'KCSORTERRUNTIMEHOURS')]
+      names(x) = c('DATE', 'YEARMONTH', 'Loading-Hours', 'Sorter-Run-Time')
+      melted = melt(x, c('DATE', 'YEARMONTH'))
+      
+      l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+      two = l + geom_jitter(aes(group=variable), size=0.1, alpha=0.2) +
+        geom_point(aes(group=variable), size=0.5, alpha=0.2) +
+        facet_wrap(~variable, ncol=1, scales='free_y') +
+        geom_smooth(aes(y=value, group=variable, colour=variable), 
+                    se=TRUE, size=1.25, alpha=0.5, span=0.2) +
+        theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+        scale_y_continuous(labels=comma) +
+        labs(title='Man Hour Summary, KC', 
+             x='Date', y='Hours')
+      
+      print(suppressWarnings(grid.arrange(one, two, ncol=2)))
+      
+    })
     
     
     
@@ -603,6 +730,168 @@ shinyServer(
     
     
     
+    ## ________________ trucks plot ________________ ##
+    output$trucks_plot = renderPlot(width = 1100, height = 800, {
+      p = t_production()
+      p$YEARMONTH = paste0(p$YEAR, '-', p$MONTH)
+      p$YEARMONTH = factor(p$YEARMONTH, levels=unique(p$YEARMONTH))
+      
+      x = p[, c('DATE', 'YEARMONTH', 'STLTRUCKSTOTAL', 'STLTRUCKSPACKAGE', 'STLTRUCKSKEG')]
+      names(x) = c('DATE', 'YEARMONTH', 'Total-Trucks', 'Package-Trucks','Keg-Trucks')
+      melted = melt(x, c('DATE', 'YEARMONTH'))
+      
+      l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+      one = l + geom_step(aes(group=variable), size=0.7, alpha=0.7) +
+        geom_point(aes(group=variable), size=0.5, alpha=0.2) +
+        facet_wrap(~variable, ncol=1, scales='free_y') +
+        geom_smooth(aes(y=value, group=variable, colour=variable), 
+                    se=TRUE, size=1.25, alpha=0.5, span=0.2) +
+        theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+        scale_y_continuous(labels=comma) +
+        labs(title='Truck Summary, STL', 
+             x='Date', y='Hours')
+      
+      x = p[, c('DATE', 'YEARMONTH', 'KCTRUCKSKCTOTAL', 'KCTRUCKSSPRINGFIELD')]
+      names(x) = c('DATE', 'YEARMONTH', 'Total-Trucks', 'Springfield-Trucks')
+      melted = melt(x, c('DATE', 'YEARMONTH'))
+      
+      l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+      two = l + geom_step(aes(group=variable), size=0.7, alpha=0.7) +
+        geom_point(aes(group=variable), size=0.5, alpha=0.2) +
+        facet_wrap(~variable, ncol=1, scales='free_y') +
+        geom_smooth(aes(y=value, group=variable, colour=variable), 
+                    se=TRUE, size=1.25, alpha=0.5, span=0.2) +
+        theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
+        scale_y_continuous(labels=comma) +
+        labs(title='Truck Summary, KC', 
+             x='Date', y='Hours')
+      
+      print(suppressWarnings(grid.arrange(one, two, ncol=2)))
+      
+    })
+    
+    
+    
+
+    
+    
+    ## ________________ transfer frequency data generate ________________ ##
+    transfer_frequency = reactive({
+      p = t_production()
+      #p = x
+      p = p[, c('DATE', 'KCCASESSTLTRANSFER', 'STLCASESKCTRANSFER')]
+      names(p) = c('Date', 'Kc-to-Stl', 'Stl-to-Kc')
+      p$Week = week(p$Date)
+      
+      kc_to_stl = aggregate(`Kc-to-Stl` ~ Week, data=p, FUN=function(x) round(sum(x, na.rm=TRUE)))
+      kc_to_stl_ct = aggregate(`Kc-to-Stl` ~ Week, data=p, FUN=function(x) length(x[x > 0]))
+      names(kc_to_stl_ct) = c('Week', 'Kc-to-Stl-Count')
+      
+      stl_to_kc = aggregate(`Stl-to-Kc` ~ Week, data=p, FUN=function(x) round(sum(x, na.rm=TRUE)))
+      stl_to_kc_ct = aggregate(`Stl-to-Kc` ~ Week, data=p, FUN=function(x) length(x[x > 0]))
+      names(stl_to_kc_ct) = c('Week', 'Stl-to-Kc-Count')
+      
+      pe = merge(stl_to_kc, stl_to_kc_ct, by='Week', all=TRUE)
+      pe = merge(pe, kc_to_stl, by='Week', all=TRUE)
+      pe = merge(pe, kc_to_stl_ct, by='Week', all=TRUE)
+      
+      pe = melt(pe, 'Week')
+      pe
+    })
+    
+    
+    
+    ## ________________ transfer frequency plot ________________ ##
+    output$transfers_plot = renderPlot(width = 950, height = 800, {
+      p = transfer_frequency()
+
+      l = ggplot(data=p, aes(x=Week, y=value, group=variable))
+      one = l + geom_step(aes(group=variable, 
+                              fill=variable), 
+                          alpha=0.9) +
+        geom_smooth(size=1.5,
+                    aes(alpha=0.5,
+                        fill=variable,
+                        colour=variable, 
+                        group=variable, 
+                        span=0.2)) +
+        facet_wrap(~variable, 
+                   ncol=2, 
+                   scales='free_y') +
+        theme(legend.position='none') +
+        scale_y_continuous(labels=comma) +
+        scale_x_continuous(breaks=round(seq(min(p$Week), max(p$Week), by=1)), 1) +
+        labs(title='Inventory Transfer Summary, Cases v. Occurrences', 
+             x='Week of the Year', 
+             y='Weekly Total (Cases or No. of Transfers)') 
+      
+      
+     print(one)
+      
+    })
+    
+    
+    
+    
+
+    
+    ## ________________ detailed cpmh plot ________________ ##
+    output$cpmh_plot = renderPlot(width = 1000, height = 800, {
+      p = t_production()
+      
+      names_cpmh = ifelse(grepl('CPMH', names(p))==TRUE, names(p), '')
+      names_cpmh = names_cpmh[names_cpmh != '']
+      names_cpmh = names_cpmh[grepl('OTADJUSTED', names_cpmh) != TRUE]
+      names_cpmh = names_cpmh[grepl('KCRCPMH', names_cpmh) != TRUE]
+      names_cpmh = sort(names_cpmh)
+      
+      p = p[, c('DATE', names_cpmh)]
+      names(p) = c('Date', 'C-100-CPMH', 'C-200-CPMH', 'C-300/400-CPMH',
+                   'KC-Overall-CPMH', 'STL-Overall-CPMH', 'C-Line', 'D-Line', 
+                   'E-Line', 'F-Line', 'G-Line')
+      col_order = c('KC-Overall-CPMH', 'C-100-CPMH', 'C-200-CPMH', 'C-300/400-CPMH',
+                   'STL-Overall-CPMH', 'C-Line', 'D-Line', 'E-Line', 'F-Line', 'G-Line')
+      
+      p = melt(p, 'Date')
+      p$variable = factor(p$variable, levels=col_order)
+      
+      l = ggplot(data=p, aes(x=Date, y=value, group=variable))
+      one = l + geom_step(aes(group=variable, 
+                              fill=variable), 
+                          alpha=0.9) +
+        geom_smooth(size=1.5,
+                    aes(alpha=0.5,
+                        fill=variable,
+                        colour=variable, 
+                        group=variable, 
+                        span=0.2)) +
+        facet_wrap(~variable, 
+                   ncol=2,
+                   nrow=5,
+                   scales='free_y',
+                   as.table=F) +
+        theme(legend.position='none') +
+        scale_y_continuous(labels=comma) +
+        labs(title='Overview of CPMH', 
+             x='Date', 
+             y='Cases per Man  Hour') 
+      
+      
+      print(one)
+      
+    })
+    
+    
+    
+    
+ 
+    
+    #x$STLKEGSTOTALREGION
+    #CPMH TAB
+    #STLSORTERRUNTIMEHOURS STLRESTOCKHOURS STLKEGHOURS STLP2VPICKHOURS STLLOADINGHOURS
+    
+    #KCSORTERRUNTIMEHOURS KCLOADINGHOURS PALLETPICKS
+    ## NONCONVEYABLE PALLETS COMPLETIONTIME KCCASESSTLTRANSFER STLCASESKCTRANSFER
     
     
     
@@ -691,7 +980,7 @@ shinyServer(
       x = x %>% filter(grepl('Warehouse', Type))
       valueBox(
         scales::dollar((round(sum(x[, 'Cost'], na.rm=TRUE)))), 
-        'Warehouse Breakage LY', icon=icon('car')
+        'Warehouse Breakage LY', icon=icon('trash-o')
       )
     })
     
@@ -700,7 +989,7 @@ shinyServer(
       x = x %>% filter(grepl('Driver', Type))
       valueBox(
         scales::dollar((round(sum(x[, 'Cost'], na.rm=TRUE)))), 
-        'Driver Breakage', icon=icon('car')
+        'Driver Breakage', icon=icon('user-times')
       )
     })
     
@@ -709,7 +998,7 @@ shinyServer(
       x = x %>% filter(grepl('Driver', Type))
       valueBox(
         scales::dollar((round(sum(x[, 'Cost'], na.rm=TRUE)))), 
-        'Driver Breakage LY', icon=icon('car')
+        'Driver Breakage LY', icon=icon('user-times')
       )
     })
     
@@ -734,7 +1023,7 @@ shinyServer(
       y = round(sum(y[, 'Cost']))     
       d = scales::percent(((x - y) / y))
       valueBox(
-        d, 'YOY %Change', icon=icon('trash-o')
+        d, 'Year-Over-Year Change', icon=icon('trash-o')
       )
     })
     
@@ -749,7 +1038,7 @@ shinyServer(
       y = round(sum(y[, 'Cost']))     
       d = scales::percent(((x - y) / y))
       valueBox(
-        d, 'YOY %Change', icon=icon('trash-o')
+        d, 'Year-Over-Year Change', icon=icon('user-times')
       )
     })
     
@@ -954,14 +1243,14 @@ shinyServer(
     output$total_unsaleables = renderValueBox({
       valueBox(
         scales::dollar((round(sum(t_unsaleables()[, 'Cost'], na.rm=TRUE)))),
-        'Unsaleables', icon=icon('trash-o')
+        'Unsaleables', icon=icon('times-circle')
       )
     })
     
     output$total_unsaleables_ly = renderValueBox({
       valueBox(
         scales::dollar((round(sum(t_unsaleables_ly()[, 'Cost'], na.rm=TRUE)))),
-        'Unsaleables LY', icon=icon('trash-o')
+        'Unsaleables LY', icon=icon('times-circle')
       )
     })
     
@@ -980,7 +1269,7 @@ shinyServer(
       y = round(sum(t_unsaleables_ly()[, 'Cost']))
       d = scales::percent(((x - y) / y))
       valueBox(
-        d, 'YOY %Change', icon=icon('trash-o')
+        d, 'Year-Over-Year Change', icon=icon('times-circle')
       )
     })
     
