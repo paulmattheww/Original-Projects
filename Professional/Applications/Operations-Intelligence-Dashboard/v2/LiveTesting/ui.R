@@ -4,7 +4,7 @@ library(stringr)
 library(lubridate)
 
 
-#print('go live testing version')
+#print('go live version')
 
 
 yr = year(Sys.Date())
@@ -26,7 +26,7 @@ dashboardPage(skin='red',
                                                 label = 'Date Range', 
                                                 start='2016-01-01', 
                                                 end=end_last_month, 
-                                                min='2016-01-01', 
+                                                min='2015-01-01', 
                                                 max= '2016-04-30', #as.character(strptime(Sys.Date(), format='%Y-%m-%d')),
                                                 format='mm/dd/yyyy'),
                                  
@@ -81,225 +81,250 @@ dashboardPage(skin='red',
                                  menuItem('Empty Keg Transfers', tabName='empty_kegs', icon=icon('wrench')),
                                  menuItem('Inventory Adjustments', tabName='adjustments', icon=icon('wrench')),
                                  menuItem('Out of Stock', tabName='oos', icon=icon('wrench'))
+                               )
+              ),
+              
+              dashboardBody(
+                
+                tabItems(
+                  
+                  tabItem(tabName='dashboard',
+                          
+                          fluidRow( 
+                            valueBoxOutput('cases_delivered'),
+                            valueBoxOutput('cases_delivered_ly'),
+                            valueBoxOutput('cases_delivered_delta'),
+                            
+                            valueBoxOutput('cpmh'),
+                            valueBoxOutput('cpmh_ly'),
+                            valueBoxOutput('cpmh_delta'),
+                            
+                            valueBoxOutput('man_hours'),
+                            valueBoxOutput('man_hours_ly'),
+                            valueBoxOutput('man_hours_delta'),
+                            
+                            valueBoxOutput('ot_hours'),
+                            valueBoxOutput('ot_hours_ly'),
+                            valueBoxOutput('ot_hours_delta'),
+                            
+                            valueBoxOutput('loading_hours'),
+                            valueBoxOutput('loading_hours_ly'),
+                            valueBoxOutput('loading_hours_delta'),
+                            
+                            valueBoxOutput('employees_on_hand'),
+                            valueBoxOutput('employees_on_hand_ly'),
+                            valueBoxOutput('employees_on_hand_delta'),
+                            
+                            valueBoxOutput('total_breakage'),
+                            valueBoxOutput('total_breakage_ly'),
+                            valueBoxOutput('total_breakage_delta'),
+                            
+                            valueBoxOutput('driver_breakage'),
+                            valueBoxOutput('driver_breakage_ly'),
+                            valueBoxOutput('driver_breakage_delta'),
+                            
+                            valueBoxOutput('trucks'),
+                            valueBoxOutput('trucks_ly'),
+                            valueBoxOutput('trucks_delta'),
+                            
+                            valueBoxOutput('stops'),
+                            valueBoxOutput('stops_ly'),
+                            valueBoxOutput('stops_delta'),
+                            
+                            valueBoxOutput('oddball_cases'),
+                            valueBoxOutput('oddball_cases_ly'),
+                            valueBoxOutput('oddball_cases_delta'),
+                            
+                            valueBoxOutput('avg_jackpot'),
+                            valueBoxOutput('avg_jackpot_ly'),
+                            valueBoxOutput('avg_jackpot_delta'),
+                            
+                            valueBoxOutput('errors'),
+                            valueBoxOutput('errors_ly'),
+                            valueBoxOutput('errors_delta'),
+                            
+                            valueBoxOutput('total_unsaleables'),
+                            valueBoxOutput('total_unsaleables_ly'),
+                            valueBoxOutput('total_unsaleables_delta')
+                            
+                          )
+                  ),
+                  
+                  
+                  
+                  ## ________ production tab ________ ##
+                  tabItem(tabName='production_summary', 
+                          p(h1('Production Summary')),
+                          wellPanel(
+                            tabBox(
+                              title = '', id = 'production_summary',
+                              height = '900px', width = '1100px',
+                              tabPanel('Production Lines', 
+                                       plotOutput('case_line_plot')),
+                              tabPanel('Man Hours', 
+                                       plotOutput('man_hours_plot')),
+                              tabPanel('Time Allocation',
+                                       plotOutput('time_allocation_plot')),
+                              tabPanel('Truck Summary', 
+                                       plotOutput('trucks_plot')),
+                              tabPanel('Warehouse Productivity',
+                                       plotOutput('cpmh_plot')),
+                              # tabPanel('Stops Summary',
+                              #          plotOutput('')),
+                              tabPanel('Inventory Transfers',
+                                       fluidRow(
+                                         plotOutput('transfers_plot')))
+                              # tabPanel('Inventory Transfers',
+                              #          fluidRow(
+                              #            plotOutput('transfers_plot')
+                              #          ))
+                              ))),
+                  
+                  
+                  
+                  
+                  
+                  ## ________ plots tab ________ ##
+                  tabItem(tabName='plots',
+                          
+                          fluidRow(
+                            
+                          )),
+                  
+                  
+                  ## ________ breakage tab ________ ##
+                  tabItem(tabName='breakage'),
+                  
+                  tabItem(tabName='breakage_summary', 
+                          p(h1('Breakage Summary')),
+                          wellPanel(
+                            plotOutput('plot_breakage_summary')),
+                          dataTableOutput('breakage_pivot')),
+                  
+                  tabItem(tabName='breakage_by_product',
+                          p(h1('Most Broken Products:')),
+                          selectInput('driver_warehouse', 'Warehouse or Driver Breakage',
+                                      choice=c('Warehouse', 'Drivers')),
+                          
+                          wellPanel(plotOutput('plot_breakage_product')),
+                          dataTableOutput('breakage_by_product')),
+                  
+                  tabItem(tabName='atomic_breakage',
+                          p(h1('Atomic Level Data, This Year:')),
+                          dataTableOutput('atomic_breakage')),
+                  
+                  tabItem(tabName='atomic_breakage_ly',
+                          p(h1('Atomic Level Data, Last Year:')),
+                          dataTableOutput('atomic_breakage_ly')),
+                  
+                  
+                  
+                  ## ________ unsaleables ________ ##
+                  
+                  tabItem(tabName='top_10_plot',
+                          p(h1('Top Unsaleables by Product & Supplier')),
+                          wellPanel(plotOutput('top_10_plot')),
+                          selectInput('unsaleables_facet', 
+                                      h4('View Details by Supplier or by Item'),
+                                      choice=c('Product', 'Supplier', 'Class')), # add type, director, month
+                          dataTableOutput('unsaleable_summary_data')),
+                  
+                  tabItem(tabName='atomic_unsaleables',
+                          p(h1('Atomic Level Data, This Year:')),
+                          dataTableOutput('atomic_unsaleables')),
+                  
+                  tabItem(tabName='atomic_unsaleables_ly',
+                          p(h1('Atomic Level Data, Last Year:')),
+                          dataTableOutput('atomic_unsaleables_ly')),
+                  
+                  
+                  
+                  
+                  
+                  tabItem(tabName='STL', 
+                          valueBoxOutput('g_line_cases'),
+                          valueBoxOutput('g_line_percent'),
+                          valueBoxOutput('g_line_unique'),
+                          
+                          valueBoxOutput('d_line_cases'),
+                          valueBoxOutput('d_line_percent'),
+                          valueBoxOutput('d_line_unique'),
+                          
+                          valueBoxOutput('c_line_cases'),
+                          valueBoxOutput('c_line_percent'),
+                          valueBoxOutput('c_line_unique'),
+                          
+                          valueBoxOutput('e_line_cases'),
+                          valueBoxOutput('e_line_percent'),
+                          valueBoxOutput('e_line_unique'),
+                          
+                          valueBoxOutput('o_line_cases'),
+                          valueBoxOutput('o_line_percent'),
+                          valueBoxOutput('o_line_unique'),
+                          
+                          valueBoxOutput('f_line_cases'),
+                          valueBoxOutput('f_line_percent'),
+                          valueBoxOutput('f_line_unique'),
+                          
+                          valueBoxOutput('w_line_cases'),
+                          valueBoxOutput('w_line_percent'),
+                          valueBoxOutput('w_line_unique'),
+                          
+                          valueBoxOutput('a_line_btls'),
+                          valueBoxOutput('a_line_percent'),
+                          valueBoxOutput('a_line_unique'),
+                          
+                          valueBoxOutput('b_line_btls'),
+                          valueBoxOutput('b_line_percent'),
+                          valueBoxOutput('b_line_unique')
+                          
+                          
+                          
+                  ),
+                  
+                  tabItem(tabName='KC', 
+                          valueBoxOutput('c_100'),
+                          valueBoxOutput('c_100_percent'),
+                          valueBoxOutput('c_100_unique'),
+                          
+                          valueBoxOutput('c_200'),
+                          valueBoxOutput('c_200_percent'),
+                          valueBoxOutput('c_200_unique'),
+                          
+                          valueBoxOutput('c_300'),
+                          valueBoxOutput('c_300_percent'),
+                          valueBoxOutput('c_300_unique'),
+                          
+                          valueBoxOutput('c_400'),
+                          valueBoxOutput('c_400_percent'),
+                          valueBoxOutput('c_400_unique'),
+                          
+                          valueBoxOutput('odd'),
+                          valueBoxOutput('odd_percent'),
+                          valueBoxOutput('odd_unique'),
+                          
+                          valueBoxOutput('wine'),
+                          valueBoxOutput('wine_percent'),
+                          valueBoxOutput('wine_unique')#,
+                          
+                          #               valueBoxOutput('a_rack'),
+                          #               valueBoxOutput('a_rack_percent'),
+                          #               valueBoxOutput('a_rack_unique'),
+                          #               
+                          #               valueBoxOutput('b_rack'),
+                          #               valueBoxOutput('b_rack_percent'),
+                          #               valueBoxOutput('b_rack_unique')
+                  ),
+                  
+                  
+                  tabItem(tabName='velocity_summary',
+                          dataTableOutput('velocity_summary'))#,
+                  
+                  #       tabItem(tabName='production', 
+                  #               plotOutput('cases_by_line')
+                  # )
+                )
               )
-),
-
-dashboardBody(
-  
-  tabItems(
-    
-    tabItem(tabName='dashboard',
-            
-            fluidRow( 
-              valueBoxOutput('cases_delivered'),
-              valueBoxOutput('cases_delivered_ly'),
-              valueBoxOutput('cases_delivered_delta'),
-              
-              valueBoxOutput('cpmh'),
-              valueBoxOutput('cpmh_ly'),
-              valueBoxOutput('cpmh_delta'),
-              
-              valueBoxOutput('man_hours'),
-              valueBoxOutput('man_hours_ly'),
-              valueBoxOutput('man_hours_delta'),
-              
-              valueBoxOutput('ot_hours'),
-              valueBoxOutput('ot_hours_ly'),
-              valueBoxOutput('ot_hours_delta'),
-              
-              valueBoxOutput('loading_hours'),
-              valueBoxOutput('loading_hours_ly'),
-              valueBoxOutput('loading_hours_delta'),
-              
-              valueBoxOutput('employees_on_hand'),
-              valueBoxOutput('employees_on_hand_ly'),
-              valueBoxOutput('employees_on_hand_delta'),
-              
-              valueBoxOutput('total_breakage'),
-              valueBoxOutput('total_breakage_ly'),
-              valueBoxOutput('total_breakage_delta'),
-              
-              valueBoxOutput('driver_breakage'),
-              valueBoxOutput('driver_breakage_ly'),
-              valueBoxOutput('driver_breakage_delta'),
-              
-              valueBoxOutput('trucks'),
-              valueBoxOutput('trucks_ly'),
-              valueBoxOutput('trucks_delta'),
-              
-              valueBoxOutput('stops'),
-              valueBoxOutput('stops_ly'),
-              valueBoxOutput('stops_delta'),
-              
-              valueBoxOutput('oddball_cases'),
-              valueBoxOutput('oddball_cases_ly'),
-              valueBoxOutput('oddball_cases_delta'),
-              
-              valueBoxOutput('errors'),
-              valueBoxOutput('errors_ly'),
-              valueBoxOutput('errors_delta'),
-              
-              valueBoxOutput('total_unsaleables'),
-              valueBoxOutput('total_unsaleables_ly'),
-              valueBoxOutput('total_unsaleables_delta')
-              
-            )
-    ),
-    
-    
-    
-    ## ________ production tab ________ ##
-    tabItem(tabName='production_summary', 
-            p(h1('Production Summary')),
-            wellPanel(
-              plotOutput('case_line_plot'))
-    ),
-    
-    
-    
-    
-    
-    ## ________ plots tab ________ ##
-    tabItem(tabName='plots',
-            
-            fluidRow(
-              
-            )),
-    
-    
-    ## ________ breakage tab ________ ##
-    tabItem(tabName='breakage'),
-    
-    tabItem(tabName='breakage_summary', 
-            p(h1('Breakage Summary')),
-            wellPanel(
-              plotOutput('plot_breakage_summary')),
-            dataTableOutput('breakage_pivot')),
-    
-    tabItem(tabName='breakage_by_product',
-            p(h1('Most Broken Products:')),
-            selectInput('driver_warehouse', 'Warehouse or Driver Breakage',
-                        choice=c('Warehouse', 'Drivers')),
-            
-            wellPanel(plotOutput('plot_breakage_product')),
-            dataTableOutput('breakage_by_product')),
-    
-    tabItem(tabName='atomic_breakage',
-            p(h1('Atomic Level Data, This Year:')),
-            dataTableOutput('atomic_breakage')),
-    
-    tabItem(tabName='atomic_breakage_ly',
-            p(h1('Atomic Level Data, Last Year:')),
-            dataTableOutput('atomic_breakage_ly')),
-    
-    
-    
-    ## ________ unsaleables ________ ##
-    
-    tabItem(tabName='top_10_plot',
-            p(h1('Top Unsaleables by Product & Supplier')),
-            wellPanel(plotOutput('top_10_plot')),
-            selectInput('unsaleables_facet', 
-                        h4('View Details by Supplier or by Item'),
-                        choice=c('Product', 'Supplier', 'Class')), # add type, director, month
-            dataTableOutput('unsaleable_summary_data')),
-    
-    tabItem(tabName='atomic_unsaleables',
-            p(h1('Atomic Level Data, This Year:')),
-            dataTableOutput('atomic_unsaleables')),
-    
-    tabItem(tabName='atomic_unsaleables_ly',
-            p(h1('Atomic Level Data, Last Year:')),
-            dataTableOutput('atomic_unsaleables_ly')),
-    
-    
-    
-    
-    
-    tabItem(tabName='STL', 
-            valueBoxOutput('g_line_cases'),
-            valueBoxOutput('g_line_percent'),
-            valueBoxOutput('g_line_unique'),
-            
-            valueBoxOutput('d_line_cases'),
-            valueBoxOutput('d_line_percent'),
-            valueBoxOutput('d_line_unique'),
-            
-            valueBoxOutput('c_line_cases'),
-            valueBoxOutput('c_line_percent'),
-            valueBoxOutput('c_line_unique'),
-            
-            valueBoxOutput('e_line_cases'),
-            valueBoxOutput('e_line_percent'),
-            valueBoxOutput('e_line_unique'),
-            
-            valueBoxOutput('o_line_cases'),
-            valueBoxOutput('o_line_percent'),
-            valueBoxOutput('o_line_unique'),
-            
-            valueBoxOutput('f_line_cases'),
-            valueBoxOutput('f_line_percent'),
-            valueBoxOutput('f_line_unique'),
-            
-            valueBoxOutput('w_line_cases'),
-            valueBoxOutput('w_line_percent'),
-            valueBoxOutput('w_line_unique'),
-            
-            valueBoxOutput('a_line_btls'),
-            valueBoxOutput('a_line_percent'),
-            valueBoxOutput('a_line_unique'),
-            
-            valueBoxOutput('b_line_btls'),
-            valueBoxOutput('b_line_percent'),
-            valueBoxOutput('b_line_unique')
-            
-            
-            
-    ),
-    
-    tabItem(tabName='KC', 
-            valueBoxOutput('c_100'),
-            valueBoxOutput('c_100_percent'),
-            valueBoxOutput('c_100_unique'),
-            
-            valueBoxOutput('c_200'),
-            valueBoxOutput('c_200_percent'),
-            valueBoxOutput('c_200_unique'),
-            
-            valueBoxOutput('c_300'),
-            valueBoxOutput('c_300_percent'),
-            valueBoxOutput('c_300_unique'),
-            
-            valueBoxOutput('c_400'),
-            valueBoxOutput('c_400_percent'),
-            valueBoxOutput('c_400_unique'),
-            
-            valueBoxOutput('odd'),
-            valueBoxOutput('odd_percent'),
-            valueBoxOutput('odd_unique'),
-            
-            valueBoxOutput('wine'),
-            valueBoxOutput('wine_percent'),
-            valueBoxOutput('wine_unique')#,
-            
-            #               valueBoxOutput('a_rack'),
-            #               valueBoxOutput('a_rack_percent'),
-            #               valueBoxOutput('a_rack_unique'),
-            #               
-            #               valueBoxOutput('b_rack'),
-            #               valueBoxOutput('b_rack_percent'),
-            #               valueBoxOutput('b_rack_unique')
-    ),
-    
-    
-    tabItem(tabName='velocity_summary',
-            dataTableOutput('velocity_summary'))#,
-    
-    #       tabItem(tabName='production', 
-    #               plotOutput('cases_by_line')
-    # )
-  )
-)
 )
 
 
