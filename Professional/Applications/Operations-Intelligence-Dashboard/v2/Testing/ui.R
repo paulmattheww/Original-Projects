@@ -26,7 +26,7 @@ dashboardPage(skin='red',
                                                 label = 'Date Range', 
                                                 start='2016-01-01', 
                                                 end=end_last_month, 
-                                                min='2016-01-01', 
+                                                min='2015-01-01', 
                                                 max= '2016-04-30', #as.character(strptime(Sys.Date(), format='%Y-%m-%d')),
                                                 format='mm/dd/yyyy'),
                                  
@@ -135,6 +135,10 @@ dashboardPage(skin='red',
                             valueBoxOutput('oddball_cases_ly'),
                             valueBoxOutput('oddball_cases_delta'),
                             
+                            valueBoxOutput('avg_jackpot'),
+                            valueBoxOutput('avg_jackpot_ly'),
+                            valueBoxOutput('avg_jackpot_delta'),
+                            
                             valueBoxOutput('errors'),
                             valueBoxOutput('errors_ly'),
                             valueBoxOutput('errors_delta'),
@@ -152,8 +156,29 @@ dashboardPage(skin='red',
                   tabItem(tabName='production_summary', 
                           p(h1('Production Summary')),
                           wellPanel(
-                            plotOutput('case_line_plot'))
-                  ),
+                            tabBox(
+                              title = '', id = 'production_summary',
+                              height = '900px', width = '1100px',
+                              tabPanel('Production Lines', 
+                                       plotOutput('case_line_plot')),
+                              tabPanel('Man Hours', 
+                                       plotOutput('man_hours_plot')),
+                              tabPanel('Time Allocation',
+                                       plotOutput('time_allocation_plot')),
+                              tabPanel('Truck Summary', 
+                                       plotOutput('trucks_plot')),
+                              tabPanel('Warehouse Productivity',
+                                       plotOutput('cpmh_plot')),
+                              # tabPanel('Stops Summary',
+                              #          plotOutput('')),
+                              tabPanel('Inventory Transfers',
+                                       fluidRow(
+                                         plotOutput('transfers_plot')))
+                              # tabPanel('Inventory Transfers',
+                              #          fluidRow(
+                              #            plotOutput('transfers_plot')
+                              #          ))
+                              ))),
                   
                   
                   
