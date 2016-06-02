@@ -33,7 +33,7 @@ history = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Input Files for R
 headTail(breaks); headTail(sales); headTail(supplier); headTail(supplier_history); headTail(history)
 
 
-breaks = breaks %>% filter(X.RCODE != 1)
+#breaks = breaks %>% filter(X.RCODE != 1)
 
 
 print('Prevent Errors')
@@ -42,7 +42,7 @@ sum_ext_cost_breaks = sum(breaks$EXT_COST, na.rm=TRUE)
 
 print('Change these')
 this_year = 2016
-this_month = 'April'
+this_month = 'May'
 
 # print('Read in KC data, do not chagen column headers')
 # breaks = read.csv("C:/Users/pmwash/Desktop/R_Files/Data Input/PWBREAKAGE_KC.csv", header=TRUE) 
@@ -147,8 +147,8 @@ case_summary = breakage_by_class_cases(breaks)
 
 
 
-
-
+#check
+head(history)
 
 append_breakage_history = function(history, incident_summary, cost_summary, year=2016, month='February') {
   
@@ -161,7 +161,7 @@ append_breakage_history = function(history, incident_summary, cost_summary, year
   names(combined) = names(history)
   
   new_history = rbind(history, combined)
-  write.csv(new_history, 'C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/KC/breakage_detailed_history_kc.csv')
+  write.csv(new_history, 'C:/Users/pmwash/Desktop/R_Files/Data Input/Input Files for Reports/Breakage/KC/breakage_detailed_history_kc.csv', row.names=FALSE)
   
   new_history[, c(4:11)] = sapply(new_history[, c(4:11)], function(x) as.numeric(as.character(x)))
   
@@ -342,7 +342,7 @@ calculate_ytd_sales = function(sales) {
 }
 
 sales = calculate_ytd_sales(sales)
-
+tail(sales)
 
 
 
@@ -385,6 +385,14 @@ tail(sales[,c('YTD.Sales', 'Sales')], 13)
 ytd_sales_lastyr = head(tail(sales$YTD.Sales, 13), 1); head(tail(sales, 13), 1)
 current_sales_lastyr = head(tail(sales$Sales, 13), 1)
 current_sales_lastyr
+
+
+# # FOR FIXING OLD REPORTS JAN - MAR KC
+# current_sales = head(tail(sales$Sales, 3), 1)
+# ytd_sales = head(tail(sales$YTD.Sales, 3), 1)
+# 
+# ytd_sales_lastyr = head(tail(sales$YTD.Sales, 15), 1); head(tail(sales, 15), 1)
+# current_sales_lastyr = head(tail(sales$Sales, 15), 1)
 
 master_dataset = calculate_percent_sales(master_dataset, ytd_sales, current_sales)
 
@@ -585,7 +593,7 @@ breakage_summary = prepare_summary(supplier_for_summary, monthly_summary, curren
 
 # CHANGE MONTH IN NAME OF FILE
 print('Write to a file for presentation and distribution')
-file_name = 'kc_breakage_report_apr_2016.xlsx'
+file_name = 'kc_breakage_report_may_2016.xlsx'
 write.xlsx(breakage_summary, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Summary')
 write.xlsx(warehouse_breakage, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Warehouse Breakage by Item', append=TRUE)
 write.xlsx(driver_breakage_item, file=paste0('C:/Users/pmwash/Desktop/R_Files/Data Output/', file_name), sheetName='Driver Breakage by Item', append=TRUE)
