@@ -1,0 +1,1235 @@
+
+<!doctype HTML>
+<meta charset = 'utf-8'>
+<html>
+  <head>
+	<title>Routing Project Management</title>
+	<link rel='stylesheet' href='http://timelyportfolio.github.io/rCharts_d3_sankey/css/sankey.css'>
+    
+    <script src='http://timelyportfolio.github.io/rCharts_d3_sankey/js/d3.v3.js' type='text/javascript'></script>
+    <script src='http://timelyportfolio.github.io/rCharts_d3_sankey/js/sankey.js' type='text/javascript'></script>
+
+
+    
+    <style>
+    .rChart {
+      display: block;
+      margin-left: auto; 
+      margin-right: auto;
+      width: 900px;
+      height: 1100px;
+    }  
+    </style>
+	
+	<style>ul { display:table; margin:0 auto;}</style>
+    
+  </head>
+  <body >
+	<font face="Calibri">
+	<center><h1>Roadnet Routing Software Implementation</h1></center>
+	<center><h4>Information as of June 3, 2016</h4></center>
+	<br>
+	<center><h2>Project Risk Assessment</h2></center>
+		<ul>
+			<li>Communicate implications to Sales & CS regarding customer setup, off day deliveries, and Under $150</li>
+			<li>Habit changes for Operations team, including Daily Reporting, SOP changes & standardization statewide</li> 
+			<li>Data bridges are built in C# & .NET. IT team will need training on these languages</li>
+			<li>Keg routing SOP will be uniquely challenging; Operations & IT must communicate to avoid delays</li>
+		</ul>
+		<br>
+	<center><h2>Near-Term Deadlines</h2></center>
+		<ul>
+			<li>Finish collecting all time windows</li>
+			<li>Acquire list of customers who we call each day (no time windows)</li> 
+			<li>Distribute training documents</li>
+			<li>Categorize Customers & compute averages for service/wait times</li>
+			<li>Input all data from driver collection forms</li>
+		</ul>
+		<br>
+	
+	
+	<center><h2>Detailed Project Timeline w/ Percent Completion</h2></center>
+	<center><img src="https://github.com/paulmattheww/Original-Projects/blob/master/Professional/Visualizations/timeline.png?raw=true " alt="Detailed Gantt Chart" style="width:1000px;height:800px;"></center>
+	
+	<center><h2>R = Responsible; A = Accountable; C = Consulted; I = Informed</h2></center>
+
+		<div style="margin: 0 auto; display: table; margin-top: 1em;">
+		<table class='gmisc_table' style='border-collapse: collapse; margin-top: 1em; margin-bottom: 1em;' >
+		<thead>
+		<tr>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey;'> </th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>end</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>CW</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>MG</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>PW</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>RA</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>RSt</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>VH</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>RS</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>JL</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>PC</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>JE</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>KG</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>BS</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>DH</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>BK</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>MA</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>TP</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>AS</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>TW</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>JB</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>H1</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>H2</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>H3</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>H4</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>H5</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>H6</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>H7</th>
+		<th style='border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;'>H8</th>
+		</tr>
+		</thead>
+		<tbody>
+		<tr>
+		<td style='text-align: left;'>COLLECT CUSTOMER DATA</td>
+		<td style='text-align: center;'>16959</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>SOP NO TIME WINDOWS</td>
+		<td style='text-align: center;'>16959</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>DISTRIBUTE TRAINING DOCS</td>
+		<td style='text-align: center;'>16959</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>DAILY RPT ACTUAL V PLAN</td>
+		<td style='text-align: center;'>16959</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>LIST OF NO TIME WINDOWS</td>
+		<td style='text-align: center;'>16959</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>PROVIDE IT DETAILS</td>
+		<td style='text-align: center;'>16959</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>ADD WEEK DATA TO CUST</td>
+		<td style='text-align: center;'>16961</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>CATEGORIZE CUSTOMERS</td>
+		<td style='text-align: center;'>16961</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>INPUT DATA</td>
+		<td style='text-align: center;'>16967</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>DATA BRIDGE TRAINING</td>
+		<td style='text-align: center;'>16967</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>CUST SETUP OUTSIDE STL</td>
+		<td style='text-align: center;'>16967</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>IT LOCKOUT WHILE ROUTING</td>
+		<td style='text-align: center;'>16968</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>DAILY RTE/STOP/ TERMS TO CUS</td>
+		<td style='text-align: center;'>16968</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>GEOCODE TOOL</td>
+		<td style='text-align: center;'>16968</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>BUILD DATA BRIDGES</td>
+		<td style='text-align: center;'>16968</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>EXTRAPOLATE SERVICE TIMES</td>
+		<td style='text-align: center;'>16968</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>OUTLINE SOP NOW V PLAN</td>
+		<td style='text-align: center;'>16969</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>TRANSFER DATA</td>
+		<td style='text-align: center;'>16969</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>BUILD BASE ROUTES</td>
+		<td style='text-align: center;'>16973</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>SOP DATA MAINTENANCE</td>
+		<td style='text-align: center;'>16975</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>NEED MORE DATA?</td>
+		<td style='text-align: center;'>16975</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>FINANCE TRAINING</td>
+		<td style='text-align: center;'>16982</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>SOP UNDER $150</td>
+		<td style='text-align: center;'>16983</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>DAILY REPORTING SOP</td>
+		<td style='text-align: center;'>16989</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>KEG ROUTE SOP</td>
+		<td style='text-align: center;'>16991</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>RECREATE REPORTS</td>
+		<td style='text-align: center;'>17003</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>C</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>ONSITE TRAIN RTER KC</td>
+		<td style='text-align: center;'>17010</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>ONSITE TRAIN RTER STL</td>
+		<td style='text-align: center;'>17016</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>ROUTING TRAINING</td>
+		<td style='text-align: center;'>17045</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>ROUTING SOP</td>
+		<td style='text-align: center;'>17045</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='text-align: left;'>SOP NEW CUSTOMER</td>
+		<td style='text-align: center;'>17045</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>R</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>A</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		<td style='text-align: center;'>_</td>
+		</tr>
+		<tr>
+		<td style='border-bottom: 2px solid grey; text-align: left;'>ASSESS $$ IMPACT</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>17045</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>R</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>C</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>C</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>A</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>A</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>C</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>R</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>R</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		<td style='border-bottom: 2px solid grey; text-align: center;'>_</td>
+		</tr>
+		</tbody>
+		</table>
+		</div>
+
+    <br>
+	<center><h2>Mouse over your tasks to view your responsibilities</h2></center>
+        <div id = 'chart11c055196c7' class = 'rChart rCharts_d3_sankey'></div>    
+    ﻿<!--Attribution:
+Mike Bostock https://github.com/d3/d3-plugins/tree/master/sankey
+Mike Bostock http://bost.ocks.org/mike/sankey/
+-->
+
+<script>
+(function(){
+var params = {
+ "dom": "chart11c055196c7",
+"width":    900,
+"height":   1100,
+"data": {
+ "target": [ "Carrie Ward", "Mary Goodman", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Paul Washburn", "Rick Ade", "Rick Ade", "Rick Ade", "Rick Ade", "Rick Ade", "Rick Ade", "Rick Ade", "Rick Ade", "Rick Ade", "Rick Ade", "Rick Ade", "Rick Ade", "Rick Ade", "Rick Ade", "Rick Ade", "Rick Ade", "Rick Ade", "Rick Ade", "Rich Stewart", "Rich Stewart", "Rich Stewart", "Rich Stewart", "Rich Stewart", "Rich Stewart", "Rich Stewart", "Rich Stewart", "Verne Horne", "Verne Horne", "Verne Horne", "Verne Horne", "Verne Horne", "Verne Horne", "Randy Simpson", "Randy Simpson", "Randy Simpson", "Randy Simpson", "Randy Simpson", "Randy Simpson", "Randy Simpson", "Randy Simpson", "Randy Simpson", "Joe Luna", "Joe Luna", "Joe Luna", "Joe Luna", "Joe Luna", "Joe Luna", "Joe Luna", "Joe Luna", "Joe Luna", "Joe Luna", "Joe Luna", "Joe Luna", "Joe Luna", "Joe Luna", "Joe Luna", "Joe Luna", "Joe Luna", "Paul Cunningham", "Paul Cunningham", "Paul Cunningham", "Paul Cunningham", "Paul Cunningham", "Paul Cunningham", "Paul Cunningham", "Paul Cunningham", "Paul Cunningham", "Paul Cunningham", "Paul Cunningham", "Paul Cunningham", "Paul Cunningham", "Paul Cunningham", "Paul Cunningham", "Paul Cunningham", "Jeff Elliott", "Jeff Elliott", "Jeff Elliott", "Jeff Elliott", "Jeff Elliott", "Jeff Elliott", "Jeff Elliott", "Jeff Elliott", "Jeff Elliott", "Jeff Elliott", "Jeff Elliott", "Kevin Gagen", "Kevin Gagen", "Kevin Gagen", "Kevin Gagen", "Kevin Gagen", "Kevin Gagen", "Kevin Gagen", "Kevin Gagen", "Kevin Gagen", "Bill Schwein", "Bill Schwein", "Bill Schwein", "Bill Schwein", "Bill Schwein", "Bill Schwein", "Bill Schwein", "Bill Schwein", "Don Hercher", "Don Hercher", "Don Hercher", "Don Hercher", "Bob Kloeppinger", "Bob Kloeppinger", "Bob Kloeppinger", "Bob Kloeppinger", "Bob Kloeppinger", "Bob Kloeppinger", "Bob Kloeppinger", "Bob Kloeppinger", "Bob Kloeppinger", "Bob Kloeppinger", "Bob Kloeppinger", "Bob Kloeppinger", "Marissa Arlin", "Marissa Arlin", "Marissa Arlin", "Marissa Arlin", "Tony Perri", "Tony Perri", "Tony Perri", "Tony Perri", "Amy Stephens", "Amy Stephens", "Amy Stephens", "Tom West", "Tom West", "Tom West", "Tom West", "Jason Bass", "Jason Bass", "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8" ],
+"source": [ "IT LOCKOUT WHILE ROUTING", "IT LOCKOUT WHILE ROUTING", "INPUT DATA", "INPUT STRATEGY", "SCHEDULE CONSULT", "ASSESS $$ IMPACT", "FINANCE TRAINING", "SOP DATA MAINTENANCE", "DATA BRIDGE TRAINING", "TRANSFER DATA", "CATEGORIZE CUSTOMERS", "EXTRAPOLATE SERVICE TIMES", "NEED MORE DATA?", "IT LOCKOUT WHILE ROUTING", "BUILD DATA BRIDGES", "RECREATE REPORTS", "DAILY REPORTING SOP", "SOP NEW CUSTOMER", "LIST OF NO TIME WINDOWS", "CONFIRM DEL DAY QUALITY", "ADD WEEK DATA TO CUST", "DISTRIBUTE TRAINING DOCS", "GEOCODE TOOL", "CUST SETUP OUTSIDE STL", "DAILY RTE/STOP/ TERMS TO CUS", "PROVIDE IT DETAILS", "OUTLINE SOP NOW V PLAN", "COLLECT CUSTOMER DATA", "INPUT DATA", "SCHEDULE CONSULT", "ASSESS $$ IMPACT", "SOP DATA MAINTENANCE", "NEED MORE DATA?", "ROUTING SOP", "ROUTING TRAINING", "IT LOCKOUT WHILE ROUTING", "SOP NO TIME WINDOWS", "RECREATE REPORTS", "DAILY REPORTING SOP", "KEG ROUTE SOP", "SOP UNDER $150", "BUILD BASE ROUTES", "CUST SETUP OUTSIDE STL", "ONSITE TRAIN RTER KC", "DAILY RPT ACTUAL V PLAN", "COLLECT CUSTOMER DATA", "INPUT DATA", "ROUTING TRAINING", "SOP NO TIME WINDOWS", "BUILD BASE ROUTES", "CUST SETUP OUTSIDE STL", "ONSITE TRAIN RTER KC", "DAILY RPT ACTUAL V PLAN", "COLLECT CUSTOMER DATA", "ROUTING TRAINING", "BUILD BASE ROUTES", "CUST SETUP OUTSIDE STL", "ONSITE TRAIN RTER STL", "DAILY RPT ACTUAL V PLAN", "ASSESS $$ IMPACT", "SOP DATA MAINTENANCE", "NEED MORE DATA?", "ROUTING SOP", "SOP NO TIME WINDOWS", "KEG ROUTE SOP", "SOP UNDER $150", "BUILD BASE ROUTES", "DAILY RPT ACTUAL V PLAN", "COLLECT CUSTOMER DATA", "INPUT DATA", "ASSESS $$ IMPACT", "CATEGORIZE CUSTOMERS", "ROUTING SOP", "ROUTING TRAINING", "SOP NO TIME WINDOWS", "BUILD DATA BRIDGES", "RECREATE REPORTS", "DAILY REPORTING SOP", "KEG ROUTE SOP", "SOP NEW CUSTOMER", "SOP UNDER $150", "BUILD BASE ROUTES", "CUST SETUP OUTSIDE STL", "ONSITE TRAIN RTER KC", "DAILY RPT ACTUAL V PLAN", "COLLECT CUSTOMER DATA", "INPUT DATA", "ASSESS $$ IMPACT", "CATEGORIZE CUSTOMERS", "ROUTING SOP", "ROUTING TRAINING", "SOP NO TIME WINDOWS", "BUILD DATA BRIDGES", "RECREATE REPORTS", "DAILY REPORTING SOP", "KEG ROUTE SOP", "SOP UNDER $150", "BUILD BASE ROUTES", "ONSITE TRAIN RTER KC", "ONSITE TRAIN RTER STL", "DAILY RPT ACTUAL V PLAN", "SCHEDULE CONSULT", "SOP DATA MAINTENANCE", "DATA BRIDGE TRAINING", "TRANSFER DATA", "IT LOCKOUT WHILE ROUTING", "BUILD DATA BRIDGES", "RECREATE REPORTS", "DAILY REPORTING SOP", "KEG ROUTE SOP", "SOP NEW CUSTOMER", "PROVIDE IT DETAILS", "SCHEDULE CONSULT", "SOP DATA MAINTENANCE", "DATA BRIDGE TRAINING", "TRANSFER DATA", "IT LOCKOUT WHILE ROUTING", "BUILD DATA BRIDGES", "RECREATE REPORTS", "LIST OF NO TIME WINDOWS", "PROVIDE IT DETAILS", "INPUT STRATEGY", "SOP DATA MAINTENANCE", "DATA BRIDGE TRAINING", "IT LOCKOUT WHILE ROUTING", "BUILD DATA BRIDGES", "RECREATE REPORTS", "KEG ROUTE SOP", "SOP NEW CUSTOMER", "COLLECT CUSTOMER DATA", "ASSESS $$ IMPACT", "SOP NO TIME WINDOWS", "BUILD BASE ROUTES", "SOP DATA MAINTENANCE", "EXTRAPOLATE SERVICE TIMES", "ROUTING SOP", "ROUTING TRAINING", "SOP NO TIME WINDOWS", "BUILD DATA BRIDGES", "DAILY REPORTING SOP", "KEG ROUTE SOP", "SOP UNDER $150", "BUILD BASE ROUTES", "ONSITE TRAIN RTER STL", "OUTLINE SOP NOW V PLAN", "INPUT DATA", "INPUT STRATEGY", "ASSESS $$ IMPACT", "FINANCE TRAINING", "COLLECT CUSTOMER DATA", "ROUTING TRAINING", "ONSITE TRAIN RTER STL", "DAILY RPT ACTUAL V PLAN", "INPUT DATA", "SOP NEW CUSTOMER", "GEOCODE TOOL", "COLLECT CUSTOMER DATA", "CATEGORIZE CUSTOMERS", "ROUTING TRAINING", "SOP NO TIME WINDOWS", "ASSESS $$ IMPACT", "FINANCE TRAINING", "INPUT DATA", "INPUT DATA", "INPUT DATA", "INPUT DATA", "INPUT DATA", "INPUT DATA", "INPUT DATA", "INPUT DATA" ],
+"value": [      8,      8,     10,      3,      7,     10,      7,     10,     10,     10,      8,      8,      5,      8,     10,     10,      9,     10,      5,      3,      8,      8,      5,      6,     10,      8,      8,     10,     10,      7,     10,     10,      5,     10,     10,      8,      6,     10,      9,      9,      8,      8,      6,      8,      8,     10,     10,     10,      6,      8,      6,      8,      8,     10,     10,      8,      6,      8,      8,     10,     10,      5,     10,      6,      9,      8,      8,      8,     10,     10,     10,      8,     10,     10,      6,     10,     10,      9,      9,     10,      8,      8,      6,      8,      8,     10,     10,     10,      8,     10,     10,      6,     10,     10,      9,      9,      8,      8,      8,      8,      8,      7,     10,     10,     10,      8,     10,     10,      9,      9,     10,      8,      7,     10,     10,     10,      8,     10,     10,      5,      8,      3,     10,     10,      8,     10,     10,      9,     10,     10,     10,      6,      8,     10,      8,     10,     10,      6,     10,      9,      9,      8,      8,      8,      8,     10,      3,     10,      7,     10,     10,      8,      8,     10,     10,      5,     10,      8,     10,      6,     10,      7,     10,     10,     10,     10,     10,     10,     10,     10 ] 
+},
+"nodeWidth":     25,
+"nodePadding":     10,
+"layout":     32,
+"labelFormat": ".1%",
+"title": "Team Member/Task Relationships",
+"id": "chart11c055196c7" 
+};
+
+params.units ? units = " " + params.units : units = "";
+
+//hard code these now but eventually make available
+var formatNumber = d3.format("0,.0f"),    // zero decimal places
+    format = function(d) { return formatNumber(d) + units; },
+    color = d3.scale.category20();
+
+if(params.labelFormat){
+  formatNumber = d3.format(".2%");
+}
+
+var svg = d3.select('#' + params.id).append("svg")
+    .attr("width", params.width)
+    .attr("height", params.height);
+    
+var sankey = d3.sankey()
+    .nodeWidth(params.nodeWidth)
+    .nodePadding(params.nodePadding)
+    .layout(params.layout)
+    .size([params.width,params.height]);
+    
+var path = sankey.link();
+    
+var data = params.data,
+    links = [],
+    nodes = [];
+    
+//get all source and target into nodes
+//will reduce to unique in the next step
+//also get links in object form
+data.source.forEach(function (d, i) {
+    nodes.push({ "name": data.source[i] });
+    nodes.push({ "name": data.target[i] });
+    links.push({ "source": data.source[i], "target": data.target[i], "value": +data.value[i] });
+}); 
+
+//now get nodes based on links data
+//thanks Mike Bostock https://groups.google.com/d/msg/d3-js/pl297cFtIQk/Eso4q_eBu1IJ
+//this handy little function returns only the distinct / unique nodes
+nodes = d3.keys(d3.nest()
+                .key(function (d) { return d.name; })
+                .map(nodes));
+
+//it appears d3 with force layout wants a numeric source and target
+//so loop through each link replacing the text with its index from node
+links.forEach(function (d, i) {
+    links[i].source = nodes.indexOf(links[i].source);
+    links[i].target = nodes.indexOf(links[i].target);
+});
+
+//now loop through each nodes to make nodes an array of objects rather than an array of strings
+nodes.forEach(function (d, i) {
+    nodes[i] = { "name": d };
+});
+
+sankey
+  .nodes(nodes)
+  .links(links)
+  .layout(params.layout);
+  
+var link = svg.append("g").selectAll(".link")
+  .data(links)
+.enter().append("path")
+  .attr("class", "link")
+  .attr("d", path)
+  .style("stroke-width", function (d) { return Math.max(1, d.dy); })
+  .sort(function (a, b) { return b.dy - a.dy; });
+
+link.append("title")
+  .text(function (d) { return d.source.name + " → " + d.target.name + "\n" + format(d.value); });
+
+var node = svg.append("g").selectAll(".node")
+  .data(nodes)
+.enter().append("g")
+  .attr("class", "node")
+  .attr("transform", function (d) { return "translate(" + d.x + "," + d.y + ")"; })
+.call(d3.behavior.drag()
+  .origin(function (d) { return d; })
+  .on("dragstart", function () { this.parentNode.appendChild(this); })
+  .on("drag", dragmove));
+
+node.append("rect")
+  .attr("height", function (d) { return d.dy; })
+  .attr("width", sankey.nodeWidth())
+  .style("fill", function (d) { return d.color = color(d.name.replace(/ .*/, "")); })
+  .style("stroke", function (d) { return d3.rgb(d.color).darker(2); })
+.append("title")
+  .text(function (d) { return d.name + "\n" + format(d.value); });
+
+node.append("text")
+  .attr("x", -6)
+  .attr("y", function (d) { return d.dy / 2; })
+  .attr("dy", ".35em")
+  .attr("text-anchor", "end")
+  .attr("transform", null)
+  .text(function (d) { return d.name; })
+.filter(function (d) { return d.x < params.width / 2; })
+  .attr("x", 6 + sankey.nodeWidth())
+  .attr("text-anchor", "start");
+
+// the function for moving the nodes
+  function dragmove(d) {
+    d3.select(this).attr("transform", 
+        "translate(" + (
+                   d.x = Math.max(0, Math.min(params.width - d.dx, d3.event.x))
+                ) + "," + (
+                   d.y = Math.max(0, Math.min(params.height - d.dy, d3.event.y))
+                ) + ")");
+        sankey.relayout();
+        link.attr("d", path);
+  }
+})();
+</script></font>
+    
+    <script></script>
+  <br><br></div>
+  
+	
+	
+  </body>
+</html>
