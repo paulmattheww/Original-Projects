@@ -1,4 +1,4 @@
- # 6-8-16 ven ndiagram of teams and brands overlap
+# 6-8-16 ven ndiagram of teams and brands overlap
 
 
 library(VennDiagram)
@@ -111,11 +111,11 @@ library(data.tree)
 df = overlap; headTail(df)
 
 df$pathString = paste('Whole Company',
-                   df$Team, 
-                   df$Director,
-                   df$Supplier, 
-                   df$Brand,
-                   sep='/')
+                      df$Team, 
+                      df$Director,
+                      df$Supplier, 
+                      df$Brand,
+                      sep='/')
 # df$pathString = paste('Whole Company',
 #                       df$target, 
 #                       df$source, 
@@ -235,17 +235,24 @@ a_row = tcrossprod(mat) #mat %*% t(mat) #matrix multiplier
 
 # a_row is now a one mode matrix formed by the row entities
 # now we need a one mode matrix formed by the column entities
-a_col = tcrossprod(t(mat)) # or t(mat) %*% mat
+a_teams = tcrossprod(t(mat)) # or t(mat) %*% mat
 
-headTail(a_row); headTail(a_col)
+headTail(a_row); headTail(a_teams)
 
-graph_i = graph.incidence(a_col)
+
+library(igraph)
+library(plotly)
+# graph_i = graph.incidence(a_col)
+graph_i = graph.adjacency(a_teams, mode = 'undirected')
+E(graph_i)$weight = count.multiple(graph_i)
+
+
 
 V(graph_i)$color = rgb(1, 0, .5)
 V(graph_i)$label = V(graph_i)$name
 
 
-plot(graph_i)
+plot(graph_i, layout=layout.fruchterman.reingold)
 
 library(igraph)
 
@@ -325,7 +332,6 @@ rpivotTable(tb,
 #           options = 
 #             list(pageLength = x))
 # 
-
 
 
 
