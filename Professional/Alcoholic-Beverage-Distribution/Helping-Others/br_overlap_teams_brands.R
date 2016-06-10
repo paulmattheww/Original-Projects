@@ -283,6 +283,13 @@ V(team_adjacency)$degree = degree(team_adjacency)
 #tkplot(team_adjacency)
 
 
+
+
+
+
+
+
+
 library(d3heatmap)
 library(heatmaply)
 
@@ -297,9 +304,50 @@ p_mat[is.infinite(p_mat)] = 0
 
 d3heatmap(p_mat, scale='none', 
           colors = "Spectral",
-          height=850, width=1500,
+          height=850, width=1400,
           yaxis_font_size = 10,
           xaxis_font_size = 10)
+
+
+
+
+
+
+
+mat = spMatrix(
+  nrow=length(unique(tb$Supplier)),
+  ncol=length(unique(tb$Team)),
+  i = as.numeric(factor(tb$Supplier)),
+  j = as.numeric(factor(tb$Team)),
+  x = as.numeric(tb$Revenue) * 1)#rep(1, length(as.numeric(tb$Revenue))))
+# x = rep(1, length(as.numeric(tb$Brand))))
+# row.names(mat) = levels(factor(tb$Brand))
+row.names(mat) = levels(factor(tb$Supplier))
+colnames(mat) = levels(factor(tb$Team))
+headTail(mat, 50)
+
+p_mat = cbind(mat / rowSums(mat)) #fuck ups below
+# p_mat = prop.table(mat)
+# p_mat = mat / diag(mat)
+head(p_mat, 30)
+
+p_mat[is.na(p_mat)] = 0
+p_mat[is.infinite(p_mat)] = 0
+
+d3heatmap(p_mat, scale='none', 
+          colors = "Spectral",
+          height=850, width=1400,
+          yaxis_font_size = 10,
+          xaxis_font_size = 10)
+
+
+
+
+
+
+
+
+
 
 
 
@@ -316,13 +364,14 @@ plot(graph_i, layout=layout.fruchterman.reingold)
 #pivot check
 library(rpivotTable)
 
-rpivotTable(tb,
+rpivotTable(as.data.frame(as.matrix(tb)),
+  # as.data.frame(as.matrix(p_mat)),
             aggregatorName='Sum',
             vals='Revenue',
-            row='Team',
+            row=c('Supplier', 'Team'),
             width="100%", 
             height="2500px",
-            rendererName='Treemap',
+            rendererName='Table',
             menuLimit = 20000)
 
 
