@@ -222,13 +222,14 @@ head(tb)
 
 head(tb)
 library(Matrix)
-mat = spMatrix(nrow=length(unique(tb$Supplier)),
-               # nrow=length(unique(tb$Brand)),
+mat = spMatrix(
+  # nrow=length(unique(tb$Supplier)),
+               nrow=length(unique(tb$Brand)),
                ncol=length(unique(tb$Team)),
-               i = as.numeric(factor(tb$Supplier)),
-               # i = as.numeric(factor(tb$Brand)),
+               # i = as.numeric(factor(tb$Supplier)),
+               i = as.numeric(factor(tb$Brand)),
                j = as.numeric(factor(tb$Team)),
-               x = rep(1, length(as.numeric(tb$Supplier))))
+               x = as.numeric(tb$Revenue) * 1)#rep(1, length(as.numeric(tb$Revenue))))
                # x = rep(1, length(as.numeric(tb$Brand))))
 # row.names(mat) = levels(factor(tb$Brand))
 row.names(mat) = levels(factor(tb$Supplier))
@@ -236,8 +237,8 @@ colnames(mat) = levels(factor(tb$Team))
 headTail(mat, 50)
 
 # get percentages of whole matrix
-p_mat = mat / diag(mat)
-head(p_mat, 30)
+# p_mat = mat / diag(mat)
+# head(p_mat, 30)
 
 library(ggplot2)
 library(gplots)
@@ -291,7 +292,6 @@ p_mat = cbind(mat / rowSums(mat)) #fuck ups below
 # p_mat = mat / diag(mat)
 head(p_mat, 30)
 
-head(p_mat)
 p_mat[is.na(p_mat)] = 0
 p_mat[is.infinite(p_mat)] = 0
 
