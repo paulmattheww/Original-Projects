@@ -230,6 +230,14 @@ row.names(mat) = levels(factor(tb$Brand))
 colnames(mat) = levels(factor(tb$Team))
 headTail(mat, 50)
 
+library(ggplot2)
+library(gplots)
+library(ggdendro)
+
+
+xxx = as.matrix(mat) # scale(mat)
+dd_xxx = as.dendrogram(hclust(dist(xxx)))
+
 # to get the one-mode rep of ties between entities, multiply the matrix by its transpose
 a_row = tcrossprod(mat) #mat %*% t(mat) #matrix multiplier
 
@@ -237,19 +245,33 @@ a_row = tcrossprod(mat) #mat %*% t(mat) #matrix multiplier
 # now we need a one mode matrix formed by the column entities
 a_teams = tcrossprod(t(mat)) # or t(mat) %*% mat
 
+
 headTail(a_row); headTail(a_teams)
 
 
 library(igraph)
-library(plotly)
 # graph_i = graph.incidence(a_col)
 graph_i = graph.adjacency(a_teams, mode = 'undirected')
-E(graph_i)$weight = count.multiple(graph_i)
+
+graph_i = simplify(graph_i)
+
+graph_i_olap = a_teams / diag(a_teams)
+graph_i_olap_g = graph.incidence(graph_i_olap)
+graph_i_olap_g = simplify(graph_i_olap, remove.multiple=TRUE, remove.loops=TRUE)
+
+team_adjacency = graph.adjacency(graph_i_olap, weighted=T)
+
+E(graph_i_olap)$weight = count.multiple(graph_i_olap)
+#V(graph_i_olap)$degree = degree(team_adjacency)
+V(graph_i_olap)$color = rgb(1, 0, .5)
+V(graph_i_olap)$label = V(graph_i)$name
 
 
 
-V(graph_i)$color = rgb(1, 0, .5)
-V(graph_i)$label = V(graph_i)$name
+library(d3heatmap)
+d3heatmap(mat)
+
+
 
 
 plot(graph_i, layout=layout.fruchterman.reingold)
