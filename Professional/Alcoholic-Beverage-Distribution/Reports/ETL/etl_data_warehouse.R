@@ -1,5 +1,44 @@
 library(dplyr)
+library(RODBC)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
+
+
+
+
+
+
+
+# TESTING STAGING DATABASE
+
+#unsaleable monthly report data
+staging_db = 'N:/Operations Intelligence/Data/STaging/Staging-Database.accdb'
+odbc_staging = odbcConnectAccess2007(staging_db)
+UNSALEABLE_REPORT_RAW_DATA = sqlQuery(odbc_staging, "SELECT [#MIVDT],[#MINP#], [#MTRCD], [#MIVDT], [#MCUS#], [#MQTYS], [#MCOS$], [#MQPC], [#MCMP], [#MQTY@], [#MCMRC], [#MBRND], [#MCLA@], [#MSUPL]
+          FROM WSFILE002_MTC1CI
+          WHERE (((WSFILE002_MTC1CI.[#MTRCD])='A') 
+          AND ((WSFILE002_MTC1CI.[#MIVDT])>1160601 And (WSFILE002_MTC1CI.[#MIVDT])<1160614) 
+          AND ((WSFILE002_MTC1CI.[#MCMRC])=2));
+         ")
+tail(UNSALEABLE_REPORT_RAW_DATA)
+
+
+
+UNSALEABLE_EXTRACT = sqlQuery(odbc_staging, "SELECT WSFILE002_RCT1.[#RDATE], WSFILE002_RCT1.[#RPRD#], WSFILE002_RCT1.[#RDESC], WSFILE002_PRD1.[PBRAN#], WSFILE002_RCT1.[#RCASE], WSFILE002_RCT1.[#RBOTT], WSFILE002_RCT1.[#RQPC], WSFILE002_RCT1.[#RFOB], WSFILE002_DIRDIV.DDUSERN, WSFILE002_SUP1.[#SSUP#], WSFILE002_SUP1.[#SSUNM]
+FROM WSFILE002_DIRDIV INNER JOIN (WSFILE002_RCT1 INNER JOIN (WSFILE002_PRD1 INNER JOIN WSFILE002_SUP1 ON WSFILE002_PRD1.PSUPPL = WSFILE002_SUP1.[#SSUP#]) ON WSFILE002_RCT1.[#RPRD#] = WSFILE002_PRD1.[PPROD#]) ON WSFILE002_DIRDIV.DDSUPP = WSFILE002_SUP1.[#SSUP#]
+                                      WHERE (((WSFILE002_RCT1.[#RDATE])>1160601 And (WSFILE002_RCT1.[#RDATE])<1160608) AND ((WSFILE002_RCT1.[#RTRC@])='A') AND ((WSFILE002_RCT1.[#RCODE])=2));
+                                      ")
+tail(UNSALEABLE_EXTRACT)
+
+         # WHERE #RDATE BETWEEN "#1160601#" AND "#1160608#"')
+# WHERE #RCOMP <> 0
+         # AND #RTRC@ <> '0' 
+         # AND #RDATE BETWEEN 1160601 AND 1160608
+         # AND #rcode < 8 
+         # AND EXT_COST <> 0
+         # AND #RTRC@ == 'A'")
+sqlQuery(odbc_staging, 'SELECT column_name,* FROM WSFILE002_MTC1.columns')
+
+
 
 
 
@@ -93,6 +132,7 @@ production = etl_production(stl=stl, kc=kc)
 headTail(production)
 
 write.csv(production, 'N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/Output/production_ts_upload.csv', na='', row.names=FALSE)
+
 
 
 
@@ -468,11 +508,18 @@ off_day_etl = function(deliveries, weeklookup) {
   
   #off_day_d = filter(off_day_d, New.Customer != 'YES')
   
-  off_day_d = off_day_d[, c('Date', 'Invoice', 'Call', 'Salesperson', 'Customer', 
-                            'New.Customer', 'On.Premise', 'Tier', 'Cases', 'Dollars', 
-                            'Priority', 'Warehouse', 'Weekday',
-                            'Delivery.Days', 'Month', 'DOTM', 'Year', 'Week',
-                            'Ship.Week', 'Ship.Week.Plan', 'Merchandising')]
+  da_colz = c('Date', 'Invoice', 'Call', 'Salesperson', 'Customer', 
+              'New.Customer', 'On.Premise', 'Tier', 'Cases', 'Dollars', 
+              'Priority', 'Warehouse', 'Weekday',
+              'Delivery.Days', 'Month', 'DOTM', 'Year', 'Week',
+              'Ship.Week', 'Ship.Week.Plan', 'Merchandising')
+  off_day_d = off_day_d[, da_colz]
+  
+  names(off_day_d) = c('Date', 'Invoice', 'Call', 'Salesperson', 'Customer', 
+                       'NewCustomer', 'OnPremise', 'Tier', 'Cases', 'Dollars', 
+                       'Priority', 'Warehouse', 'Weekday',
+                       'DeliveryDays', 'Month', 'DOTM', 'Year', 'Week',
+                       'ShipWeek', 'ShipWeekPlan', 'Merchandising')
   
   
   off_day_d # headTail(off_day_d, 30)
@@ -813,4 +860,3 @@ write.csv(out_of_stock, 'N:/Operations Intelligence/Monthly Reports/Data/Reporti
 
 
 
- 
