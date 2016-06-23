@@ -13,9 +13,9 @@ as400_db = 'N:/Operations Intelligence/Data/Staging/STaging-Database.accdb'
 as400_odbc = odbcConnectAccess2007(as400_db)
 
 sls = sqlQuery(as400_odbc, "SELECT WSFILE002_MTC1CI.[#MIVDT], WSFILE002_MTC1CI.[#MIVND], WSFILE002_MTC1CI.[#MCUS#], WSFILE002_MTC1CI.[#MCUSY], 
-                                    WSFILE002_MTC1CI.[#MEXT$], WSFILE002_MTC1CI.[#MQTYS], WSFILE002_MTC1CI.[#MQPC], WSFILE002_MTC1CI.[#MLIN#]
-                            FROM WSFILE002_MTC1CI
-                            WHERE ((WSFILE002_MTC1CI.[#MIVDT] BETWEEN 1150601 And 1160601) AND ((WSFILE002_MTC1CI.[#MTRCD])='B'));")
+               WSFILE002_MTC1CI.[#MEXT$], WSFILE002_MTC1CI.[#MQTYS], WSFILE002_MTC1CI.[#MQPC], WSFILE002_MTC1CI.[#MLIN#]
+               FROM WSFILE002_MTC1CI
+               WHERE ((WSFILE002_MTC1CI.[#MIVDT] BETWEEN 1150601 And 1160601) AND ((WSFILE002_MTC1CI.[#MTRCD])='B'));")
 
 names(sls) = c('Date', 'Invoice', 'CustomerID', 'CustomerType', 'Ext$', 'QtySold', 'QPC', 'Line')
 headTail(sls, 20)
@@ -183,11 +183,38 @@ headTail(customer_invoice_summary); headTail(customers)
 customers_new = merge(customers, customer_invoice_summary, by='CustomerID', all.x=TRUE); headTail(customers_new)
 
 
-# Add in categories
+# Add in categories from AS400
 as400_db = 'N:/Operations Intelligence/Data/Staging/STaging-Database.accdb'
 as400_odbc = odbcConnectAccess2007(as400_db)
 cus = sqlQuery(as400_odbc, "SELECT [CCUST#], [CCTYPE] FROM WSFILE002_CUS2")
 close(as400_odbc)
+
+
+typ = kc_customers$CustomerType
+kc_customers$CustomerType = ifelse(typ == 'A', 'Bar/Tavern', 
+                                   ifelse(typ == 'C', 'Country Club', 
+                                          ifelse(typ=='E', 'Transportation/Airline',
+                                                 ifelse(typ=='G', 'Gambling', 
+                                                        ifelse(typ=='J', 'Hotel/Motel',
+                                                               ifelse(typ=='L', 'Restaurant', 
+                                                                      ifelse(typ=='M', 'Military', 
+                                                                             ifelse(typ=='N', 'Fine Dining',
+                                                                                    ifelse(typ=='O', 'Internal', 
+                                                                                           ifelse(typ=='P', 'Country/Western',
+                                                                                                  ifelse(typ=='S', 'Package Store', 
+                                                                                                         ifelse(typ=='T', 'Supermarket/Grocery',
+                                                                                                                ifelse(typ=='V', 'Drug Store',
+                                                                                                                       ifelse(typ=='Y', 'Convenience Store', 
+                                                                                                                              ifelse(typ=='Z', 'Catering',
+                                                                                                                                     ifelse(typ=='3', 'Night Club', 
+                                                                                                                                            ifelse(typ=='5', 'Adult Entertainment', 
+                                                                                                                                                   ifelse(typ=='6', 'Sports Bar', 
+                                                                                                                                                          ifelse(typ=='I', 'Church', 
+                                                                                                                                                                 ifelse(typ=='F', 'Membership Club', 
+                                                                                                                                                                        ifelse(typ=='B', 'Mass Merchandiser', 
+                                                                                                                                                                               ifelse(typ=='H', 'Fraternal Organization', 
+                                                                                                                                                                                      ifelse(typ=='7', 'Sports Venue', 'OTHER')))))))))))))))))))))))
+
 
 
 
@@ -273,7 +300,7 @@ kc_customers %>% ggvis(x = ~Line, y = ~ServiceTime) %>%
              axis = list(stroke = "white"),
              labels = list(fontSize = 14))) %>%
   set_options(width = 600, height = 600) 
- 
+
 
 
 kc_customers %>% ggvis(x = ~Invoice, y = ~ServiceTime) %>% 
@@ -320,11 +347,11 @@ a %>% ggvis(~Line, ~OnPremise, fill = ~Freq) %>%
 # %>%
 #   add_tooltip(function(x) paste0("Wt: ", Invoice, "<br>"), "hover") 
 
-  
-  
-  
-  
-  #add_tooltip(CustomerID, "hover")
+
+
+
+
+#add_tooltip(CustomerID, "hover")
 
 odbcCloseAll()
 
