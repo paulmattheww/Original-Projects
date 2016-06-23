@@ -186,7 +186,7 @@ customers_new = merge(customers, customer_invoice_summary, by='CustomerID', all.
 # Add in categories
 as400_db = 'N:/Operations Intelligence/Data/Staging/STaging-Database.accdb'
 as400_odbc = odbcConnectAccess2007(as400_db)
-cus = sqlQuery(as400_odbc, "SELECT [CCUST#], [CCUSTN], [CCTYPE], [CSLYTD], [CONPRM] FROM WSFILE002_CUS2")
+cus = sqlQuery(as400_odbc, "SELECT [CCUST#], [CCTYPE] FROM WSFILE002_CUS2")
 close(as400_odbc)
 
 
