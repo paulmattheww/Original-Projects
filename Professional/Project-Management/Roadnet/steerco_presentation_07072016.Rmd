@@ -1,10 +1,10 @@
 ---
-title: "Roadnet Routing Solution"
-subtitle: "<small>Steering Committee Update</small>"
-author: "Paul Washburn & Rick Ade"
-date: "July 7, 2016"
+title: "<b>Roadnet Routing Solution</b>"
+subtitle: "<b><small>Steering Committee Update</small></b>"
+author: "<small>Paul Washburn & Rick Ade</small>"
+date: "<small>July 7, 2016</small>"
 output: revealjs::revealjs_presentation#html_document #ioslides_presentation #slidy_presentation #beamer_presentation #revealjs::revealjs_presentation
-theme: night
+theme: solarized
 center: true
 fig_width: 10
 fig_height: 5
@@ -12,6 +12,7 @@ fig_caption: true
 widescreen: true
 # navigation: slide
 transition: rotate
+background_transition: concave
 # width: 1500
 # height: 1200
 autosize: true
@@ -30,10 +31,6 @@ library(plan)
 library(plotrix)
 library(xlsx)
 
-
-
-
-
 #get data for gantt
 event = read.xlsx(file='C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Planning Data/master_planning_roadnet.xlsx',
                   sheetName='events', header=TRUE)
@@ -42,15 +39,16 @@ events_dates = c(as.character(Sys.Date())) #event$date#
 tasks = read.xlsx(file='C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Planning Data/master_planning_roadnet.xlsx',
                   sheetName='nodes_w_types', header=TRUE)
 tasks = filter(tasks, type == 'Task')
-
 ```
 
 
+# <b>Executive Summmary</b> <br><small>Recent events have accelerated pace of work.<br><br>As the real work begins we will likely need to seek the opinions of the Steering Committee more often. Decisions will need to be made more frequently, and consultations will have higher stakes to timeline & success.<br><br>Progress towards our goal has been satisfactory.</small> {data-background=#A4A4A4}
 
-# Detailed Project Timeline <small>As of July 1, 2016</small> {data-background=#D8D8D8}
 
-## Timeline & Near-Term Goals
-```{r timeline, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=12, fig.height=8}
+# <b>Progress Report</b> <br><small>The project is on schedule, yet highly sensitive to delays. <br><br>Project is about 40% complete. <br><br>Staying on track is imperative to successful implementation this calendar year.<br><br>We are entering into a very dense work phase for all team members.</small> {data-background=#A4A4A4}
+
+## Detailed Project Timeline
+```{r timeline, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=12, fig.height=7.5}
 create_gantt = function(key, desc, start, end, done, events, event_dates){
   roadnet_planner = as.gantt(key=key, description=desc,
                              start=start, end=end, done=done) #, # done) #, NeededBy) #, done, neededBy)
@@ -74,13 +72,41 @@ suppressWarnings(print(x))
 ```
 
 
+## Accomplishments
+<ul> 
+  <li>All requisite data has been collected by drivers</li>
+  <li>All requisite data has been input into digital form</li>
+  <li>Derivative data has been identified for transformation</li>
+  <li>RTS database has been converted to RNA database</li>
+  <li>Data supply chain has been outlined for entire system</li>
+  <li>Processes have been outlined at high level</li>
+  <li>Reporting requirements have been gathered</li>
+  <li>IT team has met with & trained on API connectivity</li>
+  <li>Service times have been inferred statistically outside KC</li>
+</ul>
 
 
+## Challenges & Unresolved Issues
+<p><center>Maximizing dynamic routing is the largest challenge and will be central to the project. Other unresolved issues include:</p></center>
+<ul> 
+  <li><b>Lock all out from AS400 during routing</b></li>
+  <li>Keg Routing process in Roadnet</li>
+  <li>Detailed specifications for IT team</li>
+  <li>Decide on SQL or flat file staging database</li>
+  <li>Decide if Azure for staging database</li>
+  <li>Decide time cutoff: orders & input</li>
+  <li>Decide whether to send orders throughout day</li>
+  <li>Decide whether to keep only true routing session</li>
+  <li>Derive fields that do not exist for routing</li>
+</ul>
 
   
+  
+  
 
-# Risks Assessment & Mitigation {data-background=#D8D8D8}
-<small>Overview of potential challenges in perspective of their potential impacts</small>
+# <b>Risk Assessment & Mitigation</b> <small>Following is an overview of project risks & their potential impacts.<br><br>Aside from larger risk items, there exist micro-risks that can just as easily derail progress. These include apathy, lack of engagement, lack of incentives, poor communication, doubts about the software's viability and hasty decisions about technical details.<br><br>All reasonable measures to mitigate risks will be employed to minimize the risk of failure.</small> {data-background=#A4A4A4}
+
+
 
 ## Risk Matrix
 
@@ -120,16 +146,240 @@ final_plot = base_plot +
 print(final_plot)
 ```
 
-## Risk Items
+
+
+
+
+## Overview of Risk Items
 <ul> 
-  <li><b>Complex Rules:</b> The rules we wish to implement will be challenging to implement; data maintenance and initial setup will be vital.</li>
-  <li><b>Consultants:</b> We face considerable risk due to miscommunications and possible apathy coming from Omnitracs consultants.</li>
-  <li><b>Keg Routing:</b> A workable model will need to be developed/tested if we are to leverage the tool for all routing activities.</li>
-  <li><b>Operations Team Habit Changes:</b> Habits related to data maintenance, routing, reporting and interacting with drivers/customers will be challenged.</li>
-  <li><b>Re-engineering Reports:</b> The reporting that surrounds the routing process as it exists today is highly inefficient and error-prone, and all will need to be reverse-engineered.</li>
+  <li><b>Complex Rules:</b> Challenging to implement</li>
+  <li><b>Consultants:</b> Communication has been challenging</li>
+  <li><b>Keg Routing:</b> Model needs be conceived & developed</li>
+  <li><b>Habit Changes:</b> Habits will be sticky for routers and drivers</li>
+  <li><b>Reports:</b> Reporting difficult hard to reverse engineer</li>
+  <li><b>Dynamic routing phase-in:</b> Plan incremental phase-in</li>
+  <li><b>IT Training:</b> C# .NET and XML for API connectivity</li>
+  <li><b>Sales & Cust. Service:</b> Data/cut-offs/under $150/off days</li>
+  <li><b>Driver Cooperation:</b> Order of route; custom asks of router</li>
+  <li><b>Mis-Aligned Incentives:</b> Process owners need nudges</li>
 </ul>
 
 
+## Risk Mitigation <small>Implementing Complex Rules for Dynamic Routing</small>
+<ul> 
+  <li>Dynamic routing requires excellent data maintenance</li>
+  <li>Necessitates clear & concise communication w/ Omnitracs</li>
+  <li>All needs of the system need to be outlined prior to on-site</li>
+  <li>Will require testing of all possible scenarios</li>
+  <li>We must plan for driver/customer personal relationships</li>
+  <li>We must plan prioritizing certain customers over others</li>
+  <li>Document "wish list" of rules to implement prior to on-site</li>
+  <li>Ensure all relevant data makes it into the RNA database</li>
+</ul>
+
+
+## Risk Mitigation  <small>Consultant Miscommunications & Errors</small>
+<p>Somewhere between the sales process & our interaction with the consultants relevant information has failed to filter down. 
+Twice the issue has been addressed with Linda Harris, the project manager. The IT team is very helpful.</p>
+<ul> 
+  <li>Misunderstandings will be nipped in the bud immediately</li>
+  <li>Open, honest & clear communication practices employed</li>
+  <li>Technical items will be brought up to technical consultants</li>
+  <li>Where necessary we will ask for answers in writing</li>
+  <li>Meetings must add value or invoices will be disputed</li>
+</ul>
+
+
+## Risk Mitigation  <small>Routing Kegs Using Dynamic Routing in Roadnet</small>
+<p>Keg routing is currently done outside of Roadnet, and a workable process must be modeled, developed & tested.
+Kansas City will be the laboratory for this testing.</p>
+<ul> 
+  <li>Need to develop a field that indicates "Is.Keg?" for product</li>
+  <li>Keg delivery days need to be established for each client</li>
+  <li>Keg route assignment needs to have clear criteria</li>
+  <li>Must decide if we will be using a separate routing session</li>
+  <li>Model will be explored in KC & exported statewide</li>
+  <li>Keg routes will need to be reviewed prior to utilizing</li>
+</ul>
+
+## Risk Mitigation <small>Operations, Sales & Driver Habit Changes</small>
+<p>The following must be addressed/pre-empted:</p>
+<ul> 
+  <li>Driver on-boarding process needs updating</li>
+  <li>Customer & Route data maintenance SOP</li>
+  <li>Data origination (Sales/Operations/Data Integrity) SOPs</li>
+  <li>Drivers currently choose stop sequence; will change</li>
+  <li>Pre-emptive communication will need to take place</li>
+  <li>In STL drivers have every incentive to speed, burning fuel</li>
+  <li>Need to sort out complaining from true feedback; forum?</li>
+  <li>Need feedback mechanism from drivers/routers</li>
+  <li>Must ensure driver manages client relationships</li>
+</ul>
+
+
+## Risk Mitigation <small>Re-Engineering Routing & Operations Reports</small>
+<ul> 
+  <li>Reporting will be designed to be transferrable to new ERP</li>
+  <li>Report process will be documented in detail prior to build</li>
+  <li>Where appropriate reports will be automated & simplified</li>
+  <li>Where appropriate reports will be improved</li>
+  <li>New reports will be developed from Business Intelligence</li>
+  <li>Track actual v. planned miles, hours, etc.</li>
+  <li>Combine with other reports</li>
+  <li>Identify holes in systematic reporting from Roadnet</li>
+</ul>
+
+
+## Risk Mitigation <small>Mis-aligned Incentives at the Execution Level</small>
+<p>To achieve organizational change there must exist buy-in, effort, direction, feedback mechanisms & enthusiasm at the daily execution-level. <br><br>Incentives need not be financial, and should not be too numerous or complicated. Focusing on a few levers, and employing them consistently, is most consistently linked to successful change-management.<br><br><a href="http://sloanreview.mit.edu/article/monitor-measure-incentive-is-management-as-simple-as-that/">See research from MIT & Stanford</a></p>
+
+
+## Risk Mitigation <small>Mis-aligned Incentives at the Execution Level (Cont.)</small>
+<p>The following will help minimize the risk of mis-alignment of goals & incentives:</p>
+<ul> 
+  <li>Goals, mechanisms & incentives need be carefully aligned</li>
+  <li>Develop positive incentives to minimize apathy/burnout</li>
+  <li>Target setting of variables relevant to ROI</li>
+  <li>Build deep/relevant understanding at all levels</li>
+  <li>Establish & communicate expectations clearly & often</li>
+  <li>Timely & accurate reporting of relevant information</li>
+  <li>Incentives should have value to the individual</li>
+</ul>
+
+
+
+
+
+# <b>Financial Assessment</b> <br><small>Initial ROI estimations assume 3% fuel savings & 2% labor savings. If we are successful meeting these goals then Roadnet will have an ROI within 3 years.<br><br> There are considerable obstacles to achieving an ROI within this timeframe.<br><br>Challenges include the enforcement of dynamic routing stop sequence, a lack of dispatching metrics, lack of incentive at the execution level, labor contract structures and logistical difficulties implementing custom routing rules.</small>{data-background=#A4A4A4}
+
+
+## Horizon for ROI <small>Dynamic routing will be challenging at first. Relevant factors are driver confusion, expansion of client relationships per driver, and imperfect data. All steps to minimize this will be implemented.</small>  
+<ul>
+  <li>Group consensus is that ROI will not be quickly realized</li>
+  <li>Best case scenario will be ROI @ 9 months</li>
+  <li>Conservative estimate between 1.5 - 3 year horizon</li>
+  <li>Growing pains likely to emerge in beginning</li>
+  <li>Drivers will need period to adjust to dynamic routes</li>
+  <li>ROI will need to be statistically adjusted for veracity</li>
+  <li>Adjustments include sales, fuel cost, man hours & miles</li>
+  <li>Must save 2 miles/truck/day & 5 minutes/driver/day</li>
+</ul>
+
+
+
+## Optimizing for Maximum ROI <small>Certain activities will influence ROI more than others, such as the following:</small>
+<ul> 
+  <li>Filling trucks to capacity to decrease trucks used</li>
+  <li>Ensuring client/driver relationships are not neglected</li>
+  <li>Prevent speeding & hazardous driving*</li>
+  <li>Maintain data as flawlessly as possible</li>
+  <li>Enforce dynamic route sequence with drivers</li>
+  <li>Minimize off-day deliveries through communication</li>
+  <li>Maintain/consult objective metrics often</li>
+  <li>Ensure no negative externalities to sales/merchandisers</li>
+  <li>Maintain positive mindset about software viability</li>
+  <li>Be open to adaptation when appropriate</li>
+</ul>
+
+
+## Tenative Plan for Tracking ROI <small>ROI will need to account for statistical fluctuations in fuel, labor & case production. Raw data will come from the following sources:</small>
+<ul> 
+  <li>Hogan HR invoices</li>
+  <li>Hogan fuel invoices</li>
+  <li>Other fuel vendor invoices</li>
+  <li>Daily report {miles driven, miles expected, case production}</li>
+  <li>Payroll data {Harris data, GL}</li>
+  <li>Roadnet invoices</li>
+  <li>If we add dispatching, cell phone & other one-time fees</li>
+</ul>
+
+
+
+
+
+
+
+
+# <b>Team Performance</b> <br><small>The Roadnet Team has performed well to-date. <br><br>Project Management data structures & reporting have enhanced collective productivity.<br><br>Optimism towards goal may be a problem.<br><br>Empirical research on Project Management has been reviewed to help maintain adequate productivity and overall effectiveness.</small>{data-background=#A4A4A4}
+
+
+## Factors of Team Effectiveness <small>Aside from regular 1v1 interactions between PMs and Members, there are 5 key factors that determine a team's effectiveness. Often there exists a tradeoff between effectiveness & efficiency. For details, please see <a href="https://rework.withgoogle.com/blog/five-keys-to-a-successful-google-team/">Google's People Operations Study of Team Effectiveness</a></small>
+<ul>
+  <li><b>Psychological Safety -</b>Opportunity to speak up & be heard</li>
+  <li><b>Dependability -</b> Work completed on-time w/ excellence</li>
+  <li><b>Structure & Clarity -</b> Clear roles, plans & goals</li>
+  <li><b>Meaning -</b> Personal importance to the mission</li>
+  <li><b>Impact -</b> Believing work matters & influences change</li>
+</ul>
+
+
+## Group Roles <br><small>We actively seek to cultivate these constructive roles</small>
+<ul>
+  <li><b>Encourager -</b> Offers praise & acknowledges contributions</li>
+  <li><b>Harmonizer -</b> Reduces tension & promotes reconciliation</li>
+  <li><b>Compromizer -</b> In conflict scenario offers middleground</li>
+  <li><b>Gate Keeper -</b> Encourages participation & communication</li>
+  <li><b>Standard Setter -</b> Evaluates progress to standards</li>
+</ul>
+
+
+
+## Task Roles <small>These roles are important to ask execution</small>
+<ul>
+  <li>Initiator</li>
+  <li>Information Seeker</li>
+  <li>Opinion Seeker</li>
+  <li>Information Giver</li>
+  <li>Opinion Giver</li>
+  <li>Coordinator</li>
+  <li>Elaborator</li>
+  <li>Orientor</li>
+  <li>Evaluator</li>
+  <li>Procedure Technician</li>
+  <li>Recorder</li>
+</ul>
+
+
+
+
+# <b>Moving Forward</b> <br><small>As stated earlier, the project has kicked into high gear. <br><br>We will go from 40% to 80% complete much faster than we went from 0% to 40% complete.<br><br>The meat of the work will be performed in the next two months, and mistakes will not be immediately evident (if ever). Since the quality feedback loop is delayed we must ensure that seemingly small decisions are not made by taking the path of least resistance.<br><br>This period will be most important to success.</small> {data-background=#A4A4A4}
+
+
+## Upcoming Key Decisions
+<ul> 
+  <li>Decide where data will live on permanent basis</li>
+  <li>Decide & approve plan for phasing in dynamic routing</li>
+  <li>Decide & approve ROI tracking plan</li>
+  <li>Decide & approve keg routing process</li>
+  <li>Decide & approve disaster recovery plan</li>
+  <li>Decide whether to use stagin database</li>
+  <li>Decide if SQL or flat file for staging database</li>
+  <li>Decide whether to send orders througout day; format</li>
+  <li>Decide whether multiple routing sessions necessary</li>
+  <li>Decide on HR data permissions for tracking ROI</li>
+  <li>Decide what incentive structures to implement</li>
+</ul>
+
+
+## Next Steps
+<ul> 
+  <li>Build data bridges between AS400 & Roadnet Cloud</li>
+  <li>Build reports relevant to routing; improve/automate</li>
+  <li>Derive fields necessary for dynamic routing; automate</li>
+  <li>Merge in missing data RNA database</li>
+  <li>Formalize ROI tracking process</li>
+  <li>Begin testing keg routing process in KC; document</li>
+  <li>Routers will continue online training</li>
+  <li>Develop disaster recovery plan</li>
+  <li>SOPs: routing, maintenance, kegs, off-day, under $150</li>
+  <li>Finalize ROI measurement strategy</li>
+  <li>Outline all rules necessary for dynamic routing</li>
+  <li>Develop plan for phasing in dynamic routing; consensus</li>
+</ul>
+  
+
+
+# <b>Questions, Comments & Discussion</b> {data-background=#A4A4A4}
 
 
 
