@@ -1,0 +1,530 @@
+---
+title: "<b>Roadnet Software Implementation</b>"
+subtitle: "<b><small>Team Update & Next Steps</small></b>"
+# author: "<small>Paul Washburn & Rick Ade</small>"
+date: "<small>July 2016</small>"
+output: revealjs::revealjs_presentation#html_document #ioslides_presentation #slidy_presentation #beamer_presentation #revealjs::revealjs_presentation
+theme: solarized
+center: true
+fig_width: 10
+fig_height: 5
+fig_caption: true
+widescreen: true
+# navigation: slide
+transition: slide
+# background_transition: concave
+# width: 1500
+# height: 1200
+autosize: true
+---
+
+```{r setup, include=FALSE}
+library(RODBC)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(RColorBrewer)
+library(ggthemes)
+library(reshape2)
+library(plotly)
+library(plan)
+library(plotrix)
+library(xlsx)
+library(htmlTable)
+
+#get data for gantt
+event = read.xlsx(file='C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Planning Data/master_planning_roadnet.xlsx',
+                  sheetName='events', header=TRUE)
+events = c('TODAY') #event$label#
+events_dates = c(as.character(Sys.Date())) #event$date#
+tasks = read.xlsx(file='C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Planning Data/master_planning_roadnet.xlsx',
+                  sheetName='nodes_w_types', header=TRUE)
+tasks = filter(tasks, type == 'Task')
+
+
+# make function for task lists
+make_list = function(player, role) {
+  Player = player
+  Role = role
+  task_matrix = data.frame(cbind(Player, Role))
+  htmlTable(task_matrix)
+}
+```
+
+
+# <b>How to Navigate</b> <br><small>Use your keyboard's arrows.<br><br>Right & Left arrows will bring you to the next section in the slideshow.<br><br>Up and down arrows will navigate to the next slide within a section.<br><br>Press "o" to see an outline of the presentation all at once.</small> {data-background=#99ff99}
+
+
+
+# <b>Project Status</b> <br><small><a href="file://majorbrands.com/STLcommon/2016%20MB%20Projects/Roadnet/Presentations/steerco_update_07072016.html">Steering Committee Meeting</a> took place Thursday 7/7.<br><br>During the upcoming months the amount of work for all team members will increase and remain elevated until September.<br><br>Timely completion of tasks & decisions is vital.<br><br>This period will make-or-break the project.</small> {data-background=#99ff99}
+
+
+# <b>Progress Report</b> <br><small>The project is on schedule, yet highly sensitive to delays. <br><br>Project is about 40% complete. <br><br>Staying on track is imperative to successful implementation this calendar year.<br><br>We are entering into a very dense work phase for all team members.</small> {data-background=#99ff99}
+
+## Detailed Project Timeline
+```{r timeline, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=12, fig.height=7.5}
+create_gantt = function(key, desc, start, end, done, events, event_dates){
+  roadnet_planner = as.gantt(key=key, description=desc,
+                             start=start, end=end, done=done) #, # done) #, NeededBy) #, done, neededBy)
+
+  x = plot(roadnet_planner,
+           event.label=events,
+           event.time=events_dates,
+           time.lines.by="5 days",
+           main='Major Tasks Remaining in Roadnet',
+           col.done='green',
+           col.notdone='gray',
+           cex=1)
+
+  suppressWarnings(print(x))
+}
+
+#png('N:/2016 MB Projects/Roadnet/Planning/timeline.png', width = 1200, height = 800)
+x = create_gantt(key=tasks$key, desc=tasks$label, start=tasks$start,
+             end=tasks$end, done=tasks$done, events=events, event_dates=event_dates)
+suppressWarnings(print(x))
+```
+
+
+## Accomplishments
+<ul> 
+  <li>All requisite data has been collected by drivers</li>
+  <li>All requisite data has been input into digital form</li>
+  <li>Derivative data has been identified for transformation</li>
+  <li>RTS database has been converted to RNA database</li>
+  <li>Data supply chain has been outlined for entire system</li>
+  <li>Processes have been outlined at high level</li>
+  <li>Reporting requirements have been gathered</li>
+  <li>IT team has met with & trained on API connectivity</li>
+  <li>Service times have been inferred statistically outside KC</li>
+</ul>
+
+
+
+
+
+# <b>Upcoming Tasks</b> <br><small>The task list has grown; please review the timeline carefully.<br><br>More tasks will be in the pipeline going forward as we move into the meat of the project.<br><br>Efforts on tasks will be self-directed based on who is involved with the sub-group responsible to complete. Please note who you will be working with on each task and plan accordingly.<br><br></small> {data-background=#99ff99}
+
+
+
+## Active Tasks
+<ul> 
+  <li>Determine how to restrict AS400 access during routing</li>
+  <li>Develop a viable Keg Routing process in Roadnet</li>
+  <li>Test viable Keg Routing process in Roadnet KC, document</li>
+  <li>Determine if IT team has layout of technical specs</li>
+  <li>Build out API connections b/n AS400 & Roadnet</li>
+  <li>Review list of fields required for dynamic routing</li>
+  <li>Analyze keg routes based on volume & weekday</li>
+  <li>Determine how Roadnet can help w/ future DOT inquiries</li>
+  <li>Update on progress watching training videos</li>
+  <li>Analyze product weights; can we estimate?</li>
+  <li>Document detailed logic for building each report</li>
+  <li>Develop plan for disaster recovery; get approval</li>
+</ul>
+
+
+
+## Active Tasks (Cont.)
+<ul> 
+  <li>Rough draft of SOP: data maintenance</li>
+  <li>Rough draft of SOP: under $150</li>
+  <li>Rough draft of SOP: off-day deliveries</li>
+  <li>Outline all rules necessary for dynamic routing</li>
+  <li>Gather potential externalities to sales/merchandising</li>
+</ul>
+
+  
+
+## AS400 Lockout During Routing <br><small><b>Due by July 31st</b></small>
+```{r task1, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p1 = c('Jeff Elliot', 'Bill Schwein', 'Kevin Gagen', 'Mary Goodman', 'Paul Washburn')
+r1 = c('Responsible', 'Accountable', 'Accountable', 'Responsible', 'Informed')
+
+make_list(player=p1, role=r1)
+```
+<p><b>Deliverable:</b> When others access the AS400 during the routing process the changes made by the router are overwritten and the routing data is lost. It is necessary to keep nonessential people out during routing. This can be through SOP or technology.</p>
+
+
+
+## Develop Keg Routing Process <br><small><b>Due by July 21st</b></small>
+```{r task2, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p2 = c('Joe Luna', 'Paul Washburn', 'Rick Ade', 'Paul Cunningham')
+r2 = c('Accountable', 'Responsible', 'Responsible', 'Accountable')
+
+make_list(player=p2, role=r2)
+```
+<p><b>Deliverable:</b> Kegs are currently routed outside of Roadnet and must be absorbed into the system. Must develop workable plan for routing kegs in Roadnet, w/ session information, documentation & IT requirements. </p>
+
+
+
+## Test Keg Routing Process <br><small><b>Due by August 5th</b></small>
+```{r task3, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p3 = c('Joe Luna', 'Paul Washburn', 'Rick Ade')
+r3 = c('Accountable', 'Responsible', 'Responsible')
+
+make_list(player=p3, role=r3)
+```
+<p><b>Deliverable:</b> Once a viable keg routing process is created it will need to be tested, first in KC then outside. Process must work at all houses. All possible outcomes should be tested so the system is reliable for our purposes.</p>
+
+
+
+## Finalize Technical Specifications <br><small><b>Due by July 15th</b></small>
+```{r task4, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p4 = c('Jeff Elliott', 'Bill Schwein', 'Paul Washburn')
+r4 = c('Responsible', 'Responsible', 'Informed')
+
+make_list(player=p4, role=r4)
+```
+<p><b>Deliverable:</b> Obtain all IT specs and plot out the rest of the project from the technology perspective. Once all specs obtained confirmation will be needed to unlock other tasks for the rest of the team.</p>
+
+
+
+## Watch Training Videos <br><small><b>Due by July 31st</b></small>
+```{r task5, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p5 = c('Paul Cunningham', 'Joe Luna', 'Bob Kloeppinger', 'Verne Horne', 'Tony Pierri', 'Rick Stewart', 'Rick Ade')
+r5 = c('Responsible', 'Responsible', 'Responsible', 'Responsible', 'Responsible', 'Responsible', 'Responsible')
+
+make_list(player=p5, role=r5)
+```
+<p><b>Deliverable:</b> Complete prior to on site router training.</p>
+
+
+
+## Review, Edit, & Approve Fields <br><small><b>Due by July 15th</b></small>
+```{r task6, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p6 = c('Jeff Elliott', 'Bill Schwein', 'Kevin Gagen', 'Paul Washburn', 'Mary Goodman')
+r6 = c('Accountable', 'Accountable', 'Accountable', 'Responsible', 'Consulted')
+
+make_list(player=p6, role=r6)
+```
+<p><b>Deliverable:</b> Must discuss necessity of each field, decide which ones to bring over, decide which ones to create in pipeline, decide which tables they will come from, and finalize the requirements list. This must be done before creating all the field API connections.</p>
+
+
+
+## Buildout API Connectivity <br><small><b>Due by July 21st</b></small>
+```{r task7, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p7 = c('Jeff Elliott', 'Bill Schwein', 'Kevin Gagen', 'Paul Washburn')
+r7 = c('Responsible', 'Responsible', 'Responsible', 'Consulted')
+
+make_list(player=p7, role=r7)
+```
+<p><b>Deliverable:</b> Build code pipeline for API connections. The fields to connect will be determined from the previous slide's task. Must also decide which system will be the primary home for each field, and how the data will be entered/generated. Some fields will be pushed back from Roadnet to ERP.</p>
+
+
+
+## Analyze Product Weights <br><small><b>Due by July 21st</b></small>
+```{r task8, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p8 = c('Paul Washburn', 'Rick Ade', 'Joe Luna', 'Jeff Elliott', 'Carrie Ward', 'Mary Goodman')
+r8 = c('Responsible', 'Consulted', 'Consulted', 'Consulted',  'Consulted', 'Consulted')
+
+make_list(player=p8, role=r8)
+```
+<p><b>Deliverable:</b> Currently we estimate capacity based on cases, which can be improved by using objective measurements. Maximizing capacity has a direct impact on ROI. To explore the decision, product weights will be reviewed.</p>
+
+
+
+## Analyze Keg Routes <br><small><b>Due by July 28th</b></small>
+```{r task9, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p9 = c('Paul Washburn', 'Rick Ade', 'Joe Luna', 'Paul Cunningham', 'Carrie Ward', 'Mary Goodman')
+r9 = c('Responsible', 'Consulted', 'Consulted', 'Consulted',  'Informed', 'Informed')
+
+make_list(player=p9, role=r9)
+```
+<p><b>Deliverable:</b> Volume, weekday, and customer location will be analyzed. Customers not on keg routes will be reviewed for keg volume as well, and vetted for proximity to weekday/route for potential improvements.</p>
+
+
+
+## Document Logic Behind Reports <br><small><b>Due by August 5th</b></small>
+```{r task10, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p10 = c('Paul Washburn', 'Bob Kloeppinger', 'Paul Cunningham', 'Joe Luna', 'Bill Schwein')
+r10 = c('Responsible', 'Consulted', 'Consulted', 'Consulted',  'Consulted')
+
+make_list(player=p10, role=r10)
+```
+<p><b>Deliverable:</b> Reverse engineer current reports, document requirements, identify improvements/extensions, build new reports and test them for veracity and practicality.</p>
+
+
+
+## Disaster Recovery Plan <br><small><b>Due by August 1st</b></small>
+```{r task11, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p11 = c('Bill Schwein', 'Travis West', 'Mary Goodman', 'Paul Washburn')
+r11 = c('Responsible', 'Accountable', 'Consulted', 'Informed')
+
+make_list(player=p11, role=r11)
+```
+<p><b>Deliverable:</b> IT team to develop viable Disaster Recovery Plan and build plans to implement. Once approved by Mary process is to be tested and given the final stamp of approval. After approval, document in detail the process.</p>
+
+
+
+## Data Maintenance SOP <br><small><b>Due by August 1st</b></small>
+```{r task12, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p12 = c('Joe Luna', 'Rick Ade', 'Paul Cunningham', 'Bob Kloeppinger', 'Paul Washburn')
+r12 = c('Responsible', 'Consulted', 'Responsible', 'Consulted', 'Accountable')
+
+make_list(player=p12, role=r12)
+```
+<p><b>Deliverable:</b> Data maintenance will be the most important SOP for successful dynamic routing. Routers will be responsible for outlining the process of keeping customer information accurate and usable.</p>
+
+
+
+## Under $150 SOP <br><small><b>Due by August 10th</b></small>
+```{r task13, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p13 = c('Bob Kloeppinger', 'Rick Ade', 'Paul Cunningham', 'Joe Luna', 'Paul Washburn')
+r13 = c('Responsible', 'Accountable', 'Responsible', 'Consulted', 'Accountable')
+
+make_list(player=p13, role=r13)
+```
+<p><b>Deliverable:</b> Collectively generateed & mutually agreed upon rough draft of SOP in written format, including every step in the process.</p>
+
+
+
+## Off-Day Deliveries SOP <br><small><b>Due by August 10th</b></small>
+```{r task14, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p14 = c('Bob Kloeppinger', 'Rick Ade', 'Paul Cunningham', 'Joe Luna', 'Paul Washburn', 'Carrie Ward', 'Mary Goodman')
+r14 = c('Responsible', 'Accountable', 'Responsible', 'Consulted', 'Accountable', 'Consulted', 'Consulted')
+
+make_list(player=p14, role=r14)
+```
+<p><b>Deliverable:</b> Collectively generateed & mutually agreed upon rough draft of SOP in written format. Inter-departmental communication may be necessary.</p>
+
+
+
+## Externalities to Sales & Merchandising <br><small><b>Due by August 17th</b></small>
+```{r task15, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p15 = c('Paul Washburn', 'Rick Ade', 'Carrie Ward', 'Mary Goodman')
+r15 = c('Accountable', 'Accountable', 'Responsible', 'Responsible')
+
+make_list(player=p15, role=r15)
+```
+<p><b>Deliverable:</b> Outline all risks that may exist to Sales & Merchandising. Communicate with relevant parties & mitigate risks.</p>
+  
+
+
+## How Roadnet Can Help w/ DOT <br><small><b>Due by August 5th</b></small>
+```{r task16, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, fig.width=7, fig.height=3}
+p16 = c('Randy Simpson', 'Rick Ade', 'Don Hercher')
+r16 = c('Responsible', 'Responsible', 'Responsible')
+
+make_list(player=p16, role=r16)
+```
+<p><b>Deliverable:</b> Decide if the recent DOT inquiry could have been made easier by customizing Roadnet's capabilities, such as tracking relevant information at the Truck and Driver level. Decide if within scope of the project; if yes, develop plan to incorporate helpful features.</p>
+   
+
+
+
+
+<!-- ## Outline All Dynamic Routing Rules -->
+
+  
+<!-- ## Group Roles <br><small>We actively seek to cultivate these constructive roles</small> -->
+<!-- <ul> -->
+<!--   <li><b>Encourager -</b> Offers praise & acknowledges contributions</li> -->
+<!--   <li><b>Harmonizer -</b> Reduces tension & promotes reconciliation</li> -->
+<!--   <li><b>Compromizer -</b> In conflict scenario offers middleground</li> -->
+<!--   <li><b>Gate Keeper -</b> Encourages participation & communication</li> -->
+<!--   <li><b>Standard Setter -</b> Evaluates progress to standards</li> -->
+<!-- </ul> -->
+
+
+
+<!-- ## Task Roles <small>These roles are important to ask execution</small> -->
+<!-- <ul> -->
+<!--   <li>Initiator</li> -->
+<!--   <li>Information Seeker</li> -->
+<!--   <li>Opinion Seeker</li> -->
+<!--   <li>Information Giver</li> -->
+<!--   <li>Opinion Giver</li> -->
+<!--   <li>Coordinator</li> -->
+<!--   <li>Elaborator</li> -->
+<!--   <li>Orientor</li> -->
+<!--   <li>Evaluator</li> -->
+<!--   <li>Procedure Technician</li> -->
+<!--   <li>Recorder</l> -->
+<!-- </ul> -->
+  
+  
+  
+  
+  
+  
+
+# <b>Risk Assessment & Mitigation</b> <small>Following is an overview of project risks & their potential impacts. It is the team's resonsibility to mitigate risks by whatever reasonable means available. <br><br>If you see a risk to the project that is not displayed please raise your concern.</small> {data-background=#99ff99}
+
+
+
+## Risk Matrix
+
+```{r risks, echo=FALSE, fig.align='center', fig.width=8}
+risks = read.xlsx(file='C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Planning Data/master_planning_roadnet.xlsx',
+                  sheetName='risks', header=TRUE)
+nRow <- 5
+nCol <- 5
+m3 <- matrix(c(2,2,3,3,3,1,2,2,3,3,1,1,2,2,3,1,1,2,2,2,1,1,1,1,2), nrow = 5, ncol = 5, byrow = TRUE)
+myData <- m3 
+rownames(myData) <- c("5", "4", "3", "2", "1")  
+colnames(myData) <- c("1", "2", "3", "4", "5")  
+long_data = melt(myData)
+colnames(long_data) <- c("Likelihood", "Consequence", "value")
+long_data = mutate(long_data, value = Consequence + Likelihood)
+r = risks
+names(r) = c('risk', 'Likelihood', 'Consequence', 'mitigation', 'value')
+# myPalette = colorRampPalette(rev(brewer.pal(5, "RdYlGn")))
+myPalette = colorRampPalette(c('green', 'yellow', 'red', 'darkred'))
+
+g = ggplot(data=long_data, aes(x=Consequence, y=Likelihood, fill=value))
+base_plot = g + geom_tile() +
+  scale_fill_gradientn(colours = myPalette(3)) + 
+  scale_x_continuous(breaks = 0:6, expand = c(0, 0)) +
+  scale_y_continuous(breaks = 0:6, expand = c(0, 0)) +
+  coord_fixed() +
+  theme_bw() +
+  theme(legend.position='none')
+
+final_plot = base_plot + 
+  geom_point(data=r, position='jitter', size=r$Consequence, 
+             aes(x=r$Consequence, y=r$Likelihood)) + 
+  geom_text(data=r, position='jitter', size=3, label=r$risk, 
+            aes(x=r$Consequence, y=r$Likelihood)) +
+  ggtitle('Risk Matrix')
+
+print(final_plot)
+```
+
+
+
+
+
+
+
+# <b>Team Performance</b> <br><small>The Roadnet Team has performed well to-date. <br><br>Going forward, timely task completion will be absolutely vital.<br><br>Optimism towards project goal is important and doubts should be raised & addressed.<br><br>Empirical research on Project Management has been reviewed to help maintain adequate productivity and overall effectiveness.</small>{data-background=#99ff99}
+
+
+## Factors of Team Effectiveness <small>There are 5 key factors that determine a team's effectiveness. <br>See study overview by clicking <a href="https://rework.withgoogle.com/blog/five-keys-to-a-successful-google-team/">"Do Managers Matter?"</a></small>
+<ul>
+  <li><b>Psychological Safety -</b>Opportunity to speak up & be heard</li>
+  <li><b>Dependability -</b> Work completed on-time w/ excellence</li>
+  <li><b>Structure & Clarity -</b> Clear roles, plans & goals</li>
+  <li><b>Meaning -</b> Personal importance to the mission</li>
+  <li><b>Impact -</b> Believing work matters & influences change</li>
+</ul>
+
+
+
+## Factors of Team Effectiveness
+```{r factors_effectiveness, echo=FALSE, fig.align='center', fig.width=8}
+roles = read.xlsx(file='C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Planning Data/master_planning_roadnet.xlsx',
+                  sheetName='roles', header=TRUE)
+roles$role = factor(roles$role, levels=roles$role)
+roles$score = as.numeric(roles$score)
+g = ggplot(data=roles, aes(x=role, y=score))
+g = g + geom_bar(stat='identity', fill='blue', colour='orange', size=2, alpha=0.6) +
+  labs(title='Roadnet Team Score on Factors of Effectiveness', 
+       x='Factor', y='Score') +
+  theme_minimal() 
+print(g)
+```
+
+
+
+## Factors of Team Effectiveness <small>Please raise any concerns you have about any of these categories. The goal is to complete this project with optimism, pride & excellence. If something is standing in your way it is important to shine a light on it.</small>
+<ul>
+  <li><b>Psychological Safety -</b> Speak up!</li>
+  <li><b>Dependability -</b> Get quality work done on time!</li>
+  <li><b>Structure & Clarity -</b> Is your role clear?</li>
+  <li><b>Meaning -</b> Does project have meaning? Why/why not?</li>
+  <li><b>Impact -</b> Influence organizational change!</li>
+</ul>
+
+
+
+<!-- ## Group Roles <br><small>We actively seek to cultivate these constructive roles</small> -->
+<!-- <ul> -->
+<!--   <li><b>Encourager -</b> Offers praise & acknowledges contributions</li> -->
+<!--   <li><b>Harmonizer -</b> Reduces tension & promotes reconciliation</li> -->
+<!--   <li><b>Compromizer -</b> In conflict scenario offers middleground</li> -->
+<!--   <li><b>Gate Keeper -</b> Encourages participation & communication</li> -->
+<!--   <li><b>Standard Setter -</b> Evaluates progress to standards</li> -->
+<!-- </ul> -->
+
+
+
+<!-- ## Task Roles <small>These roles are important to ask execution</small> -->
+<!-- <ul> -->
+<!--   <li>Initiator</li> -->
+<!--   <li>Information Seeker</li> -->
+<!--   <li>Opinion Seeker</li> -->
+<!--   <li>Information Giver</li> -->
+<!--   <li>Opinion Giver</li> -->
+<!--   <li>Coordinator</li> -->
+<!--   <li>Elaborator</li> -->
+<!--   <li>Orientor</li> -->
+<!--   <li>Evaluator</li> -->
+<!--   <li>Procedure Technician</li> -->
+<!--   <li>Recorder</l> -->
+<!-- </ul> -->
+
+
+
+
+# <b>Moving Forward</b> <br><small>As stated earlier, the project has kicked into high gear. <br><br>We will go from 40% to 80% complete much faster than we went from 0% to 40% complete.<br><br>The meat of the work will be performed in the next two months, and mistakes will not be immediately evident (if ever). Since the quality feedback loop is delayed we must ensure that seemingly small decisions are not made by taking the path of least resistance.<br><br>This period will be most important to success.</small> {data-background=#99ff99}
+
+
+## Upcoming Key Decisions
+<ul> 
+  <li>Decide where data will live on permanent basis</li>
+  <li>Decide & approve plan for phasing in dynamic routing</li>
+  <li>Decide & approve ROI tracking plan</li>
+  <li>Decide & approve keg routing process</li>
+  <li>Decide & approve disaster recovery plan</li>
+  <li>Decide whether to use staging database</li>
+  <li>Decide if SQL or flat file for staging database</li>
+  <li>Decide whether to send orders througout day; format</li>
+  <li>Decide whether multiple routing sessions necessary</li>
+  <li>Decide on HR data permissions for tracking ROI</li>
+  <li>Decide what incentive structures to implement</li>
+</ul>
+
+
+## Next Steps
+<ul> 
+  <li>Build data bridges between AS400 & Roadnet Cloud</li>
+  <li>Build reports relevant to routing; improve/automate</li>
+  <li>Derive fields necessary for dynamic routing; automate</li>
+  <li>Merge in missing data RNA database</li>
+  <li>Formalize ROI tracking process</li>
+  <li>Begin testing keg routing process in KC; document</li>
+  <li>Routers will continue online training</li>
+  <li>Develop disaster recovery plan</li>
+  <li>SOPs: routing, maintenance, kegs, off-day, under $150</li>
+  <li>Finalize ROI measurement strategy</li>
+  <li>Outline all rules necessary for dynamic routing</li>
+  <li>Develop plan for phasing in dynamic routing; consensus</li>
+</ul>
+  
+
+
+# <b>Questions, Comments & Discussion</b> <br><small>Please take this time to clarify understanding, raise concerns, or provide input on the project's progress.<br><br>Thank you for your time!</small> {data-background=#99ff99}
+
+# <b>Parting Words of Wisdom from Peter Drucker</b> <br><small>Management is doing things right; Leadership is doing the right things.<br><br>Plans are only good intentions unless they immediately degenerate into hard work.<br><br>The only thing we know about the future is that it will be different.<br><br>The best way to predict the future is to create it.</small> {data-background=#99ff99}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
