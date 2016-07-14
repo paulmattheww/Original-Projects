@@ -409,17 +409,18 @@ by_house
 
 
 
+i = read.csv(file='C:/Users/pmwash/Desktop/R_files/Data Output/off_day_deliveries_jun.csv')
+headTail(i)
+
+by_warehouse_day = aggregate(Invoice ~ Date + Weekday + Warehouse, data=i, FUN=countUnique)
+by_warehouse_day$Date = as.POSIXct(as.Date(by_warehouse_day$Date, '%m/%d/%Y'))
+by_warehouse_day = by_warehouse_day %>% arrange(Date)
+by_warehouse_day$Date = as.Date(by_warehouse_day$Date, '%Y-%m-%d')
+# by_warehouse_day$Date = as.character(by_warehouse_day$Date)
+str(by_warehouse_day)
 
 
-salespeeps_byday = aggregate(Invoice ~ Date + + Weekday + Warehouse, data=i, FUN=countUnique)
-salespeeps_byday$Date = as.POSIXct(as.Date(salespeeps_byday$Date, '%m/%d/%Y'))
-salespeeps_byday = salespeeps_byday %>% arrange(Date)
-salespeeps_byday$Date = as.Date(salespeeps_byday$Date, '%Y-%m-%d')
-# salespeeps_byday$Date = as.character(salespeeps_byday$Date)
-str(salespeeps_byday)
-
-
-head(salespeeps_byday, 50)
+head(by_warehouse_day, 50)
 
 
 
@@ -427,24 +428,65 @@ head(salespeeps_byday, 50)
 byday = nPlot(
   Invoice ~ Date,
   group = 'Warehouse',
-  data = salespeeps_byday,
+  data = by_warehouse_day,
   type = 'lineWithFocusChart', #lineWithFocusChart #lineChart
   height = 700,
   width = 800
 )
 byday$xAxis(tickFormat = "#!function(d) {return d3.time.format.utc('%a %b %d')(new Date(d * 86400000 ))}!#")
 byday$x2Axis(tickFormat = "#!function(d) {return d3.time.format.utc('%a %b %d')(new Date(d * 86400000))}!#")
-# byday$chart(useInteractiveGuideline = TRUE)
-byday$set(title = "June Off Day Deliveries")
+byday$set(title = "June 2016 Off Day Deliveries")
 byday$yAxis(axisLabel = 'Number Off Day Deliveries')
 byday$templates$script = "http://timelyportfolio.github.io/rCharts_nvd3_templates/chartWithTitle_styled.html"
-
+byday$show('inline', include_assets = TRUE, standalone = TRUE)
+#byday$print('iframesrc', cdn =TRUE, include_assets=TRUE)
+# byday$chart(reduceTicks=FALSE)
+byday$chart(color=c('green', 'blue', 'purple', 'orange'))
+byday$save('N:/Operations Intelligence/Monthly Reports/Off Day Deliveries/HTML/timeseries_warehouse_june2016.html')
+#byday$html()
 byday
 
 
 
 
 
+xslp = aggregate(Invoice~Salesperson, data=i, FUN=countUnique)
+xslp = xslp %>% arrange(desc(Invoice))
+xslp$Invoice = NULL
+xslp = head(xslp$Salesperson, 10)
+
+by_customer_slspsn = aggregate(Invoice ~ Date + Weekday + Salesperson + Warehouse + Division, data=i, FUN=countUnique)
+by_customer_slspsn$Date = as.POSIXct(as.Date(by_customer_slspsn$Date, '%m/%d/%Y'))
+by_customer_slspsn = by_customer_slspsn %>% arrange(Date)
+by_customer_slspsn$Date = as.Date(by_customer_slspsn$Date, '%Y-%m-%d')
+str(by_customer_slspsn)
+
+by_customer_slspsn = subset(by_customer_slspsn, by_customer_slspsn$Salesperson %in% xslp)#    by_customer_slspsn[, by_customer_slspsn$Salesperson %in% xslp]
+head(by_customer_slspsn, 50)
+
+
+
+
+by_slpsn = nPlot(
+  Invoice ~ Date,
+  group = 'Salesperson',
+  data = by_customer_slspsn,
+  type = 'lineWithFocusChart', #lineWithFocusChart #lineChart
+  height = 700,
+  width = 800
+)
+by_slpsn$params$facet('Division')
+by_slpsn$xAxis(tickFormat = "#!function(d) {return d3.time.format.utc('%a %b %d')(new Date(d * 86400000 ))}!#")
+by_slpsn$x2Axis(tickFormat = "#!function(d) {return d3.time.format.utc('%a %b %d')(new Date(d * 86400000))}!#")
+by_slpsn$set(title = "Top 10 Salespersons for June 2016 Off Day Deliveries")
+by_slpsn$yAxis(axisLabel = 'Number Off Day Deliveries')
+by_slpsn$templates$script = "http://timelyportfolio.github.io/rCharts_nvd3_templates/chartWithTitle_styled.html"
+by_slpsn$show('inline', include_assets = TRUE, standalone = TRUE)
+by_slpsn$chart(showLegend=TRUE)
+# by_slpsn$chart(color=c('green', 'blue', 'purple', 'orange'))
+by_slpsn$save('N:/Operations Intelligence/Monthly Reports/Off Day Deliveries/HTML/timeseries_warehouse_salesperson_june2016.html')
+
+by_slpsn
 
 
 
@@ -462,10 +504,125 @@ byday
 
 
 
+xcust = aggregate(Invoice~Customer, data=i, FUN=countUnique)
+xcust = xcust %>% arrange(desc(Invoice))
+xcust$Invoice = NULL
+xcust = head(xcust$Customer, 10)
+
+by_cust = aggregate(Invoice ~ Date + Weekday + Customer + Warehouse, data=i, FUN=countUnique)
+by_cust$Date = as.POSIXct(as.Date(by_cust$Date, '%m/%d/%Y'))
+by_cust = by_cust %>% arrange(Date)
+by_cust$Date = as.Date(by_cust$Date, '%Y-%m-%d')
+str(by_cust)
+
+by_cust = subset(by_cust, by_cust$Customer %in% xcust)#    by_cust[, by_cust$Salesperson %in% xslp]
+head(by_cust, 50)
 
 
 
 
+by_cust_plot = nPlot(
+  Invoice ~ Date,
+  group = 'Customer',
+  data = by_cust,
+  type = 'lineWithFocusChart', #lineWithFocusChart #lineChart
+  height = 700,
+  width = 800
+)
+by_cust_plot$params$facet('Division')
+by_cust_plot$xAxis(tickFormat = "#!function(d) {return d3.time.format.utc('%a %b %d')(new Date(d * 86400000 ))}!#")
+by_cust_plot$x2Axis(tickFormat = "#!function(d) {return d3.time.format.utc('%a %b %d')(new Date(d * 86400000))}!#")
+by_cust_plot$set(title = "Top 10 Customers for June 2016 Off Day Deliveries")
+by_cust_plot$yAxis(axisLabel = 'Number Off Day Deliveries')
+by_cust_plot$templates$script = "http://timelyportfolio.github.io/rCharts_nvd3_templates/chartWithTitle_styled.html"
+by_cust_plot$show('inline', include_assets = TRUE, standalone = TRUE)
+by_cust_plot$chart(showLegend=TRUE)
+by_cust_plot$chart(color=c('black', 'red', 'orange', 'yellow', 'lightgreen', 'green', 'blue', 'purple', 'indigo', 'violet'))
+by_cust_plot$save('N:/Operations Intelligence/Monthly Reports/Off Day Deliveries/HTML/timeseries_warehouse_customer_june2016.html')
+
+by_cust_plot
+
+
+
+
+
+
+
+#salespereson donut
+slp_sum = aggregate(Invoice ~ Salesperson, data=i, FUN=countUnique)
+slp_sum = slp_sum %>% arrange(desc(Invoice))
+slp_sum$Salesperson = factor(slp_sum$Salesperson, levels=slp_sum$Salesperson)
+
+donut_by_slp = nPlot(
+  Invoice ~ Salesperson, 
+  data = slp_sum,
+  type = 'pieChart',
+  height = 1100,
+  width = 1100
+)
+donut_by_slp$set(title = "Number of Off Day Deliveries by Sales Rep")
+donut_by_slp$chart(donut=TRUE)
+donut_by_slp$chart(showLegend=F)
+donut_by_slp$save('N:/Operations Intelligence/Monthly Reports/Off Day Deliveries/HTML/piechart_salesperson_june2016.html')
+
+donut_by_slp
+
+
+
+
+
+
+
+
+
+#customer donut
+cus_sum = aggregate(Invoice ~ Customer, data=i, FUN=countUnique)
+cus_sum = cus_sum %>% arrange(desc(Invoice))
+cus_sum$Customer = factor(cus_sum$Customer, levels=cus_sum$Customer)
+cus_sum = head(cus_sum, 50)
+
+donut_by_slp = nPlot(
+  Invoice ~ Customer, 
+  data = cus_sum,
+  type = 'pieChart',
+  height = 1100,
+  width = 1100
+)
+donut_by_slp$set(title = "Number of Off Day Deliveries by Customer")
+donut_by_slp$chart(donut=TRUE)
+donut_by_slp$chart(showLegend=F)
+donut_by_slp$save('N:/Operations Intelligence/Monthly Reports/Off Day Deliveries/HTML/piechart_customer_june2016.html')
+
+donut_by_slp
+
+
+
+
+
+
+
+
+
+#warehouse donut
+wrs_sum = aggregate(Invoice ~ Warehouse, data=i, FUN=countUnique)
+wrs_sum = wrs_sum %>% arrange(desc(Invoice))
+wrs_sum$Warehouse = factor(wrs_sum$Warehouse, levels=wrs_sum$Warehouse)
+
+donut_by_slp = nPlot(
+  Invoice ~ Warehouse, 
+  data = wrs_sum,
+  type = 'pieChart',
+  height = 1100,
+  width = 1100
+)
+donut_by_slp$set(title = "Number of Off Day Deliveries by Warehouse")
+donut_by_slp$chart(donut=TRUE)
+donut_by_slp$chart(showLegend=F)
+donut_by_slp$save('N:/Operations Intelligence/Monthly Reports/Off Day Deliveries/HTML/piechart_warehouse_june2016.html')
+donut_by_slp$chart(color=c('red', 'yellow', 'blue', 'green'))
+
+
+donut_by_slp
 
 
 
