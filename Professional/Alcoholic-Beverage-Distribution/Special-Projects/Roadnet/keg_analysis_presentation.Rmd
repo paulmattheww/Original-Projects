@@ -1,0 +1,177 @@
+---
+title: "<center><h1><b>Statewide Keg Route Analysis</b></h1></center>"
+subtitle: "<center><h3>In preparation for Roadnet Routing Software implementation</h3></center>"
+author: "<center><b>Paul M Washburn, Operations Analyst</b></center>"
+date: "<h6><center>June 30 2015 through June 30, 2016</h6></center>"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(googleVis)
+library(dplyr)
+library(ggmap)
+library(scales)
+library(ggplot2)
+library(ggvis)
+
+# op <- options(gvis.plot.tag='chart')
+
+keg_routes = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Customers_KegRoutes.csv', header=TRUE)
+head(keg_routes)
+
+ytd_keg_sales = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/pw_custytd.csv', header=TRUE)
+head(ytd_keg_sales)
+
+
+kegs = merge(keg_routes, ytd_keg_sales, by='CustomerID', all.y=TRUE); head(kegs)
+kegs$KegRteHouse = paste0(kegs$Warehouse, '_', kegs$KegRte)
+
+
+
+kegs = kegs %>% filter(YTDKegSales > 0); head(kegs); tail(kegs)
+keg_route_only = kegs %>% filter(KegRte != 0, is.na(KegRte) == FALSE,
+                                 KegRteHouse %in% c('2_68', '2_67', '2_69', '2_66', '3_366', '1_75'))
+
+keg_route_only = keg_route_only %>% filter(State == 'MO')
+# keg_route_only = keg_route_only %>% filter(CustomerTYpe != 'Internal')
+
+stl_keg_routes = keg_route_only %>% filter(Warehouse == 2)
+kc_keg_routes = keg_route_only %>% filter(Warehouse == 1)
+col_keg_routes = keg_route_only %>% filter(Warehouse == 3)
+
+
+create_density_map = function(city, keg_data, title, house, zoom)  {
+  MAP = get_map(location=keg_data[,c('Longitude', 'Latitude')],
+                source='google',
+                maptype='roadmap', 
+                zoom = zoom)
+  
+  keg_map_stl = ggmap(MAP) +
+    geom_point(data = keg_data, 
+                 aes(x = Longitude, 
+                     y = Latitude, 
+                     group = factor(KegRte),
+                     colour = factor(KegRte),
+                     size = YTDKegTransactions/5
+                     ),
+                 alpha = 0.7) +
+    # facet_wrap(~OnPremise) +
+    scale_fill_gradient(low='green', high='red') +
+    geom_density2d(data = keg_data, 
+                 aes(x = Longitude, 
+                     y = Latitude)) +
+    stat_density2d(data = keg_data, 
+                   aes(x = Longitude,
+                       y = Latitude,
+                       fill = ..level.., 
+                       alpha = ..level..)) +
+    labs(x = 'Longitude', y = 'Latitude', title = title) +
+    theme(legend.position='none')
+  
+  print(keg_map_stl)
+}
+
+```
+##
+<h3><b><center>Status Quo</center></b></h3>
+* Keg routes are routed separate from packaged routes, and are routed using the AS400 in both Kansas City and Saint Louis
+* Whether or not a Customer is on a keg route is a binary characteristic at the Customer level; either Yes or No
+* No consistent criteria has been found that outlines which customers are placed on keg routes; 3-5 kegs/wk rule-of-thumb
+* Keg trucks are routinely sent to market well below the truck's capacity, presenting a solid opportunity to better utilize assets
+* Keg drivers are paid differently than package drivers, and in Kansas City are apart of the Draft Tech team making it difficult to manage
+* Keg routes in Kansas City begin at 4 AM, leading to many conflicts with on-premise customers who open at 10 AM
+
+
+<h3><b><center>Opportunities</center></b></h3>
+<center><blockquote>Increasing keg truck capacity utilization will directly increase available capacity on package trucks, leading to overall improved capacity utilization across the fleet as loads are balanced. On average this will lead to fewer trucks sent to market per day -- helping save money on labor, fuel and potentially a truck lease. 
+<br><br>In order to increase capacity utlization of keg trucks the system will need a mechanism for segregating keg orders from package orders, even for customers who do not currently have keg route privileges. This will create three tiers of keg route customers; those who always have keg route privileges, those who have keg routes when it is convenient the company, and those who never have access to keg routes.
+<br><br>Further, the criteria for determining which customers always have a keg route can likely be reviewed, standardized & improved based on available information and Steering Committee preferences. 
+</blockquote></center>
+
+* Any keg that is not delivered on a keg truck ends up occupying capacity on package trucks; a 15.5 gal 1/2 barrel keg weighs 140-170 lbs
+* Higher capacity utilization on keg trucks frees up package truck capacity, potentially reducing the avg number of trucks to market
+* Similar to separating beer/wine/liquor invoices, if keg orders can be separated out for either all or a subset of Customers then priority keg route customers can be routed first, then secondary keg customers in the same area can be placed on a keg route to fill in the gaps
+* This will free up significant cube and weight capacity on package trucks, nearly ensuring a reduction in trucks used per day (on average)
+
+
+<h3><b><center>Objectives</center></b></h3>
+<b>
+* To develop a workable Roadnet keg routing strategy that maximizes utilization of keg truck capacity
+* To use non-keg route customers to fill in the gaps on currently under-utilized keg routes
+* To develop relevant technological mechanisms to enable the afforementioned items
+* To review, improve, adopt & implement the new keg routing methodology across the state
+* To drive ROI by maximizing keg truck capacity utilization, which will free up capacity on package trucks and realize latent profits
+</b>
+
+
+<h3><b><center>Requisite Action Items</center></b></h3>
+
+
+<h3><b><center>Risks & Costs</center></b></h3>
+* Customers with a sparse delivery schedule will sometimes order kegs on an off-day; if we fulfill the order via keg route then there is potential for the on-day order to be below $150 and cause them to miss their delivery day
+* Segregating keg orders from other orders will require some thought and work for the IT team
+
+
+
+## 
+<h3><b><center>Saint Louis</center></b></h3>
+<center><p>
+<a href=# onClick="window.open('file:///N:/2016%20MB%20Projects/Roadnet/Keg%20Route%20Analysis/stl_keg_routes_interactive_map.html', '_blank')">Click here for an interactive map of Saint Louis keg routes</a><br>
+
+Saint Louis has the most keg routes and they are considerably more geographically dispersed than Kansas City or Columbia.  </p></center>
+
+```{r stl_kegs, echo=FALSE, results='asis', message=FALSE, warning=FALSE, tidy=TRUE, fig.height=9, fig.width=12}
+create_density_map(city='st louis', keg_data=stl_keg_routes, title='STL Keg Route Density', house='stl', zoom = 11)
+
+```
+
+
+## 
+<h3><center><b>Kansas City</b></center></h3>
+<a href=# onClick="window.open('file:///N:/2016%20MB%20Projects/Roadnet/Keg%20Route%20Analysis/kc_keg_routes_interactive_map.html', '_blank')">Click here for an interactive map of Kansas City keg routes</a><br>
+
+
+```{r kc_kegs, echo=FALSE, results='asis', message=FALSE, warning=FALSE, tidy=TRUE, fig.height=9, fig.width=12}
+create_density_map(city='kansas city', keg_data=kc_keg_routes, title='KC Keg Route Density', house='kc', zoom = 12)
+
+```
+
+
+## 
+<h3><b><center>Columbia</center></b></h3>
+<a href=# onClick="window.open('file:///N:/2016%20MB%20Projects/Roadnet/Keg%20Route%20Analysis/col_keg_routes_interactive_map.html', '_blank')">Click here for an interactive map of Columbia keg routes</a><br>
+
+```{r col_kegs, echo=FALSE, results='asis', message=FALSE, warning=FALSE, tidy=TRUE, fig.height=9, fig.width=12}
+create_density_map(city='columbia MO USA', keg_data=col_keg_routes, title='COL Keg Route Density', house='col', zoom = 9)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
