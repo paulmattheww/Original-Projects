@@ -1,0 +1,882 @@
+---
+title: "<b><h1>Roadnet</h1></b>"
+subtitle: "<b><small>Steering Committee Update</small></b>"
+author: "<small>Paul Washburn & Rick Ade</small>"
+date: "<small>July 27, 2016</small>"
+output: revealjs::revealjs_presentation#html_document #ioslides_presentation #slidy_presentation #beamer_presentation #revealjs::revealjs_presentation
+theme: solarized
+center: true
+fig_width: 10
+fig_height: 5
+fig_caption: true
+widescreen: true
+# navigation: slide
+transition: slide
+# background_transition: concave
+# width: 1500
+# height: 1200
+autosize: true
+---
+
+```{r setup, include=FALSE}
+if (Sys.getenv("JAVA_HOME")!="")
+  Sys.setenv(JAVA_HOME="")
+library(rJava)
+
+library(RODBC)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(RColorBrewer)
+library(ggthemes)
+library(reshape2)
+library(plotly)
+library(plan)
+library(plotrix)
+library(xlsx)
+
+#get data for gantt
+event = read.xlsx(file='C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Planning Data/master_planning_roadnet.xlsx',
+                  sheetName='events', header=TRUE)
+events = c('TODAY') #event$label#
+events_dates = c(as.character(Sys.Date())) #event$date#
+tasks = read.xlsx(file='C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Planning Data/master_planning_roadnet.xlsx',
+                  sheetName='nodes_w_types', header=TRUE)
+tasks = filter(tasks, type == 'Task')
+
+
+library(scales)
+library(googleVis)
+library(dplyr)
+library(ggmap)
+library(scales)
+library(ggplot2)
+library(ggvis)
+source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
+library(lubridate)
+library(zoo)
+library(plotly)
+library(gridExtra)
+
+keg_routes = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Customers_KegRoutes.csv', header=TRUE)
+head(keg_routes)
+
+ytd_keg_sales = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/pw_custytd.csv', header=TRUE)
+head(ytd_keg_sales)
+
+
+kegs = merge(keg_routes, ytd_keg_sales, by='CustomerID', all.y=TRUE); head(kegs)
+kegs$KegRteHouse = paste0(kegs$Warehouse, '_', kegs$KegRte)
+kegs = kegs %>% filter(YTDKegSales > 0); head(kegs); tail(kegs)
+kegs$OnKegRoute = ifelse(kegs$KegRteHouse %in% c('2_68', '2_67', '2_69', '2_66', '3_366', '1_75'), 
+                         'Keg Route Customer', 
+                         'Non-Keg Route Customer')
+kegs = filter(kegs, Latitude > 30)
+
+
+
+
+
+
+stl_kegs_all = kegs %>% filter(Warehouse == 2)
+kc_kegs_all = kegs %>% filter(Warehouse == 1)
+col_kegs_all = kegs %>% filter(Warehouse == 3)
+
+
+
+keg_route_only = kegs %>% filter(KegRte != 0, is.na(KegRte) == FALSE,
+                                 KegRteHouse %in% c('2_68', '2_67', '2_69', '2_66', '3_366', '1_75'))
+
+keg_route_only = keg_route_only %>% filter(State == 'MO')
+
+total_kegs_by_route = aggregate(YTDKegTransactions ~ KegRte + Warehouse, data=keg_route_only, FUN=sum)
+total_kegs_by_route = total_kegs_by_route %>% arrange(desc(YTDKegTransactions)) 
+total_kegs_by_route$KegRte = factor(total_kegs_by_route$KegRte, levels=total_kegs_by_route$KegRte)
+
+# time series plot
+keg_routes_day = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/pw_kegwday.csv', header=TRUE)
+keg_routes_day$Date = dat = as400Date(keg_routes_day$Date)
+keg_routes_day$Date = as.Date(keg_routes_day$Date, '%Y-%m-%d')
+keg_routes_day$Weekday = wday(dat, TRUE, FALSE)
+keg_routes_day$Route = factor(keg_routes_day$Route, levels=total_kegs_by_route$KegRte)
+keg_routes_day = keg_routes_day %>% filter(is.na(Route) == FALSE)
+
+#moving avg
+keg_routes_day = data.frame(keg_routes_day %>% 
+  group_by(Route) %>%
+  mutate(TenDayAvgKegs = rollmean(KegCount, 10, na.pad=TRUE, align='right'),
+         ThirtyDayAvgKegs = rollmean(KegCount, 30, na.pad=TRUE, align='right')))
+  
+g = ggplot(data=keg_routes_day, aes(x=Date, y=KegCount, group=Route))
+keg_routes_ts_plot = 
+  g + geom_point(aes(colour=Route, size=KegCount/10), alpha=0.5) + 
+  geom_line(data=keg_routes_day, size=2.5, alpha=0.7, colour='black',
+            aes(x=Date, y=TenDayAvgKegs, group=Route)) +
+  geom_line(data=keg_routes_day, size=1.5, alpha=0.7, colour='blue',
+            aes(x=Date, y=ThirtyDayAvgKegs, group=Route)) +
+  facet_wrap(~Route) +
+  ggtitle('Statewide Daily Keg Route Volume') +
+  labs(x='Date', y='Number of Kegs') +
+  geom_hline(yintercept = 100) +
+  theme(legend.position='none', 
+        plot.title = element_text(lineheight=1.5, face="bold"),
+        axis.text.x = element_text(angle = 90, hjust = 1))
+# end ts plot
+
+
+
+keg_routes = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Customers_KegRoutes.csv', header=TRUE)
+head(keg_routes)
+
+ytd_keg_sales = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/pw_custytd.csv', header=TRUE)
+head(ytd_keg_sales)
+
+
+kegs = merge(keg_routes, ytd_keg_sales, by='CustomerID', all.y=TRUE)
+kegs = kegs %>% filter(YTDKegSales > 0); head(kegs)
+kegs$KegRteHouse = paste0(kegs$Warehouse, '_', kegs$KegRte)
+
+kegs$OnKegRoute = factor(ifelse(kegs$KegRteHouse %in% c('2_68', '2_67', '2_69', '2_66', '3_366', '1_75'), 
+                         'Keg Route Customer', 
+                         'Non-Keg Route Customer'))
+
+kegs = kegs %>% filter(is.na(Latitude) != TRUE, is.na(Longitude) != TRUE)
+
+keg_route_only = kegs %>% filter(KegRte != 0, is.na(KegRte) == FALSE,
+                                 KegRteHouse %in% c('2_68', '2_67', '2_69', '2_66', '3_366', '1_75'))
+
+
+
+
+keg_route_only = keg_route_only %>% filter(State == 'MO')
+# keg_route_only = keg_route_only %>% filter(CustomerTYpe != 'Internal')
+
+stl_keg_routes = keg_route_only %>% filter(Warehouse == 2)
+kc_keg_routes = keg_route_only %>% filter(Warehouse == 1)
+col_keg_routes = keg_route_only %>% filter(Warehouse == 3)
+
+
+create_density_map = function(city, keg_data, title, house, zoom, facet, colour)  {
+  MAP = get_map(location=keg_data[,c('Longitude', 'Latitude')],
+                source='google',
+                maptype='roadmap', 
+                zoom = zoom)
+  
+  keg_map_stl = ggmap(MAP) +
+    geom_point(data = keg_data, 
+                 aes(x = Longitude, 
+                     y = Latitude, 
+                     group = factor(OnKegRoute),
+                     colour = factor(OnKegRoute),
+                     size = YTDKegTransactions/3
+                     ),
+                 alpha = 0.7) +
+    facet_wrap(~OnKegRoute) +
+    scale_fill_gradient(low='green', high='red') +
+    # geom_density2d(data = keg_data, 
+    #              aes(x = Longitude, 
+    #                  y = Latitude)) +
+    stat_density2d(data = keg_data, 
+                   aes(x = Longitude,
+                       y = Latitude,
+                       fill = ..level.., 
+                       alpha = ..level..,
+                       group = factor(OnKegRoute),
+                       fill = factor(OnKegRoute)),
+                   size = 2,
+                   geom = 'polygon') +
+    labs(x = 'Longitude', y = 'Latitude', title = title) +
+    theme(legend.position='none') +
+    scale_color_manual(values=c('purple', 'red')) +
+    scale_alpha_continuous(range = c(0.2, 0.8))
+  
+  print(keg_map_stl)
+}
+
+
+
+library(reshape2)
+library(ggthemes)
+weekdays_only = filter(keg_routes_day, Weekday != 'Saturday', Weekday != 'Sunday', Weekday != 'Monday')
+# weekdays_only$Date = format(weekdays_only$Date, '%a %b %d %Y')
+head(weekdays_only)
+p = ggplot(data=weekdays_only, aes(x=Date, y=KegCount, group=Weekday))
+keg_weekday_ts_plot = 
+  p + geom_point(aes(colour=Route), alpha=0.9) +
+  geom_line(data=weekdays_only, size=2, alpha=0.4, colour='black',
+            aes(x=Date, y=TenDayAvgKegs, group=Route)) +
+  geom_line(data=weekdays_only, size=.7, alpha=0.7, colour='yellow',
+            aes(x=Date, y=ThirtyDayAvgKegs, group=Route)) + 
+  facet_grid(Route ~ Weekday) +
+  labs(x='Date', y='Number of Kegs', title='Weekday Keg Route Volume by Route') +
+  theme(legend.position='none',
+        plot.title = element_text(lineheight=5, face="bold"),
+        axis.text.x = element_text(angle = 90, hjust = 1, size = 8)) +
+  geom_hline(yintercept = 100) +
+  geom_smooth(size=0.01, alpha=0.3) + 
+  scale_x_date() 
+
+
+
+# histogram
+h = ggplot(data=weekdays_only, aes(x=KegCount, group=Route))
+route_hist = h + geom_density(aes(group=Route, fill=Route), 
+                              colour='black',
+                              alpha=0.7) +
+  scale_y_continuous(labels=percent) +
+  facet_wrap(~Route) +
+  geom_vline(xintercept = 100) + 
+  theme(legend.position='none',
+        plot.title = element_text(lineheight=5, face="bold"),
+        axis.text.x = element_text(angle = 90, hjust = 1, size = 8)) +
+  labs(title='Distribution of Daily Keg Volume by Keg Route',
+       x='Number of Kegs', y='Percentage of Days') +
+  geom_rug(aes(group=Route))
+
+weekdays_only$PercentCapacityUtilized = round(weekdays_only$KegCount / 100, 4)
+avg_capacity_by_route = aggregate(PercentCapacityUtilized ~ Route, data=weekdays_only, FUN=function(x) round(mean(x), 3))
+
+
+
+library(htmlTable)
+avg_capacity_by_route = avg_capacity_by_route %>% arrange(desc(PercentCapacityUtilized))
+avg_capacity_by_route$PercentCapacityUtilized = paste0('% ', avg_capacity_by_route$PercentCapacityUtilized * 100)
+names(avg_capacity_by_route) = c('Keg Route    ', 'Average Percent Capacity Utilized')
+cap_ut = htmlTable(avg_capacity_by_route, caption='<center><b>6/2015 - 6/2016</b></center>')
+
+
+'%!in%' = function(x, y) !('%in%'(x,y))
+not_on_keg_routes =  kegs %>% filter(KegRte == 0, is.na(KegRte) == FALSE,
+                                     KegRteHouse %!in% c('2_68', '2_67', '2_69', '2_66', '3_366', '1_75'))
+not_on_keg_routes = not_on_keg_routes %>% filter(State == 'MO')
+
+stl_non_keg_routes = not_on_keg_routes %>% filter(Warehouse == 2)
+kc_non_keg_routes = not_on_keg_routes %>% filter(Warehouse == 1)
+col_non_keg_routes = not_on_keg_routes %>% filter(Warehouse == 3)
+
+
+source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
+library(lubridate)
+library(zoo)
+library(plotly)
+
+keg_routes_day = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/pw_kegwday.csv', header=TRUE)
+customers_for_merge = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Customers_KegRoutes.csv', header=TRUE)
+customers_for_merge = customers_for_merge[, c('CustomerID', 'Customer', 'Latitude', 'Longitude', 'DeliveryDays',
+                                              'OnPremise', 'ShipWeekAB', 'AvgInvoicesPerDay', 'CustomerType',
+                                              'ServiceTimePredicted')]; head(customers_for_merge)
+
+keg_routes_day$Date = dat = as400Date(keg_routes_day$Date)
+keg_routes_day$Date = as.Date(keg_routes_day$Date, '%Y-%m-%d')
+keg_routes_day$Weekday = wday(dat, TRUE, FALSE)
+keg_routes_day$Route = factor(keg_routes_day$Route)
+
+keg_routes_day = merge(keg_routes_day, customers_for_merge, by='CustomerID', all.x=TRUE); head(keg_routes_day)
+keg_routes_day = keg_routes_day %>% arrange(Date, Warehouse, Route, desc(Keg.)); head(keg_routes_day) 
+
+keg_routes_day$RteHouse = paste0(keg_routes_day$Warehouse, '_', keg_routes_day$Route)
+keg_routes_day$OnKegRoute = ifelse(keg_routes_day$RteHouse %in% c('2_68', '2_67', '2_69', '2_66', '3_366', '1_75'), 
+                         'Keg Route Customer', 
+                         'Non-Keg Route Customer'); head(keg_routes_day)
+keg_routes_day = keg_routes_day %>% filter(Latitude > 30)
+
+# keg_routes_day = data.frame(keg_routes_day %>% 
+#                               group_by(Route) %>%
+#                               mutate(TenDayAvgKegs = rollmean(KegCount, 10, na.pad=TRUE, align='right'),
+#                                      ThirtyDayAvgKegs = rollmean(KegCount, 30, na.pad=TRUE, align='right')))
+# 
+
+
+
+
+
+# determine if overlap on day of has occurred this past year
+daily_keg_sales_rte = aggregate(KegCount ~ Date + Warehouse + Route + OnKegRoute, data = keg_routes_day, FUN=sum)
+daily_keg_sales_rte = daily_keg_sales_rte %>% arrange(Date, Warehouse, Route, OnKegRoute)
+daily_keg_sales_rte$Warehouse = as.character(daily_keg_sales_rte$Warehouse)
+daily_keg_sales_rte$Route = as.character(daily_keg_sales_rte$Route)
+daily_keg_sales_rte = daily_keg_sales_rte %>% filter(Warehouse != 5)
+
+
+tha_rte = daily_keg_sales_rte$Route
+daily_keg_sales_rte$KegRoute = ifelse(daily_keg_sales_rte$OnKegRoute == 'Keg Route Customer', 
+                                      tha_rte, 
+                                      'NONKEG')
+daily_keg_sales_rte$KegCapacityUtilization = ifelse(daily_keg_sales_rte$KegRoute != 'NONKEG', 
+                                                    daily_keg_sales_rte$KegCount / 100, 
+                                                    NA)
+#head(daily_keg_sales_rte, 50)
+
+
+
+keg_nonkeg_daily = aggregate(KegCount ~ KegRoute + Warehouse + Date, data= daily_keg_sales_rte, FUN=sum); head(keg_nonkeg_daily, 20)
+keg_nonkeg_daily$HouseKegRte = paste0(keg_nonkeg_daily$Warehouse, '_', keg_nonkeg_daily$KegRoute)
+keg_nonkeg_daily = data.frame(keg_nonkeg_daily %>% 
+                              group_by(HouseKegRte) %>%
+                              mutate(TenDayAvgKegs = rollmean(KegCount, 10, na.pad=TRUE, align='right'),
+                                     ThirtyDayAvgKegs = rollmean(KegCount, 30, na.pad=TRUE, align='right')))
+
+head(keg_nonkeg_daily)
+
+
+
+g = ggplot(data=keg_nonkeg_daily, aes(x=Date, y=KegCount, group=HouseKegRte))
+keg_routes_ts_plot_compare = 
+  g + geom_point(aes(size=KegCount, group=HouseKegRte, colour=factor(HouseKegRte)), alpha=0.5) + 
+  geom_line(data=keg_nonkeg_daily, size=2.5, alpha=0.7, colour='black',
+            aes(x=Date, y=TenDayAvgKegs, group=HouseKegRte)) +
+  geom_line(data=keg_nonkeg_daily, size=1.5, alpha=0.7, colour='blue',
+            aes(x=Date, y=ThirtyDayAvgKegs, group=HouseKegRte)) +
+  facet_wrap(~HouseKegRte, ncol=3) +
+  ggtitle('Daily Keg Volume of Keg Routes vs. Non-Keg Routes') +
+  labs(x='Date', y='Number of Kegs') +
+  theme(legend.position='none', 
+        plot.title = element_text(lineheight=1.5, face="bold"),
+        axis.text.x = element_text(angle = 90, hjust = 1)) 
+
+
+
+
+```
+
+
+# <b>Executive Summmary</b> <br><small>Keg routing has emerged as a unique problem.<br><br>IT team has had to push back several of their deadlines.<br><br>On-site routing training attendees will be (1) present, (2) covered from a  duties standpoint, and (3) not distracted by day-to-day duties. MMO will attend either KC or STL depending on the individual.<br><br>All individuals who are on vacation have been informed that their deadlines must be met regardless of their vacation schedule.</small> {data-background=#e6e6e6}
+[//]: (This is a test note)
+
+
+# <b>Progress Report</b> <br><small>Several decisions are holding up progress on current tasks as well as tasks downstream, risking delays.<br><br>On-site router training will take place on 8/9-8/11 in Saint Louis and 8/23-8/25 in Kansas City.<br><br>Key decisions on keg routing, permanent data locations, an data transformations will need to be made soon to ensure forward progress.</small> {data-background=#e6e6e6}
+
+## Detailed Project Timeline
+```{r timeline, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=12, fig.height=7.5}
+create_gantt = function(key, desc, start, end, done, events, event_dates){
+  roadnet_planner = as.gantt(key=key, description=desc,
+                             start=start, end=end, done=done) #, # done) #, NeededBy) #, done, neededBy)
+
+  x = plot(roadnet_planner,
+           event.label=events,
+           event.time=events_dates,
+           time.lines.by="5 days",
+           main='Major Tasks Remaining in Roadnet',
+           col.done='green',
+           col.notdone='gray',
+           cex=1)
+
+  suppressWarnings(x)
+}
+
+#png('N:/2016 MB Projects/Roadnet/Planning/timeline.png', width = 1200, height = 800)
+x = create_gantt(key=tasks$key, desc=tasks$label, start=tasks$start,
+             end=tasks$end, done=tasks$done, events=events, event_dates=event_dates)
+x
+```
+
+
+## Accomplishments
+<ul> 
+  <li>Keg Routes have been analyzed</li>
+  <li>Keg Routing process outlined; cannot proceed</li>
+  <li>IT specifications have been outlined</li>
+  <li>Product weights determined to be necessary</li>
+  <li>Progress has been made on API connection build</li>
+  <li>Disaster Recovery rough plan created</li>
+  <li>Statewide routing process outlined</li>
+  <li>Routers have been watching training videos</li>
+  <li>On-site training agenda identified & planned</li>
+  <li>Report information flow has been documented</li>
+</ul>
+
+
+## Upcoming Tasks
+<ul> 
+  <li>Finalize keg route process/requirements; test</li>
+  <li>Group debate about routing SOP statewide</li>
+  <li>Coordinate with Amy St. for AS400 lockout SOP</li>
+  <li>Gather detailed report logic; approve statewide</li>
+  <li>Re-build current reports in Roadnet</li>
+  <li>Develop plan for phasing in dynamic routing</li>
+  <li>Finalize disaster recovery plan</li>
+  <li>Finalize (1) API buildout and (2) field list</li>
+  <li>Finalize SOPs $150, Off-Day, Data Maintenance</li>
+  <li>Determine how Roadnet can help w/ DOT data</li>
+  <li>Finalize customer setup SOP</li>
+</ul>
+
+
+## Challenges & Unresolved Issues
+<ul> 
+  <li>Lock all out from AS400 during routing</li>
+  <li>Configure/test keg routing process in Roadnet*</li>
+  <li>Derive fields that do not exist for routing</li>
+</ul>
+
+
+## Decisions
+<ul> 
+  <li>Keg Routes: separate keg invoices or add keg customers</li>
+  <li>Data: Statewide SOP to lockout users from AS400</li>
+  <li>Data: Decide time cutoff for Sales/Customer Service</li>
+  <li>Keg Routes: separate keg routing session or not</li>
+  <li>Keg Routes: start time for keg drivers</li>
+  <li>API: SQL or flat -- Azure or local for staging database</li>
+  <li>Routing: Multiple sessions throughout day</li>
+  <li>Routing: Prioritization mechanism needs resolution</li>
+</ul>
+  
+  
+  
+  
+  
+  
+
+  
+  
+  
+  
+  
+  
+# <b>On-Site Router Training</b> <br><small>Omnitracs will have consultants in Saint Louis August 8-11th and in Kansas City August 23-25th. Mid-Mo will join in with both KC and STL on their training sessions.<br><br>Routers cannot be fully freed from their duties, potentially diminishing the impact of the training. This explicitly goes against what Omnitracs recommended we do and will need to be overcome by attendees.<br><br>Routers are expected to have watched all necessary videos prior to the on-site training session.</small> {data-background=#e6e6e6}
+
+
+
+
+
+
+
+
+
+
+# <b>SOP to Restrict AS400 Access During Routing</b> <br><small>Amy Standifer will join in on the next few meetings to help us develop an SOP that can be applied statewide.<br><br><b>As part of this process the organization will need to agree on a hard time cutoff for sales/sales support/etc. to close their AS400 sessions.</b><br><br>It has been determined that using an IT approach to kick people out is not feasible, so this SOP will need to be widely recognized and consistently followed.</small> {data-background=#e6e6e6}
+
+
+
+
+
+
+  
+  
+
+
+
+# <b>Focus On Keg Routing</b> <br><small><a href="file://majorbrands.com/STLcommon/2016%20MB%20Projects/Roadnet/Keg%20Route%20Analysis/statewide_keg_route_analysis_2015-2016.html">Keg Routes statewide</a> are consistently below 100% capacity. Two viable options exist to increase keg route capacity.<br><br>The first is less labor-intensive upfront, yet guaranteed to be less effective ITLR. It will also require much more long-term maintenance.<br><br>The second is more labor intensive upfront, yet guaranteed to be more effective in mazimizing capacity more consistently and with more precision. It will also require less maintenance.</small> {data-background=#e6e6e6}
+
+
+## Keg Routing in Roadnet
+<center><blockquote>A decision on how kegs will be handled in Roadnet needs to be made in order for the team to (1) finalize the design of routing kegs in Roadnet, and (2) test the proposed paradigm in Kansas City. <br><br>This needs to be addressed ASAP.<br><br>Different amounts of work will be required depending on the strategic decision made by SteerCo.</blockquote></center>
+
+
+
+
+## Keg Routes Today
+<center><blockquote>Capacity utilization on keg routes averages below 50%. <br><br>The following slides will show opportunities where kegs <i>could have been</i> delivered on a keg truck but were not.
+<br><br>Available capacity & geographic proximity were considered as variables. When data on driver time constraints emerges it should be considered as well.</blockquote></center>
+
+
+
+## Keg Routes Today
+<center><blockquote>Following are maps of STL, KC and COL portraying the keg volume for keg routes and non keg routes. 
+<br><br>Note that there is considerable geographic overlap for all of these maps.
+<br><br>Herein lies a huge opportunity.
+<br><br>Maximizing keg route capacity utilization on a consistent basis will greatly increase the odds of ROI.</blockquote></center>
+
+
+<!-- ## Keg Routes Today -->
+<!-- ```{r echo=FALSE} -->
+<!-- cap_ut -->
+<!-- ``` -->
+
+
+## Keg Routes Today, STL
+```{r stl_map, echo=FALSE, results='asis', message=FALSE, warning=FALSE, tidy=TRUE}
+create_density_map(city='st louis', keg_data=stl_kegs_all, title='Saint Louis Keg Volume Density, Keg Routes vs. Non-Keg Routes', house='stl', zoom = 10)
+```
+
+
+## Keg Routes Today, KC
+```{r kc_map, echo=FALSE, results='asis', message=FALSE, warning=FALSE, tidy=TRUE}
+create_density_map(city='kansas city', keg_data=kc_kegs_all, title='Kansas City Keg Volume Density, Keg Routes vs. Non-Keg Routes', house='kc', zoom = 11)
+```
+
+
+## Keg Routes Today, COL
+```{r col_map, echo=FALSE, results='asis', message=FALSE, warning=FALSE, tidy=TRUE}
+create_density_map(city='columbia MO USA', keg_data=col_kegs_all, title='Columbia Keg Volume Density, Keg Routes vs. Non-Keg Routes', house='col', zoom = 10)
+```
+
+
+
+
+
+## Keg Routes Today
+<p><center>The current keg routing paradigm is rigid and does not allow for flexible approaches to increase capacity utilization. <br><br>With kegs weighing ~150 lbs each, each and every keg that we can put on a keg route will save considerable capacity on package trucks.</p></center>
+<ul> 
+  <li>Keg route capacity utilization is < 50% statewide</li>
+  <li>Either a customer has a keg route or does not</li>
+  <li>Keg routes are not maintained consistently/uniformly</li>
+  <li>Increasing keg capacity increases odds of dropping a truck</li>
+  <li>Keg capacity is currently determined by number of kegs</li>
+  <li>Sixth barrels are considered equal to half barrels</li>
+</ul>
+
+
+## Keg Routes Today
+``` {r echo=FALSE, results='asis', message=FALSE, warning=FALSE, tidy=TRUE, fig.height=12, fig.width=15}
+ggplotly(keg_routes_ts_plot_compare, height=550, width=900)
+```
+
+
+## Keg Routes Today: Keg Drivers
+<p><center>Keg drivers are unique to other drivers. Their cooperation will be imperative.</p></center>
+<ul> 
+  <li>KC Route starts at 4 AM despite suboptimal timing</li>
+  <li>Keg driver in KC are not under Operations</li>
+  <li>Keg driver in KC earns higher hourly wage</li>
+  <li>Keg drivers earn an hourly wage in all houses</li>
+  <li>Keg driver in KC experiences wasted time often</li>
+  <li>KC Route may or may not resist changes imposed</li>
+  <li>Some valid oversight mechanism will be necessary</li>
+</ul>
+
+
+
+
+## Strategic Option #1
+<p><center>Segregate Keg Invoices: Superior/Labor Intensive</p></center>
+<ul> 
+  <li>Separate out keg invoices for all customers</li>
+  <li>Make existing keg route customers Tier 1 w/ new field</li>
+  <li>Add keg routes to non-keg customers in proximity</li>
+  <li>Route Tier 1 first, then add Tier 2 til 100%</li>
+  <li>Route leftover kegs on package routes like today</li>
+  <li>Will enable us to use <b>one daily routing session</b> to route</li>
+  <li>Review & improve the process</li>
+  <li>Guarantees we truly maximize keg route capacity</li>
+</ul>
+  
+  
+  
+## Strategic Option #2
+<p><center>Review Keg Routes & Add Keg Customers: Inferior/Less Labor Intensive</p></center>
+<ul> 
+  <li>Report on keg route capacity utilization monthly</li>
+  <li>When consistently below 100%, add customers</li>
+  <li>Repeat <i>ad infinitum</i></li>
+  <li>Determining how many to add is a guessing game</li>
+  <li>Requires considerable specialized maintenance</li>
+  <li>Requires multiple daily routing sessions</li>
+  <li>Possible to "oversaturate" routes if too many added</li>
+  <li>Likely to increase capacity, not maximize it</li>
+</ul>
+  
+  
+  
+
+## Strategic Option #3
+<p><center><h1><b><br>Suggestions<br><br>? ? ?</b></h1></p></center>
+
+
+
+  
+  
+
+
+# <b>Risk Assessment & Mitigation</b> <br><small>Given that maximizing keg route capacity utilization has been identified as a critical variable, we will focus this week's risk overview on the Keg Routing process as it stands now. <br><br>The risks involved with keg routing are twofold: we risk delaying the timeline by taking long to decide, and we also risk diminishing our abilitiy to achieve ROI by the choice we end up implementing<br><br>We will consider two potential futures for keg routing. A third may exist that has not yet been identified.</small> {data-background=#e6e6e6}
+
+
+
+## Risk Matrix
+
+```{r risks, echo=FALSE, fig.align='center', fig.width=8}
+risks = read.xlsx(file='C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Planning Data/master_planning_roadnet.xlsx',
+                  sheetName='risks', header=TRUE)
+nRow <- 5
+nCol <- 5
+m3 <- matrix(c(2,2,3,3,3,1,2,2,3,3,1,1,2,2,3,1,1,2,2,2,1,1,1,1,2), nrow = 5, ncol = 5, byrow = TRUE)
+myData <- m3 
+rownames(myData) <- c("5", "4", "3", "2", "1")  
+colnames(myData) <- c("1", "2", "3", "4", "5")  
+long_data = melt(myData)
+colnames(long_data) <- c("Likelihood", "Consequence", "value")
+long_data = mutate(long_data, value = Consequence + Likelihood)
+r = risks
+names(r) = c('risk', 'Likelihood', 'Consequence', 'mitigation', 'value')
+# myPalette = colorRampPalette(rev(brewer.pal(5, "RdYlGn")))
+myPalette = colorRampPalette(c('green', 'yellow', 'red', 'darkred'))
+
+g = ggplot(data=long_data, aes(x=Consequence, y=Likelihood, fill=value))
+base_plot = g + geom_tile() +
+  scale_fill_gradientn(colours = myPalette(3)) + 
+  scale_x_continuous(breaks = 0:6, expand = c(0, 0)) +
+  scale_y_continuous(breaks = 0:6, expand = c(0, 0)) +
+  coord_fixed() +
+  theme_bw() +
+  theme(legend.position='none')
+
+final_plot = base_plot + 
+  geom_point(data=r, position='jitter', size=r$Consequence, 
+             aes(x=r$Consequence, y=r$Likelihood)) + 
+  geom_text(data=r, position='jitter', size=3, label=r$risk, 
+            aes(x=r$Consequence, y=r$Likelihood)) +
+  ggtitle('Risk Matrix')
+
+print(final_plot)
+```
+
+
+
+
+
+## Overview of Risk Items
+<ul>
+  <li><b>Max Keg Route Capacity:</b> Necessary for ROI</li>
+  <li><b>Complex Rules:</b> Challenging to implement</li>
+  <li><b>Consultants:</b> Communication has been challenging</li>
+  <li><b>Mis-Aligned Incentives:</b> Routers/Drivers/Keg Drivers</li>
+  <li><b>Habit Changes:</b> Habits will be sticky for routers and drivers</li>
+  <li><b>Dynamic routing phase-in:</b> Plan incremental phase-in</li>
+  <li><b>Sales & Cust. Service:</b> Data/cut-offs/under $150/off days</li>
+  <li><b>Driver Cooperation:</b> Order of route; custom asks of router</li>
+</ul>
+
+
+
+## Risk Mitigation  <small>Maximizing Keg Route Capacity Utilization</small>
+<p>Keg routing process still has to be modeled and tested, however we cannot proceed until decisions are made. <b><i>SteerCo must decide on keg routing strategy.</i></b>
+<br><br>Separating out keg invoices for all customers is the ideal solution with the least amount of upkeep, but is the most technologically intensive. 
+<br><br>The second, inferior option is to periodically review keg routes for capacity utilization, and add customers to keg routes when that number gets low.</p>
+
+
+
+## Risk Mitigation  <small>Maximizing Keg Route Capacity Utilization (Cont.)</small>
+<ul> 
+  <li>Manually reviewing keg routes is suboptimal since we will not be able to predict <i>how many</i> customers to add to keg routes when they are below capacity</li>
+  <li>By separating keg invoices, we will be able to (1) route all invoices in the same session, and (2) fill in the un-used capacity on keg trucks <i><b>until they are at 100%</i></b></li>
+  <li>Both will work; separating keg invoices out will work better</li>
+  <li><b><i>We cannot proceed designing the keg routing process or testing it until this is resolved</i></b></li>
+  <li>Model will be explored in KC & exported statewide</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# <b>Financial Assessment</b> <br><small>It is vital to optimize the appropriate metrics if the project is going to be successful.<br><br><b>The goal of the project is to maximize capacity utilization while minimizing miles driven, hours worked, and the number of trucks it takes to deliver product.</b><br><br>These goals can be broken down into metrics which, if optimized, will achieve ROI.<br><br>These metrics must be conceived & measured.</small>{data-background=#e6e6e6}
+
+
+
+## Optimizing for Maximum ROI <small>Certain activities will influence ROI more than others, such as the following:</small>
+<ul> 
+  <li>Filling trucks to capacity to decrease trucks used</li>
+  <li>Enforcing dynamic route sequence with drivers</li>
+  <li>Minimizing off-day deliveries through communication</li>
+  <li>Ensuring low number of miles per truck per day</li>
+  <li>Keeping the number of trucks to market per day low</li>
+  <li>Minimizing number of hours per driver per day</li>
+  <li>Maintaining data for dynamic routing perfectly</li>
+  <li>Ensuring client/driver relationships are not neglected*</li>
+  <li>Preventing speeding & hazardous driving*</li></ul>
+
+
+## Optimizing for Maximum ROI <small>Filling Trucks to Capacity</small>
+<ul> 
+  <li>Deliberately maximizing keg truck capacity</li>
+  <li>Deliberately maximizing package truck capacity</li>
+  <li>Cutting number of trucks to market by one each day</li>
+  <li>Reporting time spent in market per driver; adapt</li>
+  <li>If off-day orders necessitate additional truck, deny</li>
+</ul>
+
+
+
+## Optimizing for Maximum ROI <small>Enforcing Dynamic Routing Sequence</small>
+<ul> 
+  <li>Compare predicted miles to actual miles</li>
+  <li>Compare predicted hours to actual hours</li>
+  <li>Institute 'stop sheets' and track in daily report</li>
+  <li>Take feedback from driver to improve dynamic routing</li>
+  <li>Institute solid data maintenance practices</li>
+  <li>Require driver signature for route order each day</li>
+</ul>
+
+
+
+
+## Optimizing for Maximum ROI <small>Minimizing Off-Day Deliveries</small>
+<blockquote> 
+<i><b>With relatively little work, a tool can be developed that will inform salespeople which of their accounts have a delivery day tomorrow.</b></i>
+<br><br>Such a tool can prompt salespeople to call on and/or visit those accounts, thus promoting "ON-DAY" deliveries.
+<br><br>If Steering Committee deems appropriate, this tool can be created in short order. 
+</blockquote>
+
+
+
+## Optimizing for Maximum ROI <small>Minimizing Miles/Truck/Day</small>
+<ul> 
+  <li>Compare predicted miles to actual miles</li>
+  <li>Verbally question drivers who are consistently off</li>
+  <li>Ensure drivers & routers are communicating new data</li>
+  <li>If route based on bad information, <b>change it</b></li>
+  <li>Communicate with drivers to accept Roadnet sequence</li>
+</ul>
+
+
+
+## Optimizing for Maximum ROI <small>Minimizing Trucks to Market per Day</small>
+<ul> 
+  <li>Institute goal for router to cut one truck per day</li>
+  <li>Provide some sort of incentive to do so</li>
+  <li>Maximize keg route capacity utilization first, then</li>
+  <li>Maximize package route capacity utilization</li>
+  <li>Avoid adding a truck unless absolutely necessary</li> 
+</ul>
+
+
+
+
+## Optimizing for Maximum ROI <small>Minimizing Hours/Driver/Day</small>
+<ul> 
+  <li>Institute appropriate start times for keg routes</li>
+  <li>Review hours/driver/day versus predicted (Roadnet)</li>
+  <li>Ensure data is consistently maintained</li>
+  <li>Track start/stop time of all drivers</li>
+  <li>Discuss w/ driver reasons why routes took longer</li>
+  <li>In KC, track driving hours separate from warehouse</li>
+</ul>
+
+
+
+## Optimizing for Maximum ROI <small>Ensuring Customer Relationships Are Maintained</small>
+<blockquote> 
+<i><b>This will be more art than science.<br><br>
+Some sort of communication with customers is probably warranted to warn them that they may be seeing new drivers.<br><br>
+Best practices, perhaps from our best drivers, should be noted and replicated to whatever extent they can be.</b></i> 
+</blockquote>
+
+
+
+
+## Optimizing for Maximum ROI <small>Preventing Speeding & Hazardous Driving</small>
+<blockquote> 
+<i><b>One uncovered claim could be catastrophic.<br><br>
+Without dispatching we will not have insight into dangerous activities, such as speeding or sharp turning.<br><br>
+This aspect of the project may not be within our control, however we may be able to minimize our maximum potential losses through agreements with our drivers.</b></i> 
+</blockquote>
+
+
+
+
+
+
+
+
+# <b>Team Performance</b> <br><small>The Roadnet Team has performed well to-date. <br><br>The collective mindset has turned from "it can't be done" to "how will we get this accomplished?".<br><br>Given past performance we have no reason to think the team will not deliver on the project's objectives. However, vacations were not considered/approved/planned for by the Project Management Team, and may have implications to the timeline.<br><br>This risk has been mitigated.</small>{data-background=#e6e6e6}
+
+
+<!-- ## Factors of Team Effectiveness <small>Aside from regular 1v1 interactions between PMs and Members, there are 5 key factors that determine a team's effectiveness. Often there exists a tradeoff between effectiveness & efficiency. For details, please see <a href="https://rework.withgoogle.com/blog/five-keys-to-a-successful-google-team/">Google's People Operations Study of Team Effectiveness</a></small> -->
+<!-- <ul> -->
+<!--   <li><b>Psychological Safety -</b>Opportunity to speak up & be heard</li> -->
+<!--   <li><b>Dependability -</b> Work completed on-time w/ excellence</li> -->
+<!--   <li><b>Structure & Clarity -</b> Clear roles, plans & goals</li> -->
+<!--   <li><b>Meaning -</b> Personal importance to the mission</li> -->
+<!--   <li><b>Impact -</b> Believing work matters & influences change</li> -->
+<!-- </ul> -->
+
+
+
+<!-- ## Factors of Team Effectiveness -->
+<!-- ```{r factors_effectiveness, echo=FALSE, fig.align='center', fig.width=8} -->
+<!-- roles = read.xlsx(file='C:/Users/pmwash/Desktop/Roadnet Implementation/Data/Planning Data/master_planning_roadnet.xlsx', -->
+<!--                   sheetName='roles', header=TRUE) -->
+<!-- roles$role = factor(roles$role, levels=roles$role) -->
+<!-- g = ggplot(data=roles, aes(x=role, y=score)) -->
+<!-- g = g + geom_bar(stat='identity', fill='blue', colour='orange', size=2, alpha=0.6) + -->
+<!--   labs(title='Factors of Team Effectiveness',  -->
+<!--        x='Factor', y='Score') + theme_minimal() -->
+<!-- print(g) -->
+<!-- ``` -->
+
+
+
+
+
+<!-- # <b>Moving Forward</b> <br><small>As stated earlier, the project has kicked into high gear. <br><br>We will go from 40% to 80% complete much faster than we went from 0% to 40% complete.<br><br>The meat of the work will be performed in the next two months, and mistakes will not be immediately evident (if ever). Since the quality feedback loop is delayed we must ensure that seemingly small decisions are not made by taking the path of least resistance.<br><br>This period will be most important to success.</small> {data-background=#e6e6e6} -->
+
+
+<!-- ## Upcoming Key Decisions -->
+<!-- <ul>  -->
+<!--   <li>Decide where data will live on permanent basis</li> -->
+<!--   <li>Decide & approve plan for phasing in dynamic routing</li> -->
+<!--   <li>Decide & approve ROI tracking plan</li> -->
+<!--   <li>Decide & approve keg routing process</li> -->
+<!--   <li>Decide & approve disaster recovery plan</li> -->
+<!--   <li>Decide whether to use staging database</li> -->
+<!--   <li>Decide if SQL or flat file for staging database</li> -->
+<!--   <li>Decide whether to send orders througout day; format</li> -->
+<!--   <li>Decide whether multiple routing sessions necessary</li> -->
+<!--   <li>Decide on HR data permissions for tracking ROI</li> -->
+<!--   <li>Decide what incentive structures to implement</li> -->
+<!-- </ul> -->
+
+
+<!-- ## Next Steps -->
+<!-- <ul>  -->
+<!--   <li>Build data bridges between AS400 & Roadnet Cloud</li> -->
+<!--   <li>Build reports relevant to routing; improve/automate</li> -->
+<!--   <li>Derive fields necessary for dynamic routing; automate</li> -->
+<!--   <li>Merge in missing data RNA database</li> -->
+<!--   <li>Formalize ROI tracking process</li> -->
+<!--   <li>Begin testing keg routing process in KC; document</li> -->
+<!--   <li>Routers will continue online training</li> -->
+<!--   <li>Develop disaster recovery plan</li> -->
+<!--   <li>SOPs: routing, maintenance, kegs, off-day, under $150</li> -->
+<!--   <li>Finalize ROI measurement strategy</li> -->
+<!--   <li>Outline all rules necessary for dynamic routing</li> -->
+<!--   <li>Develop plan for phasing in dynamic routing; consensus</li> -->
+<!-- </ul> -->
+
+
+
+
+
+
+# <b>Questions, Comments & Discussion</b> <br><small>Please take this time to clarify understanding, raise concerns, or provide input on the project's progress.<br><br>Thank you for your time!</small> {data-background=#e6e6e6}
+
+
+
+
+
+
+
+
+
+
+# <b>Parting Words of Wisdom</b> <br><small>"The part that is stable we shall predict. The part that is unstable we shall control" -John von Neumann<br><br>"The day science begins to study non-physical phenomena, it will make more progress in one decade than in all the previous centuries of its existence." -Nikola Tesla <br><br>"Madness is rare in individuals-but in groups, parties, nations, and ages it is the rule" -Peter Thiel</small> {data-background=#e6e6e6}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
