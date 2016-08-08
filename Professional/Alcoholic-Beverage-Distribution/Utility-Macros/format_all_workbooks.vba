@@ -7,8 +7,10 @@ Sub format_all_workbooks()
     Dim folder_picker As FileDialog
     
     Application.ScreenUpdating = False
-    Application.EnableEvents = False
+    Application.EnableEvents = True
     Application.Calculation = xlCalculationManual
+    Application.CalculateBeforeSave = True
+
     
     file_ext = "*.xl*"
     file_path = "N:\Operations Intelligence\Sales\Delivery Days\"
