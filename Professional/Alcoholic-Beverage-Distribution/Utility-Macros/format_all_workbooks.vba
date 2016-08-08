@@ -11,14 +11,14 @@ Sub format_all_workbooks()
     Application.Calculation = xlCalculationManual
     
     file_ext = "*.xl*"
-    file_path = "N:\Operations Intelligence\Sales\Delivery Days\test\"
+    file_path = "N:\Operations Intelligence\Sales\Delivery Days\"
     file_name = Dir(file_path & file_ext)
     
     Do While file_name <> ""
       Set wb = Workbooks.Open(Filename:=file_path & file_name)
       
       For Each ws In ActiveWorkbook.Worksheets
-        ws.Range("A:A, C:C, F:F, G:H, K:K, M:M, Q:Q, AA:AA").EntireColumn.Delete
+        ws.Range("A:A, C:C, G:G, K:K, M:M, Q:Q, AA:AA").EntireColumn.Delete
         ws.Columns("A:ZZ").Font.Size = 9
         ws.Columns("A:ZZ").AutoFit
         ws.Activate
