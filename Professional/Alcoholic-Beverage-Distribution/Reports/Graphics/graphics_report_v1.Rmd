@@ -1,0 +1,473 @@
+---
+title: "<center><h1>Graphics Report, 2015-2016</h1></center>"
+author: "<center>Published August 2016 - Paul Washburn</center>"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+## Graphics data dump from Diver
+library(rpivotTable)
+library(dplyr)
+library(reshape2)
+library(lubridate)
+library(treemap)
+library(ggplot2)
+library(googleVis)
+library(rCharts)
+library(plotly)
+source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
+
+df = read.csv('N:/Operations Intelligence/Data/Graphics/graphics_data_dump_diver.csv', header=TRUE)
+df$POSTERJob.ID = factor(df$POSTERJob.ID)
+df = df %>% filter(Year %in% c(2015, 2016))
+df$Invoice.Date = dat = strptime(df$Invoice.Date, '%m/%d/%Y')
+df$Week = week(dat)
+df$Month = month(dat, TRUE, FALSE)
+df$ProjectID_LineID = paste0(df$POSTERJob.ID, '_', df$POSTER.Item.ID)
+# headTail(df)
+
+
+##### ENSURE THAT NOT DOUBLE COUNTING ANYTHING!!
+subset(df, df$POSTERJob.ID == 118864)
+
+
+selected_cols = c('POSTERJob.ID', 'POSTER.Item.ID', 'POSTER.Unique.Line.Item.Number', 'POSTER.ITEM.CATEGORY', 
+                  'POSTER.Artwork.Creator', 'POSTER.Director.Approver', 'POSTER.Price', 
+                  'Supplier', 'Brand', 'Customer', 'POSTER.Non.MB.mentions', 'POSTER.MB.mentions', 'POSTER.REPRINT')
+df_jobs_only = df[, selected_cols]
+df_jobs_only = unique(df_jobs_only)
+
+
+
+## Summarize by Job ID
+job_price = aggregate(POSTER.Price ~ POSTERJob.ID, data = df, FUN=function(x) sum(unique(x)))
+job_designer = aggregate(POSTER.Designer ~ POSTERJob.ID, data = df, FUN=unique)#function(x) sum(unique(x)))
+job_artists = aggregate(POSTER.Artwork.Creator ~ POSTERJob.ID, data = df, FUN=unique)#function(x) sum(unique(x)))
+job_lines = aggregate(POSTER.Unique.Line.Item.Number ~ POSTERJob.ID, data = df, FUN=countUnique)
+job_suppliers_count = aggregate(Supplier ~ POSTERJob.ID, data = df, FUN=countUnique)#Supplier
+job_mentions = aggregate(Total.Mentions ~ POSTERJob.ID, data = df, FUN=sum)
+job_customers = aggregate(CUSTOMER.NUMBER ~ POSTERJob.ID, data = df, FUN=countUnique)
+job_reprint = aggregate(POSTER.REPRINT ~ POSTERJob.ID, data = df, FUN=unique)
+job_director = aggregate(POSTER.Director.Approver ~ POSTERJob.ID, data = df, FUN=unique)
+job_mb_mention = aggregate(POSTER.MB.mentions ~ POSTERJob.ID, data = df, FUN=sum)
+job_nonmb_mention = aggregate(POSTER.Non.MB.mentions ~ POSTERJob.ID, data = df, FUN=sum)
+
+
+#POSTER.REPRINT
+
+
+job_summary = merge(job_price, job_designer, by='POSTERJob.ID')
+job_summary = merge(job_summary, job_artists, by='POSTERJob.ID')
+job_summary = merge(job_summary, job_lines, by='POSTERJob.ID')
+job_summary = merge(job_summary, job_suppliers_count, by='POSTERJob.ID')
+job_summary = merge(job_summary, job_mentions, by='POSTERJob.ID')
+job_summary = merge(job_summary, job_customers, by='POSTERJob.ID')
+job_summary = merge(job_summary, job_reprint, by='POSTERJob.ID')
+job_summary = merge(job_summary, job_director, by='POSTERJob.ID')
+job_summary = merge(job_summary, job_mb_mention, by='POSTERJob.ID')
+job_summary = merge(job_summary, job_nonmb_mention, by='POSTERJob.ID')
+
+
+names(job_summary) = c('JobID', 'Price', 'Designer', 'ArtworkCreator', 
+                       'LineItems', 'Suppliers', 'Mentions', 
+                       'Customers', 'Reprint', 'ApprovingDirector',
+                       'MentionsMB', 'MentionsNonMB')
+job_summary$PctMentionsMB = job_summary$MentionsMB / job_summary$Mentions
+job_summary$PctMentionsNonMB = job_summary$MentionsNonMB / job_summary$Mentions
+
+
+sup_cus = aggregate(POSTER.MB.mentions ~ POSTER.Director.Approver + Supplier, data=df, FUN=sum)
+sup_cus = sup_cus %>% filter(Supplier != '') %>%
+  arrange(desc(POSTER.MB.mentions)); headTail(sup_cus)
+
+sankey_df = function(df, colsource='source', coltarget='target', colvalue='value') {
+  library(dplyr)
+  
+  sankey.df = subset(df, select=c(colsource, coltarget, colvalue))
+  colnames(sankey.df) = c('source', 'target', 'value')
+  sankey.df = arrange(sankey.df, source)
+  
+  sankey.df
+}
+
+df_s = sankey_df(df=sup_cus, colsource='Supplier', coltarget='POSTER.Director.Approver', colvalue='POSTER.MB.mentions')
+names(df_s) = c('target', 'source', 'value')
+df_s = df_s %>% arrange(desc(value)); headTail(df_s)
+
+
+
+sankey_plot = function(df, title) {
+  sankeyPlot = rCharts$new()
+  sankeyPlot$setLib('http://timelyportfolio.github.io/rCharts_d3_sankey')
+
+  sankeyPlot$set(
+    data = df,
+    nodeWidth = 25,
+    nodePadding = 10,
+    layout = 32,
+    width = 1000,
+    height = 3000,
+    labelFormat = ".1%",
+    title=title
+  )
+  
+  sankeyPlot
+  
+}
+s = sankey_plot(df_s, title='Weighted by Number of Mentions - Customer/Supplier Relationships')
+
+
+
+
+
+
+
+## summarize by time/artist
+ts_1 = aggregate(POSTERJob.ID ~ Month +  Year + POSTER.Artwork.Creator, data=df, FUN=countUnique)
+ts_1 = filter(ts_1, POSTER.Artwork.Creator != 'LaBostrie, Nadia')
+names(ts_1) = c('Month', 'Year', 'Artist', 'NumberJobs')
+ts_1 = ts_1 %>% filter(Artist %!in% c('DeWeese, Tammy', 'Wells, Kris', 'Potts, Andy'))
+g = ggplot(data=ts_1, aes(x=Month, y=NumberJobs, group=Artist))
+plt1 = g + geom_point(aes(size=NumberJobs/20),
+                      alpha = 0.7) +
+  geom_line(size=.1, alpha=.4) +
+  facet_grid(Artist ~ Year) +
+  geom_smooth(aes(fill=Artist, colour=Artist), span=1,
+              size=2,
+              alpha=.3,
+              se=F) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), 
+        legend.position='none') +
+  labs(title='Number of Graphics Jobs Contributed To per Month')
+
+# plt1
+
+
+
+## Customer Summary
+customer_price = aggregate(POSTER.Price ~ CUSTOMER.NUMBER + Customer, data=df, FUN=sum)
+customer_mbmentions = aggregate(POSTER.MB.mentions ~ CUSTOMER.NUMBER + Customer, data=df, FUN=sum)
+customer_nonmbmentions = aggregate(POSTER.Non.MB.mentions ~ CUSTOMER.NUMBER + Customer, data=df, FUN=sum)
+customer_mentions = aggregate(Total.Mentions ~ CUSTOMER.NUMBER + Customer, data=df, FUN=sum)
+
+
+customer_summary = merge(customer_price, customer_mbmentions, by=c('CUSTOMER.NUMBER', 'Customer'))
+customer_summary = merge(customer_summary, customer_nonmbmentions, by=c('CUSTOMER.NUMBER', 'Customer'))
+customer_summary = merge(customer_summary, customer_mentions, by=c('CUSTOMER.NUMBER', 'Customer'))
+
+
+customer_summary = customer_summary %>% filter(Customer %!in% c('GENERAL MARKET ALL-STL', 
+                                                                'MAJOR BRANDS INTERNAL-STL', 
+                                                                'GENERAL MARKET ALL-KC',
+                                                                'GENERAL MARKET ALL-MMN',
+                                                                'GENERAL MARKET ALL-MMS'))
+names(customer_summary) = c('CustomerID', 'Customer', 'SumPrice', 'MentionsMB', 
+                            'MentionsNonMB', 'Mentions')
+customer_summary$PctMentionsMB = customer_summary$MentionsMB / customer_summary$Mentions
+customer_summary$MentionsNonMB = NULL
+
+
+
+
+
+## Supplier Summary
+supplier_summary = aggregate(POSTER.Price ~ Supplier + Brand, data=df, FUN=sum)
+supplier_summary = supplier_summary %>% filter(Supplier != '')
+
+names(supplier_summary) = c('Supplier', 'Brand', 'SumPrice')
+
+
+
+
+
+
+## Customer Summary
+cust_price = aggregate(POSTER.Price ~ Customer, data=df, FUN=sum)
+cust_mentions = aggregate(POSTER.MB.mentions ~ Customer, data=df, FUN=sum)
+cust_mentionsnonmb = aggregate(POSTER.Non.MB.mentions ~ Customer, data=df, FUN=sum)
+cust_count_types = aggregate(POSTER.ITEM.CATEGORY ~ Customer, data=df, FUN=countUnique)
+cust_count_brands = aggregate(Brand ~ Customer, data=df, FUN=countUnique)
+cust_count_jobs = aggregate(POSTERJob.ID ~ Customer, data=df, FUN=countUnique)
+
+
+Customer_summary = merge(cust_price, cust_mentions, by=c('Customer'))
+Customer_summary = merge(Customer_summary, cust_mentionsnonmb, by=c('Customer'))
+Customer_summary = merge(Customer_summary, cust_count_types, by=c('Customer'))
+Customer_summary = merge(Customer_summary, cust_count_brands, by=c('Customer'))
+Customer_summary = merge(Customer_summary, cust_count_jobs, by=c('Customer'))
+
+
+Customer_summary = Customer_summary %>% filter(Customer != '')
+names(Customer_summary) = c('Customer', 'SumPrice', 'MentionsMB',
+                               'MentionsNonMB', 'NumberItemTypes',
+                               'NumberBrands',
+                               'NumberJobs')
+Customer_summary = Customer_summary %>% arrange(desc(SumPrice))
+Customer_summary$PctMentionsMB = Customer_summary$MentionsMB / (Customer_summary$MentionsMB + Customer_summary$MentionsNonMB) 
+Customer_summary = head(Customer_summary, 100)
+
+Customer_summary = gvisTable(Customer_summary, 
+                             options=list(width=1100,
+                                          page='enable',
+                                          titleTextStyle="{fontName:'Courier', fontSize:10}"),
+                             format=list(SumPrice='$#,###',
+                                         MentionsMB='#,###',
+                                         MentionsNonMB='#,###',
+                                         NumberItemTypes='#,###',
+                                         NumberBrands='#,###',
+                                         NumberJobs='#,###',
+                                         PctMentionsMB='%##.##'))
+plot(Customer_summary)
+
+## POSTER.ITEM.CATEGORY
+
+
+
+# itreemap(job_summary,
+#         index = c('ApprovingDirector'),
+#         vSize = 'PctMentionsMB',
+#         # title.legend = 'Job Item Price (Sum)',
+#         # title = 'Graphics Jobs, Percent MB Mentions by Director',
+#         type = 'index'#, #depth #categorical #dens #comp #color #value #manual
+#         # lowerbound.cex.labels=.3,
+#         # force.print.labels=TRUE,
+#         # palette='RdYlBu'
+#         )
+
+# treegraph(job_summary,
+#         # index = c('ApprovingDirector'),
+#         # vSize = 'PctMentionsMB',
+#         # title.legend = 'Job Item Price (Sum)',
+#         title = 'Graphics Jobs, Percent MB Mentions by Director',
+#         type = 'index'#, #depth #categorical #dens #comp #color #value #manual
+#         # lowerbound.cex.labels=.3,
+#         # force.print.labels=TRUE
+#         # palette='RdYlBu'
+#         )
+
+
+
+item_price = aggregate(POSTER.Price ~ POSTER.ITEM.CATEGORY, data=df, FUN=sum)
+item_count = aggregate(POSTERJob.ID ~ POSTER.ITEM.CATEGORY, data=df, FUN=countUnique)
+
+item_type_print = merge(item_price, item_count, by='POSTER.ITEM.CATEGORY')
+item_type_print = item_type_print %>% arrange(desc(POSTER.Price))
+names(item_type_print) = c('Category', 'SumPrice', 'Count')
+
+options(gvis.plot.tag='chart')
+
+item_type_print = gvisTable(item_type_print, 
+                            options=list(width=900),
+                            format=list(SumPrice='$#,###',
+                                        Count='#,###'))
+
+
+
+
+
+# BRAND SUMMARY
+brand_sup = aggregate(POSTER.MB.mentions ~ Supplier + Brand, data=df, FUN=sum)
+names(brand_sup) = c('Supplier', 'Brand', 'MentionsMB')
+
+
+
+
+# cust and brand
+brand_cust = aggregate(POSTER.MB.mentions ~ Customer + Brand, data=df, FUN=sum)
+names(brand_cust) = c('Customer', 'Brand', 'MentionsMB')
+
+
+
+
+
+
+#PIPELINE ANALYSIS
+pipe_count = aggregate(POSTERJob.ID ~ Month + Year, data=df, FUN=countUnique)
+pipe_line_count = aggregate(ProjectID_LineID ~ Month + Year, data=df, FUN=countUnique)#ProjectID_LineID
+
+pipeline = merge(pipe_count, pipe_line_count, by=c('Month', 'Year'))
+names(pipeline) = c('Month', 'Year', 'NumberJobs', 'NumberLines')
+
+library(zoo)
+pipeline = pipeline %>% arrange(Year, Month) %>%
+  mutate(ThreeMonthAvg = rollmean(NumberJobs, 3, na.pad=TRUE, align="right"),
+         ThreeMonthAvgLines = rollmean(NumberLines, 3, na.pad=TRUE, align="right"))
+
+p = ggplot(data=pipeline, aes(x=Month, y=NumberJobs, group=Year))
+plt_pipeline = p + geom_bar(stat='identity', colour='black', fill='lightgreen') + 
+  facet_grid(~Year) +
+  geom_line(data=pipeline, aes(x=Month, y=ThreeMonthAvg, group=Year)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), 
+        legend.position='none') +
+  labs(title='Number of Graphics Jobs per Month') 
+
+
+pl = ggplot(data=pipeline, aes(x=Month, y=NumberLines, group=Year))
+plt_pipeline_l = pl + geom_bar(stat='identity', colour='black', fill="#CD1076") + 
+  facet_grid(~Year) +
+  geom_line(data=pipeline, aes(x=Month, y=ThreeMonthAvgLines, group=Year)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), 
+        legend.position='none') +
+  labs(title='Number of Unique Job Line Items per Month') 
+
+```
+<br><br>
+
+
+```{r results='asis', tidy=TRUE, fig.height=5, fig.width=9}
+ggplotly(plt_pipeline)
+
+ggplotly(plt_pipeline_l)
+```
+
+
+
+
+```{r results='asis', tidy=TRUE}
+plot(item_type_print)
+```
+
+
+
+
+
+<br><br>
+```{r results='asis', tidy=TRUE, fig.height=8, fig.width=11}
+treemap(job_summary,
+        index = c('ApprovingDirector', 'Designer'),
+        vSize = 'Price',
+        title.legend = 'Job Item Price (Sum)',
+        title = 'Graphics Jobs, Total Revenue by Director & Designer',
+        type = 'value', #depth #categorical #dens #comp #color #value #manual
+        lowerbound.cex.labels=.3,
+        force.print.labels=TRUE,
+        palette='RdYlGn')
+```
+
+<br><br>
+```{r results='asis', tidy=TRUE, fig.height=8, fig.width=11}
+treemap(job_summary,
+        index = c('ApprovingDirector'),
+        vSize = 'PctMentionsMB',
+        title = 'Graphics Jobs, Average % MB Brand Mentions (by Job) by Director',
+        type = 'index', #depth #categorical #dens #comp #color #value #manual
+        lowerbound.cex.labels=.3,
+        force.print.labels=TRUE,
+        fun.aggregate = 'mean',
+        position.legend = 'none'
+        )
+```
+
+<br><br>
+```{r results='asis', tidy=TRUE, fig.width=12}
+plot(Customer_summary)
+```
+
+<br><br>
+```{r results='asis', tidy=TRUE, fig.height=8, fig.width=11}
+treemap(customer_summary,
+        index = c('Customer'),
+        vSize = 'SumPrice',
+        title.legend = 'Job Item Price (Sum)',
+        title = 'Graphics Jobs, Total Revenue by Non-Internal Customer',
+        # type = 'value', #depth #categorical #dens #comp #color #value #manual
+        lowerbound.cex.labels=.1,
+        force.print.labels=TRUE,
+        palette='-RdYlGn')
+```
+
+
+<br><br>
+```{r results='asis', tidy=TRUE, fig.height=8, fig.width=11}
+
+treemap(customer_summary,
+        index = c('Customer'),
+        vSize = 'MentionsMB',
+        # fun.aggregate = 'mean',
+        position.legend = 'none',
+        # title.legend = 'Job Item Price (Sum)',
+        title = 'Graphics Jobs, MB Mentions by Customer',
+        type = 'index', #depth #categorical #dens #comp #color #value #manual
+        lowerbound.cex.labels=.1,
+        force.print.labels=TRUE
+        # palette='RdYlBu'
+        )
+
+
+```
+
+<br><br>
+```{r results='asis', tidy=TRUE, fig.height=8, fig.width=11}
+treemap(supplier_summary,
+        index = c('Supplier', 'Brand'),
+        vSize = 'SumPrice',
+        title.legend = 'Job Item Price (Sum)',
+        title = 'Graphics Jobs, Total Revenue by Supplier & Brand',
+        # type = 'value', #depth #categorical #dens #comp #color #value #manual
+        lowerbound.cex.labels=.1,
+        force.print.labels=TRUE,
+        palette='RdYlGn')
+```
+
+<br><br>
+```{r results='asis', tidy=TRUE, fig.height=8, fig.width=11}
+
+treemap(brand_sup,
+        index = c('Supplier', 'Brand'),
+        vSize = 'MentionsMB',
+        title = 'Graphics Jobs, Mentions by Supplier & Brand',
+        type = 'index', #depth #categorical #dens #comp #color #value #manual
+        lowerbound.cex.labels=.1,
+        force.print.labels=TRUE,
+        # fun.aggregate = 'mean',
+        position.legend = 'none'
+        )
+
+```
+
+
+
+<br><br>
+
+```{r results='asis', tidy=TRUE, comment=NA, fig.height=7, fig.width=9}
+ggplotly(plt1)
+```
+
+
+
+
+
+<br><br>
+
+```{r results='asis', tidy=TRUE, comment=NA}
+s$show('inline', include_assets=TRUE, cdn=TRUE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
