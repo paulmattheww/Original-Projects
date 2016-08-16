@@ -2,6 +2,9 @@
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 library(RODBC)
 library(plotly)
+library(dplyr)
+library(lubridate)
+library(stringr)
 
 # query is pw_offday
 # below is ETL process for off day deliveries
@@ -198,10 +201,9 @@ off_day_deliveries = function(deliveries, weeklookup) {
                                           'OffDayDeliveries', 'AdditionalDeliveries', 'NewCustomerDeliveries')]; headTail(customer_summary, 10)
   customer_summary = customer_summary %>% arrange(CustomerID, Week); headTail(customer_summary, 10)
   
-  model = lm(OffDayDeliveries ~ CustomerType + Tier, data=customer_summary)
+  model = lm(OffDayDeliveries ~ NumberScheduledShipDays, data=customer_summary)
   summary(model)
   
-  data.frame(customer_daily %>% group_by('Week', 'Customer') %>% filter(CustomerID == 1001911)) 
 
   
   
@@ -248,21 +250,21 @@ off_day_deliveries = function(deliveries, weeklookup) {
   # 
   # d$New.Customer = ifelse(setup_monthx == now_m & setup_yearx == now_y, 'YES', 'NO')
   
-  da_colz = c('Date', 'Invoice', 'Call', 'Salesperson', 'Customer', 
-              'New.Customer', 'On.Premise', 'Tier', 'Cases', 'Dollars', 
-              'Priority', 'Warehouse', 'Weekday',
-              'Delivery.Days', 'Month', 'DOTM', 'Year', 'Week',
-              'Ship.Week', 'Ship.Week.Plan', 'Merchandising', 'SalespersonID')
-  off_day_d = off_day_d[, da_colz]
-  
-  names(off_day_d) = c('Date', 'Invoice', 'Call', 'Salesperson', 'Customer', 
-                       'NewCustomer', 'OnPremise', 'Tier', 'Cases', 'Dollars', 
-                       'Priority', 'Warehouse', 'Weekday',
-                       'DeliveryDays', 'Month', 'DOTM', 'Year', 'Week',
-                       'ShipWeek', 'ShipWeekPlan', 'Merchandising', 'SalespersonID')
-  
-  
-  off_day_d
+  # da_colz = c('Date', 'Invoice', 'Call', 'Salesperson', 'Customer', 
+  #             'New.Customer', 'On.Premise', 'Tier', 'Cases', 'Dollars', 
+  #             'Priority', 'Warehouse', 'Weekday',
+  #             'Delivery.Days', 'Month', 'DOTM', 'Year', 'Week',
+  #             'Ship.Week', 'Ship.Week.Plan', 'Merchandising', 'SalespersonID')
+  # off_day_d = off_day_d[, da_colz]
+  # 
+  # names(off_day_d) = c('Date', 'Invoice', 'Call', 'Salesperson', 'Customer', 
+  #                      'NewCustomer', 'OnPremise', 'Tier', 'Cases', 'Dollars', 
+  #                      'Priority', 'Warehouse', 'Weekday',
+  #                      'DeliveryDays', 'Month', 'DOTM', 'Year', 'Week',
+  #                      'ShipWeek', 'ShipWeekPlan', 'Merchandising', 'SalespersonID')
+  # 
+  # 
+  # off_day_d
 
 }
 
