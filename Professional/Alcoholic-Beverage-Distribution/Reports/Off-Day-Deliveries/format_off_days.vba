@@ -9,7 +9,7 @@ Sub format_off_day()
         Range("A1").Activate
         Selection.AutoFilter
         ActiveWindow.DisplayGridlines = False
-        ws.Rows("1:100").RowHeight = 11.5
+        ws.Rows("1:100").RowHeight = 12.75
         ws.Rows("1").Font.Bold = True
         ws.Range("A2").Select
         Application.ErrorCheckingOptions.BackgroundChecking = False
