@@ -3,7 +3,7 @@ Sub format_off_day()
     
     For Each ws In ActiveWorkbook.Worksheets
         ws.Columns(1).Delete shift:=xlLeft
-        ws.Columns("A:I").Font.Size = 9
+        ws.Columns("A:I").Font.Size = 11
         ws.Columns("A:I").AutoFit
         ws.Activate
         Range("A1").Activate
