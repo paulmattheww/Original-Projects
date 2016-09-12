@@ -2,6 +2,7 @@
 """
 This script is meant to collect data from the daily report in both 
 KC and STL.
+This is a demonstration of the video-creation of this program
 """
 
 import pandas as pd
@@ -76,18 +77,31 @@ def gather_production_tab_stl(tmp_folder):
     frame['Weekday'] = frame['Date'].dt.dayofweek.map(dotw)
     first_letter = [w[:1] for w in frame['Weekday']]
     
-    frame['Route'] = first_letter + frame['Route'].astype(str).apply(lambda x: x.zfill(5))
+    frame['RoadnetRoute'] = first_letter + frame['Route'].astype(str).apply(lambda x: x.zfill(5))
     frame.reset_index(0,inplace=True,drop=True)
     
     return frame
 
 
 
-x = gather_production_tab_stl(tmp_folder)
-print(x.head(20))
+pre_compiled_stl = gather_production_tab_stl(tmp_folder)
+print(pre_compiled_stl.head())
 
 
 
+
+stl_path = 'n:/operations intelligence/roadnet routing operations/exports/stl/stl_roadnet_routes_9-9.xlsx'
+
+stl_export = read_excel(stl_path,sheetname='Sheet')
+stl_export = stl_export[['ID','Description','Total Run Time','Total Equipment Distance Cost',
+                         'Total Equipment Fixed Cost', 'Total Fixed Service Time',
+                         'Net Revenue', 'Total Worker Stop Cost']]
+                  
+                  
+                  
+
+x = x.merge(stl_export,left_on='RoadnetRoute',right_on='ID')
+print(x.head())
 
 def combine_all_houses_roadnet_data(path):
     '''
@@ -101,13 +115,17 @@ def combine_all_houses_roadnet_data(path):
 
 
 
+def merge_roadnet_data(pre_combined_daily_report,pre_combined_roadnet):
+    pass
 
 
 
+def gather_production_tab_kc():
+    ## THIS IS A TEST
+    pass
 
 
-
-
+print(stl_export.head())
 
 
 
