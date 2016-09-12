@@ -70,11 +70,57 @@ def gather_production_tab_stl(tmp_folder):
                     'Cases','Bottles','Driver','DriverId','ExtraDriver']
     frame = frame[frame['Warehouse'] != '-']
     frame = frame[frame['Driver'] != 'Totals:']
+    
+    # Shifted by 1 due to the fact we route today for tomorrow
+    dotw = {6:'Monday', 0:'Tuesday', 1:'Wednesday', 2:'Thursday', 3:'Friday', 4:'Saturday', 5:'Sunday'}
+    frame['Weekday'] = frame['Date'].dt.dayofweek.map(dotw)
+    first_letter = [w[:1] for w in frame['Weekday']]
+    
+    frame['Route'] = first_letter + frame['Route'].astype(str).apply(lambda x: x.zfill(5))
     frame.reset_index(0,inplace=True,drop=True)
+    
     return frame
 
 
 
 x = gather_production_tab_stl(tmp_folder)
-print(x[x['Stops'] > 0])
+print(x.head(20))
+
+
+
+
+def combine_all_houses_roadnet_data(path):
+    '''
+    Meant to combine exports from Roadnet
+    All houses export
+    This function combines them for merging with daily report
+    '''
+    ## CODE HERE
+    pass 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
