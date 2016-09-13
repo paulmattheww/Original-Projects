@@ -100,6 +100,8 @@ def gather_production_tab_stl(tmp_folder):
     first_letter = [w[:1] for w in frame['Weekday']]
     
     frame['RoadnetRoute'] = first_letter + frame['Route'].astype(str).apply(lambda x: x.zfill(5))
+    frame['WarehouseRoute'] = frame['Warehouse'].astype(str) + '_' + frame['RoadnetRoute'].astype(str)
+    
     frame.reset_index(0,inplace=True,drop=True)
     frame.sort(inplace=True)
     
@@ -108,7 +110,7 @@ def gather_production_tab_stl(tmp_folder):
 
 
 
-print('Extracting & combining STL Daily Report data from local disk. \n\n')
+print('\n\n\nExtracting & combining STL Daily Report data from local disk. \n\n\n')
 pre_compiled_stl = gather_production_tab_stl(tmp_folder_stl)
 print(pre_compiled_stl.head(),pre_compiled_stl.tail())
 
@@ -163,6 +165,8 @@ def gather_production_tab_kc(tmp_folder_kc):
     first_letter = [w[:1] for w in frame['Weekday']]
     
     frame['RoadnetRoute'] = first_letter + frame['Route'].astype(str).apply(lambda x: x.zfill(5))
+    frame['WarehouseRoute'] = frame['Warehouse'].astype(str) + '_' + frame['RoadnetRoute'].astype(str)
+    
     frame.reset_index(0,inplace=True,drop=True)
     frame.sort('Date',inplace=True)
     
@@ -198,6 +202,8 @@ def combine_roadnet_exports(export_list):
     
     for house in export_list:
         df = read_excel(house,sheetname='Sheet')
+        df = df[:-1]#.ix[:len(df)-2]
+        
         if house is stl_file:
             df['Warehouse'], df['WarehouseAS400'] = 'STL', '2'
             df['WarehouseRoute'] = df['Warehouse'].astype(str)+'_'+ df['ID'].astype(str)
@@ -213,24 +219,45 @@ def combine_roadnet_exports(export_list):
         else:
             df['Warehouse'], df['WarehouseAS400'] = 'UNDEFINED', 'UNDEFINED'
             df['WarehouseRoute'] = df['Warehouse'].astype(str)+'_'+ df['ID'].astype(str)
-            
+        
         df = df[['ID','Description','Total Run Time','Total Equipment Distance Cost',
                          'Total Equipment Fixed Cost', 'Total Fixed Service Time',
                          'Net Revenue', 'Total Worker Stop Cost','Warehouse',
-                         'WarehouseAS400','WarehouseRoute']]
+                         'WarehouseAS400','WarehouseRoute','Start Date Time']]
         df.columns = ['RoadnetRoute','Description','RoadnetRunTime','EquipmentDistanceCost',
                          'EquipmentFixedCost', 'RoadnetServiceTime',
                          'Revenue', 'WorkerStopCost','Warehouse','WarehouseAS400',
-                         'WarehouseRoute']
+                         'WarehouseRoute','Date']
+                         
+        dat = df['Date'].tolist()                 
+        dat = [re.sub(r'CDT','',D) for D in dat]
+        dat = [re.sub(r'(\d{2}):(\d{2})','',D) for D in dat]
+        dat = [re.sub(r' ','',D) for D in dat]
+        dat = [dt.strptime(D,'%m/%d/%Y') for D in dat]
+        df['Date'] = dat                   
+                         
         export_df = export_df.append(df)
         
     return export_df
     
 roadnet_clean_exports = combine_roadnet_exports(export_list)
 
-print(roadnet_clean_exports.head(),'\n\n\n',roadnet_clean_exports.tail())
+
+print('\n\n\n',roadnet_clean_exports.head(),'\n\n\n',roadnet_clean_exports.tail())
 
 
+
+
+
+
+
+def combine_all_houses_roadnet_data(path):
+    '''
+    Meant to combine exports from Roadnet
+    All houses export
+    This function combines them for merging with daily report
+    '''
+    pass
 
 
 
@@ -249,14 +276,6 @@ print(roadnet_clean_exports.head(),'\n\n\n',roadnet_clean_exports.tail())
 
 #
 #
-#def combine_all_houses_roadnet_data(path):
-#    '''
-#    Meant to combine exports from Roadnet
-#    All houses export
-#    This function combines them for merging with daily report
-#    '''
-#    ## CODE HERE
-#    pass 
 #
 #
 #
