@@ -17,6 +17,7 @@ import os
 import shutil
 import re
 from datetime import datetime as dt
+import datetime
 
 
 
@@ -70,16 +71,17 @@ def gather_production_tab_stl(tmp_folder):
     df = read_excel(file_list[0],sheetname='Production',
                             parse_cols='C:S',header=0)  
     dat = re.sub(r'.xlsx','',file_list[0]) + '-2016'
-    df['Date'] = dt.strptime(dat,'%m-%d-%Y')
+    # Shifted by 1 due to the fact we route today for tomorrow
+    df['Date'] = dt.strptime(dat,'%m-%d-%Y') + datetime.timedelta(days=1)
     file_list.pop(0)
     
     _list = [df]
     
     for file in file_list:
-        wb = read_excel(file,sheetname='Production', #bool(re.search('Production', 'Production (1)')) #difflib.get_close_matches('Production'),
+        wb = read_excel(file,sheetname='Production', 
                             parse_cols='C:S',header=0)
         dis = re.sub(r'.xlsx','',file) + '-2016'
-        wb['Date'] = dt.strptime(dis,'%m-%d-%Y')
+        wb['Date'] = dt.strptime(dis,'%m-%d-%Y') + datetime.timedelta(days=1)
             
         _list.append(wb)
     
@@ -94,8 +96,7 @@ def gather_production_tab_stl(tmp_folder):
     frame = frame[frame['Warehouse'] != '-']
     frame = frame[frame['Driver'] != 'Totals:']
     
-    # Shifted by 1 due to the fact we route today for tomorrow
-    dotw = {6:'Monday', 0:'Tuesday', 1:'Wednesday', 2:'Thursday', 3:'Friday', 4:'Saturday', 5:'Sunday'}
+    dotw = {0:'Monday', 1:'Tuesday', 2:'Wednesday', 3:'Thursday', 4:'Friday', 5:'Saturday', 6:'Sunday'}
     frame['Weekday'] = frame['Date'].dt.dayofweek.map(dotw)
     first_letter = [w[:1] for w in frame['Weekday']]
     
@@ -134,7 +135,8 @@ def gather_production_tab_kc(tmp_folder_kc):
                             parse_cols='C:S',header=0)  
     dat = re.sub(r'Daily Report '.lower(),'',file_list[0].lower())
     dat = re.sub(r'.xls','',dat) + '-2016'
-    df['Date'] = dt.strptime(dat,'%m-%d-%Y')
+    # Shifted by 1 due to the fact we route today for tomorrow
+    df['Date'] = dt.strptime(dat,'%m-%d-%Y') + datetime.timedelta(days=1)
     file_list.pop(0)
     
     _list = [df]
@@ -144,7 +146,7 @@ def gather_production_tab_kc(tmp_folder_kc):
                             parse_cols='C:S',header=0)
         dis = re.sub(r'Daily Report '.lower(),'',file.lower())
         dis = re.sub(r'.xls','',dis) + '-2016'
-        wb['Date'] = dt.strptime(dis,'%m-%d-%Y')
+        wb['Date'] = dt.strptime(dis,'%m-%d-%Y') + datetime.timedelta(days=1)
             
         _list.append(wb)
     
@@ -159,8 +161,7 @@ def gather_production_tab_kc(tmp_folder_kc):
     frame = frame[frame['Warehouse'] != '-']
     frame = frame[frame['Driver'] != 'Totals:']
     
-    # Shifted by 1 due to the fact we route today for tomorrow
-    dotw = {6:'Monday', 0:'Tuesday', 1:'Wednesday', 2:'Thursday', 3:'Friday', 4:'Saturday', 5:'Sunday'}
+    dotw = {0:'Monday', 1:'Tuesday', 2:'Wednesday', 3:'Thursday', 4:'Friday', 5:'Saturday', 6:'Sunday'}
     frame['Weekday'] = frame['Date'].dt.dayofweek.map(dotw)
     first_letter = [w[:1] for w in frame['Weekday']]
     
@@ -176,6 +177,22 @@ def gather_production_tab_kc(tmp_folder_kc):
 print('Extracting & combining KC Daily Report data from local disk. \n\n')
 pre_compiled_kc = gather_production_tab_kc(tmp_folder_kc)
 print(pre_compiled_kc.head(), pre_compiled_kc.tail())
+
+
+
+
+def combine_kc_stl_dailyrpt(stl,kc):
+    '''
+    Takes the daily report data comiled above
+    and rowbinds them together
+    '''
+    combined = stl.append(kc)
+    combined.reset_index(0,inplace=True,drop=True)
+    combined.sort(['Date','Stops'],inplace=True,ascending=False)
+    return combined
+    
+
+combined_dailyrpt = combine_kc_stl_dailyrpt(pre_compiled_stl,pre_compiled_kc)
 
 
 
@@ -223,11 +240,10 @@ def combine_roadnet_exports(export_list):
         df = df[['ID','Description','Total Run Time','Total Equipment Distance Cost',
                          'Total Equipment Fixed Cost', 'Total Fixed Service Time',
                          'Net Revenue', 'Total Worker Stop Cost','Warehouse',
-                         'WarehouseAS400','WarehouseRoute','Start Date Time']]
+                         'WarehouseAS400','Start Date Time']]
         df.columns = ['RoadnetRoute','Description','RoadnetRunTime','EquipmentDistanceCost',
                          'EquipmentFixedCost', 'RoadnetServiceTime',
-                         'Revenue', 'WorkerStopCost','Warehouse','WarehouseAS400',
-                         'WarehouseRoute','Date']
+                         'Revenue', 'WorkerStopCost','Warehouse','WarehouseAS400','Date']
                          
         dat = df['Date'].tolist()                 
         dat = [re.sub(r'CDT','',D) for D in dat]
@@ -243,49 +259,29 @@ def combine_roadnet_exports(export_list):
 roadnet_clean_exports = combine_roadnet_exports(export_list)
 
 
-print('\n\n\n',roadnet_clean_exports.head(),'\n\n\n',roadnet_clean_exports.tail())
+
+#print(combined_dailyrpt.head(),combined_dailyrpt.tail(), '\n\n\n\n\n',
+#      roadnet_clean_exports.head())
 
 
-
-
-
-
-
-def combine_all_houses_roadnet_data(path):
+def merge_dailyrpt_roadnet(combined_dailyrpt,roadnet_clean_exports):
     '''
     Meant to combine exports from Roadnet
     All houses export
     This function combines them for merging with daily report
     '''
-    pass
+    df =  pd.merge(combined_dailyrpt, roadnet_clean_exports,
+                   on=['Date','RoadnetRoute','Warehouse'], how='outer')
+    return df
+    
+    
+    
 
+tidy_dataset = merge_dailyrpt_roadnet(combined_dailyrpt,roadnet_clean_exports)
 
+print(tidy_dataset.head())
 
-
-
-
-#stl
-
-#
-#print('STL Data\n', stl_export.head(),
-#      '\nKC Data\n', kc_export.head(),'\nCOL Data\n', col_export.head(), '\nSPFD Data\n', spfd_export.head())
-#
-#
-#stl_data = pre_compiled_stl.merge(stl_export,left_on='RoadnetRoute',right_on='ID')
-#
-
-#
-#
-#
-#
-#
-#
-#def merge_roadnet_data(pre_combined_daily_report,pre_combined_roadnet):
-#    pass
-
-
-
-
+tidy_dataset.to_csv('C:/Users/pmwash/Desktop/Disposable Docs/TESTING_ROADNET_ETL.csv')
 
 
 
