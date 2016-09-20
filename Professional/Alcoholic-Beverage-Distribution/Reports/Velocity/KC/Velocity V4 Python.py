@@ -42,12 +42,36 @@ def pre_process_kc(raw):
     remove_rows_btls = btls['PRODUCT#'].astype(str).apply(lambda x: str.isnumeric(x) )
     btls = btls[remove_rows_btls == True]
     
+    
+    def replace_last(source_string, replace_what, replace_with):
+        '''Replaces last occurrence of replace_what'''
+        head, sep, tail = source_string.rpartition(replace_what)
+        return head + replace_with + tail
+
+
+    btl_sales = btls['BOTTLESALES'].astype(str).tolist()
+    btl_sales = [b.strip().replace(' ','') for b in btl_sales]
+    btl_sales = ['-' + replace_last(b,'-','')  if b.endswith('-') == True else b for b in btl_sales]
+    btl_sales = Series(btl_sales)
+    btls['BOTTLESALES'] = btl_sales.astype(float)
+    
+    case_sales = cases['CASESALES'].astype(str).tolist()
+    case_sales = [c.strip().replace(' ','') for c in case_sales]
+    case_sales = ['-' + replace_last(c,'-','')  if c.endswith('-') == True else c for c in case_sales]
+    case_sales = Series(case_sales)
+    cases['CASESALES'] = case_sales.astype(float)
+
+    
     return btls, cases
 
 
 # Preprocess the information 
+
 BTLS,CASES = pre_process_kc(raw)
 print('\n\n\nBOTTLES HEADER \n\n\n',BTLS.head(),'\n\n\nCASES HEADER \n',CASES.head())
+
+
+
 
 # Categorize case & bottle locations
 
@@ -92,6 +116,56 @@ def map_kc_lines(btls,cases):
 CASES['CASELINE'],BTLS['BOTTLELINE'] = map_kc_lines(BTLS,CASES)
 
 
+
+CASES.head()
+BTLS.head()
+
+
+cs_count_items_on_line = CASES[['CASELINE','CASESALES']].groupby('CASELINE').count()
+cs_volume_on_line = CASES[['CASELINE','CASESALES']].groupby('CASELINE').sum()
+
+volume_per_sku = cs_volume_on_line / cs_count_items_on_line
+
+
+btl_count_items_on_line = BTLS[['BOTTLELINE','BOTTLESALES']].groupby('BOTTLELINE').count()
+btl_volume_on_line = BTLS[['BOTTLELINE','BOTTLESALES']].groupby('BOTTLELINE').sum()
+
+volume_per_btl_sku = btl_volume_on_line / btl_count_items_on_line
+
+
+BTLS['BOTTLESALES'].sum()
+
+BTLS.head()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # all_sizes = raw['SIZEANDDESCRIPTION'].tolist()
 # keg_sizes = ["\\<1/6BL\\>","\\<1/2BL\\>","\\<1/4BL\\>","\\<20L\\>","\\<10.8G\\>","\\<15.5G\\>","\\<15L\\>",
 # "\\<2.6G\\>","\\<19L\\>","\\<3.3G\\>","\\<4.9G\\>","\\<5.16G\\>","\\<5.2G\\>","\\<5.4G\\>","\\<19.5L\\>",
@@ -101,18 +175,5 @@ CASES['CASELINE'],BTLS['BOTTLELINE'] = map_kc_lines(BTLS,CASES)
 # [re.match(k,a) for k,a in zip(keg_sizes,all_sizes)]
 
 # re.match(keg_sizes,'1/6BL')
-
-CASES.head()
-
-cs_count_items_on_line = CASES[['CASELINE','CASESALES']].groupby('CASELINE').count()
-cs_sum_items_on_line = CASES[['CASELINE','CASESALES']].groupby('CASELINE').sum()
-
-volume_per_sku = cs_sum_items_on_line / cs_count_items_on_line
-
-
-
-
-
-
 
 
