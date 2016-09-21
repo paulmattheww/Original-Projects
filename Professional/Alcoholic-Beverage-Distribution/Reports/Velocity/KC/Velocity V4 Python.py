@@ -121,40 +121,44 @@ CASES.head()
 BTLS.head()
 
 
-cs_count_items_on_line = CASES[['CASELINE','CASESALES']].groupby('CASELINE').count()
-cs_volume_on_line = CASES[['CASELINE','CASESALES']].groupby('CASELINE').sum()
-
-volume_per_sku = cs_volume_on_line / cs_count_items_on_line
-
-
-btl_count_items_on_line = BTLS[['BOTTLELINE','BOTTLESALES']].groupby('BOTTLELINE').count()
-btl_volume_on_line = BTLS[['BOTTLELINE','BOTTLESALES']].groupby('BOTTLELINE').sum()
-
-volume_per_btl_sku = btl_volume_on_line / btl_count_items_on_line
-
-
-BTLS['BOTTLESALES'].sum()
-
-BTLS.head()
-
-
-
-
-
-
-
-
-
-
-
-
+def create_summary(CASES, BTLS, production_days=18):
+    '''Summarize case lines for KC'''
+    cs_count_items_on_line = CASES[['CASELINE','CASESALES']].groupby('CASELINE').count()
+    cs_count_items_on_line.columns = ['N_SKUS']
+    cs_volume_on_line = CASES[['CASELINE','CASESALES']].groupby('CASELINE').sum()
+    cs_volume_on_line.columns = ['CASE_VOLUME']
+    
+    cs_summary = cs_count_items_on_line.join(cs_volume_on_line)
+    cs_summary['VOLUME_PER_SKU'] = round(cs_summary.CASE_VOLUME / cs_summary.N_SKUS, 0)
+    cs_summary['VOLUME_PER_DAY'] = round(cs_summary.CASE_VOLUME / production_days, 0)
+    total_case_volume = cs_summary['CASE_VOLUME'].sum()
+    cs_summary['PERCENT_TOTAL_VOLUME'] = round(cs_summary.CASE_VOLUME / total_case_volume, 4)
+    
+    btl_count_items_on_line = BTLS[['BOTTLELINE','BOTTLESALES']].groupby('BOTTLELINE').count()
+    btl_count_items_on_line.columns = ['N_SKUS']
+    btl_volume_on_line = BTLS[['BOTTLELINE','BOTTLESALES']].groupby('BOTTLELINE').sum()
+    btl_volume_on_line.columns = ['BOTTLE_VOLUME']
+    
+    btl_summary = btl_count_items_on_line.join(btl_volume_on_line)
+    btl_summary['VOLUME_PER_SKU'] = round(btl_summary.BOTTLE_VOLUME / btl_summary.N_SKUS, 0)
+    btl_summary['VOLUME_PER_DAY'] = round(btl_summary.BOTTLE_VOLUME / production_days, 0)
+    total_bottle_volume = btl_summary['BOTTLE_VOLUME'].sum()
+    btl_summary['PERCENT_TOTAL_VOLUME'] = round(btl_summary.BOTTLE_VOLUME / total_bottle_volume, 4)
+    
+    return cs_summary, btl_summary
 
 
-
+cs_summary, btl_summary = create_summary(CASES, BTLS)
 
 
 
 
+
+
+
+
+_blines = BTLS.BOTTLELINE 
+_clines = CASES.CASELINE
 
 
 
