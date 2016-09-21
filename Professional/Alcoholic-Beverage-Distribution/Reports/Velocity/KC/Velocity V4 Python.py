@@ -120,8 +120,9 @@ CASES['CASELINE'],BTLS['BOTTLELINE'] = map_kc_lines(BTLS,CASES)
 
 def extract_features(CASES, BTLS, production_days=18):
     '''Extracts features from the data'''
-    CASES['CASE.SALES.PER.DAY'] = round(CASES.CASESALES / production_days,0)
-    BTLS['BTL.SALES.PER.DAY'] = round(BTLS.BOTTLESALES / production_days,0)
+    
+    CASES['CASE.SALES.PER.DAY'] = round(CASES.CASESALES / production_days,4)
+    BTLS['BTL.SALES.PER.DAY'] = round(BTLS.BOTTLESALES / production_days,4)
     
     cs_desc = CASES['SIZEANDDESCRIPTION'].astype(str).tolist()
     CASES['SIZE'] = [re.split('  ', c)[1] for c in cs_desc]
@@ -151,7 +152,7 @@ def create_summary(CASES, BTLS, production_days=18):
     cs_volume_on_line.columns = ['CASE_VOLUME']
     
     cs_summary = cs_count_items_on_line.join(cs_volume_on_line)
-    cs_summary['VOLUME_PER_SKU'] = round(cs_summary.CASE_VOLUME / cs_summary.N_SKUS, 0)
+    cs_summary['VOLUME_PER_SKU'] = round(cs_summary.CASE_VOLUME / cs_summary.N_SKUS, 2)
     cs_summary['VOLUME_PER_DAY'] = round(cs_summary.CASE_VOLUME / production_days, 0)
     total_case_volume = cs_summary['CASE_VOLUME'].sum()
     cs_summary['PERCENT_TOTAL_VOLUME'] = round(cs_summary.CASE_VOLUME / total_case_volume, 4)
@@ -162,7 +163,7 @@ def create_summary(CASES, BTLS, production_days=18):
     btl_volume_on_line.columns = ['BOTTLE_VOLUME']
     
     btl_summary = btl_count_items_on_line.join(btl_volume_on_line)
-    btl_summary['VOLUME_PER_SKU'] = round(btl_summary.BOTTLE_VOLUME / btl_summary.N_SKUS, 0)
+    btl_summary['VOLUME_PER_SKU'] = round(btl_summary.BOTTLE_VOLUME / btl_summary.N_SKUS, 2)
     btl_summary['VOLUME_PER_DAY'] = round(btl_summary.BOTTLE_VOLUME / production_days, 0)
     total_bottle_volume = btl_summary['BOTTLE_VOLUME'].sum()
     btl_summary['PERCENT_TOTAL_VOLUME'] = round(btl_summary.BOTTLE_VOLUME / total_bottle_volume, 4)
@@ -170,32 +171,66 @@ def create_summary(CASES, BTLS, production_days=18):
     return cs_summary, btl_summary
 
 
-cs_summary, btl_summary = create_summary(CASES, BTLS)
 
 
-
-
-cs_lines = ['C100','C200','C300','C400','OddBall','WineRoom']
-
-file_out = pd.ExcelWriter('M:/Operations Intelligence/Monthly Reports/Velocity/Velocity Report.xlsx', engine='xlsxwriter')
-
-for i, line in enumerate(cs_lines):
-    new_df = DataFrame(CASES[CASES.CASELINE == line])
-    new_df.reset_index(drop=True, inplace=True)
-    print('Inputting %s as its own tab in the velocity report.' % line)
-    new_df.to_excel(file_out, sheet_name=str(line + '-C'),index=False)
-file_out.save()
+def write_kc_to_xlsx(CASES, BTLS, month):
+    '''Write the output to file'''
+    file_out = pd.ExcelWriter('M:/Operations Intelligence/Monthly Reports/Velocity/Velocity-'+month+'.xlsx', engine='xlsxwriter')
+    workbook = file_out.book
     
+    cs_summary, btl_summary = create_summary(CASES, BTLS)
+    cs_summary.to_excel(file_out, sheet_name='Summary', index=True)
+    btl_summary.to_excel(file_out, sheet_name='Summary', startrow=12, index=True)
+    
+    summary_tab = file_out.sheets['Summary']
+    summary_tab.set_column('A:A',11)
+    summary_tab.set_column('B:B',9)
+    summary_tab.set_column('C:C',16)
+    summary_tab.set_column('D:E',19)
+    summary_tab.set_column('F:F',24)
+    
+    cs_lines = ['C100','C200','C300','C400','OddBall','WineRoom']
+    btl_lines = ['A Line', 'B Line', 'OddBall']
+    
+    for i, line in enumerate(cs_lines):
+        new_df = DataFrame(CASES[CASES.CASELINE == line])
+        new_df.reset_index(drop=True, inplace=True)
+        print('Inputting %s as its own tab in the velocity report.' % line)
+        tab_name = str(line + '-C')
+        new_df.to_excel(file_out, sheet_name=tab_name,index=False)
+        sheet = file_out.sheets[tab_name]
+        sheet.set_column('A:A',10)
+        sheet.set_column('B:B',48)
+        sheet.set_column('C:C',10)
+        sheet.set_column('D:D',15.2)
+        sheet.set_column('E:G',8.5)
+        sheet.set_column('H:H',16)
+        sheet.set_column('I:I',9)
+        sheet.set_column('J:J',19)
+        sheet.set_column('K:K',10)
+    
+    for i, line in enumerate(btl_lines):
+        new_df = DataFrame(BTLS[BTLS.BOTTLELINE == line])
+        new_df.reset_index(drop=True, inplace=True)
+        print('Inputting %s as its own tab in the velocity report.' % line)
+        tab_name = str(line + '-B')
+        new_df.to_excel(file_out, sheet_name=tab_name,index=False)
+        sheet = file_out.sheets[tab_name]
+        sheet.set_column('A:A',10)
+        sheet.set_column('B:B',48)
+        sheet.set_column('C:C',10)
+        sheet.set_column('D:D',15.2)
+        sheet.set_column('E:G',8.5)
+        sheet.set_column('H:H',16)
+        sheet.set_column('I:I',11)
+        sheet.set_column('J:J',19)
+        sheet.set_column('K:K',10)
+    
+    file_out.save()
     
 
-    
-df_list
-
-
-CASES[CASES.CASELINE == line]
-
-_blines = BTLS.BOTTLELINE 
-_clines = CASES.CASELINE
+write_kc_to_xlsx(CASES, BTLS, month='September-15th-rolling-30')
+  
 
 
 
