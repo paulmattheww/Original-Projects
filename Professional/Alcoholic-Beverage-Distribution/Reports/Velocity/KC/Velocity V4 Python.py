@@ -12,13 +12,14 @@ Send to group
 '''
 
 import pandas as pd
-from pandas import read_excel, Series
+from pandas import read_excel, Series, Panel, DataFrame
 import numpy as np
 import re
 
 raw = read_excel('C:/Users/pmwash/Desktop/Re-Engineered Reports/Velocity/Data/velocity_kc.xlsx',header=0)
 
 def pre_process_kc(raw):
+    '''Accepts a .xls output from Compleo'''
     # Remove whitespace from column names
     raw.columns = [x.strip().replace(' ','') for x in raw.columns]
     
@@ -65,17 +66,15 @@ def pre_process_kc(raw):
     return btls, cases
 
 
-# Preprocess the information 
 
 BTLS,CASES = pre_process_kc(raw)
-print('\n\n\nBOTTLES HEADER \n\n\n',BTLS.head(),'\n\n\nCASES HEADER \n',CASES.head())
+#print('\n\n\nBOTTLES HEADER \n\n\n',BTLS.head(),'\n\n\nCASES HEADER \n',CASES.head())
 
 
 
-
-# Categorize case & bottle locations
 
 def map_kc_lines(btls,cases):
+    '''Map KC Lines to locations'''
     cs_loc = cases['CSE.LOC.'].astype(str)
     cases['CSE.LOC.'] = [re.sub(' ','',x) for x in cs_loc]
     case_line_indicator = Series(cases['CSE.LOC.'].str[:2].tolist())
@@ -117,8 +116,31 @@ CASES['CASELINE'],BTLS['BOTTLELINE'] = map_kc_lines(BTLS,CASES)
 
 
 
+
+
+def extract_features(CASES, BTLS, production_days=18):
+    '''Extracts features from the data'''
+    CASES['CASE.SALES.PER.DAY'] = round(CASES.CASESALES / production_days,0)
+    BTLS['BTL.SALES.PER.DAY'] = round(BTLS.BOTTLESALES / production_days,0)
+    
+    cs_desc = CASES['SIZEANDDESCRIPTION'].astype(str).tolist()
+    CASES['SIZE'] = [re.split('  ', c)[1] for c in cs_desc]
+    
+    btl_desc = BTLS['SIZEANDDESCRIPTION'].astype(str).tolist()
+    BTLS['SIZE'] = [re.split('  ', b)[1] for b in btl_desc]
+    
+    return CASES, BTLS
+
+
+
+CASES, BTLS = extract_features(CASES, BTLS)
+
+
 CASES.head()
 BTLS.head()
+
+
+
 
 
 def create_summary(CASES, BTLS, production_days=18):
@@ -153,9 +175,24 @@ cs_summary, btl_summary = create_summary(CASES, BTLS)
 
 
 
+cs_lines = ['C100','C200','C300','C400','OddBall','WineRoom']
+
+file_out = pd.ExcelWriter('M:/Operations Intelligence/Monthly Reports/Velocity/Velocity Report.xlsx', engine='xlsxwriter')
+
+for i, line in enumerate(cs_lines):
+    new_df = DataFrame(CASES[CASES.CASELINE == line])
+    new_df.reset_index(drop=True, inplace=True)
+    print('Inputting %s as its own tab in the velocity report.' % line)
+    new_df.to_excel(file_out, sheet_name=str(line + '-C'),index=False)
+file_out.save()
+    
+    
+
+    
+df_list
 
 
-
+CASES[CASES.CASELINE == line]
 
 _blines = BTLS.BOTTLELINE 
 _clines = CASES.CASELINE
