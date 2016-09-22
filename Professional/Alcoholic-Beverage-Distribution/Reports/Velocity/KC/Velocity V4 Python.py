@@ -223,6 +223,35 @@ def write_kc_to_xlsx(CASES, BTLS, month):
 write_kc_to_xlsx(CASES, BTLS, month='08-21-2016 through 09-21-2016')
   
 
+from ggplot import *
+
+CASES.groupby('CASELINE')['PICKFREQUENCY'].hist(by=CASES['CASELINE'], bins=100)
+
+
+g = ggplot(CASES, aes(x='DESCRIPTION',y='PICKFREQUENCY', group='CASELINE'))
+g + geom_bar(aes(group='CASELINE')) + \
+    facet_wrap('CASELINE')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
