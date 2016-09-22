@@ -61,43 +61,43 @@ def pre_process_kc(raw):
     case_sales = ['-' + replace_last(c,'-','')  if c.endswith('-') == True else c for c in case_sales]
     case_sales = Series(case_sales)
     cases['CASESALES'] = case_sales.astype(float)
-
+    
+    cases.columns = ['PRODUCT#','SIZE','DESCRIPTION','CASESALES','PICKFREQUENCY','CSE.LOC.','BTL.LOC.','BULK1','BOTTLESONHAND']
+    btls.columns = ['PRODUCT#','SIZE','DESCRIPTION','BOTTLESALES','PICKFREQUENCY','CSE.LOC.','BTL.LOC.','BULK1','BOTTLESONHAND']
     
     return btls, cases
 
 
 
 BTLS,CASES = pre_process_kc(raw)
-#print('\n\n\nBOTTLES HEADER \n\n\n',BTLS.head(),'\n\n\nCASES HEADER \n',CASES.head())
+print('\n\n\nBOTTLES HEADER \n\n\n',BTLS.head(),'\n\n\nCASES HEADER \n',CASES.head())
 
 
 
 
-def map_kc_lines(btls,cases):
+def map_kc_lines(BTLS,CASES):
     '''Map KC Lines to locations'''
-    cs_loc = cases['CSE.LOC.'].astype(str)
-    cases['CSE.LOC.'] = [re.sub(' ','',x) for x in cs_loc]
-    case_line_indicator = Series(cases['CSE.LOC.'].str[:2].tolist())
-    case_lines = []
     
-    for c in case_line_indicator:
-        if c in ['C1','C2','C3','C4']:
-            if c == 'C1':
-                case_lines.append('C100')
-            elif c == 'C2':
-                case_lines.append('C200')
-            elif c == 'C3':
-                case_lines.append('C300')
-            else:
-                case_lines.append('C400')
+    CASES['CASELINE'] = CASES['CSE.LOC.'].astype(str).str[:2]
+    c_lines = list()
+    
+    for i, c in enumerate(CASES['CASELINE']):
+        if c == 'C1':
+            c_lines.append('C100')
+        elif c == 'C2':
+            c_lines.append('C200')
+        elif c == 'C3':
+            c_lines.append('C300')
+        elif c == 'C4':
+            c_lines.append('C400')
         elif c[:1] in ['W','5']:
-            case_lines.append('WineRoom')
+            c_lines.append('WineRoom')
         else:
-            case_lines.append('OddBall')
-
-    case_lines = Series(case_lines)
+            c_lines.append('OddBall')
     
-    btl_loc = btls['BTL.LOC.'].astype(str)
+    CASES['CASELINE'] = c_lines
+
+    btl_loc = BTLS['BTL.LOC.'].astype(str)
     btls['BTL.LOC.'] = [re.sub(' ','',x) for x in btl_loc]
     btl_line_indicator = Series(btls['BTL.LOC.'].str[:1].tolist())
     bottle_lines = []
@@ -110,10 +110,14 @@ def map_kc_lines(btls,cases):
         else:
             bottle_lines.append('OddBall')
     
-    return case_lines, bottle_lines
+    BTLS['BOTTLELINE'] = bottle_lines
+    
+    
+    return CASES, BTLS
 
-CASES['CASELINE'],BTLS['BOTTLELINE'] = map_kc_lines(BTLS,CASES)
 
+
+CASES,BTLS = map_kc_lines(BTLS,CASES)
 
 
 
@@ -124,22 +128,11 @@ def extract_features(CASES, BTLS, production_days=18):
     CASES['CASE.SALES.PER.DAY'] = round(CASES.CASESALES / production_days,4)
     BTLS['BTL.SALES.PER.DAY'] = round(BTLS.BOTTLESALES / production_days,4)
     
-    cs_desc = CASES['SIZEANDDESCRIPTION'].astype(str).tolist()
-    CASES['SIZE'] = [re.split('  ', c)[1] for c in cs_desc]
-    
-    btl_desc = BTLS['SIZEANDDESCRIPTION'].astype(str).tolist()
-    BTLS['SIZE'] = [re.split('  ', b)[1] for b in btl_desc]
-    
     return CASES, BTLS
 
 
 
 CASES, BTLS = extract_features(CASES, BTLS)
-
-
-CASES.head()
-BTLS.head()
-
 
 
 
@@ -199,15 +192,14 @@ def write_kc_to_xlsx(CASES, BTLS, month):
         tab_name = str(line + '-C')
         new_df.to_excel(file_out, sheet_name=tab_name,index=False)
         sheet = file_out.sheets[tab_name]
-        sheet.set_column('A:A',10)
-        sheet.set_column('B:B',48)
-        sheet.set_column('C:C',10)
-        sheet.set_column('D:D',15.2)
-        sheet.set_column('E:G',8.5)
-        sheet.set_column('H:H',16)
-        sheet.set_column('I:I',9)
-        sheet.set_column('J:J',19)
-        sheet.set_column('K:K',10)
+        sheet.set_column('A:B',10)
+        sheet.set_column('C:C',48)
+        sheet.set_column('D:D',10)
+        sheet.set_column('E:E',15.2)
+        sheet.set_column('F:H',8.5)
+        sheet.set_column('I:I',16)
+        sheet.set_column('J:J',9)
+        sheet.set_column('K:K',19)
     
     for i, line in enumerate(btl_lines):
         new_df = DataFrame(BTLS[BTLS.BOTTLELINE == line])
@@ -216,20 +208,19 @@ def write_kc_to_xlsx(CASES, BTLS, month):
         tab_name = str(line + '-B')
         new_df.to_excel(file_out, sheet_name=tab_name,index=False)
         sheet = file_out.sheets[tab_name]
-        sheet.set_column('A:A',10)
-        sheet.set_column('B:B',48)
-        sheet.set_column('C:C',10)
-        sheet.set_column('D:D',15.2)
-        sheet.set_column('E:G',8.5)
-        sheet.set_column('H:H',16)
-        sheet.set_column('I:I',11)
-        sheet.set_column('J:J',19)
-        sheet.set_column('K:K',10)
+        sheet.set_column('A:B',10)
+        sheet.set_column('C:C',48)
+        sheet.set_column('D:D',10)
+        sheet.set_column('E:E',15.2)
+        sheet.set_column('F:H',8.5)
+        sheet.set_column('I:I',16)
+        sheet.set_column('J:J',9)
+        sheet.set_column('K:K',19)
     
     file_out.save()
     
 
-write_kc_to_xlsx(CASES, BTLS, month='September-15th-rolling-30')
+write_kc_to_xlsx(CASES, BTLS, month='08-21-2016 through 09-21-2016')
   
 
 
