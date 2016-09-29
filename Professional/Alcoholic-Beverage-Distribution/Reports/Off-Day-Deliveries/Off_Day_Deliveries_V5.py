@@ -47,15 +47,20 @@ deliveries['Weekday'] = Series([dt.strftime(dt.strptime(d, '%Y-%m-%d'), '%A') fo
 
 week_plan = deliveries.ShipWeekPlan
 week_ship = deliveries.Ship
-month = dat.dt.month
+month = deliveries.Month
+year = deliveries.Year
 
+setup_date = deliveries.CustomerSetup.astype(str).tolist()
+setup_month = Series([d.zfill(4)[:2] for d in setup_date])
+this_century = [int(d[-2:]) < 20 for d in setup_date]
+setup_year = Series(["20" + s[-2:] if int(s[-2:]) < 20 else "19" + s[-2:] for s in setup_date])
 
-deliveries.head(1000)
+deliveries.head()
 
 
 
 pw_offday = read_csv('C:/Users/pmwash/Desktop/R_files/Data Input/Input Files for Reports/Off-Day Deliveries/pw_offday.csv')
-weeklookup = read_csv('N:/Operations Intelligence/Monthly Reports/Data/Reporting/Transfer Files/pw_offday_weeklookup.csv')#change htese paths
+weeklookup = read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Off Day Deliveries/pw_offday_weeklookup.csv')#change htese paths
 
 
 
