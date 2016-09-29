@@ -45,8 +45,9 @@ deliveries = deliveries.merge(weeklookup, on='Date')
 dat = Series(deliveries.Date.astype(str).tolist())
 deliveries['Weekday'] = Series([dt.strftime(dt.strptime(d, '%Y-%m-%d'), '%A') for d in dat])
 
-week_plan = deliveries.ShipWeekPlan
-week_ship = deliveries.Ship
+week_plan = deliveries.ShipWeekPlan.tolist()
+week_shipped = deliveries.Ship.tolist()
+weekday = deliveries.Weekday = [d[:3] for d in deliveries.Weekday.astype(str).tolist()]
 month = deliveries.Month
 year = deliveries.Year
 
@@ -67,12 +68,55 @@ sun = Series([d[-1:][:1] for d in del_days]).map({'1':'U','0':'_'})
 deliveries['DeliveryDays'] = list(itertools.chain.from_iterable([mon + tue + wed + thu + fri + sat + sun]))
 
 
+_off_day = list()
+_days = DataFrame(columns=[mon, tue, wed, thu, fri, sat, sun])
+
+
+for plan, actual in zip(week_plan, week_shipped):
+    if plan != '':
+        if plan != actual:
+            _off_day.append('Y')
+        elif plan == actual:
+            if mon == 'M' & weekday == 'Mon':
+                _off_day.append('N')
+            elif tue == 'T' & weekday == 'Tue':
+                _off_day.append('N')
+            elif wed == 'W' & weekday == 'Wed':
+                _off_day.append('N')
+            elif thu == 'R' & weekday == 'Thu':
+                _off_day.append('N')    
+            elif fri == 'F' & weekday == 'Fri':
+                _off_day.append('N')
+            elif sat == 'S' & weekday == 'Sat':
+                _off_day.append('N')
+            elif sun == 'U' & weekday == 'Sun':
+                _off_day.append('N')
+            else:
+                _off_day.append('Y')
+        elif plan == '':
+            if mon == 'M' & weekday == 'Mon':
+                _off_day.append('N')
+            elif tue == 'T' & weekday == 'Tue':
+                _off_day.append('N')
+            elif wed == 'W' & weekday == 'Wed':
+                _off_day.append('N')
+            elif thu == 'R' & weekday == 'Thu':
+                _off_day.append('N')    
+            elif fri == 'F' & weekday == 'Fri':
+                _off_day.append('N')
+            elif sat == 'S' & weekday == 'Sat':
+                _off_day.append('N')
+            elif sun == 'U' & weekday == 'Sun':
+                _off_day.append('N')
+            else:
+                _off_day.append('Y')
+        else:
+            _off_day.append('N')
+
+_off_day
 
 deliveries.head()
 
-CHECK = 'MTWRFSU'
-CHECK[-7:][:1]
-CHECK[-6:][:1]
 
 
 
