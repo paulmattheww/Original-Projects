@@ -54,6 +54,19 @@ setup_date = deliveries.CustomerSetup.astype(str).tolist()
 setup_month = Series([d.zfill(4)[:2] for d in setup_date])
 this_century = [int(d[-2:]) < 20 for d in setup_date]
 setup_year = Series(["20" + s[-2:] if int(s[-2:]) < 20 else "19" + s[-2:] for s in setup_date])
+del_days = [str('%07d'% int(str(day).zfill(0))) for day in deliveries.Ship.astype(str).tolist()]
+
+mon = Series([d[:7][:1] for d in del_days])
+tue = Series([d[:6][:1] for d in del_days])
+wed = Series([d[:5][:1] for d in del_days])
+thu = Series([d[:4][:1] for d in del_days])
+fri = Series([d[:3][:1] for d in del_days])
+sat = Series([d[:2][:1] for d in del_days])
+sun = Series([d[:1][:1] for d in del_days])
+
+[d[:7] for d in del_days]
+
+
 
 deliveries.head()
 
