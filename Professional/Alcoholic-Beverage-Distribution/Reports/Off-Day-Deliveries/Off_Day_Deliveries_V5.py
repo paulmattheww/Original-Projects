@@ -7,7 +7,7 @@ from pandas import Series, DataFrame, read_csv
 import numpy as np
 import pandas as pd
 from datetime import datetime as dt
-import datetime
+import itertools
 
 def clean_pw_offday(pw_offday, weeklookup):
     '''
@@ -54,21 +54,25 @@ setup_date = deliveries.CustomerSetup.astype(str).tolist()
 setup_month = Series([d.zfill(4)[:2] for d in setup_date])
 this_century = [int(d[-2:]) < 20 for d in setup_date]
 setup_year = Series(["20" + s[-2:] if int(s[-2:]) < 20 else "19" + s[-2:] for s in setup_date])
-del_days = [str('%07d'% int(str(day).zfill(0))) for day in deliveries.Ship.astype(str).tolist()]
+deliveries.Ship = del_days = [str('%07d'% int(str(day).zfill(0))) for day in deliveries.Ship.astype(str).tolist()]
 
-mon = Series([d[:7][:1] for d in del_days])
-tue = Series([d[:6][:1] for d in del_days])
-wed = Series([d[:5][:1] for d in del_days])
-thu = Series([d[:4][:1] for d in del_days])
-fri = Series([d[:3][:1] for d in del_days])
-sat = Series([d[:2][:1] for d in del_days])
-sun = Series([d[:1][:1] for d in del_days])
+mon = Series([d[-7:][:1] for d in del_days]).map({'1':'M','0':'_'})
+tue = Series([d[-6:][:1] for d in del_days]).map({'1':'T','0':'_'})
+wed = Series([d[-5:][:1] for d in del_days]).map({'1':'W','0':'_'})
+thu = Series([d[-4:][:1] for d in del_days]).map({'1':'R','0':'_'})
+fri = Series([d[-3:][:1] for d in del_days]).map({'1':'F','0':'_'})
+sat = Series([d[-2:][:1] for d in del_days]).map({'1':'S','0':'_'})
+sun = Series([d[-1:][:1] for d in del_days]).map({'1':'U','0':'_'})
 
-[d[:7] for d in del_days]
+deliveries['DeliveryDays'] = list(itertools.chain.from_iterable([mon + tue + wed + thu + fri + sat + sun]))
 
 
 
 deliveries.head()
+
+CHECK = 'MTWRFSU'
+CHECK[-7:][:1]
+CHECK[-6:][:1]
 
 
 
