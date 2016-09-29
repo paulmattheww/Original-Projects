@@ -42,11 +42,12 @@ deliveries.Warehouse = deliveries.Warehouse.map(whs_map)
 deliveries.Date = [as400_date(d) for d in deliveries.Date.astype(str).tolist()]    
 deliveries = deliveries.merge(weeklookup, on='Date')
 
-dat = Series(deliveries.Date.astype(str).tolist())
-deliveries['Weekday'] = Series([dt.strftime(dt.strptime(d, '%Y-%m-%d'), '%A') for d in dat])
+dat = Series(deliveries.Date.tolist())
+dat_f = Series([dt.strptime(d, '%Y-%m-%d') for d in dat])
+deliveries['Weekday'] = Series([dt.strftime(d, '%A') for d in dat_f])
 
 week_plan = deliveries.ShipWeekPlan.tolist()
-week_shipped = deliveries.Ship.tolist()
+week_shipped = dat.dt.week.tolist()
 weekday = deliveries.Weekday = [d[:3] for d in deliveries.Weekday.astype(str).tolist()]
 month = deliveries.Month
 year = deliveries.Year
@@ -70,6 +71,8 @@ deliveries['DeliveryDays'] = list(itertools.chain.from_iterable([mon + tue + wed
 
 _off_day = list()
 _days = DataFrame(columns=[mon, tue, wed, thu, fri, sat, sun])
+
+[plan==actual for plan, actual in zip(week_plan,week_shipped)]
 
 
 for plan, actual in zip(week_plan, week_shipped):
