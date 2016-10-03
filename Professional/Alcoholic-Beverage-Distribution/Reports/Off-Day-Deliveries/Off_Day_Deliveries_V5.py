@@ -82,9 +82,40 @@ day_list = _days['WeekPlanned'].tolist()
 _days['WeekPlanned'] = [d if d in ['A','B'] else '' for d in day_list]
 
 _week_actual = _days.WeekShipped.tolist()
-_week_plan = [ship_week if plan_week == '' else plan_week for ship_week, plan_week in zip(_week_actual,_days.WeekPlanned.tolist())]
+_week_plan = _days['WeekPlanned'] = [ship_week if plan_week == '' else plan_week for ship_week, plan_week in zip(_week_actual,_days.WeekPlanned.tolist())]
+_days['OffWeek'] = _off_week = [p != a for p, a in zip(_week_plan, _week_actual)]
 
-['T' in d and w == 'Tue' for d, w in zip(_days['DelDays'].tolist(), _days['Weekday'].tolist())]
+off_mon = [str('M' not in d and w == 'Mon')[:1] for d, w in zip(del_days, weekday)]
+off_tue = [str('T' not in d and w == 'Tue')[:1] for d, w in zip(del_days, weekday)]
+off_wed = [str('W' not in d and w == 'Wed')[:1] for d, w in zip(del_days, weekday)]
+off_thu = [str('R' not in d and w == 'Thu')[:1] for d, w in zip(del_days, weekday)]
+off_fri = [str('F' not in d and w == 'Fri')[:1] for d, w in zip(del_days, weekday)]
+off_sat = [str('S' not in d and w == 'Sat')[:1] for d, w in zip(del_days, weekday)]
+off_sun = [str('U' not in d and w == 'Sun')[:1] for d, w in zip(del_days, weekday)]
+
+_off_days = DataFrame({'Mon':off_mon, 'Tue':off_tue, 'Wed':off_wed, 'Thu':off_thu, 
+                       'Fri':off_fri, 'Sat':off_sat, 'Sun':off_sun, 'OffWeek':_off_week})
+                       
+  # use or statement to mark if off day or not                     
+_ls = _off_days[ (_off_days['Tue'] == 'T') | (_off_days['Wed'] == 'T')]                    
+                       
+_off_days[_off_days[['Mon','Tue','Wed','Thu','Fri','Sat','Sun']] == 'T']
+
+
+
+
+
+
+
+
+
+
+list(itertools.chain(off_mon + off_tue + off_wed + off_thu + off_fri + off_sat + off_sun))
+
+[str(o)[:1] for o in off_mon]
+
+
+
 
 
 [day.WeekPlanned == day.WeekShipped for day in _days[['WeekPlanned','WeekShipped']]]
