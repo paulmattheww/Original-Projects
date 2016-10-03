@@ -9,6 +9,14 @@ import pandas as pd
 from datetime import datetime as dt
 import itertools
 
+
+
+
+pw_offday = read_csv('C:/Users/pmwash/Desktop/R_files/Data Input/Input Files for Reports/Off-Day Deliveries/pw_offday.csv')
+weeklookup = read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Off Day Deliveries/pw_offday_weeklookup.csv')#change htese paths
+
+
+
 def clean_pw_offday(pw_offday, weeklookup):
     '''
     Clean pw_offday query without filtering out non-off-days
@@ -73,12 +81,13 @@ _days = DataFrame(data={'Weekday':weekday, 'WeekPlanned':week_plan, 'WeekShipped
 day_list = _days['WeekPlanned'].tolist()
 _days['WeekPlanned'] = [d if d in ['A','B'] else '' for d in day_list]
 
+_week_actual = _days.WeekShipped.tolist()
+_week_plan = [ship_week if plan_week == '' else plan_week for ship_week, plan_week in zip(_week_actual,_days.WeekPlanned.tolist())]
 
-['Yes']
+['T' in d and w == 'Tue' for d, w in zip(_days['DelDays'].tolist(), _days['Weekday'].tolist())]
+
 
 [day.WeekPlanned == day.WeekShipped for day in _days[['WeekPlanned','WeekShipped']]]
-_plan = _days.WeekPlanned.tolist()
-_actual = _days.WeekShipped.tolist()
 _del_days = _days.DelDays.tolist()
 _weekdays = _days.Weekday.tolist()
 
@@ -86,9 +95,8 @@ _weekdays = _days.Weekday.tolist()
 _off_day = list()
 
 
-
-for plan, actual in zip(_plan, _actual):
-    for day, wday in zip(_del_days, _weekdays):
+for day, wday in zip(_del_days, _weekdays):
+    for plan, actual in zip(_plan, _actual):
         if plan != '':
             if plan != actual:
                 _off_day.append('Y')
@@ -140,110 +148,6 @@ _off_day
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-for plan, actual in zip(week_plan, week_shipped):
-    for day in _days:
-        if plan not in ['A','B']:
-            if plan != actual:
-                _off_day.append('Y')
-                    
-            elif plan == actual:
-                if day['Monday'] == 'M' and day['Weekday'] == 'Mon':
-                    _off_day.append('N')
-                elif day['Tuesday'] == 'T' and day['Weekday'] == 'Tue':
-                    _off_day.append('N')
-                elif day['Wednesday'] == 'W' and day['Weekday'] == 'Wed':
-                    _off_day.append('N')
-                elif day['Thursday'] == 'R' and day['Weekday'] == 'Thu':
-                    _off_day.append('N')    
-                elif day['Friday'] == 'F' and day['Weekday'] == 'Fri':
-                    _off_day.append('N')
-                elif day['Saturday'] == 'S' and day['Weekday'] == 'Sat':
-                    _off_day.append('N')
-                elif day['Sunday'] == 'U' and day['Weekday'] == 'Sun':
-                    _off_day.append('N')
-                else:
-                    _off_day.append('Y')
-            elif plan == '':
-                if day['Monday'] == 'M' and day['Weekday'] == 'Mon':
-                    _off_day.append('N')
-                elif day['Tuesday'] == 'T' and day['Weekday'] == 'Tue':
-                    _off_day.append('N')
-                elif day['Wednesday'] == 'W' and day['Weekday'] == 'Wed':
-                    _off_day.append('N')
-                elif day['Thursday'] == 'R' and day['Weekday'] == 'Thu':
-                    _off_day.append('N')    
-                elif day['Friday'] == 'F' and day['Weekday'] == 'Fri':
-                    _off_day.append('N')
-                elif day['Saturday'] == 'S' and day['Weekday'] == 'Sat':
-                    _off_day.append('N')
-                elif day['Sunday'] == 'U' and day['Weekday'] == 'Sun':
-                    _off_day.append('N')
-                else:
-                    _off_day.append('Y')
-
-            else:
-                _off_day.append('N')
-
-_off_day
-
-
-for plan, actual in zip(week_plan, week_shipped):
-    if plan != '':
-        if plan != actual:
-            _off_day.append('Y')
-        elif plan == actual:
-            if mon == 'M' and weekday == 'Mon':
-                _off_day.append('N')
-            elif tue == 'T' and weekday == 'Tue':
-                _off_day.append('N')
-            elif wed == 'W' and weekday == 'Wed':
-                _off_day.append('N')
-            elif thu == 'R' and weekday == 'Thu':
-                _off_day.append('N')    
-            elif fri == 'F' and weekday == 'Fri':
-                _off_day.append('N')
-            elif sat == 'S' and weekday == 'Sat':
-                _off_day.append('N')
-            elif sun == 'U' and weekday == 'Sun':
-                _off_day.append('N')
-            else:
-                _off_day.append('Y')
-        elif plan == '':
-            if mon == 'M' and weekday == 'Mon':
-                _off_day.append('N')
-            elif tue == 'T' and weekday == 'Tue':
-                _off_day.append('N')
-            elif wed == 'W' and weekday == 'Wed':
-                _off_day.append('N')
-            elif thu == 'R' and weekday == 'Thu':
-                _off_day.append('N')    
-            elif fri == 'F' and weekday == 'Fri':
-                _off_day.append('N')
-            elif sat == 'S' and weekday == 'Sat':
-                _off_day.append('N')
-            elif sun == 'U' and weekday == 'Sun':
-                _off_day.append('N')
-            else:
-                _off_day.append('Y')
-        else:
-            _off_day.append('N')
-
-_off_day
 
 deliveries.head()
 
