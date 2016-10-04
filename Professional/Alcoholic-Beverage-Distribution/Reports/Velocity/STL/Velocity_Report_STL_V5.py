@@ -223,43 +223,8 @@ def write_stl_to_xlsx(CASES, BTLS, month):
     file_out.save()
     
 
-write_stl_to_xlsx(CASES, BTLS, month='08-21-2016 through 09-21-2016')
+write_stl_to_xlsx(CASES, BTLS, month='September 2016')
   
-
-
-CASES.plot(x='PICKFREQUENCY',y='CASESALES',kind='scatter')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Visualization R&D 
-## Also look into the slowest items on each line, see which can be swapped out
-
-from ggplot import *
-
-CASES.groupby('CASELINE')['PICKFREQUENCY'].hist(by=CASES['CASELINE'], bins=100)
-
-
-g = ggplot(CASES, aes(x='DESCRIPTION',y='PICKFREQUENCY', colour='CASELINE'))
-g + geom_bar(aes(colour='CASELINE')) + \
-    facet_wrap('CASELINE')
-
-
 
 
 
