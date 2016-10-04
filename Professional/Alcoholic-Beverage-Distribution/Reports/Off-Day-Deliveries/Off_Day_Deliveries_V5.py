@@ -60,10 +60,6 @@ week_shipped = deliveries.ShipWeek.tolist()
 month = deliveries.Month
 year = deliveries.Year
 
-setup_date = deliveries.CustomerSetup.astype(str).tolist()
-setup_month = Series([d.zfill(4)[:2] for d in setup_date])
-this_century = [int(d[-2:]) < 20 for d in setup_date]
-setup_year = Series(["20" + s[-2:] if int(s[-2:]) < 20 else "19" + s[-2:] for s in setup_date])
 deliveries.Ship = del_days = [str('%07d'% int(str(day).zfill(0))) for day in deliveries.Ship.astype(str).tolist()]
 
 mon = Series([d[-7:][:1] for d in del_days]).map({'1':'M','0':'_'})
@@ -99,6 +95,41 @@ _off_days = _off_days[['Mon','Tue','Wed','Thu','Fri','Sat','Sun','Weekday','OffW
 _off_days['OffDayDelivery'] = (_off_days['Mon'] == 'T') | (_off_days['Tue'] == 'T') | (_off_days['Wed'] == 'T') | (_off_days['Thu'] == 'T') | (_off_days['Fri'] == 'T') | (_off_days['Sat'] == 'T') | (_off_days['Sun'] == 'T') | (_off_days['OffWeek'] == True)                
                        
 check_later = _off_days[_off_days['OffDayDelivery'] == True]
+
+deliveries = pd.concat([deliveries,_off_days[['OffWeek','OffDayDelivery']]], axis=1)
+deliveries.Call = deliveries.Call.map({1:'Customer Call', 2:'ROE/EDI', 3:'Salesperson Call', 4:'Telesales'})
+
+setup_date = deliveries.CustomerSetup.astype(str).tolist()
+setup_month = Series([d.zfill(4)[:2] for d in setup_date])
+this_century = [int(d[-2:]) < 20 for d in setup_date]
+setup_year = Series(["20" + s[-2:] if int(s[-2:]) < 20 else "19" + s[-2:] for s in setup_date])
+
+deliveries['CustomerSetup'] = [str(mon) + '-' + str(yr) for mon, yr in zip(setup_month, setup_year)]
+
+last_month = str(dt.now().month - 1).zfill(2)
+this_year = str(dt.now().year)
+m_y_cutoff = last_month + '-' + this_year
+
+transaction_month = [d[5:7] for d in deliveries.Date.tolist()]
+transaction_year = [d[:4] for d in deliveries.Date.tolist()]
+m_y_transaction = [m + '-' + y for m, y in zip(transaction_month, transaction_year)]
+
+deliveries.NewCustomer = ['Y' if m_y_cutoff == transaction else 'N' for transaction in m_y_transaction]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #works tweak
