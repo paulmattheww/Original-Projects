@@ -94,20 +94,16 @@ off_sat = [str('S' not in d and w == 'Sat')[:1] for d, w in zip(del_days, weekda
 off_sun = [str('U' not in d and w == 'Sun')[:1] for d, w in zip(del_days, weekday)]
 
 _off_days = DataFrame({'Mon':off_mon, 'Tue':off_tue, 'Wed':off_wed, 'Thu':off_thu, 
-                       'Fri':off_fri, 'Sat':off_sat, 'Sun':off_sun, 'OffWeek':_off_week})
+                       'Fri':off_fri, 'Sat':off_sat, 'Sun':off_sun, 'OffWeek':_off_week, 'Weekday':weekday})
                        
-  # use or statement to mark if off day or not                     
-_ls = _off_days[ (_off_days['Tue'] == 'T') | (_off_days['Wed'] == 'T')]                    
+# use or statement to mark if off day or not                     
+_off_days['OffDayDelivery'] = (_off_days['Mon'] == 'T') | (_off_days['Tue'] == 'T') | (_off_days['Wed'] == 'T') | (_off_days['Thu'] == 'T') | (_off_days['Fri'] == 'T') | (_off_days['Sat'] == 'T') | (_off_days['Sun'] == 'T') | (_off_days['OffWeek'] == True)                
                        
-_off_days[_off_days[['Mon','Tue','Wed','Thu','Fri','Sat','Sun']] == 'T']
+_off_days[_off_days['OffDayDelivery'] == True]
 
 
-
-
-
-
-
-
+#works tweak
+#_ls = _off_days[(_off_days['Mon'] == 'T') | (_off_days['Tue'] == 'T') | (_off_days['Wed'] == 'T') | (_off_days['Thu'] == 'T') | (_off_days['Fri'] == 'T') | (_off_days['Sat'] == 'T') | (_off_days['Sun'] == 'T') | (_off_days['OffWeek'] == True)]                    
 
 
 list(itertools.chain(off_mon + off_tue + off_wed + off_thu + off_fri + off_sat + off_sun))
