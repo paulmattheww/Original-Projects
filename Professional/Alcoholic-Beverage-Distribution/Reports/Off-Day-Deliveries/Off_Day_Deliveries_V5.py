@@ -116,6 +116,12 @@ m_y_transaction = [m + '-' + y for m, y in zip(transaction_month, transaction_ye
 
 deliveries.NewCustomer = ['Y' if m_y_cutoff == transaction else 'N' for transaction in m_y_transaction]
 
+    return deliveries
+
+
+clean_data = clean_pw_offday(pw_offday, weeklookup)
+
+clean_data.head()
 
 
 
@@ -123,96 +129,6 @@ deliveries.NewCustomer = ['Y' if m_y_cutoff == transaction else 'N' for transact
 
 
 
-
-
-
-
-
-
-
-
-
-#works tweak
-#_ls = _off_days[(_off_days['Mon'] == 'T') | (_off_days['Tue'] == 'T') | (_off_days['Wed'] == 'T') | (_off_days['Thu'] == 'T') | (_off_days['Fri'] == 'T') | (_off_days['Sat'] == 'T') | (_off_days['Sun'] == 'T') | (_off_days['OffWeek'] == True)]                    
-
-
-list(itertools.chain(off_mon + off_tue + off_wed + off_thu + off_fri + off_sat + off_sun))
-
-[str(o)[:1] for o in off_mon]
-
-
-
-
-
-[day.WeekPlanned == day.WeekShipped for day in _days[['WeekPlanned','WeekShipped']]]
-_del_days = _days.DelDays.tolist()
-_weekdays = _days.Weekday.tolist()
-
-
-_off_day = list()
-
-
-for day, wday in zip(_del_days, _weekdays):
-    for plan, actual in zip(_plan, _actual):
-        if plan != '':
-            if plan != actual:
-                _off_day.append('Y')
-                    
-            elif plan == actual:
-                if 'M' in day and wday == 'Mon':
-                    _off_day.append('N')
-                elif 'T' in day and wday == 'Tue':
-                    _off_day.append('N')
-                elif 'W' in day and wday == 'Wed':
-                    _off_day.append('N')
-                elif 'R' in day and wday == 'Thu':
-                    _off_day.append('N')    
-                elif 'F' in day and wday == 'Fri':
-                    _off_day.append('N')
-                elif 'S' in day and wday == 'Sat':
-                    _off_day.append('N')
-                elif 'U' in day and wday == 'Sun':
-                    _off_day.append('N')
-            else:
-                _off_day.append('Y')
-                
-        elif plan == '':
-            if 'M' in day and wday == 'Mon':
-                    _off_day.append('N')
-            elif 'T' in day and wday == 'Tue':
-                _off_day.append('N')
-            elif 'W' in day and wday == 'Wed':
-                _off_day.append('N')
-            elif 'R' in day and wday == 'Thu':
-                _off_day.append('N')    
-            elif 'F' in day and wday == 'Fri':
-                _off_day.append('N')
-            elif 'S' in day and wday == 'Sat':
-                _off_day.append('N')
-            elif 'U' in day and wday == 'Sun':
-                _off_day.append('N')
-            else:
-                _off_day.append('Y')
-
-        else:
-            _off_day.append('N')
-
-_off_day
-
-
-
-
-
-
-
-
-deliveries.head()
-
-
-
-
-pw_offday = read_csv('C:/Users/pmwash/Desktop/R_files/Data Input/Input Files for Reports/Off-Day Deliveries/pw_offday.csv')
-weeklookup = read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Off Day Deliveries/pw_offday_weeklookup.csv')#change htese paths
 
 
 
