@@ -140,20 +140,52 @@ agg_funcs_week = {'OffDayDelivery' : {'Count':sum},
 _agg_byweek = DataFrame(_agg_byday.groupby(['CustomerId','Week']).agg(agg_funcs_week)).reset_index(drop=False)
 _agg_byweek.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byweek.columns]
 
-_all_deliv_ct = _agg_byweek['Delivery|Count'].astype(int).tolist()
-_offday_deliv_ct = _agg_byweek['OffDayDelivery|Count'].astype(int).tolist()
-
-_agg_byweek['AdditionalDelivery|Count'] = [_all - _off if _off > 0 else 0 for _all,_off in zip(_all_deliv_ct, _offday_deliv_ct)]
-
 def sum_digits_in_string(digit):
     return sum(int(x) for x in digit if x.isdigit())
 
 _n_days = deliveries.Ship.astype(str).tolist()
 deliveries['AllottedWeeklyDeliveryDays'] = [sum_digits_in_string(n) for n in _n_days]
-_n_days = deliveries.set_index('CustomerId')['AllottedWeeklyDeliveryDays'].to_dict()
 _agg_byweek['AlottedWeeklyDeliveryDays|Count'] = _agg_byweek['CustomerId'] 
+
+_allot = deliveries['AllottedWeeklyDeliveryDays'].tolist()
+_week_ind = deliveries['ShipWeekPlan'].tolist()
+deliveries['AllottedWeeklyDeliveryDays'] = [a if w not in ['A','B'] else 0.5 for a, w in zip(_allot, _week_ind)]
+_n_days = deliveries.set_index('CustomerId')['AllottedWeeklyDeliveryDays'].to_dict()
 _agg_byweek['AlottedWeeklyDeliveryDays|Count'] = _agg_byweek['AlottedWeeklyDeliveryDays|Count'].map(_n_days)
-_agg_byweek['AdditionalDelivery|Count'] = 
+
+
+
+
+addl_day_indicator = (_agg_byweek['OffDayDelivery|Count']>0) & (_agg_byweek['Delivery|Count'] > _agg_byweek['AlottedWeeklyDeliveryDays|Count'])
+off_ct = _agg_byweek['OffDayDelivery|Count'].tolist()
+_agg_byweek['AdditionalDelivery|Count'] = [off if ind == True else 0 for off,ind in zip(off_ct, addl_day_indicator)]
+
+
+
+
+
+
+_agg_byweek[_agg_byweek['AdditionalDelivery|Count'] > 0].head(50)
+
+
+x = _agg_byweek[(_agg_byweek['OffDayDelivery|Count']>0) & (_agg_byweek['Delivery|Count'] > _agg_byweek['AlottedWeeklyDeliveryDays|Count'])]
+
+x[x['AdditionalDelivery|Count'] > 0].head(50)
+
+x.head(50)
+
+
+
+
+
+
+
+_allotted_ct = _agg_byweek['AlottedWeeklyDeliveryDays|Count'].astype(int).tolist()
+_deliv_ct = _agg_byweek['Delivery|Count'].astype(int).tolist()
+
+
+
+_agg_byweek['AdditionalDelivery|Count'] = [_actual - _allotted if _actual > _allotted else 0 for _actual,_allotted in zip(_allotted_ct, _deliv_ct)]
 
 
 _agg_byweek.head(50)
@@ -179,7 +211,7 @@ test = [s, u]
 
 
 _agg_byweek.head(100)
-_agg_byweek[_agg_byweek['AdditionalDelivery|Count'] > 0]
+_agg_byweek[_agg_byweek['AdditionalDelivery|Count'] > 1].head(50)
 
 
 {k:sum(t) for k,t in test.items()}
