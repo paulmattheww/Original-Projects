@@ -20,10 +20,10 @@ weeklookup = read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Off Day Del
 
 
 
-def clean_pw_offday(pw_offday, weeklookup):
-    '''
-    Clean pw_offday query without filtering out non-off-days
-    '''
+#def clean_pw_offday(pw_offday, weeklookup):
+#    '''
+#    Clean pw_offday query without filtering out non-off-days
+#    '''
 deliveries = pw_offday
 
 def as400_date(dat):
@@ -107,7 +107,7 @@ setup_month = Series([d.zfill(4)[:2] for d in setup_date])
 this_century = [int(d[-2:]) < 20 for d in setup_date]
 setup_year = Series(["20" + s[-2:] if int(s[-2:]) < 20 else "19" + s[-2:] for s in setup_date])
 
-deliveries['CustomerSetup'] = [str(mon) + '-' + str(yr) for mon, yr in zip(setup_month, setup_year)]
+deliveries['CustomerSetup'] = c_setup = [str(mon) + '-' + str(yr) for mon, yr in zip(setup_month, setup_year)]
 
 last_month = str(dt.now().month - 1).zfill(2)
 this_year = str(dt.now().year)
@@ -117,7 +117,7 @@ transaction_month = [d[5:7] for d in deliveries.Date.tolist()]
 transaction_year = [d[:4] for d in deliveries.Date.tolist()]
 m_y_transaction = [m + '-' + y for m, y in zip(transaction_month, transaction_year)]
 
-deliveries['NewCustomer'] = _new_cust = ['Y' if m_y_cutoff == transaction else 'N' for transaction in m_y_transaction]
+deliveries['NewCustomer'] = _new_cust = [1 if m_y_cutoff == setup else 0 for setup in c_setup]
 deliveries['OffDayDeliveries'] =  deliveries.OffDayDelivery.astype(int)
     
 print(deliveries.head(),'\n\n\n\n',deliveries.tail())
@@ -125,17 +125,19 @@ print(deliveries.head(),'\n\n\n\n',deliveries.tail())
 len_unique = lambda x: len(pd.unique(x))
 agg_funcs = {'OffDayDeliveries' : {'Count':max}, 
              'Date' : {'Count':len_unique},
-             'Cases' : {'Sum':sum, 'Avg':np.mean}}
+             'Cases' : {'Sum':sum, 'Avg':np.mean},
+             'NewCustomer': lambda x: min(x)}
 
 _agg_byday = DataFrame(deliveries.groupby(['CustomerId','Customer','Week','Date']).agg(agg_funcs)).reset_index(drop=False)
-_agg_byday = DataFrame(_agg_byday[['CustomerId','Week','Date','OffDayDeliveries']])
+_agg_byday = DataFrame(_agg_byday[['CustomerId','Week','Date','OffDayDeliveries','NewCustomer']])
 _agg_byday.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byday.columns]
-_agg_byday.columns = ['CustomerId','Week','Date','Delivery','OffDayDelivery']
+_agg_byday.columns = ['CustomerId','Week','Date','Delivery','OffDayDelivery','NewCustomer']
 _agg_byday.head(50)
 
 
 agg_funcs_week = {'OffDayDelivery' : {'Count':sum},
-                  'Delivery' : {'Count':sum} }
+                  'Delivery' : {'Count':sum},
+                  'NewCustomer' : lambda x: min(x)}
 
 _agg_byweek = DataFrame(_agg_byday.groupby(['CustomerId','Week']).agg(agg_funcs_week)).reset_index(drop=False)
 _agg_byweek.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byweek.columns]
@@ -146,17 +148,16 @@ def sum_digits_in_string(digit):
 _n_days = deliveries.Ship.astype(str).tolist()
 deliveries['AllottedWeeklyDeliveryDays'] = [sum_digits_in_string(n) for n in _n_days]
 _agg_byweek['AlottedWeeklyDeliveryDays|Count'] = _agg_byweek['CustomerId'] 
+_agg_byweek.columns = ['CustomerId','Week','Delivery|Count','OffDayDelivery|Count','NewCustomer','AllottedWeeklyDeliveryDays|Count']
 
 _allot = deliveries['AllottedWeeklyDeliveryDays'].tolist()
 _week_ind = deliveries['ShipWeekPlan'].tolist()
 deliveries['AllottedWeeklyDeliveryDays'] = [a if w not in ['A','B'] else 0.5 for a, w in zip(_allot, _week_ind)]
 _n_days = deliveries.set_index('CustomerId')['AllottedWeeklyDeliveryDays'].to_dict()
-_agg_byweek['AlottedWeeklyDeliveryDays|Count'] = _agg_byweek['AlottedWeeklyDeliveryDays|Count'].map(_n_days)
+_agg_byweek['AllottedWeeklyDeliveryDays|Count'] = _agg_byweek['AllottedWeeklyDeliveryDays|Count'].map(_n_days)
 
-
-
-
-addl_day_indicator = (_agg_byweek['OffDayDelivery|Count']>0) & (_agg_byweek['Delivery|Count'] > _agg_byweek['AlottedWeeklyDeliveryDays|Count'])
+check_later3 = _agg_byweek[(_agg_byweek['OffDayDelivery|Count']>0) & (_agg_byweek['Delivery|Count'] > _agg_byweek['AllottedWeeklyDeliveryDays|Count']) & (_agg_byweek['NewCustomer'] != 1)]
+addl_day_indicator = (_agg_byweek['OffDayDelivery|Count']>0) & (_agg_byweek['Delivery|Count'] > _agg_byweek['AllottedWeeklyDeliveryDays|Count']) & (_agg_byweek['NewCustomer'] != 1)
 off_ct = _agg_byweek['OffDayDelivery|Count'].tolist()
 _agg_byweek['AdditionalDelivery|Count'] = [off if ind == True else 0 for off,ind in zip(off_ct, addl_day_indicator)]
 
