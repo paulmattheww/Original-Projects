@@ -9,10 +9,13 @@ import pandas as pd
 from datetime import datetime as dt
 import itertools
 
+pd.set_option('display.height', 100)
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 100)
+pd.set_option('display.width', 100)
 
 
-
-pw_offday = read_csv('C:/Users/pmwash/Desktop/R_files/Data Input/Input Files for Reports/Off-Day Deliveries/pw_offday.csv')
+pw_offday = read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Off Day Deliveries/pw_offday.csv')
 weeklookup = read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Off Day Deliveries/pw_offday_weeklookup.csv')#change htese paths
 
 
@@ -30,7 +33,7 @@ def as400_date(dat):
     dat = str(dt.date(dt.strptime(dat, '%y%m%d')))
     return dat
     
-deliveries.columns = ['Date', 'Division', 'Invoice', 'CustomerID', 'Call', 'Priority', 
+deliveries.columns = ['Date', 'Division', 'Invoice', 'CustomerId', 'Call', 'Priority', 
            'Warehouse', 'Cases', 'Dollars', 'Ship', 'Salesperson', 
            'ShipWeekPlan', 'Merchandising', 'OnPremise', 
            'CustomerSetup', 'CustomerType', 'Customer']
@@ -114,7 +117,108 @@ transaction_month = [d[5:7] for d in deliveries.Date.tolist()]
 transaction_year = [d[:4] for d in deliveries.Date.tolist()]
 m_y_transaction = [m + '-' + y for m, y in zip(transaction_month, transaction_year)]
 
-deliveries.NewCustomer = ['Y' if m_y_cutoff == transaction else 'N' for transaction in m_y_transaction]
+deliveries['NewCustomer'] = _new_cust = ['Y' if m_y_cutoff == transaction else 'N' for transaction in m_y_transaction]
+deliveries['OffDayDeliveries'] =  deliveries.OffDayDelivery.astype(int)
+    
+print(deliveries.head(),'\n\n\n\n',deliveries.tail())
+    
+len_unique = lambda x: len(pd.unique(x))
+agg_funcs = {'OffDayDeliveries' : {'Count':max}, 
+             'Date' : {'Count':len_unique},
+             'Cases' : {'Sum':sum, 'Avg':np.mean}}
+
+_agg_byday = DataFrame(deliveries.groupby(['CustomerId','Customer','Week','Date']).agg(agg_funcs)).reset_index(drop=False)
+_agg_byday = DataFrame(_agg_byday[['CustomerId','Week','Date','OffDayDeliveries']])
+_agg_byday.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byday.columns]
+_agg_byday.columns = ['CustomerId','Week','Date','Delivery','OffDayDelivery']
+_agg_byday.head(50)
+
+
+agg_funcs_week = {'OffDayDelivery' : {'Count':sum},
+                  'Delivery' : {'Count':sum} }
+
+_agg_byweek = DataFrame(_agg_byday.groupby(['CustomerId','Week']).agg(agg_funcs_week)).reset_index(drop=False)
+_agg_byweek.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byweek.columns]
+
+_all_deliv_ct = _agg_byweek['Delivery|Count'].astype(int).tolist()
+_offday_deliv_ct = _agg_byweek['OffDayDelivery|Count'].astype(int).tolist()
+
+_agg_byweek['AdditionalDelivery|Count'] = [_all - _off if _off > 0 else 0 for _all,_off in zip(_all_deliv_ct, _offday_deliv_ct)]
+
+def sum_digits_in_string(digit):
+    return sum(int(x) for x in digit if x.isdigit())
+
+_n_days = deliveries.Ship.astype(str).tolist()
+deliveries['AllottedWeeklyDeliveryDays'] = [sum_digits_in_string(n) for n in _n_days]
+_n_days = deliveries.set_index('CustomerId')['AllottedWeeklyDeliveryDays'].to_dict()
+_agg_byweek['AlottedWeeklyDeliveryDays|Count'] = _agg_byweek['CustomerId'] 
+_agg_byweek['AlottedWeeklyDeliveryDays|Count'] = _agg_byweek['AlottedWeeklyDeliveryDays|Count'].map(_n_days)
+_agg_byweek['AdditionalDelivery|Count'] = 
+
+
+_agg_byweek.head(50)
+
+
+{deliveries[['CustomerId']],deliveries[['AllottedWeeklyDeliveryDays']]}
+
+_agg_byweek['AlottedWeeklyDeliveryDays|Count'] = [sum_digits_in_string(n) for n in _n_days]
+
+s = '111111111100000000000'
+u = '111111111100000000000'
+test = [s, u]
+
+
+
+
+
+
+
+
+
+
+
+
+_agg_byweek.head(100)
+_agg_byweek[_agg_byweek['AdditionalDelivery|Count'] > 0]
+
+
+{k:sum(t) for k,t in test.items()}
+
+
+
+accumulator = list()
+
+for i, _ in enumerate(test):
+    s = test[i]
+    while len(s) > 0:
+        for j, _ in enumerate(s):    
+            _sum = 0
+            _sum += int(s[j])
+        accumulator.append(_sum)
+    
+#for i, _ in enumerate(s):
+#    _sum += np.float64(s[i])
+#    print(int(s[i]))
+        
+
+_agg_byweek['AdditionalDayDelivery|Count'] = 
+
+
+
+
+n_days_week = deliveries.Ship.astype(str).tolist()
+
+
+
+_agg_byweek['OffDayDelivery|Count'] / _agg_byweek['Delivery|Count']
+
+_agg_byweek.head(50)
+
+check_later2 = _agg_byweek[_agg_byweek['OffDayDelivery|Count'] > 0]
+
+
+
+
 
     return deliveries
 
@@ -122,14 +226,6 @@ deliveries.NewCustomer = ['Y' if m_y_cutoff == transaction else 'N' for transact
 clean_data = clean_pw_offday(pw_offday, weeklookup)
 
 clean_data.head()
-
-
-
-
-
-
-
-
 
 
 
