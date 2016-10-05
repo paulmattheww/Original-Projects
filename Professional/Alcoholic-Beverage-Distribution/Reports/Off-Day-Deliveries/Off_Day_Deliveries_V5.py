@@ -156,24 +156,12 @@ deliveries['AllottedWeeklyDeliveryDays'] = [a if w not in ['A','B'] else 0.5 for
 _n_days = deliveries.set_index('CustomerId')['AllottedWeeklyDeliveryDays'].to_dict()
 _agg_byweek['AllottedWeeklyDeliveryDays|Count'] = _agg_byweek['AllottedWeeklyDeliveryDays|Count'].map(_n_days)
 
-check_later3 = _agg_byweek[(_agg_byweek['OffDayDelivery|Count']>0) & (_agg_byweek['Delivery|Count'] > _agg_byweek['AllottedWeeklyDeliveryDays|Count']) & (_agg_byweek['NewCustomer'] != 1)]
+check_later3 = _agg_byweek[(_agg_byweek['OffDayDelivery|Count']>0) & (_agg_byweek['Delivery|Count'] > _agg_byweek['AllottedWeeklyDeliveryDays|Count']) & (_agg_byweek['NewCustomer'] != 1)].head(50)
 addl_day_indicator = (_agg_byweek['OffDayDelivery|Count']>0) & (_agg_byweek['Delivery|Count'] > _agg_byweek['AllottedWeeklyDeliveryDays|Count']) & (_agg_byweek['NewCustomer'] != 1)
 off_ct = _agg_byweek['OffDayDelivery|Count'].tolist()
 _agg_byweek['AdditionalDelivery|Count'] = [off if ind == True else 0 for off,ind in zip(off_ct, addl_day_indicator)]
 
-
-
-
-
-
-_agg_byweek[_agg_byweek['AdditionalDelivery|Count'] > 0].head(50)
-
-
-x = _agg_byweek[(_agg_byweek['OffDayDelivery|Count']>0) & (_agg_byweek['Delivery|Count'] > _agg_byweek['AlottedWeeklyDeliveryDays|Count'])]
-
-x[x['AdditionalDelivery|Count'] > 0].head(50)
-
-x.head(50)
+check_later4 = _agg_byweek[_agg_byweek['AdditionalDelivery|Count'] > 0].head(50)
 
 
 
