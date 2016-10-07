@@ -10,19 +10,24 @@ Run velocity separation process
 Print to file
 Send to group
 '''
-print('Did you change the month?')
-report_month = 'September 2016'
+report_month = input('Enter full month and year for the report: ')
 
 import pandas as pd
 from pandas import read_excel, Series, DataFrame
 import numpy as np
-import re
 
 raw = read_excel('C:/Users/pmwash/Desktop/Re-Engineered Reports/Velocity/Data/velocity_stl.xlsx',header=0)
 
-ttl_cs = 266760
-ttl_btl = 10266
+ttl_cs = 110250
+ttl_btl = 5426.64
 
+print('''
+
+
+Expecting cases to be %.2f and bottles to be %.2f
+
+
+''' % (ttl_cs,ttl_btl))
 
 def pre_process_stl(raw):
     '''Accepts a .xls output from Compleo unformatted'''
@@ -41,27 +46,20 @@ def pre_process_stl(raw):
     case_start_ix = min(find_case_split[find_case_split == 'CASESALES'].index)
     
     # Split out bottles and cases by finding first case instance
-    btls = raw.loc[0:btl_end_ix-1]
-    cases = raw.loc[case_start_ix+2:].reset_index(drop=True)
+    btls = raw.loc[0:btl_end_ix-1].reset_index(drop=True)
+    cases = raw.loc[case_start_ix:].reset_index(drop=True)
     
     # Format columns for cases 
-    ##case_cols = cases.iloc[0].astype(str).reset_index(drop=True).tolist()
     cases.columns = ['PRODUCT#', 'SIZE', 'ANDDESCRIPTION', 'CASESALES', 'PICKFREQUENCY', 'CSE.LOC.',
            'BTL.LOC.', 'BULK1', 'BOTTLESONHAND']
     
     # Remove invalid data from cases and btls
      # Remove invalid data from cases and btls
     remove_rows_cases = cases['PRODUCT#'].astype(str).apply(lambda x: str.isnumeric(x) )
-    cases = cases[remove_rows_cases == True]
+    cases = cases[remove_rows_cases == True].reset_index(drop=True)
     
     remove_rows_btls = btls['PRODUCT#'].astype(str).apply(lambda x: str.isnumeric(x) )
-    btls = btls[remove_rows_btls == True]
-#    remove_rows_cases = cases['SIZE'].astype(str).apply(lambda x: x not in ['OTAL','REPORT','SIZE',''])
-#    cases = cases[remove_rows_cases == True]
-#    
-#    remove_rows_btls = (btls['SIZE'].astype(str).apply(lambda x: x not in ['OTAL','REPORT','SIZE',''])) | ()
-#    btls = btls[remove_rows_btls == True]
-    
+    btls = btls[remove_rows_btls == True].reset_index(drop=True)
     
     def replace_last(source_string, replace_what, replace_with):
         '''Replaces last occurrence of replace_what'''
@@ -85,6 +83,9 @@ def pre_process_stl(raw):
     
     check_btls = np.sum(btls['BOTTLESALES'])
     check_cses = np.sum(cases['CASESALES'])
+    
+    print('\n\n\nTotal bottles: ', check_btls, '\n\n',
+          'Total cases: ', check_cses)
     
     cases.columns = ['PRODUCT#','SIZE','DESCRIPTION','CASESALES','PICKFREQUENCY','CSE.LOC.','BTL.LOC.','BULK1','BOTTLESONHAND']
     btls.columns = ['PRODUCT#','SIZE','DESCRIPTION','BOTTLESALES','PICKFREQUENCY','CSE.LOC.','BTL.LOC.','BULK1','BOTTLESONHAND']
