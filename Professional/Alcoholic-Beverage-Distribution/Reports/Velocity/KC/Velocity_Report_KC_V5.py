@@ -16,6 +16,20 @@ from pandas import read_excel, Series, Panel, DataFrame
 import numpy as np
 import re
 
+report_month = input('Enter full month and year for the report: ')
+
+
+ttl_cs = 266760.00
+ttl_btl = 10266.66
+
+print('''
+
+
+Expecting cases to be %.2f and bottles to be %.2f
+
+
+''' % (ttl_cs,ttl_btl))
+
 raw = read_excel('C:/Users/pmwash/Desktop/Re-Engineered Reports/Velocity/Data/velocity_kc.xlsx',header=0)
 
 def pre_process_kc(raw):
@@ -24,24 +38,31 @@ def pre_process_kc(raw):
     raw.columns = [x.strip().replace(' ','') for x in raw.columns]
     
     # Locate first row where the dataframe begins referring to cases 
+    find_btl_split = Series(raw['SIZE'].astype(str).tolist())
+    find_btl_split = Series([x.strip().replace(' ','') for x in find_btl_split])
+    
     find_case_split = Series(raw['BOTTLESALES'].astype(str).tolist())
     find_case_split = Series([x.strip().replace(' ','') for x in find_case_split])
+    
+    
+    btl_end_ix = min(find_btl_split[find_btl_split == 'OTAL'].index)
     case_start_ix = min(find_case_split[find_case_split == 'CASESALES'].index)
     
     # Split out bottles and cases by finding first case instance
-    btls = raw.loc[0:case_start_ix-1]
-    cases = raw.loc[case_start_ix:].reset_index(drop=True)
+    btls = raw.loc[0:btl_end_ix-1]
+    cases = raw.loc[case_start_ix+1:].reset_index(drop=True)
     
     # Format columns for cases 
-    case_cols = cases.iloc[0].astype(str).reset_index(drop=True).tolist()
-    cases.columns = Series([x.strip().replace(' ','') for x in case_cols])
+    ##case_cols = cases.iloc[0].astype(str).reset_index(drop=True).tolist()
+    cases.columns = ['PRODUCT#', 'SIZE', 'ANDDESCRIPTION', 'CASESALES', 'PICKFREQUENCY', 'CSE.LOC.',
+       'BTL.LOC.', 'BULK1', 'BOTTLESONHAND']
     
     # Remove invalid data from cases and btls
     remove_rows_cases = cases['PRODUCT#'].astype(str).apply(lambda x: str.isnumeric(x) )
-    cases = cases[remove_rows_cases == True]
+    cases = cases[remove_rows_cases == True].reset_index(drop=True)
     
     remove_rows_btls = btls['PRODUCT#'].astype(str).apply(lambda x: str.isnumeric(x) )
-    btls = btls[remove_rows_btls == True]
+    btls = btls[remove_rows_btls == True].reset_index(drop=True)
     
     
     def replace_last(source_string, replace_what, replace_with):
@@ -52,15 +73,23 @@ def pre_process_kc(raw):
 
     btl_sales = btls['BOTTLESALES'].astype(str).tolist()
     btl_sales = [b.strip().replace(' ','') for b in btl_sales]
+    btl_sales = [b.strip().replace(',','') for b in btl_sales]    
     btl_sales = ['-' + replace_last(b,'-','')  if b.endswith('-') == True else b for b in btl_sales]
     btl_sales = Series(btl_sales)
     btls['BOTTLESALES'] = btl_sales.astype(float)
     
     case_sales = cases['CASESALES'].astype(str).tolist()
     case_sales = [c.strip().replace(' ','') for c in case_sales]
+    case_sales = [c.strip().replace(',','') for c in case_sales]    
     case_sales = ['-' + replace_last(c,'-','')  if c.endswith('-') == True else c for c in case_sales]
     case_sales = Series(case_sales)
     cases['CASESALES'] = case_sales.astype(float)
+    
+    check_btls = np.sum(btls['BOTTLESALES'])
+    check_cses = np.sum(cases['CASESALES'])
+    
+    print('Total bottles: ', check_btls, '\n',
+          'Total cases: ', check_cses)
     
     cases.columns = ['PRODUCT#','SIZE','DESCRIPTION','CASESALES','PICKFREQUENCY','CSE.LOC.','BTL.LOC.','BULK1','BOTTLESONHAND']
     btls.columns = ['PRODUCT#','SIZE','DESCRIPTION','BOTTLESALES','PICKFREQUENCY','CSE.LOC.','BTL.LOC.','BULK1','BOTTLESONHAND']
@@ -98,8 +127,8 @@ def map_kc_lines(BTLS,CASES):
     CASES['CASELINE'] = c_lines
 
     btl_loc = BTLS['BTL.LOC.'].astype(str)
-    btls['BTL.LOC.'] = [re.sub(' ','',x) for x in btl_loc]
-    btl_line_indicator = Series(btls['BTL.LOC.'].str[:1].tolist())
+    BTLS['BTL.LOC.'] = [re.sub(' ','',x) for x in btl_loc]
+    btl_line_indicator = Series(BTLS['BTL.LOC.'].str[:1].tolist())
     bottle_lines = []
     
     for b in btl_line_indicator:
@@ -111,8 +140,7 @@ def map_kc_lines(BTLS,CASES):
             bottle_lines.append('OddBall')
     
     BTLS['BOTTLELINE'] = bottle_lines
-    
-    
+
     return CASES, BTLS
 
 
@@ -194,7 +222,7 @@ def write_kc_to_xlsx(CASES, BTLS, month):
         sheet = file_out.sheets[tab_name]
         sheet.set_column('A:B',10)
         sheet.set_column('C:C',48)
-        sheet.set_column('D:D',10)
+        sheet.set_column('D:D',12)
         sheet.set_column('E:E',15.2)
         sheet.set_column('F:H',8.5)
         sheet.set_column('I:I',16)
@@ -210,30 +238,56 @@ def write_kc_to_xlsx(CASES, BTLS, month):
         sheet = file_out.sheets[tab_name]
         sheet.set_column('A:B',10)
         sheet.set_column('C:C',48)
-        sheet.set_column('D:D',10)
+        sheet.set_column('D:D',12)
         sheet.set_column('E:E',15.2)
         sheet.set_column('F:H',8.5)
         sheet.set_column('I:I',16)
-        sheet.set_column('J:J',9)
+        sheet.set_column('J:J',11)
         sheet.set_column('K:K',19)
     
     file_out.save()
     
 
-write_kc_to_xlsx(CASES, BTLS, month='08-21-2016 through 09-21-2016')
+
+
+write_kc_to_xlsx(CASES, BTLS, month=report_month)
   
 
-from ggplot import *
-
-CASES.groupby('CASELINE')['PICKFREQUENCY'].hist(by=CASES['CASELINE'], bins=100)
-
-
-g = ggplot(CASES, aes(x='DESCRIPTION',y='PICKFREQUENCY', group='CASELINE'))
-g + geom_bar(aes(group='CASELINE')) + \
-    facet_wrap('CASELINE')
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Visualization R&D 
+## Also look into the slowest items on each line, see which can be swapped out
+#
+#from ggplot import *
+#
+#CASES.groupby('CASELINE')['PICKFREQUENCY'].hist(by=CASES['CASELINE'], bins=100)
+#
+#
+#g = ggplot(CASES, aes(x='DESCRIPTION',y='PICKFREQUENCY', colour='CASELINE'))
+#g + geom_bar(aes(colour='CASELINE')) + \
+#    facet_wrap('CASELINE')
+#
+#
+#
 
 
 
