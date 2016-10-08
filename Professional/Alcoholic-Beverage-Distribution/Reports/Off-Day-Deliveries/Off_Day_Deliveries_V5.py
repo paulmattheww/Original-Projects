@@ -141,12 +141,12 @@ _agg_byweek = DataFrame(_agg_byday.groupby(['CustomerId','Week']).agg(agg_funcs_
 _agg_byweek.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byweek.columns]
     
 len_unique = lambda x: len(pd.unique(x))
-agg_funcs = {'OffDayDeliveries' : {'Count':max}, 
+agg_funcs_day = {'OffDayDeliveries' : {'Count':max}, 
              'Date' : {'Count':len_unique},
              'Cases' : {'Sum':sum, 'Avg':np.mean},
              'NewCustomer': lambda x: min(x)}
 
-_agg_byday = DataFrame(deliveries.groupby(['CustomerId','Customer','Week','Date']).agg(agg_funcs)).reset_index(drop=False)
+_agg_byday = DataFrame(deliveries.groupby(['CustomerId','Customer','Week','Date']).agg(agg_funcs_day)).reset_index(drop=False)
 _agg_byday = DataFrame(_agg_byday[['CustomerId','Week','Date','OffDayDeliveries','NewCustomer']])
 _agg_byday.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byday.columns]
 _agg_byday.columns = ['CustomerId','Week','Date','Delivery','OffDayDelivery','NewCustomer']
@@ -175,21 +175,21 @@ _agg_byday['N_DeliveriesThisWeek'] = [c + ',' + w for c, w in zip(cid, wkk)]
 _agg_byday['N_DeliveriesThisWeek'] = _agg_byday['N_DeliveriesThisWeek'].map(Series(by_week_map))
 
 
-list(cid, wkk).map(by_week_map)
 
-map(by_week_map)
+addl_day_criteria_1 = ( _agg_byday.shift(1)['CustomerId'] == _agg_byday['CustomerId'] )
+addl_day_criteria_2 = ( _agg_byday.shift(1)['Week'] == _agg_byday['Week'] )
+addl_day_criteria_3 = ( _agg_byday['OffDayDelivery'] == 1 )
+addl_day_criteria_4 = ( _agg_byday['NewCustomer'] != 1 )
+addl_day_criteria_5 = ( _agg_byday['N_DeliveriesThisWeek'] > _agg_byday['AllottedWeeklyDeliveryDays|Count'] )
 
-addl_day_criteria_1 = ( _agg_byday.shift(1)['CustomerId'].head(50) == _agg_byday['CustomerId'].head(50) )
-addl_day_criteria_2 = ( _agg_byday.shift(1)['Week'].head(50) == _agg_byday['Week'].head(50) )
-addl_day_criteria_3 = ( _agg_byday['OffDayDelivery'].head(50) == 1 )
-addl_day_criteria_4 = ( _agg_byday['NewCustomer'].head(50) != 1 )
-addl_day_criteria_5 = ( _agg_byday['AllottedWeeklyDeliveryDays|Count'].head(50) != 1 )
-
+_agg_byday['AdditionalDeliveryDays'] = addl_day_criteria_1 & addl_day_criteria_2 & addl_day_criteria_3 & addl_day_criteria_4 & addl_day_criteria_5
 
 
+_agg_byday[_agg_byday['AdditionalDeliveryDays'] == True]
+_agg_byday[_agg_byday['AdditionalDeliveryDays'] == True].count()
 
 
-_agg_byday.head(50)
+_agg_byday.head(500)
 
 
 ##################### <(---)> push this football down the field #####################
