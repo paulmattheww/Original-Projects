@@ -133,15 +133,7 @@ _n_days = deliveries.set_index('CustomerId')['AllottedWeeklyDeliveryDays'].to_di
     
 print(deliveries.head(),'\n\n\n\n',deliveries.tail())
 
-# Aggregate by week for use later on
-agg_funcs_week = {'OffDayDelivery' : {'Count':sum},
-                  'Delivery' : {'Count':sum},
-                  'NewCustomer' : lambda x: min(x)}
 
-_agg_byweek = DataFrame(_agg_byday.groupby(['CustomerId','Week']).agg(agg_funcs_week)).reset_index(drop=False)
-_agg_byweek.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byweek.columns]
-
-    
 # Aggregate by day 
 len_unique = lambda x: len(pd.unique(x))
 agg_funcs_day = {'OffDayDeliveries' : {'Count':max}, 
@@ -158,6 +150,17 @@ _agg_byday.columns = ['CustomerId','Customer','Week','Date','Delivery','OffDayDe
 _agg_byday['AllottedWeeklyDeliveryDays|Count'] = _agg_byday['CustomerId'].astype(int)
 _agg_byday['AllottedWeeklyDeliveryDays|Count'] = _agg_byday['AllottedWeeklyDeliveryDays|Count'].map(_n_days)
 
+
+
+# Aggregate by week for use later on
+agg_funcs_week = {'OffDayDelivery' : {'Count':sum},
+                  'Delivery' : {'Count':sum},
+                  'NewCustomer' : lambda x: min(x)}
+
+_agg_byweek = DataFrame(_agg_byday.groupby(['CustomerId','Week']).agg(agg_funcs_week)).reset_index(drop=False)
+_agg_byweek.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byweek.columns]
+
+    
 # Map number of total deliveries each week by customer
 # to determine whether a customer with TWR deliveries 
 # got TWF deliveries -- which is an off-day delivery
@@ -183,12 +186,12 @@ addl_day_criteria_5 = ( _agg_byday['N_DeliveriesThisWeek'] > _agg_byday['Allotte
 _agg_byday['AdditionalDeliveryDays'] = Series(addl_day_criteria_1 & addl_day_criteria_2 & addl_day_criteria_3 & addl_day_criteria_4 & addl_day_criteria_5).astype(int)
 
 
-
+### CHECK CALCULATION FOR ADDITIONAL DEL DAYS THERE IS A BUG
 # Aggregate by customer to see how each customer did during the time period specified
 agg_funcs_cust = {'OffDayDelivery' : {'Count':sum},
                   'Delivery' : {'Count':sum},
                   'NewCustomer' : lambda x: min(x),
-                  'AllottedWeeklyDeliveryDays|Count': lambda x: round(min(x),0),
+                  'AllottedWeeklyDeliveryDays|Count': lambda x: min(x),
                   'AdditionalDeliveryDays': lambda x: int(sum(x)),
                   'Dollars|Sum':lambda x: int(sum(x)),
                   'Cases|Sum':lambda x: int(sum(x)) }                                           
@@ -207,7 +210,7 @@ _agg_bycust = _agg_bycust.sort_values(by=['AdditionalDeliveryDays','OffDayDelive
 
 
 # Map tiers to customers
-tier_map = {0:'Tier 4',0.5:'Tier 4', 1:'Tier 3', 2:'Tier 2', 3:'Tier 1', 4:'Tier 1', 5:'Tier 1', 6:'Tier 1', 7:'Tier 1'}
+tier_map = {0:'No Tier Assigned',0.5:'Tier 4', 1:'Tier 3', 2:'Tier 2', 3:'Tier 1', 4:'Tier 1', 5:'Tier 1', 6:'Tier 1', 7:'Tier 1'}
 _agg_bycust['Tier'] = _agg_bycust['AllottedWeeklyDeliveries'].map(tier_map)
 
 _agg_bycust['CasesPerDelivery'] = round(_agg_bycust['CasesDelivered'] / _agg_bycust['Deliveries'], 1)
@@ -226,7 +229,11 @@ customer_attributes.tail()
 _agg_bycust[_agg_bycust['AdditionalDeliveryDays'] > 1].head(50)
 
 
-_agg_byday[_agg_byday['AdditionalDeliveryDays'] == 1]
+_agg_bycust[_agg_bycust['AllottedWeeklyDeliveries'] == 0.5]
+
+
+
+
 _agg_byday[_agg_byday['AdditionalDeliveryDays'] == 1].count()
 
 
