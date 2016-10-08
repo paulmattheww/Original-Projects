@@ -212,7 +212,7 @@ _agg_bycust['Tier'] = _agg_bycust['AllottedWeeklyDeliveries'].map(tier_map)
 
 ##################### <(---)> push this football down the field #####################
 
-
+_agg_bycust.groupby('Tier')['OffDayDeliveries'].sum().plot(kind='bar')
 
 _agg_bycust.head(20)
 _agg_bycust.tail()
