@@ -154,7 +154,7 @@ pass_through_cols = ['CustomerId','Customer','Week','Date']
 _agg_byday = DataFrame(deliveries.groupby(pass_through_cols).agg(agg_funcs_day)).reset_index(drop=False)
 _agg_byday = DataFrame(_agg_byday[['CustomerId','Customer','Week','Date','OffDayDeliveries','NewCustomer','Cases','Dollars']])
 _agg_byday.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byday.columns]
-_agg_byday.columns = ['CustomerId','Customer','Week','Date','Delivery','OffDayDelivery','NewCustomer','Cases','Dollars']
+_agg_byday.columns = ['CustomerId','Customer','Week','Date','Delivery','OffDayDelivery','NewCustomer','Cases|Sum','Cases|Avg','Dollars|Sum','Dollars|Avg']
 _agg_byday['AllottedWeeklyDeliveryDays|Count'] = _agg_byday['CustomerId'].astype(int)
 _agg_byday['AllottedWeeklyDeliveryDays|Count'] = _agg_byday['AllottedWeeklyDeliveryDays|Count'].map(_n_days)
 
@@ -182,7 +182,6 @@ addl_day_criteria_5 = ( _agg_byday['N_DeliveriesThisWeek'] > _agg_byday['Allotte
 
 _agg_byday['AdditionalDeliveryDays'] = Series(addl_day_criteria_1 & addl_day_criteria_2 & addl_day_criteria_3 & addl_day_criteria_4 & addl_day_criteria_5).astype(int)
 
-##################### <(---)> push this football down the field #####################
 
 
 # Aggregate by customer to see how each customer did during the time period specified
@@ -190,14 +189,36 @@ agg_funcs_cust = {'OffDayDelivery' : {'Count':sum},
                   'Delivery' : {'Count':sum},
                   'NewCustomer' : lambda x: min(x),
                   'AllottedWeeklyDeliveryDays|Count': lambda x: round(min(x),0),
-                  'AdditionalDeliveryDays': lambda x: int(sum(x))}
+                  'AdditionalDeliveryDays': lambda x: int(sum(x)),
+                  'Dollars|Sum':lambda x: int(sum(x)),
+                  'Cases|Sum':lambda x: int(sum(x)) }                                           
 
 _agg_bycust = DataFrame(_agg_byday.groupby(['CustomerId','Customer']).agg(agg_funcs_cust)).reset_index(drop=False)
 _agg_bycust.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_bycust.columns]
+_agg_bycust.columns = ['CustomerId','Customer','CasesDelivered','AdditionalDeliveryDays','Dollars','AllottedWeeklyDeliveries','NewCustomer','Deliveries','OffDayDeliveries']
+_agg_bycust = _agg_bycust[['CustomerId','Customer','NewCustomer','AllottedWeeklyDeliveries','Deliveries','OffDayDeliveries','AdditionalDeliveryDays','CasesDelivered','Dollars']]
 
-_agg_bycust.sort(['AdditionalDeliveryDays']).head()
+# Map customer attributes from the deliveries raw dataframe
+attr = ['CustomerId','Warehouse','OnPremise','CustomerSetup','CustomerType','ShipWeekPlan','DeliveryDays']
+customer_attributes = deliveries[attr].drop_duplicates().reset_index(drop=True)
 
-_agg_bycust.head()
+_agg_bycust = _agg_bycust.merge(customer_attributes, on='CustomerId', how='inner').drop_duplicates()
+_agg_bycust = _agg_bycust.sort_values(by=['AdditionalDeliveryDays','OffDayDeliveries'], ascending=False).reset_index(drop=True)
+
+
+##################### <(---)> push this football down the field #####################
+
+
+
+_agg_bycust.head(20)
+_agg_bycust.tail()
+
+
+
+
+customer_attributes.tail()
+_agg_bycust[_agg_bycust['AdditionalDeliveryDays'] > 1].head(50)
+
 
 _agg_byday[_agg_byday['AdditionalDeliveryDays'] == 1]
 _agg_byday[_agg_byday['AdditionalDeliveryDays'] == 1].count()
