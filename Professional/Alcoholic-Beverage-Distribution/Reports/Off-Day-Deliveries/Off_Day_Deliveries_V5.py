@@ -210,9 +210,11 @@ _agg_bycust = _agg_bycust.sort_values(by=['AdditionalDeliveryDays','OffDayDelive
 tier_map = {0:'Tier 4',0.5:'Tier 4', 1:'Tier 3', 2:'Tier 2', 3:'Tier 1', 4:'Tier 1', 5:'Tier 1', 6:'Tier 1', 7:'Tier 1'}
 _agg_bycust['Tier'] = _agg_bycust['AllottedWeeklyDeliveries'].map(tier_map)
 
+_agg_bycust['CasesPerDelivery'] = round(_agg_bycust['CasesDelivered'] / _agg_bycust['Deliveries'], 1)
+
 ##################### <(---)> push this football down the field #####################
 
-_agg_bycust.groupby('Tier')['OffDayDeliveries'].sum().plot(kind='bar')
+_agg_bycust.groupby('Tier')['CasesPerDelivery'].mean().plot(kind='bar')
 
 _agg_bycust.head(20)
 _agg_bycust.tail()
