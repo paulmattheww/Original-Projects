@@ -33,6 +33,9 @@ def as400_date(dat):
     dat = str(dt.date(dt.strptime(dat, '%y%m%d')))
     return dat
     
+def sum_digits_in_string(digit):
+    return sum(int(x) for x in digit if x.isdigit())
+    
 deliveries.columns = ['Date', 'Division', 'Invoice', 'CustomerId', 'Call', 'Priority', 
            'Warehouse', 'Cases', 'Dollars', 'Ship', 'Salesperson', 
            'ShipWeekPlan', 'Merchandising', 'OnPremise', 
@@ -119,6 +122,13 @@ m_y_transaction = [m + '-' + y for m, y in zip(transaction_month, transaction_ye
 
 deliveries['NewCustomer'] = _new_cust = [1 if m_y_cutoff == setup else 0 for setup in c_setup]
 deliveries['OffDayDeliveries'] =  deliveries.OffDayDelivery.astype(int)
+
+_n_days = deliveries.Ship.astype(str).tolist()
+deliveries['AllottedWeeklyDeliveryDays'] = [sum_digits_in_string(n) for n in _n_days]
+_allot = deliveries['AllottedWeeklyDeliveryDays'].tolist()
+_week_ind = deliveries['ShipWeekPlan'].tolist()
+deliveries['AllottedWeeklyDeliveryDays'] = [a if w not in ['A','B'] else 0.5 for a, w in zip(_allot, _week_ind)]
+_n_days = deliveries.set_index('CustomerId')['AllottedWeeklyDeliveryDays'].to_dict()
     
 print(deliveries.head(),'\n\n\n\n',deliveries.tail())
     
@@ -132,7 +142,34 @@ _agg_byday = DataFrame(deliveries.groupby(['CustomerId','Customer','Week','Date'
 _agg_byday = DataFrame(_agg_byday[['CustomerId','Week','Date','OffDayDeliveries','NewCustomer']])
 _agg_byday.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byday.columns]
 _agg_byday.columns = ['CustomerId','Week','Date','Delivery','OffDayDelivery','NewCustomer']
+_agg_byday['AllottedWeeklyDeliveryDays|Count'] = _agg_byday['CustomerId'].astype(int)
+_agg_byday['AllottedWeeklyDeliveryDays|Count'] = _agg_byday['AllottedWeeklyDeliveryDays|Count'].map(_n_days)
+
+
+
+## Add in number of del days per cust as criteria
+_agg_byday.shift(1).head(50) 
+_agg_byday['CustomerId'].head(50)
+
+# Map number of total deliveries each week by customer
+# to determine whether a customer with TWR deliveries 
+# got TWF deliveries -- which is an off-day delivery
+# but not an additional delivery. Use a dictionary {(cust#, week) : n_deliveries_total}
+by_week_map = _agg_byday.groupby(['CustomerId','Week']).Delivery.sum().to_dict()
+
+addl_day_criteria_1 = ( _agg_byday.shift(1)['CustomerId'].head(50) == _agg_byday['CustomerId'].head(50) )
+addl_day_criteria_2 = ( _agg_byday.shift(1)['Week'].head(50) == _agg_byday['Week'].head(50) )
+addl_day_criteria_3 = ( _agg_byday['OffDayDelivery'].head(50) == 1 )
+addl_day_criteria_4 = ( _agg_byday['NewCustomer'].head(50) != 1 )
+addl_day_criteria_5 = ( _agg_byday['AllottedWeeklyDeliveryDays|Count'].head(50) != 1 )
+
+
+
+
 _agg_byday.head(50)
+
+
+##################### <(---)> push this football down the field #####################
 
 
 agg_funcs_week = {'OffDayDelivery' : {'Count':sum},
@@ -142,18 +179,11 @@ agg_funcs_week = {'OffDayDelivery' : {'Count':sum},
 _agg_byweek = DataFrame(_agg_byday.groupby(['CustomerId','Week']).agg(agg_funcs_week)).reset_index(drop=False)
 _agg_byweek.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byweek.columns]
 
-def sum_digits_in_string(digit):
-    return sum(int(x) for x in digit if x.isdigit())
 
-_n_days = deliveries.Ship.astype(str).tolist()
-deliveries['AllottedWeeklyDeliveryDays'] = [sum_digits_in_string(n) for n in _n_days]
-_agg_byweek['AlottedWeeklyDeliveryDays|Count'] = _agg_byweek['CustomerId'] 
+
+_agg_byweek['AllottedWeeklyDeliveryDays|Count'] = _agg_byweek['CustomerId'] 
 _agg_byweek.columns = ['CustomerId','Week','Delivery|Count','OffDayDelivery|Count','NewCustomer','AllottedWeeklyDeliveryDays|Count']
 
-_allot = deliveries['AllottedWeeklyDeliveryDays'].tolist()
-_week_ind = deliveries['ShipWeekPlan'].tolist()
-deliveries['AllottedWeeklyDeliveryDays'] = [a if w not in ['A','B'] else 0.5 for a, w in zip(_allot, _week_ind)]
-_n_days = deliveries.set_index('CustomerId')['AllottedWeeklyDeliveryDays'].to_dict()
 _agg_byweek['AllottedWeeklyDeliveryDays|Count'] = _agg_byweek['AllottedWeeklyDeliveryDays|Count'].map(_n_days)
 
 check_later3 = _agg_byweek[(_agg_byweek['OffDayDelivery|Count']>0) & (_agg_byweek['Delivery|Count'] > _agg_byweek['AllottedWeeklyDeliveryDays|Count']) & (_agg_byweek['NewCustomer'] != 1)].head(50)
@@ -164,78 +194,19 @@ _agg_byweek['AdditionalDelivery|Count'] = [off if ind == True else 0 for off,ind
 check_later4 = _agg_byweek[_agg_byweek['AdditionalDelivery|Count'] > 0].head(50)
 
 
+_agg_byweek[(_agg_byweek['AdditionalDelivery|Count'] > 0)].head(50)
+
+##################### <(---)> push this football down the field #####################
 
 
 
 
 
-_allotted_ct = _agg_byweek['AlottedWeeklyDeliveryDays|Count'].astype(int).tolist()
-_deliv_ct = _agg_byweek['Delivery|Count'].astype(int).tolist()
+x = deliveries.sort_values(['Date','Week','CustomerId'])
+x.head(200).to_csv('C:/Users/pmwash/Desktop/Disposable Docs/test.csv')
 
 
-
-_agg_byweek['AdditionalDelivery|Count'] = [_actual - _allotted if _actual > _allotted else 0 for _actual,_allotted in zip(_allotted_ct, _deliv_ct)]
-
-
-_agg_byweek.head(50)
-
-
-{deliveries[['CustomerId']],deliveries[['AllottedWeeklyDeliveryDays']]}
-
-_agg_byweek['AlottedWeeklyDeliveryDays|Count'] = [sum_digits_in_string(n) for n in _n_days]
-
-s = '111111111100000000000'
-u = '111111111100000000000'
-test = [s, u]
-
-
-
-
-
-
-
-
-
-
-
-
-_agg_byweek.head(100)
-_agg_byweek[_agg_byweek['AdditionalDelivery|Count'] > 1].head(50)
-
-
-{k:sum(t) for k,t in test.items()}
-
-
-
-accumulator = list()
-
-for i, _ in enumerate(test):
-    s = test[i]
-    while len(s) > 0:
-        for j, _ in enumerate(s):    
-            _sum = 0
-            _sum += int(s[j])
-        accumulator.append(_sum)
-    
-#for i, _ in enumerate(s):
-#    _sum += np.float64(s[i])
-#    print(int(s[i]))
-        
-
-_agg_byweek['AdditionalDayDelivery|Count'] = 
-
-
-
-
-n_days_week = deliveries.Ship.astype(str).tolist()
-
-
-
-_agg_byweek['OffDayDelivery|Count'] / _agg_byweek['Delivery|Count']
-
-_agg_byweek.head(50)
-
-check_later2 = _agg_byweek[_agg_byweek['OffDayDelivery|Count'] > 0]
+_agg_byweek[_agg_byweek['OffDayDelivery|Count'] > 0]
 
 
 
