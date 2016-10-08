@@ -23,6 +23,7 @@ weeklookup = read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Off Day Del
 #def clean_pw_offday(pw_offday, weeklookup):
 #    '''
 #    Clean pw_offday query without filtering out non-off-days
+    #invoice-level => day level => customer level
 #    '''
 deliveries = pw_offday
 
@@ -146,13 +147,14 @@ len_unique = lambda x: len(pd.unique(x))
 agg_funcs_day = {'OffDayDeliveries' : {'Count':max}, 
              'Date' : {'Count':len_unique},
              'Cases' : {'Sum':sum, 'Avg':np.mean},
+             'Dollars' : {'Sum':sum, 'Avg':np.mean},
              'NewCustomer': lambda x: min(x)}
 
 pass_through_cols = ['CustomerId','Customer','Week','Date']
 _agg_byday = DataFrame(deliveries.groupby(pass_through_cols).agg(agg_funcs_day)).reset_index(drop=False)
-_agg_byday = DataFrame(_agg_byday[['CustomerId','Customer','Week','Date','OffDayDeliveries','NewCustomer']])
+_agg_byday = DataFrame(_agg_byday[['CustomerId','Customer','Week','Date','OffDayDeliveries','NewCustomer','Cases','Dollars']])
 _agg_byday.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byday.columns]
-_agg_byday.columns = ['CustomerId','Customer','Week','Date','Delivery','OffDayDelivery','NewCustomer']
+_agg_byday.columns = ['CustomerId','Customer','Week','Date','Delivery','OffDayDelivery','NewCustomer','Cases','Dollars']
 _agg_byday['AllottedWeeklyDeliveryDays|Count'] = _agg_byday['CustomerId'].astype(int)
 _agg_byday['AllottedWeeklyDeliveryDays|Count'] = _agg_byday['AllottedWeeklyDeliveryDays|Count'].map(_n_days)
 
@@ -180,12 +182,28 @@ addl_day_criteria_5 = ( _agg_byday['N_DeliveriesThisWeek'] > _agg_byday['Allotte
 
 _agg_byday['AdditionalDeliveryDays'] = Series(addl_day_criteria_1 & addl_day_criteria_2 & addl_day_criteria_3 & addl_day_criteria_4 & addl_day_criteria_5).astype(int)
 
+##################### <(---)> push this football down the field #####################
+
+
+# Aggregate by customer to see how each customer did during the time period specified
+agg_funcs_cust = {'OffDayDelivery' : {'Count':sum},
+                  'Delivery' : {'Count':sum},
+                  'NewCustomer' : lambda x: min(x),
+                  'AllottedWeeklyDeliveryDays|Count': lambda x: round(min(x),0),
+                  'AdditionalDeliveryDays': lambda x: int(sum(x))}
+
+_agg_bycust = DataFrame(_agg_byday.groupby(['CustomerId','Customer']).agg(agg_funcs_cust)).reset_index(drop=False)
+_agg_bycust.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_bycust.columns]
+
+_agg_bycust.sort(['AdditionalDeliveryDays']).head()
+
+_agg_bycust.head()
 
 _agg_byday[_agg_byday['AdditionalDeliveryDays'] == 1]
 _agg_byday[_agg_byday['AdditionalDeliveryDays'] == 1].count()
 
 
-_agg_byday.head(50)
+_agg_byday.head()
 
 
 ##################### <(---)> push this football down the field #####################
