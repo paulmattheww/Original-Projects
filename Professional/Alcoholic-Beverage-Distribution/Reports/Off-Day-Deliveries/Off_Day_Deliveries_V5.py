@@ -131,6 +131,14 @@ deliveries['AllottedWeeklyDeliveryDays'] = [a if w not in ['A','B'] else 0.5 for
 _n_days = deliveries.set_index('CustomerId')['AllottedWeeklyDeliveryDays'].to_dict()
     
 print(deliveries.head(),'\n\n\n\n',deliveries.tail())
+
+# Aggregate by week for use later on
+agg_funcs_week = {'OffDayDelivery' : {'Count':sum},
+                  'Delivery' : {'Count':sum},
+                  'NewCustomer' : lambda x: min(x)}
+
+_agg_byweek = DataFrame(_agg_byday.groupby(['CustomerId','Week']).agg(agg_funcs_week)).reset_index(drop=False)
+_agg_byweek.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byweek.columns]
     
 len_unique = lambda x: len(pd.unique(x))
 agg_funcs = {'OffDayDeliveries' : {'Count':max}, 
@@ -149,13 +157,27 @@ _agg_byday['AllottedWeeklyDeliveryDays|Count'] = _agg_byday['AllottedWeeklyDeliv
 
 ## Add in number of del days per cust as criteria
 _agg_byday.shift(1).head(50) 
-_agg_byday['CustomerId'].head(50)
+_agg_byday.head(50)
 
 # Map number of total deliveries each week by customer
 # to determine whether a customer with TWR deliveries 
 # got TWF deliveries -- which is an off-day delivery
 # but not an additional delivery. Use a dictionary {(cust#, week) : n_deliveries_total}
-by_week_map = _agg_byday.groupby(['CustomerId','Week']).Delivery.sum().to_dict()
+
+_c = _agg_byweek['CustomerId'].astype(str).tolist()
+_w = _agg_byweek['Week'].astype(str).tolist()
+_agg_byweek['_X'] = [c + ',' + w for c,w in zip(_c,_w)]
+by_week_map = _agg_byweek.set_index('_X')['Delivery|Count'].to_dict()
+
+cid = _agg_byday['CustomerId'].astype(str).tolist()
+wkk = _agg_byday['Week'].astype(str).tolist()
+_agg_byday['N_DeliveriesThisWeek'] = [c + ',' + w for c, w in zip(cid, wkk)]
+_agg_byday['N_DeliveriesThisWeek'] = _agg_byday['N_DeliveriesThisWeek'].map(Series(by_week_map))
+
+
+list(cid, wkk).map(by_week_map)
+
+map(by_week_map)
 
 addl_day_criteria_1 = ( _agg_byday.shift(1)['CustomerId'].head(50) == _agg_byday['CustomerId'].head(50) )
 addl_day_criteria_2 = ( _agg_byday.shift(1)['Week'].head(50) == _agg_byday['Week'].head(50) )
@@ -166,18 +188,12 @@ addl_day_criteria_5 = ( _agg_byday['AllottedWeeklyDeliveryDays|Count'].head(50) 
 
 
 
+
 _agg_byday.head(50)
 
 
 ##################### <(---)> push this football down the field #####################
 
-
-agg_funcs_week = {'OffDayDelivery' : {'Count':sum},
-                  'Delivery' : {'Count':sum},
-                  'NewCustomer' : lambda x: min(x)}
-
-_agg_byweek = DataFrame(_agg_byday.groupby(['CustomerId','Week']).agg(agg_funcs_week)).reset_index(drop=False)
-_agg_byweek.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byweek.columns]
 
 
 
