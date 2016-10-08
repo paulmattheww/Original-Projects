@@ -206,6 +206,10 @@ _agg_bycust = _agg_bycust.merge(customer_attributes, on='CustomerId', how='inner
 _agg_bycust = _agg_bycust.sort_values(by=['AdditionalDeliveryDays','OffDayDeliveries'], ascending=False).reset_index(drop=True)
 
 
+# Map tiers to customers
+tier_map = {0:'Tier 4',0.5:'Tier 4', 1:'Tier 3', 2:'Tier 2', 3:'Tier 1', 4:'Tier 1', 5:'Tier 1', 6:'Tier 1', 7:'Tier 1'}
+_agg_bycust['Tier'] = _agg_bycust['AllottedWeeklyDeliveries'].map(tier_map)
+
 ##################### <(---)> push this football down the field #####################
 
 
