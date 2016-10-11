@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime as dt
 import itertools
+import datetime
 
 pd.set_option('display.height', 100)
 pd.set_option('display.max_rows', 500)
@@ -277,78 +278,105 @@ def write_offday_report_to_excel(summary, by_customer, by_day, month='September 
     Write report to Excel with formatting
     '''
     pass
-file_out = pd.ExcelWriter('N:/Operations Intelligence/Monthly Reports/Off Day Deliveries/Delivery Audit -'+month+'.xlsx', engine='xlsxwriter')
-workbook = file_out.book
-
-summary.to_excel(file_out, sheet_name='Summary', index=True)
-by_customer.to_excel(file_out, sheet_name='By Customer', index=False)
-by_day.to_excel(file_out, sheet_name='By Delivery Day', index=False)
-
-# Declare formats
-format_thousands = workbook.add_format({'num_format': '#,##0'})
-format_dollars = workbook.add_format({'num_format': '$#,##0'})
-format_percent = workbook.add_format({'num_format': '0%'})
-
-
-# Set column widths
-summary_tab = file_out.sheets['Summary']
-summary_tab.set_column('A:A',25)
-summary_tab.set_column('B:B',14)
-summary_tab.set_column('C:C',14)
-summary_tab.set_column('D:D',10)
-summary_tab.set_column('E:E',23)
-summary_tab.set_column('F:F',10)
-summary_tab.set_column('G:G',16)
-summary_tab.set_column('H:H',19)
-summary_tab.set_column('I:I',12, format_thousands)
-summary_tab.set_column('J:J',22.5, format_thousands)
-summary_tab.set_column('K:K',13, format_dollars)
-
-# Set column widths
-customer_tab = file_out.sheets['By Customer']
-customer_tab.set_column('A:A',11)
-customer_tab.set_column('B:B',37)
-customer_tab.set_column('C:C',13.5)
-customer_tab.set_column('D:D',19.5)
-customer_tab.set_column('E:E',9.3)
-customer_tab.set_column('F:G',19)
-customer_tab.set_column('H:K',12)
-customer_tab.set_column('J:K',12)
-customer_tab.set_column('H:H',12, format_thousands)
-customer_tab.set_column('L:O',15)
-customer_tab.set_column('M:M',21)
-customer_tab.set_column('P:Q',17, format_thousands)
-customer_tab.set_column('R:T',28)
-
-# Set column widths
-day_tab = file_out.sheets['By Delivery Day']
-day_tab.set_column('A:A',11)
-day_tab.set_column('B:B',37)
-day_tab.set_column('C:C',6)
-day_tab.set_column('D:D',10)
-day_tab.set_column('E:E',8)
-day_tab.set_column('F:H',13.2, format_thousands)
-day_tab.set_column('I:K',12, format_thousands)
-day_tab.set_column('L:L',33)
-day_tab.set_column('M:N',21)
-
-
-
-
-
-file_out.save()
-
-
-
-
-
-
-
+    file_out = pd.ExcelWriter('N:/Operations Intelligence/Monthly Reports/Off Day Deliveries/Delivery Audit - '+month+'.xlsx', engine='xlsxwriter')
+    workbook = file_out.book
+    
+    print('Writing summary to file.')
+    summary.to_excel(file_out, sheet_name='Summary', index=True)
+    
+    print('Writing customer information to file.')
+    by_customer.to_excel(file_out, sheet_name='By Customer', index=False)
+    
+    print('Writing daily information to file.')
+    by_day.to_excel(file_out, sheet_name='By Delivery Day', index=False)
+    
+    # Declare formats
+    format_thousands = workbook.add_format({'num_format': '#,##0'})
+    format_dollars = workbook.add_format({'num_format': '$#,##0'})
+    format_percent = workbook.add_format({'num_format': '0%'})
+    
+    print('Formatting the document for visual purposes.')
+    # Set column widths
+    summary_tab = file_out.sheets['Summary']
+    summary_tab.set_column('A:A',25)
+    summary_tab.set_column('B:B',14)
+    summary_tab.set_column('C:C',14)
+    summary_tab.set_column('D:D',10)
+    summary_tab.set_column('E:E',23)
+    summary_tab.set_column('F:F',10)
+    summary_tab.set_column('G:G',16)
+    summary_tab.set_column('H:H',19)
+    summary_tab.set_column('I:I',12, format_thousands)
+    summary_tab.set_column('J:J',22.5, format_thousands)
+    summary_tab.set_column('K:K',13, format_dollars)
+    
+    # Set column widths
+    customer_tab = file_out.sheets['By Customer']
+    customer_tab.set_column('A:A',11)
+    customer_tab.set_column('B:B',37)
+    customer_tab.set_column('C:C',13.5)
+    customer_tab.set_column('D:D',19.5)
+    customer_tab.set_column('E:E',9.3)
+    customer_tab.set_column('F:G',19)
+    customer_tab.set_column('H:K',12)
+    customer_tab.set_column('J:K',12)
+    customer_tab.set_column('H:H',12, format_thousands)
+    customer_tab.set_column('L:O',15)
+    customer_tab.set_column('M:M',21)
+    customer_tab.set_column('P:Q',17, format_thousands)
+    customer_tab.set_column('R:T',28)
+    
+    # Set column widths
+    day_tab = file_out.sheets['By Delivery Day']
+    day_tab.set_column('A:A',11)
+    day_tab.set_column('B:B',37)
+    day_tab.set_column('C:C',6)
+    day_tab.set_column('D:D',10)
+    day_tab.set_column('E:E',8)
+    day_tab.set_column('F:H',13.2, format_thousands)
+    day_tab.set_column('I:K',12, format_thousands)
+    day_tab.set_column('L:L',33)
+    day_tab.set_column('M:N',21)
+    
+    
+    
+    
+    print('Saving File.')
+    file_out.save()
 
 
-from ggplot import *
-g = ggplot(by_customer, aes('Tier', 'AdditionalDeliveries', colour='CustomerType'))
-g + geom_bar() + facet_wrap('Warehouse') 
+last_mon = dt.now().month - 1
+report_month = dt.now().replace(month=last_mon).strftime('%B')
+report_year = dt.now().year
+report_month_year = str(report_month) + '-' + str(report_year)
+
+write_offday_report_to_excel(summary, by_customer, by_day, month=report_month_year)
+
+
+# import seaborn as sns
+# from sklearn.decomposition import PCA
+# by_customer.head()
+
+# pca = PCA(n_components=2)
+# pca.fit(by_customer[['OffDayDeliveries','AdditionalDeliveries','NewCustomer',
+#                 'Deliveries','Cases','Dollars']])
+# pca.components_
+
+
+# pair_cols = ['OffDayDeliveries','AdditionalDeliveries','NewCustomer',
+#                 'Deliveries','Cases','Dollars','OnPremise',
+#                 'CustomerType','Tier']
+# sns.pairplot(by_customer[pair_cols], hue='CustomerType')
+
+# import numpy as np
+# import matplotlib.pyplot as plt
+# plt.hist(by_customer.Deliveries, bins=range(1,10))
+
+
+
+# from ggplot import *
+# g = ggplot(by_customer, aes('Tier', 'AdditionalDeliveries', colour='CustomerType'))
+# g + geom_point() + facet_wrap('Warehouse') 
 
 
 
