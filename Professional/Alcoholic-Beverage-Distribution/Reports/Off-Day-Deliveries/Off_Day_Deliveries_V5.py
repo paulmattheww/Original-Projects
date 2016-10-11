@@ -199,8 +199,11 @@ agg_funcs_cust = {'OffDayDelivery' : {'Count':sum},
 
 _agg_bycust = DataFrame(_agg_byday.groupby(['CustomerId','Customer']).agg(agg_funcs_cust)).reset_index(drop=False)
 _agg_bycust.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_bycust.columns]
-_agg_bycust.columns = ['CustomerId','Customer','Dollars','Cases','AdditionalDeliveries',
-                       'AllottedDeliveryDays','Deliveries','OffDayDeliveries','NewCustomer']
+_agg_bycust = _agg_bycust.reindex_axis(sorted(_agg_bycust.columns), axis=1)
+
+_agg_bycust.columns = ['AdditionalDeliveries','AllottedDeliveryDays','Cases',
+                       'Customer','CustomerId','Deliveries','Dollars',
+                       'NewCustomer','OffDayDeliveries']
 _agg_bycust = _agg_bycust[['CustomerId','Customer','NewCustomer','AllottedDeliveryDays','Deliveries',
                            'OffDayDeliveries','AdditionalDeliveries','Cases','Dollars']]
 
@@ -223,27 +226,43 @@ _agg_bycust['AdditionalDeliveries/Deliveries'] = round(_agg_bycust['AdditionalDe
 tier_map = {0:'No Delivery Days Assigned',0.5:'Tier 4', 1:'Tier 3', 2:'Tier 2', 3:'Tier 1', 4:'Tier 1', 5:'Tier 1', 6:'Tier 1', 7:'Tier 1'}
 _agg_bycust['Tier'] = _agg_bycust['AllottedDeliveryDays'].map(tier_map)
 
+addl_deliv = _agg_bycust['AdditionalDeliveries'].tolist()
+tier = _agg_bycust['Tier'].tolist()
+
+_agg_bycust['AdditionalDeliveries'] = [addl if t != 'No Delivery Days Assigned' else 0 for addl, t in zip(addl_deliv, tier)]
+
 _agg_bycust['ShipWeekPlan'] = _agg_bycust['ShipWeekPlan'].replace(np.nan, '')
 
 
+# Create summary
 agg_funcs_summary = {'Deliveries':sum,
                      'OffDayDeliveries':sum,
                      'AdditionalDeliveries':sum,
                      'Dollars':{'Avg':np.mean},
                      'Cases':{'Avg':np.mean},
                      'CasesPerDelivery':{'Avg':np.mean},
-                     'NewCustomer':lambda x: len(x > 0)}                                           
+                     'NewCustomer':sum,
+                     'Customer':len,
+                     'AllottedDeliveryDays':lambda x: round(np.mean(x),1)}                                           
 
-overall_summary = DataFrame(_agg_bycust.groupby(['Warehouse','Tier'])[['OffDayDeliveries','AdditionalDeliveries','Deliveries']]).agg(agg_funcs_summary)
+overall_summary = DataFrame(_agg_bycust.groupby(['Tier','Warehouse']).agg(agg_funcs_summary))
+overall_summary.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in overall_summary.columns]
+overall_summary = overall_summary[['NewCustomer|sum','Customer|len','AllottedDeliveryDays|<lambda>',
+                                   'Deliveries|sum','OffDayDeliveries|sum','AdditionalDeliveries|sum',
+                                   'Cases|Avg','CasesPerDelivery|Avg','Dollars|Avg']]
+overall_summary.columns = ['NewCustomers','Customers','AvgAllottedDeliveryDays','Deliveries','OffDayDeliveries','AdditionalDeliveries',
+                                   'Cases|mean','CasesPerDelivery|mean','Dollars|mean']
 
 
 
 
-overall_summary.head()
+
+return overall_summary, _agg_bycust, _agg_byday
 
 
-
-
+from ggplot import *
+g = ggplot(_agg_bycust, aes('Tier', 'AdditionalDeliveries', colour='Tier'))
+g + geom_bar() + facet_wrap('Warehouse') 
 
 
 
@@ -260,29 +279,6 @@ _agg_byday[_agg_byday['AdditionalDeliveryDays']>0].head(50)
 
 
 
-
-_agg_bycust.groupby('Tier')['AdditionalDeliveries'].sum().plot(kind='bar')
-_agg_bycust.groupby(['Warehouse','Tier'])['OffDayDeliveries'].sum().plot(kind='bar', by='Warehouse', subplots=True)
-
-_agg_bycust.groupby(['Warehouse','Tier'])[['OffDayDeliveries','AdditionalDeliveries','Deliveries']].sum()
-
-
-_agg_byday.head()
-
-customer_attributes.tail()
-_agg_bycust[_agg_bycust['AdditionalDeliveryDays'] > 0].head(50)
-
-
-_agg_bycust[_agg_bycust['AllottedWeeklyDeliveries'] == 0.5]
-
-_agg_byday[_agg_byday['AdditionalDeliveryDays'] > 0].head(50)
-
-
-
-_agg_byday[_agg_byday['AdditionalDeliveryDays'] == 1].count()
-
-
-_agg_byday.head()
 
 
 
@@ -310,25 +306,48 @@ _agg_byweek[(_agg_byweek['AdditionalDelivery|Count'] > 0)].head(50)
 
 
 
-x = deliveries.sort_values(['Date','Week','CustomerId'])
-x.head(200).to_csv('C:/Users/pmwash/Desktop/Disposable Docs/test.csv')
-
-
-_agg_byweek[_agg_byweek['OffDayDelivery|Count'] > 0]
 
 
 
 
+import seaborn as sns
 
-    return deliveries
 
-
-clean_data = clean_pw_offday(pw_offday, weeklookup)
-
-clean_data.head()
+overall_summary.index.levels[0]
 
 
 
+g = sns.FacetGrid(overall_summary, col=overall_summary.index.levels[1])
+g.map(sns.distplot, 'OffDayDeliveries')
+
+
+
+
+
+_agg_bycust.groupby('Tier')['AdditionalDeliveries'].sum().plot(kind='bar')
+_agg_bycust.groupby(['Warehouse','Tier'])['OffDayDeliveries'].sum().plot(kind='bar', by='Warehouse', subplots=True)
+
+_agg_bycust.groupby(['Warehouse','Tier'])[['OffDayDeliveries','AdditionalDeliveries','Deliveries']].sum()
+
+_agg_bycust.groupby(['Tier'])[['AdditionalDeliveries']].sum()
+
+
+_agg_byday.head()
+
+customer_attributes.tail()
+_agg_bycust[_agg_bycust['AdditionalDeliveryDays'] > 0].head(50)
+
+
+_agg_bycust[_agg_bycust['AllottedWeeklyDeliveries'] == 0.5]
+
+_agg_byday[_agg_byday['AdditionalDeliveryDays'] > 0].head(50)
+
+
+
+_agg_byday[_agg_byday['AdditionalDeliveryDays'] == 1].count()
+
+
+_agg_byday.head()
 
 
 
