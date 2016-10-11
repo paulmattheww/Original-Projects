@@ -226,6 +226,28 @@ _agg_bycust['Tier'] = _agg_bycust['AllottedDeliveryDays'].map(tier_map)
 _agg_bycust['ShipWeekPlan'] = _agg_bycust['ShipWeekPlan'].replace(np.nan, '')
 
 
+agg_funcs_summary = {'Deliveries':sum,
+                     'OffDayDeliveries':sum,
+                     'AdditionalDeliveries':sum,
+                     'Dollars':{'Avg':np.mean},
+                     'Cases':{'Avg':np.mean},
+                     'CasesPerDelivery':{'Avg':np.mean},
+                     'NewCustomer':lambda x: len(x > 0)}                                           
+
+overall_summary = DataFrame(_agg_bycust.groupby(['Warehouse','Tier'])[['OffDayDeliveries','AdditionalDeliveries','Deliveries']]).agg(agg_funcs_summary)
+
+
+
+
+overall_summary.head()
+
+
+
+
+
+
+
+
 _agg_bycust.head(20)
 _agg_bycust.tail()
 
@@ -242,6 +264,7 @@ _agg_byday[_agg_byday['AdditionalDeliveryDays']>0].head(50)
 _agg_bycust.groupby('Tier')['AdditionalDeliveries'].sum().plot(kind='bar')
 _agg_bycust.groupby(['Warehouse','Tier'])['OffDayDeliveries'].sum().plot(kind='bar', by='Warehouse', subplots=True)
 
+_agg_bycust.groupby(['Warehouse','Tier'])[['OffDayDeliveries','AdditionalDeliveries','Deliveries']].sum()
 
 
 _agg_byday.head()
