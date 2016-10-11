@@ -278,7 +278,7 @@ def write_offday_report_to_excel(summary, by_customer, by_day, month='September 
     Write report to Excel with formatting
     '''
     pass
-    file_out = pd.ExcelWriter('N:/Operations Intelligence/Monthly Reports/Off Day Deliveries/Delivery Audit - '+month+'.xlsx', engine='xlsxwriter')
+    file_out = pd.ExcelWriter('N:/Operations Intelligence/Monthly Reports/Off Day Deliveries/Delivery Audit  -  '+month+'.xlsx', engine='xlsxwriter')
     workbook = file_out.book
     
     print('Writing summary to file.')
@@ -348,7 +348,7 @@ def write_offday_report_to_excel(summary, by_customer, by_day, month='September 
 last_mon = dt.now().month - 1
 report_month = dt.now().replace(month=last_mon).strftime('%B')
 report_year = dt.now().year
-report_month_year = str(report_month) + '-' + str(report_year)
+report_month_year = str(report_month) + ' ' + str(report_year)
 
 write_offday_report_to_excel(summary, by_customer, by_day, month=report_month_year)
 
