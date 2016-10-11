@@ -1,5 +1,24 @@
 
-print('New Production Report 02242016')
+print('(0) Copy files to vba location')
+print('(1) Open for_vba_production_gather.xlsm in ~/Data Input/Living Documents folder')
+print('(2) Open ~/Disposable Documents/~/input_production_report.xlsx and make sure it is clear (keep cols)')
+print('(3) Move over daily reports for month at hand AND house at hand')
+print('(4) After running VBA to gather all data from daily reports, save as... to C:\Users\pmwash\Desktop\R_files\Data Input\Input Files for Reports\Production\STL')
+
+# Copy from formal location to reporting location
+print('STEP 1 - MOVE FILES FROM PRODUCTION LOCATION TO TEMP LOCATION 
+      (CHANGE MONTH IN PATH)')
+from_loc = c('N:/Daily Report/2016/SEP/')
+org_files = list.files(from_loc, full.names=TRUE)
+org_files = org_files[c(2:19)]
+
+to_loc = c('C:/Users/pmwash/Desktop/Disposable Docs/Production Data/.')
+file.copy(from=org_files,
+          to=to_loc)
+rm(org_files)
+
+
+print('STEP 2 - MOVE & CHANGE TO CSV OUTPUT FILE TO C:\Users\pmwash\Desktop\R_files\Data Input\Input Files for Reports\Production\STL')
 
 
 print('Gather external utilities')
@@ -12,8 +31,9 @@ library(gridExtra)
 library(lubridate)
 library(reshape2)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
-raw_data = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Living Documents/Input Production Report/input_production_report.csv', header=TRUE)
+raw_data = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/Input Files for Reports/Production/STL/input_production_report_stl.csv', header=TRUE)
 
+headTail(raw_data)
 
 
 print('Prepare the data')
@@ -183,6 +203,12 @@ tidy_production_data = function(raw_data) {
 
 production = tidy_production_data(raw_data)
 #write.csv(production, file='C:/Users/pmwash/Desktop/R_files/Data Input/Living Documents/STL Production Report Daily Data Archive.csv')
+headTail(production)
+
+
+
+
+# add in mechanism to delte first column after, not by hand
 
 
 append_archive_daily_data = function(production) {
@@ -191,8 +217,8 @@ append_archive_daily_data = function(production) {
   history = read.csv(path, header=TRUE)
   names(history) = names(production)
   appended = rbind(history, production)
-  
-  write.csv(appended, path)
+
+  write.csv(appended, path, row.names=FALSE)
   
   appended
 }
@@ -203,6 +229,9 @@ production_appended = append_archive_daily_data(production)
 # If you must re-read it in without appending duplicates... 
 # path = '//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Production/Production History/STL Production Report Daily Data Archive.csv'
 # production_appended = read.csv(path, header=TRUE)
+
+tail(production_appended, 30)
+
 
 
 
@@ -290,6 +319,13 @@ generate_cumsums = function(production_appended) {
 
 
 production_appended = generate_cumsums(production_appended)
+
+
+headTail(production_appended)
+
+
+
+
 
 
 
@@ -407,16 +443,18 @@ generate_moving_avgs = function(production_appended) {
 
 production_appended = generate_moving_avgs(production_appended)
 
+headTail(production_appended)
 
 
 
 
-aggregate_monthly_averages_totals = function(production_appended, report_month='JANUARY') {
+
+aggregate_monthly_averages_totals = function(production_appended, this_month='-3') {
   t = production_appended
   
   
   t_melt = melt(t, id=c('MONTH', 'YEAR'))  
-  t_melt$value = as.numeric(t_melt$value)
+  t_melt$value = as.numeric(as.character(t_melt$value))
   
   t_sums = dcast(t_melt, MONTH + YEAR ~ variable, function(x) round(sum(x, na.rm=TRUE), 2))
   
@@ -453,7 +491,6 @@ aggregate_monthly_averages_totals = function(production_appended, report_month='
             'ODD.BALL.CASES', 'AVG.ODD.BALL.CASES', 'ODD.BALL.HOURS', 'AVG.ODD.BALL.HOURS')
   t_combined = t_combined[, order]
   
-  this_month = '-1'
   t_combined = t_combined[which(substrRight(row.names(t_combined), 2) %in% this_month), ]
   
   T_combined = data.frame(t(t_combined))
@@ -467,34 +504,74 @@ aggregate_monthly_averages_totals = function(production_appended, report_month='
   T_combined
 }
 
-monthly_summary = aggregate_monthly_averages_totals(production_appended)
 
 
 
+print('CHANGE THE MONTH BELOW!!!')
+library(lubridate)
+last_month = month(Sys.Date()) - 1
+this_month_summary = paste0('-', as.character(last_month)); this_month_summary   #'-5'
 
 
+this_month = month(Sys.Date()) - 1; this_month
 
-write_analysis_to_file = function(production_appended, file_path) {
-  p = production_appended
-  row.names(p) = factor(p$DATE, levels=p$DATE)
-  p$DATE = NULL
-  
-  monthly_summary = aggregate_monthly_averages_totals(p)
-  
-  write.xlsx(monthly_summary, file=file_path, sheet='Monthly Summary')
-  write.xlsx(p, file=file_path, sheet='Raw Data', append=TRUE)
-}
+monthly_summary = aggregate_monthly_averages_totals(production_appended, this_month=this_month_summary)
 
-file_name = 'production_report_january_2016.xlsx'
+
+file_name = 'YTD 2016 Production Summary through September.xlsx'
 file_path = paste0('C:/Users/pmwash/Desktop/R_files/Data Output/', file_name)
-
-write_analysis_to_file(production_appended, file_path)
-
+file_path
 
 
+jan = aggregate_monthly_averages_totals(production_appended, this_month='-1')
+feb = aggregate_monthly_averages_totals(production_appended, this_month='-2')
+mar = aggregate_monthly_averages_totals(production_appended, this_month='-3')
+apr = aggregate_monthly_averages_totals(production_appended, this_month='-4')
+may = aggregate_monthly_averages_totals(production_appended, this_month='-5')
+jun = aggregate_monthly_averages_totals(production_appended, this_month='-6')
+jul = aggregate_monthly_averages_totals(production_appended, this_month='-7')
+aug = aggregate_monthly_averages_totals(production_appended, this_month='-8')
+sep = aggregate_monthly_averages_totals(production_appended, this_month='-9')
+
+write.xlsx(jan, file=file_path, sheet='January')
+write.xlsx(feb, file=file_path, sheet='February', append=TRUE)
+write.xlsx(mar, file=file_path, sheet='March', append=TRUE)
+write.xlsx(apr, file=file_path, sheet='April', append=TRUE)
+write.xlsx(may, file=file_path, sheet='May', append=TRUE)
+write.xlsx(jun, file=file_path, sheet='June', append=TRUE)
+write.xlsx(jul, file=file_path, sheet='July', append=TRUE)
+write.xlsx(aug, file=file_path, sheet='August', append=TRUE)
+write.xlsx(sep, file=file_path, sheet='September', append=TRUE)
+write.xlsx(production_appended, file=file_path, sheet='Raw Data', append=TRUE)
 
 
-write_plots_to_file = function(production_appended, file_path, this_month=1) {
+
+
+
+print('Below is for STL moving files')
+
+from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
+to = file_path = paste0("//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Production/", file_name, sep='')
+moveRenameFile(from, to)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+write_plots_to_file = function(production_appended, file_path, this_month=5) {
   setwd('C:/Users/pmwash/Desktop/R_files/Data Output/Plots')
   
   p = production_appended
@@ -508,7 +585,7 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
   
   p_this_month = filter(p, MONTH==this_month)
   
-  
+  p = p %>% filter(TOTAL.ODD.BALL.HOURS < 300)
   
   # Cases by Line
   wb = loadWorkbook(file_path)
@@ -517,35 +594,37 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
   pic = system.file(image_name)
   sheet_name = createSheet(wb, image_name)
   
-  jpeg(image_name, width=800, height=1000) 
+  jpeg(image_name, width=745, height=1012) 
   
-  x = p[, c('DATE', 'YEAR.MONTH', 'C.CASES.10.DAY.MVG.AVG', 'D.CASES.10.DAY.MVG.AVG', 'E.CASES.10.DAY.MVG.AVG', 
-            'F.CASES.10.DAY.MVG.AVG', 'G.CASES.10.DAY.MVG.AVG', 'W.CASES.10.DAY.MVG.AVG', 'TOTAL.ODD.BALL.10.DAY.MVG.AVG')]
+  x = p[, c('DATE', 'YEAR.MONTH', 'C.CASES', 'D.CASES', 'E.CASES', 
+            'F.CASES', 'G.CASES', 'W.CASES', 'TOTAL.ODD.BALL')]
   melted = melt(x, c('DATE', 'YEAR.MONTH'))
   l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
-  one = l + geom_point(aes(group=YEAR.MONTH), size=0.5) +
-    geom_line(aes(group=YEAR.MONTH), size=0.25) +
+  one = l + geom_point(aes(group=YEAR.MONTH), size=0.1, alpha=0.2) +
+    geom_boxplot(aes(group=YEAR.MONTH), alpha=0.5) +
     facet_wrap(~variable, ncol=1, scales='free_y') +
-    geom_smooth(aes(group=variable, colour=variable), se=FALSE) +
+    geom_smooth(aes(group=variable, colour=variable), se=FALSE, size=1.25, alpha=0.5, span=0.2) +
     theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
     scale_y_continuous(labels=comma) +
-    labs(title='Case Production by Case Line', 
-         x='Date', y='Cases Produced (10 Day Moving Avg)')
+    labs(title='Daily Case Production by Case Line', 
+         x='Date', y='Cases Produced by Line')
   
-  x = p[, c('DATE', 'YEAR.MONTH', 'C.HOURS.10.DAY.MVG.AVG', 'D.HOURS.10.DAY.MVG.AVG', 'E.HOURS.10.DAY.MVG.AVG', 
-            'F.HOURS.10.DAY.MVG.AVG', 'G.HOURS.10.DAY.MVG.AVG', 'W.HOURS.10.DAY.MVG.AVG', 'TOTAL.ODD.BALL.HOURS.10.DAY.MVG.AVG')]
+  x = p[, c('DATE', 'YEAR.MONTH', 'C.HOURS', 'D.HOURS', 'E.HOURS', 
+            'F.HOURS', 'G.HOURS', 'W.HOURS', 'TOTAL.ODD.BALL.HOURS')]
   melted = melt(x, c('DATE', 'YEAR.MONTH'))
   l = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
-  two = l + geom_point(aes(group=YEAR.MONTH), size=0.5) +
-    geom_line(aes(group=YEAR.MONTH), size=0.25) +
+  two = l + geom_point(aes(group=YEAR.MONTH), size=0.1, alpha=0.2) +
+    geom_boxplot(aes(group=YEAR.MONTH), alpha=0.5) +
     facet_wrap(~variable, ncol=1, scales='free_y') +
-    geom_smooth(aes(group=variable, colour=variable), se=FALSE) +
+    geom_smooth(aes(group=variable, colour=variable), se=FALSE, size=1.25, alpha=0.5, span=0.2) +
     theme(legend.position='none', axis.text.x=element_text(angle=90,hjust=1)) +
     scale_y_continuous(labels=comma) +
-    labs(title='Hours Production by Case Line', 
-         x='Date', y='Hours (10 Day Moving Avg)')
+    labs(title='Daily Production Hours by Case Line', 
+         x='Date', y='Production Hours')
   
   suppressWarnings(grid.arrange(one, two, ncol=2))
+  
+  
   dev.off()
   
   addPicture(image_name, sheet_name)
@@ -568,15 +647,18 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
             'CASES.CAPE.10.DAY.MVG.AVG')]
   melted = melt(x, c('DATE', 'YEAR.MONTH'))
   o = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
-  o + geom_point(aes(group=YEAR.MONTH), fill='lightgreen', 
-                 size=2, colour='black') +
-    facet_wrap(~variable, scales='free_y', ncol=2) +
+  o + geom_boxplot(aes(group=YEAR.MONTH, fill=variable), 
+                 size=.3, colour='black', alpha=.6) +
+    facet_wrap(~variable, 
+               scales='free_y',
+               ncol=2) +
     geom_smooth(aes(group=variable), se=F, colour='black') + 
     geom_line(aes(group=variable, colour=variable), alpha=0.3) +
     scale_y_continuous(labels=comma) + 
     labs(title='Case Production Summary',
          x="Date") +
-    theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) 
+    theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) +
+    geom_jitter(size=.3, alpha=.4)
   
   dev.off()
   addPicture(image_name, sheet_name)
@@ -587,7 +669,7 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
   
 
 
-  # Oddball Summary
+  # Oddball Cs Hrs
   wb = loadWorkbook(file_path)
   image_name = 'Oddball_Cases_Hours.png'
   pic = system.file(image_name)
@@ -595,36 +677,52 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
   
   jpeg(image_name, width=800, height=850) 
   
-  mean_monthly = mean(p$TOTAL.ODD.BALL, na.rm=TRUE)
-  o = ggplot(data=p, aes(x=YEAR.MONTH, y=TOTAL.ODD.BALL, group=YEAR.MONTH))
-  one = o + geom_bar(stat='sum', aes(group=YEAR.MONTH), fill='lightblue', 
+  # mean_monthly = mean(p$TOTAL.ODD.BALL, na.rm=TRUE)
+  o = ggplot(data=p, aes(x=month(DATE), y=YTD.ODD.BALL.CASES, group=YEAR.MONTH))
+  one = o + geom_point(stat='sum', aes(group=month(DATE)), fill='lightblue', 
                      size=1, colour='black') + 
     theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) + 
-    geom_smooth(size=1, se=F, aes(group=YEAR.MONTH)) +
+    geom_smooth(size=1, se=F, aes(group=month(DATE))) +
+    facet_wrap(~YEAR) +
     scale_y_continuous(labels=comma) + 
     labs(title='Total Oddball Cases by Month',
-         x="Year/Month", y="Total Odd Ball cASES") +
-    geom_hline(yintercept=mean_monthly, linetype="longdash") +
-    geom_jitter()
+         x="Year/Month", y="Total Odd Ball Cases") 
   
-  fixed = p %>% filter(TOTAL.ODD.BALL.HOURS < 100)
-  mean_monthly = mean(fixed$TOTAL.ODD.BALL.HOURS, na.rm=TRUE)
-  o = ggplot(data=fixed, aes(x=YEAR.MONTH, y=TOTAL.ODD.BALL.HOURS, group=YEAR.MONTH))
-  two = o + geom_bar(stat='sum', aes(group=YEAR.MONTH), fill='lightgreen', 
+  # fixed = p %>% filter(TOTAL.ODD.BALL.HOURS < 100)
+  # mean_monthly = mean(fixed$TOTAL.ODD.BALL.HOURS, na.rm=TRUE)
+  o = ggplot(data=fixed, aes(x=DATE, y=YTD.OT.HOURS, group=YEAR.MONTH))
+  two = o + geom_point(stat='sum', aes(group=month(DATE)), fill='lightgreen', 
                      size=1, colour='black') + 
     theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) + 
-    geom_smooth(size=1, se=F, aes(group=YEAR.MONTH)) +
+    geom_smooth(size=1, se=F, aes(group=month(DATE))) +
+    facet_wrap(~YEAR, ncol=1) +
     scale_y_continuous(labels=comma) + 
-    labs(title='Total Oddball Hours by Month',
+    labs(title='Total OT Hours by Month',
          x="Year/Month", y="Total Odd Ball Hours") +
-    geom_hline(yintercept=mean_monthly, linetype="longdash") +
-    geom_jitter()
-  grid.arrange(one, two, ncol=1)
+    scale_x_date(aes(x=strptime(DATE, '%Y-%m-%d')))
+  
+  grid.arrange(one, two, nrow=1) 
   
   dev.off()
   
   addPicture(image_name, sheet_name)
   saveWorkbook(wb, file_path)
+  
+  library(ggvis)
+  library(lubridate)
+  p %>%
+    ggvis(x = ~MONTH, y = ~YTD.OT.HOURS, stroke = ~factor(YEAR)) %>%
+    group_by(YEAR) %>%
+    layer_lines(stroke = ~factor(YEAR)) %>%
+    layer_points() %>% #size = ~Metric
+    add_axis("x", orient = "top", ticks = 0,
+             title = paste0('YTD OT Hours'),#paste0(unique(data$Warehouse), ' ', unique(data$Metric), ' '),
+             properties = axis_props(
+               axis = list(stroke = "white"),
+               labels = list(fontSize = 0))) %>%
+    add_axis("x", title = "Month") %>%
+    set_options(width = 1100,
+                height = 600)  
   
   
   
@@ -670,11 +768,12 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
             'STOPS.TOTAL.10.DAY.MVG.AVG')]
   melted = melt(x, c('DATE', 'YEAR.MONTH'))
   o = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
-  o + geom_point(aes(group=YEAR.MONTH), fill='lightgreen', 
-                 size=2, colour='black') +
+  o + geom_boxplot(aes(group=YEAR.MONTH), 
+                   #fill='yellow', 
+                   size=.5, 
+                   colour='purple',
+                   alpha=.7) +
     facet_wrap(~variable, scales='free_y', ncol=2) +
-    geom_smooth(aes(group=variable), se=F, colour='black') + 
-    geom_line(aes(group=variable, colour=variable), alpha=0.3) +
     scale_y_continuous(labels=comma) + 
     labs(title='Trucks Summary',
          x="Date") +
@@ -778,16 +877,51 @@ write_plots_to_file = function(production_appended, file_path, this_month=1) {
   addPicture(image_name, sheet_name)
   saveWorkbook(wb, file_path)
   
+  
+  
+  
+  # Oddballs Summary
+  wb = loadWorkbook(file_path)
+  image_name = 'Oddball_Summary.png'
+  pic = system.file(image_name)
+  sheet_name = createSheet(wb, image_name)
+  
+  jpeg(image_name, width=924, height=1012) 
+  
+  fixed = p %>% filter(TOTAL.ODD.BALL.HOURS < 50 & ODD.BALL.HOURS.1 < 30)
+  x = fixed[, c('DATE', 'YEAR.MONTH', 'ODD.BALL.CASES.1', 'ODD.BALL.HOURS.1',
+            'ODD.BALL.CASES.2', 'ODD.BALL.HOURS.2',
+            'ODD.BALL.CASES.3', 'ODD.BALL.HOURS.3',
+            'ODD.BALL.CASES.4', 'ODD.BALL.HOURS.4')]
+  melted = melt(x, c('DATE', 'YEAR.MONTH'))
+  o = ggplot(data=melted, aes(x=DATE, y=value, group=variable))
+  o + geom_point(aes(group=YEAR.MONTH), fill='lightgreen', 
+                 size=2, colour='black') +
+    facet_wrap(~variable, scales='free_y', ncol=2) +
+    geom_smooth(aes(group=variable), se=F, colour='black') + 
+    geom_line(aes(group=variable, colour=variable), alpha=0.3) +
+    scale_y_continuous(labels=comma) + 
+    labs(title='Oddball Summary',
+         x="Date") +
+    theme(legend.position="none", axis.text.x=element_text(angle=90,hjust=1)) 
+  
+  dev.off()
+  addPicture(image_name, sheet_name)
+  saveWorkbook(wb, file_path)
+  
+  
   print('Finished printing plots to file')
 }
 
+print(this_month)
+
+write_plots_to_file(production_appended, file_path, this_month=this_month)
 
 
-print('Below is for STL moving files')
 
-from = paste0("C:/Users/pmwash/Desktop/R_Files/Data Output/", file_name, sep='')
-to = file_path = paste0("//majorbrands.com/STLcommon/Operations Intelligence/Monthly Reports/Production/", 'stl_', file_name, sep='')
-moveRenameFile(from, to)
+
+
+print('Run VBA to format report')
 
 
 
