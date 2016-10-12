@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 from datetime import datetime as dt
 import itertools
-import datetime
 
 pd.set_option('display.height', 100)
 pd.set_option('display.max_rows', 500)
@@ -43,7 +42,6 @@ def clean_pw_offday(pw_offday, weeklookup):
                'ShipWeekPlan', 'Merchandising', 'OnPremise', 
                'CustomerSetup', 'CustomerType', 'Customer']
     
-    typ = deliveries.CustomerType
     typ_map = {'A':'Bar/Tavern','C':'Country Club','E':'Transportation/Airline','G':'Gambling',\
                 'J':'Hotel/Motel','L':'Restaurant','M':'Military','N':'Fine Dining','O':'Internal',\
                 'P':'Country/Western','S':'Package Store','T':'Supermarket/Grocery','V':'Drug Store',\
@@ -64,9 +62,6 @@ def clean_pw_offday(pw_offday, weeklookup):
     
     week_plan = deliveries.ShipWeekPlan.tolist()
     week_shipped = deliveries.ShipWeek.tolist()
-    
-    month = deliveries.Month
-    year = deliveries.Year
     
     deliveries.Ship = del_days = [str('%07d'% int(str(day).zfill(0))) for day in deliveries.Ship.astype(str).tolist()]
     
@@ -254,26 +249,50 @@ def clean_pw_offday(pw_offday, weeklookup):
     overall_summary.columns = ['NewCustomers','Customers','AvgAllottedDeliveryDays','Deliveries','OffDayDeliveries','AdditionalDeliveries',
                                        'Cases|mean','CasesPerDelivery|mean','Dollars|mean']
     
-    
-    
-    
-    
     return overall_summary, _agg_bycust, _agg_byday
 
 
 summary, by_customer, by_day = clean_pw_offday(pw_offday, weeklookup)
 
-summary
+
 by_customer.tail()
 by_day.tail()
+summary
 
 
+def identify_focus_areas(by_customer):
+    '''
+    Extract prospects for improvement & needed action
+    '''
+    need_cols = ['CustomerId','Customer','CustomerSetup','Warehouse','Deliveries','Cases','Dollars']
+    need_delivery_days = by_customer[(by_customer['Tier'] == 'No Delivery Days Assigned')]
+    need_delivery_days = need_delivery_days[need_cols].sort_values('Deliveries', ascending=False)
+    print(need_delivery_days.head(10))    
+    
+    output_cols = ['CustomerId','Customer','Warehouse','OffDayDeliveries/Deliveries',
+                   'AdditionalDeliveries/Deliveries','AllottedDeliveryDays',
+                   'Deliveries','OffDayDeliveries','AdditionalDeliveries',
+                   'OnPremise','CustomerType','DeliveryDays','ShipWeekPlan',
+                   'CasesPerDelivery','Tier']
+    
+    switch_criteria = (by_customer['Tier'] != 'No Delivery Days Assigned') & (by_customer['OffDayDeliveries/Deliveries'] > 0.9 )
+    switch_day_prospects = by_customer[switch_criteria].sort_values('OffDayDeliveries/Deliveries', ascending=False).reset_index(drop=True).head(50)
+    switch_day_prospects = switch_day_prospects[output_cols]
+    print(switch_day_prospects.head(10))
+    
+    add_day_criteria = (by_customer['Tier'] != 'No Delivery Days Assigned') 
+    add_day_prospects = by_customer[add_day_criteria].sort_values('AdditionalDeliveries/Deliveries', ascending=False).reset_index(drop=True).head(50)
+    add_day_prospects = add_day_prospects[output_cols]
+    print(add_day_prospects.head(10))
 
 
+    return need_delivery_days, switch_day_prospects, add_day_prospects
 
 
+need_delivery_days, switch_delivery_days, add_delivery_days = identify_focus_areas(by_customer)
 
-def write_offday_report_to_excel(summary, by_customer, by_day, month='September 2016'):
+
+def write_offday_report_to_excel(summary, by_customer, by_day, need_delivery_days, switch_delivery_days, add_delivery_days, month='YOU FORGOT TO SPECIFY THE MONTH'):
     '''
     Write report to Excel with formatting
     '''
@@ -284,6 +303,15 @@ def write_offday_report_to_excel(summary, by_customer, by_day, month='September 
     print('Writing summary to file.')
     summary.to_excel(file_out, sheet_name='Summary', index=True)
     
+    print('Writing customers who need delivery days assigned to file.')
+    need_delivery_days.to_excel(file_out, sheet_name='No Delivery Days Assigned', index=False)
+    
+    print('Writing prospects for switching delivery days to file.')
+    switch_delivery_days.to_excel(file_out, sheet_name='Prospects Switching Days', index=False)
+    
+    print('Writing summary to file.')
+    add_delivery_days.to_excel(file_out, sheet_name='Prospects Adding Days', index=False)
+
     print('Writing customer information to file.')
     by_customer.to_excel(file_out, sheet_name='By Customer', index=False)
     
@@ -293,6 +321,7 @@ def write_offday_report_to_excel(summary, by_customer, by_day, month='September 
     # Declare formats
     format_thousands = workbook.add_format({'num_format': '#,##0'})
     format_dollars = workbook.add_format({'num_format': '$#,##0'})
+    format_float = workbook.add_format({'num_format': '###0.#0'})    
     format_percent = workbook.add_format({'num_format': '0%'})
     
     print('Formatting the document for visual purposes.')
@@ -324,7 +353,7 @@ def write_offday_report_to_excel(summary, by_customer, by_day, month='September 
     customer_tab.set_column('L:O',15)
     customer_tab.set_column('M:M',21)
     customer_tab.set_column('P:Q',17, format_thousands)
-    customer_tab.set_column('R:T',28)
+    customer_tab.set_column('R:T',28, format_percent)
     
     # Set column widths
     day_tab = file_out.sheets['By Delivery Day']
@@ -338,6 +367,52 @@ def write_offday_report_to_excel(summary, by_customer, by_day, month='September 
     day_tab.set_column('L:L',33)
     day_tab.set_column('M:N',21)
     
+    # Set column widths
+    none_assigned_tab = file_out.sheets['No Delivery Days Assigned']
+    none_assigned_tab.set_column('A:A',11)
+    none_assigned_tab.set_column('B:B',33)
+    none_assigned_tab.set_column('C:G',15)
+    none_assigned_tab.set_column('F:F',15, format_thousands)
+    none_assigned_tab.set_column('G:G',15, format_dollars)    
+    
+    # Set column widths
+    switch_tab = file_out.sheets['Prospects Switching Days']
+    switch_tab.set_column('A:A',11)
+    switch_tab.set_column('B:B',35)
+    switch_tab.set_column('C:C',11)
+    switch_tab.set_column('D:D',26, format_percent)
+    switch_tab.set_column('E:E',29, format_percent)
+    switch_tab.set_column('F:F',20)
+    switch_tab.set_column('G:G',10)
+    switch_tab.set_column('H:H',16)
+    switch_tab.set_column('I:I',19)
+    switch_tab.set_column('J:J',11)
+    switch_tab.set_column('K:K',20.3)    
+    switch_tab.set_column('L:L',12)
+    switch_tab.set_column('M:M',13.5)
+    switch_tab.set_column('N:N',16, format_float)
+    switch_tab.set_column('O:O',8)
+ 
+    
+    # Set column widths
+    add_tab = file_out.sheets['Prospects Adding Days']
+    add_tab.set_column('A:A',11)
+    add_tab.set_column('B:B',35)
+    add_tab.set_column('C:C',11)
+    add_tab.set_column('D:D',26, format_percent)
+    add_tab.set_column('E:E',29, format_percent)
+    add_tab.set_column('F:F',20)
+    add_tab.set_column('G:G',10)
+    add_tab.set_column('H:H',16)
+    add_tab.set_column('I:I',19)
+    add_tab.set_column('J:J',11)
+    add_tab.set_column('K:K',20.3)    
+    add_tab.set_column('L:L',12)
+    add_tab.set_column('M:M',13.5)
+    add_tab.set_column('N:N',16, format_float)
+    add_tab.set_column('O:O',8)
+ 
+    
     
     
     
@@ -350,7 +425,7 @@ report_month = dt.now().replace(month=last_mon).strftime('%B')
 report_year = dt.now().year
 report_month_year = str(report_month) + ' ' + str(report_year)
 
-write_offday_report_to_excel(summary, by_customer, by_day, month=report_month_year)
+write_offday_report_to_excel(summary, by_customer, by_day, need_delivery_days, switch_delivery_days, add_delivery_days, month=report_month_year)
 
 
 # import seaborn as sns
