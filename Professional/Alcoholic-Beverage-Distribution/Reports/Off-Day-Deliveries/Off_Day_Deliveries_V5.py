@@ -249,16 +249,32 @@ def clean_pw_offday(pw_offday, weeklookup):
     overall_summary.columns = ['NewCustomers','Customers','AvgAllottedDeliveryDays','Deliveries','OffDayDeliveries','AdditionalDeliveries',
                                        'Cases|mean','CasesPerDelivery|mean','Dollars|mean']
     
-    return overall_summary, _agg_bycust, _agg_byday
+    agg_funcs_HL_summary = {'Deliveries':sum,
+                         'OffDayDeliveries':sum,
+                         'AdditionalDeliveries':sum,
+                         'Dollars':{'Avg':np.mean},
+                         'Cases':{'Avg':np.mean},
+                         'CasesPerDelivery':{'Avg':np.mean},
+                         'NewCustomer':sum,
+                         'Customer':len,
+                         'AllottedDeliveryDays':lambda x: round(np.mean(x),1)}                                           
+    
+    high_level_summary = DataFrame(_agg_bycust.groupby(['Tier']).agg(agg_funcs_HL_summary))
+    high_level_summary.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in high_level_summary.columns]
+    high_level_summary = high_level_summary[['NewCustomer|sum','Customer|len','AllottedDeliveryDays|<lambda>',
+                                       'Deliveries|sum','OffDayDeliveries|sum','AdditionalDeliveries|sum',
+                                       'Cases|Avg','CasesPerDelivery|Avg','Dollars|Avg']]
+    high_level_summary.columns = ['NewCustomers','Customers','AvgAllottedDeliveryDays','Deliveries','OffDayDeliveries','AdditionalDeliveries',
+                                       'Cases|mean','CasesPerDelivery|mean','Dollars|mean']
+    return high_level_summary, overall_summary, _agg_bycust, _agg_byday
 
 
-summary, by_customer, by_day = clean_pw_offday(pw_offday, weeklookup)
+high_level_summary, summary, by_customer, by_day = clean_pw_offday(pw_offday, weeklookup)
 
 
-by_customer.tail()
-by_day.tail()
-summary
+print(summary)
 
+print(high_level_summary)
 
 def identify_focus_areas(by_customer):
     '''
@@ -292,7 +308,7 @@ def identify_focus_areas(by_customer):
 need_delivery_days, switch_delivery_days, add_delivery_days = identify_focus_areas(by_customer)
 
 
-def write_offday_report_to_excel(summary, by_customer, by_day, need_delivery_days, switch_delivery_days, add_delivery_days, month='YOU FORGOT TO SPECIFY THE MONTH'):
+def write_offday_report_to_excel(high_level_summary, summary, by_customer, by_day, need_delivery_days, switch_delivery_days, add_delivery_days, month='YOU FORGOT TO SPECIFY THE MONTH'):
     '''
     Write report to Excel with formatting
     '''
@@ -301,7 +317,8 @@ def write_offday_report_to_excel(summary, by_customer, by_day, need_delivery_day
     workbook = file_out.book
     
     print('Writing summary to file.')
-    summary.to_excel(file_out, sheet_name='Summary', index=True)
+    summary.to_excel(file_out, sheet_name='Summary', index=True, startrow=8)
+    high_level_summary.to_excel(file_out, sheet_name='Summary', index=True, startcol=1)    
     
     print('Writing customers who need delivery days assigned to file.')
     need_delivery_days.to_excel(file_out, sheet_name='No Delivery Days Assigned', index=False)
@@ -328,11 +345,11 @@ def write_offday_report_to_excel(summary, by_customer, by_day, need_delivery_day
     # Set column widths
     summary_tab = file_out.sheets['Summary']
     summary_tab.set_column('A:A',25)
-    summary_tab.set_column('B:B',14)
+    summary_tab.set_column('B:B',25)
     summary_tab.set_column('C:C',14)
     summary_tab.set_column('D:D',10)
     summary_tab.set_column('E:E',23)
-    summary_tab.set_column('F:F',10)
+    summary_tab.set_column('F:F',10, format_thousands)
     summary_tab.set_column('G:G',16)
     summary_tab.set_column('H:H',19)
     summary_tab.set_column('I:I',12, format_thousands)
@@ -425,7 +442,7 @@ report_month = dt.now().replace(month=last_mon).strftime('%B')
 report_year = dt.now().year
 report_month_year = str(report_month) + ' ' + str(report_year)
 
-write_offday_report_to_excel(summary, by_customer, by_day, need_delivery_days, switch_delivery_days, add_delivery_days, month=report_month_year)
+write_offday_report_to_excel(high_level_summary, summary, by_customer, by_day, need_delivery_days, switch_delivery_days, add_delivery_days, month=report_month_year)
 
 
 # import seaborn as sns
