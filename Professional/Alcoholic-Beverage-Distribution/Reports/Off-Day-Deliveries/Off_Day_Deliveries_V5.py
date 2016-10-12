@@ -97,14 +97,14 @@ def clean_pw_offday(pw_offday, weeklookup):
     _off_days = _off_days[['Mon','Tue','Wed','Thu','Fri','Sat','Sun','Weekday','OffWeek']]                           
     _off_days['OffDayDelivery'] = (_off_days['Mon'] == 'T') | (_off_days['Tue'] == 'T') | (_off_days['Wed'] == 'T') | (_off_days['Thu'] == 'T') | (_off_days['Fri'] == 'T') | (_off_days['Sat'] == 'T') | (_off_days['Sun'] == 'T') | (_off_days['OffWeek'] == True)                
                            
-    check_later = _off_days[_off_days['OffDayDelivery'] == True]
+    #check_later = _off_days[_off_days['OffDayDelivery'] == True]
     
     deliveries = pd.concat([deliveries,_off_days[['OffWeek','OffDayDelivery']]], axis=1)
     deliveries.Call = deliveries.Call.map({1:'Customer Call', 2:'ROE/EDI', 3:'Salesperson Call', 4:'Telesales'})
     
     setup_date = deliveries.CustomerSetup.astype(str).tolist()
     setup_month = Series([d.zfill(4)[:2] for d in setup_date])
-    this_century = [int(d[-2:]) < 20 for d in setup_date]
+    #this_century = [int(d[-2:]) < 20 for d in setup_date]
     setup_year = Series(["20" + s[-2:] if int(s[-2:]) < 20 else "19" + s[-2:] for s in setup_date])
     
     deliveries['CustomerSetup'] = c_setup = [str(mon) + '-' + str(yr) for mon, yr in zip(setup_month, setup_year)]
@@ -112,12 +112,8 @@ def clean_pw_offday(pw_offday, weeklookup):
     last_month = str(dt.now().month - 1).zfill(2)
     this_year = str(dt.now().year)
     m_y_cutoff = last_month + '-' + this_year
-    
-    transaction_month = [d[5:7] for d in deliveries.Date.tolist()]
-    transaction_year = [d[:4] for d in deliveries.Date.tolist()]
-    m_y_transaction = [m + '-' + y for m, y in zip(transaction_month, transaction_year)]
-    
-    deliveries['NewCustomer'] = _new_cust = [1 if m_y_cutoff == setup else 0 for setup in c_setup]
+        
+    deliveries['NewCustomer'] = [1 if m_y_cutoff == setup else 0 for setup in c_setup]
     deliveries['OffDayDeliveries'] =  deliveries.OffDayDelivery.astype(int)
     
     _n_days = deliveries.Ship.astype(str).tolist()
@@ -273,8 +269,8 @@ high_level_summary, summary, by_customer, by_day = clean_pw_offday(pw_offday, we
 
 
 print(summary)
-
 print(high_level_summary)
+
 
 def identify_focus_areas(by_customer):
     '''
@@ -429,10 +425,6 @@ def write_offday_report_to_excel(high_level_summary, summary, by_customer, by_da
     add_tab.set_column('N:N',16, format_float)
     add_tab.set_column('O:O',8)
  
-    
-    
-    
-    
     print('Saving File.')
     file_out.save()
 
@@ -443,6 +435,16 @@ report_year = dt.now().year
 report_month_year = str(report_month) + ' ' + str(report_year)
 
 write_offday_report_to_excel(high_level_summary, summary, by_customer, by_day, need_delivery_days, switch_delivery_days, add_delivery_days, month=report_month_year)
+
+
+
+
+
+
+
+
+
+
 
 
 # import seaborn as sns
