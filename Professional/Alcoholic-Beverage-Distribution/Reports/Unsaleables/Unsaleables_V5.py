@@ -44,6 +44,12 @@ pwrct1_col_map = {'#RCOMP':'Warehouse', '#RCODE':'ReasonCode', '#RTRC@':'Transac
                   'PBRAN#':'BrandId'}
 pwrct1.rename(columns=pwrct1_col_map, inplace=True)
 
+print('Mapping warehouse names.')
+whs_map = {1:'Kansas City', 2:'Saint Louis', 3:'Columbia', 4:'Cape Girardeau', 5:'Springfield'}
+pwrct1['Warehouse'] = pwrct1['Warehouse'].map(whs_map)
+pwunsale['Warehouse'] = pwunsale['Warehouse'].map(whs_map)
+
+
 def as400_date(dat):
     '''Accepts list of dates as strings from theAS400'''
     return [dt.date(dt.strptime(d[-6:], '%y%m%d')) for d in dat]
@@ -83,23 +89,40 @@ pwrct1['Class'] = pwrct1.Class.map(class_codes)
 print('Reversing the sign of cases and dollars for user understandability')
 flip_sign = lambda x: np.multiply(x, -1)
 pwrct1[['CasesUnsaleable', 'ExtCost']] = pwrct1[['CasesUnsaleable', 'ExtCost']].apply(flip_sign)
+pwunsale[['ExtCost','CasesReturned']] = pwunsale[['ExtCost','CasesReturned']].apply(flip_sign)
+
+print('Aggregating by Product Id.')
+agg_funcs_product_rct = {'CasesReturned': {'avg':np.mean, 'sum':np.sum},
+                         'ExtCost': {'avg':np.mean, 'sum':np.sum}}
 
 
 
 
 
 
-pwrct1.head()
-pwunsale.head()
+print(pwrct1.head())
+print(pwunsale.head())
 
 
 
 
 
 
-
-
-
+#
+#agg_funcs_cust = {'OffDayDelivery' : {'Count':sum},
+#                  'Delivery' : {'Count':sum},
+#                  'NewCustomer' : lambda x: min(x),
+#                  'AllottedWeeklyDeliveryDays|Count': lambda x: max(x),
+#                  'AdditionalDeliveryDays': lambda x: sum(x),
+#                  'Dollars|Sum':lambda x: int(sum(x)),
+#                  'Cases|Sum':lambda x: sum(x) }                                           
+#
+#_agg_bycust = DataFrame(_agg_byday.groupby(['CustomerId','Customer']).agg(agg_funcs_cust)).reset_index(drop=False)
+#_agg_bycust.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_bycust.columns]
+#_agg_bycust = _agg_bycust.reindex_axis(sorted(_agg_bycust.columns), axis=1)
+#
+#
+#
 
 
 
