@@ -174,7 +174,7 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     _agg_byproduct_combined[['ProductId','SupplierId']] = _agg_byproduct_combined[['ProductId','SupplierId']].astype(np.int)
     
     print('Merging in Directors on the SupplierId field.')
-    _agg_byproduct_combined = _agg_byproduct_combined.merge(directors[['SupplierId','Director']], on='SupplierId',how='left')
+    _agg_byproduct_combined = _agg_byproduct_combined.merge(directors[['SupplierId','Director']], on='SupplierId',how='outer')
     
     print('Reordering columns.')
     reorder_cols = ['Director', 'Warehouse', 
@@ -191,9 +191,13 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     _attributes = pwrct1[_attrs].drop_duplicates()
     _agg_byproduct_combined = _agg_byproduct_combined.merge(_attributes, on='ProductId', how='left')
     
+    print('Drop Duplicates.')
+    _agg_byproduct_combined.drop_duplicates(inplace=True)
+    
     print('Compare values below to originals. \n\n\n')
     new_tot_unsaleable = np.sum(_agg_byproduct_combined['DollarsUnsaleable|sum'])
     new_returned = np.sum(_agg_byproduct_combined['DollarsReturned|sum'])
+    
     print('Original Unsaleables:  $%.2f \nPost-Processing Unsaleables:  $%.2f' % (tot_unsaleable, new_tot_unsaleable)) 
     print('Original Returns:  $%.2f \nPost-Processing Returns:  $%.2f' % (returned, new_returned)) 
     
@@ -202,6 +206,9 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
 
 unsaleables_by_product = aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy)
 
+unsaleables_by_product.head()
+
+unsaleables_by_product[['Warehouse','Director','ProductId','SupplierId']].drop_duplicates()
 
 
 
