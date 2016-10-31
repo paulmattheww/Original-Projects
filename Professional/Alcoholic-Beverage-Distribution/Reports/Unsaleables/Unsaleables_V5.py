@@ -20,24 +20,27 @@ pd.set_option('display.max_columns', 100)
 pd.set_option('display.width', 100)
 
 
-print('When Directors change suppliers you will need to change the input for the merge.')
-
 
 input_folder = 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Unsaleables/'
 
-
 pwrct1 = pd.read_csv(input_folder + 'pwrct1.csv', header=0, encoding='ISO-8859-1')
 pwunsale = pd.read_csv(input_folder + 'pwunsale.csv', header=0, encoding='ISO-8859-1')
-directors = pd.read_csv(input_folder + 'supplier_director_lookup_table_as_of_02102016.csv', 
-                        header=0, encoding='ISO-8859-1')
                         
 print('''
-Reading in supplier/product lookup table. The query is pw_supprod in the AS400.
+Reading in supplier/product lookup table. The query is pw_supprod in the AS400. Last updated 10/31/2016.
 
-Last updated 10/31/2016.
+Reading in director lookup table from Diver. Last updated Feb 2016. en Directors change suppliers you will need to change the input for the merge.
+
+Reading in customer attribute lookup table. The query is pw_cusattr. Last updated 10/31/2016.
 ''')
 pw_supprod = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_supprod.csv', 
                         header=0, encoding='ISO-8859-1', names=['ProductId','Product','SupplierId','Supplier']) 
+directors = pd.read_csv(input_folder + 'supplier_director_lookup_table_as_of_02102016.csv', 
+                        header=0, encoding='ISO-8859-1')
+pw_cusattr = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_cusattr.csv', 
+                        header=0, encoding='ISO-8859-1', names=['CustomerId','Customer','OnPremise','Latitude','Longitude'])
+
+
 
 print('Mapping column names.')
 pwunsale_col_map = {'#MIVND':'Invoice', '#MINP#':'ProductId', '#MTRCD':'TransactionCode',
