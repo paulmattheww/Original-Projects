@@ -30,6 +30,14 @@ pwrct1 = pd.read_csv(input_folder + 'pwrct1.csv', header=0, encoding='ISO-8859-1
 pwunsale = pd.read_csv(input_folder + 'pwunsale.csv', header=0, encoding='ISO-8859-1')
 directors = pd.read_csv(input_folder + 'supplier_director_lookup_table_as_of_02102016.csv', 
                         header=0, encoding='ISO-8859-1')
+                        
+print('''
+Reading in supplier/product lookup table. The query is pw_supprod in the AS400.
+
+Last updated 10/31/2016.
+''')
+pw_supprod = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_supprod.csv', 
+                        header=0, encoding='ISO-8859-1', names=['ProductId','Product','SupplierId','Supplier']) 
 
 print('Mapping column names.')
 pwunsale_col_map = {'#MIVND':'Invoice', '#MINP#':'ProductId', '#MTRCD':'TransactionCode',
@@ -95,40 +103,55 @@ flip_sign = lambda x: np.multiply(x, -1)
 pwrct1[['CasesUnsaleable', 'ExtCost']] = pwrct1[['CasesUnsaleable', 'ExtCost']].apply(flip_sign)
 pwunsale[['ExtCost','CasesReturned']] = pwunsale[['ExtCost','CasesReturned']].apply(flip_sign)
 
+print('Merge in standardized supplier names and product names to both queries.')
+merge_cols = ['SupplierId','ProductId']
+pwunsale = pwunsale.merge(pw_supprod, on='ProductId', how='left')
+pwrct1 = pwrct1.drop(labels=['Supplier','Product'], axis=1).merge(pw_supprod, on=merge_cols, how='left')
 
 
+
+
+pwrct1.head()
+pwunsale.head()
+pw_supprod.head()
+
+
+## Still need to aggregate on suppliers and have them go through accurately
 
 print('Aggregating RCT1 data by day and warehouse.')
 agg_funcs_product_rct = {'CasesUnsaleable': {'avg':np.mean, 'sum':np.sum},
                          'ExtCost': {'avg':np.mean, 'sum':np.sum}}
 
-_agg_byproduct_rct = DataFrame(pwrct1.groupby(['Warehouse','ProductId','SupplierId']).agg(agg_funcs_product_rct).reset_index(drop=False))
+grp_cols = ['Warehouse','SupplierId','Supplier','ProductId','Product']
+_agg_byproduct_rct = DataFrame(pwrct1.groupby(grp_cols).agg(agg_funcs_product_rct).reset_index(drop=False))
 _agg_byproduct_rct.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byproduct_rct.columns]                  
 _agg_byproduct_rct = _agg_byproduct_rct.reindex_axis(sorted(_agg_byproduct_rct.columns), axis=1)
 _agg_byproduct_rct.columns = ['CasesUnsaleable|avg', 'CasesUnsaleable|sum', 
                               'DollarsUnsaleable|avg', 'DollarsUnsaleable|sum',
-                              'ProductId', 'SupplierId', 'Warehouse']
+                              'Product', 'ProductId', 
+                              'Supplier', 'SupplierId', 'Warehouse']
 
 print('Aggregating MTC data by day and warehouse.')
 agg_funcs_product_mtc = {'CasesReturned': {'avg':np.mean, 'sum':np.sum},
                      'ExtCost': {'avg':np.mean, 'sum':np.sum}}
 
-_agg_byproduct_mtc = DataFrame(pwunsale.groupby(['Warehouse','ProductId']).agg(agg_funcs_product_mtc).reset_index(drop=False))
+_agg_byproduct_mtc = DataFrame(pwunsale.groupby(grp_cols).agg(agg_funcs_product_mtc).reset_index(drop=False))
 _agg_byproduct_mtc.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byproduct_mtc.columns]                  
 _agg_byproduct_mtc = _agg_byproduct_mtc.reindex_axis(sorted(_agg_byproduct_mtc.columns), axis=1)
 _agg_byproduct_mtc.columns = ['CasesReturned|avg', 'CasesReturned|sum', 
                               'DollarsReturned|avg', 'DollarsReturned|sum',
-                              'ProductId', 'Warehouse']
+                              'Product', 'ProductId', 
+                              'Supplier', 'SupplierId', 'Warehouse']
 
-_agg_byproduct_combined = _agg_byproduct_rct.merge(_agg_byproduct_mtc, on=['Warehouse','ProductId'], how='outer')
+
+print('Combining RCT and MTC data.')
+_agg_byproduct_combined = _agg_byproduct_rct.merge(_agg_byproduct_mtc, on=grp_cols, how='outer')
+
 
 print('Merging in Directors and Supplier names using an outer join.')
-_agg_byproduct_combined = _agg_byproduct_combined.merge(directors, on=['SupplierId'],how='outer')
+_agg_byproduct_combined = _agg_byproduct_combined.merge(directors, on='SupplierId',how='outer')
 
-print('Merging in Product names.')
-pcols = ['ProductId','Product']
-_prod = pwrct1[pcols].drop_duplicates()
-_agg_byproduct_combined = _agg_byproduct_combined.merge(_prod, on='ProductId', how='outer')
+
 
 print('Reordering columns.')
 reorder_cols = ['Director', 'SupplierId', 'Supplier', 
