@@ -134,6 +134,9 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     
     Takes tidy data as input (previous function).
     '''
+    pwunsale = pwunsale_tidy
+    pwrct1 = pwrct1_tidy    
+    
     print('Expect to see the following. \n\n\n')
     tot_unsaleable = np.sum(pwrct1_tidy['ExtCost'])
     returned = np.sum(pwunsale_tidy['ExtCost'])
@@ -188,7 +191,7 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     _attributes = pwrct1[_attrs].drop_duplicates()
     _agg_byproduct_combined = _agg_byproduct_combined.merge(_attributes, on='ProductId', how='left')
     
-    print('Compare values below to originals. \n\n\n)
+    print('Compare values below to originals. \n\n\n')
     new_tot_unsaleable = np.sum(_agg_byproduct_combined['DollarsUnsaleable|sum'])
     new_returned = np.sum(_agg_byproduct_combined['DollarsReturned|sum'])
     print('Original Unsaleables:  $%.2f \nPost-Processing Unsaleables:  $%.2f' % (tot_unsaleable, new_tot_unsaleable)) 
