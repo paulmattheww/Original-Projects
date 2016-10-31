@@ -145,11 +145,17 @@ _agg_byproduct_mtc.columns = ['CasesReturned|avg', 'CasesReturned|sum',
 
 
 print('Combining RCT and MTC data.')
-_agg_byproduct_combined = _agg_byproduct_rct.merge(_agg_byproduct_mtc, on=grp_cols, how='outer')
+_agg_byproduct_combined = _agg_byproduct_rct.merge(_agg_byproduct_mtc.drop(labels=['Supplier','Product'], axis=1), on=['SupplierId','ProductId','Warehouse'], how='outer')
 
 
 print('Merging in Directors and Supplier names using an outer join.')
 _agg_byproduct_combined = _agg_byproduct_combined.merge(directors, on='SupplierId',how='outer')
+_agg_byproduct_combined[['ProductId','SupplierId']] = _agg_byproduct_combined[['ProductId','SupplierId']].astype(np.int)
+
+
+
+
+
 
 
 
