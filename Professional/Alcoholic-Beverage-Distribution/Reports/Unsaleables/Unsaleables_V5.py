@@ -111,12 +111,16 @@ pwrct1 = pwrct1.drop(labels=['Supplier','Product'], axis=1).merge(pw_supprod, on
 
 
 
-pwrct1.head()
-pwunsale.head()
-pw_supprod.head()
 
 
-## Still need to aggregate on suppliers and have them go through accurately
+
+print('Finished pre-processing the queries.')
+
+
+
+
+
+
 
 print('Aggregating RCT1 data by day and warehouse.')
 agg_funcs_product_rct = {'CasesUnsaleable': {'avg':np.mean, 'sum':np.sum},
@@ -144,23 +148,20 @@ _agg_byproduct_mtc.columns = ['CasesReturned|avg', 'CasesReturned|sum',
                               'Supplier', 'SupplierId', 'Warehouse']
 
 
+
+
 print('Combining RCT and MTC data.')
 _agg_byproduct_combined = _agg_byproduct_rct.merge(_agg_byproduct_mtc.drop(labels=['Supplier','Product'], axis=1), on=['SupplierId','ProductId','Warehouse'], how='outer')
-
-
-print('Merging in Directors and Supplier names using an outer join.')
-_agg_byproduct_combined = _agg_byproduct_combined.merge(directors, on='SupplierId',how='outer')
 _agg_byproduct_combined[['ProductId','SupplierId']] = _agg_byproduct_combined[['ProductId','SupplierId']].astype(np.int)
 
 
-
-
-
-
+print('Merging in Directors on the SupplierId field.')
+_agg_byproduct_combined = _agg_byproduct_combined.merge(directors[['SupplierId','Director']], on='SupplierId',how='left')
 
 
 print('Reordering columns.')
-reorder_cols = ['Director', 'SupplierId', 'Supplier', 
+reorder_cols = ['Director', 'Warehouse', 
+                'SupplierId', 'Supplier', 
                 'ProductId', 'Product',
                 'DollarsUnsaleable|sum', 'CasesUnsaleable|sum',
                 'DollarsUnsaleable|avg', 'CasesUnsaleable|avg',
@@ -168,11 +169,29 @@ reorder_cols = ['Director', 'SupplierId', 'Supplier',
                 'DollarsReturned|avg', 'CasesReturned|avg']
 _agg_byproduct_combined = _agg_byproduct_combined[reorder_cols]
 
+
+print('Mapping in attribute columns.')
+_attrs = ['ProductId', 'Size', 'Class', 'QPC']
+_attributes = pwrct1[_attrs].drop_duplicates()
+_agg_byproduct_combined = _agg_byproduct_combined.merge(_attributes, on='ProductId', how='left')
+
 _agg_byproduct_combined.head()
 
 
 
-_agg_byproduct_combined[['ProductId','SupplierId']] = _agg_byproduct_combined[['ProductId','SupplierId']].astype(int)
+
+
+
+
+
+
+
+
+
+
+_agg_byproduct_mtc.head()
+_agg_byproduct_rct.head()
+_agg_byproduct_combined.head()
 
 
 
@@ -185,10 +204,10 @@ _agg_byproduct_combined[['ProductId','SupplierId']] = _agg_byproduct_combined[['
 
 
 
-_agg_byday_combined.merge(directors, on=)
 
-
-
+pwrct1.head()
+pwunsale.head()
+pw_supprod.head()
 
 
 
