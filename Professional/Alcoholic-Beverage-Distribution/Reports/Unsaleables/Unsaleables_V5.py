@@ -20,12 +20,16 @@ pd.set_option('display.max_columns', 100)
 pd.set_option('display.width', 100)
 
 
-input_folder = 'C:/Users/pmwash/Desktop/R_files/Data Input/Input Files for Reports/Unsaleables/'
+print('When Directors change suppliers you will need to change the input for the merge.')
+
+
+input_folder = 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Unsaleables/'
 
 
 pwrct1 = pd.read_csv(input_folder + 'pwrct1.csv', header=0, encoding='ISO-8859-1')
 pwunsale = pd.read_csv(input_folder + 'pwunsale.csv', header=0, encoding='ISO-8859-1')
-
+directors = pd.read_csv(input_folder + 'supplier_director_lookup_table_as_of_02102016.csv', 
+                        header=0, encoding='ISO-8859-1')
 
 print('Mapping column names.')
 pwunsale_col_map = {'#MIVND':'Invoice', '#MINP#':'ProductId', '#MTRCD':'TransactionCode',
@@ -91,32 +95,89 @@ flip_sign = lambda x: np.multiply(x, -1)
 pwrct1[['CasesUnsaleable', 'ExtCost']] = pwrct1[['CasesUnsaleable', 'ExtCost']].apply(flip_sign)
 pwunsale[['ExtCost','CasesReturned']] = pwunsale[['ExtCost','CasesReturned']].apply(flip_sign)
 
-print('Aggregating by Product Id.')
-agg_funcs_product_rct = {'CasesReturned': {'avg':np.mean, 'sum':np.sum},
+
+
+
+print('Aggregating RCT1 data by day and warehouse.')
+agg_funcs_product_rct = {'CasesUnsaleable': {'avg':np.mean, 'sum':np.sum},
                          'ExtCost': {'avg':np.mean, 'sum':np.sum}}
 
+_agg_byproduct_rct = DataFrame(pwrct1.groupby(['Warehouse','ProductId','SupplierId']).agg(agg_funcs_product_rct).reset_index(drop=False))
+_agg_byproduct_rct.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byproduct_rct.columns]                  
+_agg_byproduct_rct = _agg_byproduct_rct.reindex_axis(sorted(_agg_byproduct_rct.columns), axis=1)
+_agg_byproduct_rct.columns = ['CasesUnsaleable|avg', 'CasesUnsaleable|sum', 
+                              'DollarsUnsaleable|avg', 'DollarsUnsaleable|sum',
+                              'ProductId', 'SupplierId', 'Warehouse']
+
+print('Aggregating MTC data by day and warehouse.')
+agg_funcs_product_mtc = {'CasesReturned': {'avg':np.mean, 'sum':np.sum},
+                     'ExtCost': {'avg':np.mean, 'sum':np.sum}}
+
+_agg_byproduct_mtc = DataFrame(pwunsale.groupby(['Warehouse','ProductId']).agg(agg_funcs_product_mtc).reset_index(drop=False))
+_agg_byproduct_mtc.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byproduct_mtc.columns]                  
+_agg_byproduct_mtc = _agg_byproduct_mtc.reindex_axis(sorted(_agg_byproduct_mtc.columns), axis=1)
+_agg_byproduct_mtc.columns = ['CasesReturned|avg', 'CasesReturned|sum', 
+                              'DollarsReturned|avg', 'DollarsReturned|sum',
+                              'ProductId', 'Warehouse']
+
+_agg_byproduct_combined = _agg_byproduct_rct.merge(_agg_byproduct_mtc, on=['Warehouse','ProductId'], how='outer')
+
+print('Merging in Directors and Supplier names using an outer join.')
+_agg_byproduct_combined = _agg_byproduct_combined.merge(directors, on=['SupplierId'],how='outer')
+
+print('Merging in Product names.')
+pcols = ['ProductId','Product']
+_prod = pwrct1[pcols].drop_duplicates()
+_agg_byproduct_combined = _agg_byproduct_combined.merge(_prod, on='ProductId', how='outer')
+
+print('Reordering columns.')
+reorder_cols = ['Director', 'SupplierId', 'Supplier', 
+                'ProductId', 'Product',
+                'DollarsUnsaleable|sum', 'CasesUnsaleable|sum',
+                'DollarsUnsaleable|avg', 'CasesUnsaleable|avg',
+                'DollarsReturned|sum', 'CasesReturned|sum',
+                'DollarsReturned|avg', 'CasesReturned|avg']
+_agg_byproduct_combined = _agg_byproduct_combined[reorder_cols]
+
+_agg_byproduct_combined.head()
 
 
 
+_agg_byproduct_combined[['ProductId','SupplierId']] = _agg_byproduct_combined[['ProductId','SupplierId']].astype(int)
+
+
+
+
+
+
+
+
+
+
+
+
+_agg_byday_combined.merge(directors, on=)
+
+
+
+
+
+
+
+
+
+_agg_byproduct_combined.head()
+
+print('Aggregating by Product.') # add rolling means etc
+
+
+
+print('Merging in Directors.')
 
 
 print(pwrct1.head())
 print(pwunsale.head())
 
-
-
-
-
-
-#
-#agg_funcs_cust = {'OffDayDelivery' : {'Count':sum},
-#                  'Delivery' : {'Count':sum},
-#                  'NewCustomer' : lambda x: min(x),
-#                  'AllottedWeeklyDeliveryDays|Count': lambda x: max(x),
-#                  'AdditionalDeliveryDays': lambda x: sum(x),
-#                  'Dollars|Sum':lambda x: int(sum(x)),
-#                  'Cases|Sum':lambda x: sum(x) }                                           
-#
 #_agg_bycust = DataFrame(_agg_byday.groupby(['CustomerId','Customer']).agg(agg_funcs_cust)).reset_index(drop=False)
 #_agg_bycust.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_bycust.columns]
 #_agg_bycust = _agg_bycust.reindex_axis(sorted(_agg_bycust.columns), axis=1)
