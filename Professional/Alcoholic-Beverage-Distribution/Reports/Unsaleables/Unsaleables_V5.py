@@ -69,7 +69,6 @@ def pre_process_unsaleables_returns_dumps(pwunsale, pwrct1, pw_supprod, director
     pwrct1['Warehouse'] = pwrct1['Warehouse'].map(whs_map)
     pwunsale['Warehouse'] = pwunsale['Warehouse'].map(whs_map)
     
-    
     def as400_date(dat):
         '''Accepts list of dates as strings from theAS400'''
         return [dt.date(dt.strptime(d[-6:], '%y%m%d')) for d in dat]
@@ -115,7 +114,6 @@ def pre_process_unsaleables_returns_dumps(pwunsale, pwrct1, pw_supprod, director
     merge_cols = ['SupplierId','ProductId']
     pwunsale = pwunsale.merge(pw_supprod, on='ProductId', how='left')
     pwrct1 = pwrct1.drop(labels=['Supplier','Product'], axis=1).merge(pw_supprod, on=merge_cols, how='left')
-    
     
     print('Finished pre-processing the queries.')
     
@@ -180,6 +178,9 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     print('Merging in Directors on the SupplierId field.')
     _agg_byproduct_combined = _agg_byproduct_combined.merge(directors[['SupplierId','Director']], on='SupplierId',how='left')
     
+    print('\nUpdated Unsaleables: $%.2f' % np.sum(_agg_byproduct_combined['DollarsUnsaleable|sum']))
+    print('Updated Returns: $%.2f \n' % np.sum(_agg_byproduct_combined['DollarsReturned|sum']))
+    
     print('Reordering columns.')
     reorder_cols = ['Director', 'Warehouse', 
                     'SupplierId', 'Supplier', 
@@ -190,10 +191,19 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
                     'DollarsReturned|avg', 'CasesReturned|avg']
     _agg_byproduct_combined = _agg_byproduct_combined[reorder_cols]
     
+    print('Deriving "dumped" quantity by subtracting returns from unsaleables.')
+    _agg_byproduct_combined['DollarsDumped|sum'] = np.subtract(_agg_byproduct_combined['DollarsUnsaleable|sum'], _agg_byproduct_combined['DollarsReturned|sum'])    
+    _agg_byproduct_combined['DollarsDumped|avg'] = np.subtract(_agg_byproduct_combined['DollarsUnsaleable|avg'], _agg_byproduct_combined['DollarsReturned|avg'])    
+    _agg_byproduct_combined['CasesDumped|sum'] = np.subtract(_agg_byproduct_combined['CasesUnsaleable|sum'], _agg_byproduct_combined['CasesReturned|sum'])    
+    _agg_byproduct_combined['CasesDumped|avg'] = np.subtract(_agg_byproduct_combined['CasesUnsaleable|avg'], _agg_byproduct_combined['CasesReturned|avg'])    
+
     print('Mapping in attribute columns.')
     _attrs = ['ProductId', 'Size', 'Class', 'QPC']
-    _attributes = pwrct1[_attrs].drop_duplicates()
-    _agg_byproduct_combined = _agg_byproduct_combined.merge(_attributes, on='ProductId', how='left')
+    _attributes = pwrct1[_attrs].drop_duplicates(subset='ProductId')
+    _agg_byproduct_combined = _agg_byproduct_combined.merge(_attributes, on='ProductId', how='inner')
+    
+    print('\nUpdated Unsaleables: $%.2f' % np.sum(_agg_byproduct_combined['DollarsUnsaleable|sum']))
+    print('Updated Returns: $%.2f \n' % np.sum(_agg_byproduct_combined['DollarsReturned|sum']))
     
     print('Checking for and dropping Duplicates.\n\n\n')
     _agg_byproduct_combined.drop_duplicates(inplace=True)
@@ -214,61 +224,7 @@ unsaleables_by_product = aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_
 
 unsaleables_by_product.head()
 
-unsaleables_by_product[['Warehouse','Director','ProductId','SupplierId']].drop_duplicates()
 
-
-
-
-
-
-
-
-
-
-
-_agg_byproduct_mtc.head()
-_agg_byproduct_rct.head()
-_agg_byproduct_combined.head()
-
-
-
-
-
-
-
-
-
-
-
-
-
-pwrct1.head()
-pwunsale.head()
-pw_supprod.head()
-
-
-
-
-
-
-_agg_byproduct_combined.head()
-
-print('Aggregating by Product.') # add rolling means etc
-
-
-
-print('Merging in Directors.')
-
-
-print(pwrct1.head())
-print(pwunsale.head())
-
-#_agg_bycust = DataFrame(_agg_byday.groupby(['CustomerId','Customer']).agg(agg_funcs_cust)).reset_index(drop=False)
-#_agg_bycust.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_bycust.columns]
-#_agg_bycust = _agg_bycust.reindex_axis(sorted(_agg_bycust.columns), axis=1)
-#
-#
-#
 
 
 
