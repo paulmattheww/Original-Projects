@@ -9,11 +9,9 @@ Do not add or remove columns in query
 '''
 
 import pandas as pd 
-from pandas import Series,DataFrame
+from pandas import DataFrame
 import numpy as np
 from datetime import datetime as dt
-from datetime import date
-import datetime
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 100)
@@ -142,22 +140,22 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     print('Total unsaleables expected:  $%.2f' % tot_unsaleable) 
     print('Total returns expected:  $%.2f' % returned)
     
-    print('\n\n\nAggregating RCT1 data by day and warehouse.')
+    print('\n\n\nAggregating RCT1 data by Product.')
     agg_funcs_product_rct = {'CasesUnsaleable': {'avg':np.mean, 'sum':np.sum},
                              'ExtCost': {'avg':np.mean, 'sum':np.sum}}
     
-    grp_cols = ['Warehouse','SupplierId','Supplier','ProductId','Product']
+    grp_cols = ['SupplierId','Supplier','ProductId','Product']
     _agg_byproduct_rct = DataFrame(pwrct1.groupby(grp_cols).agg(agg_funcs_product_rct).reset_index(drop=False))
     _agg_byproduct_rct.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byproduct_rct.columns]                  
     _agg_byproduct_rct = _agg_byproduct_rct.reindex_axis(sorted(_agg_byproduct_rct.columns), axis=1)
     _agg_byproduct_rct.columns = ['CasesUnsaleable|avg', 'CasesUnsaleable|sum', 
                                   'DollarsUnsaleable|avg', 'DollarsUnsaleable|sum',
                                   'Product', 'ProductId', 
-                                  'Supplier', 'SupplierId', 'Warehouse']
+                                  'Supplier', 'SupplierId']
                                   
     print('\nUpdated unsaleables: $%.2f \n' % np.sum(_agg_byproduct_rct['DollarsUnsaleable|sum']))
     
-    print('Aggregating MTC data by day and warehouse.')
+    print('Aggregating MTC data by Product.')
     agg_funcs_product_mtc = {'CasesReturned': {'avg':np.mean, 'sum':np.sum},
                          'ExtCost': {'avg':np.mean, 'sum':np.sum}}
     
@@ -167,12 +165,12 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     _agg_byproduct_mtc.columns = ['CasesReturned|avg', 'CasesReturned|sum', 
                                   'DollarsReturned|avg', 'DollarsReturned|sum',
                                   'Product', 'ProductId', 
-                                  'Supplier', 'SupplierId', 'Warehouse']
+                                  'Supplier', 'SupplierId']
                                   
     print('\nUpdated returns: $%.2f \n' % np.sum(_agg_byproduct_mtc['DollarsReturned|sum']))
     
     print('Combining RCT and MTC data.')
-    _agg_byproduct_combined = _agg_byproduct_rct.merge(_agg_byproduct_mtc.drop(labels=['Supplier','Product'], axis=1), on=['SupplierId','ProductId','Warehouse'], how='outer')
+    _agg_byproduct_combined = _agg_byproduct_rct.merge(_agg_byproduct_mtc.drop(labels=['Supplier','Product'], axis=1), on=['SupplierId','ProductId'], how='outer')
     _agg_byproduct_combined[['ProductId','SupplierId']] = _agg_byproduct_combined[['ProductId','SupplierId']].astype(np.int)
     
     print('Merging in Directors on the SupplierId field.')
@@ -182,8 +180,7 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     print('Updated Returns: $%.2f \n' % np.sum(_agg_byproduct_combined['DollarsReturned|sum']))
     
     print('Reordering columns.')
-    reorder_cols = ['Director', 'Warehouse', 
-                    'SupplierId', 'Supplier', 
+    reorder_cols = ['Director', 'SupplierId', 'Supplier', 
                     'ProductId', 'Product',
                     'DollarsUnsaleable|sum', 'CasesUnsaleable|sum',
                     'DollarsUnsaleable|avg', 'CasesUnsaleable|avg',
@@ -191,12 +188,6 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
                     'DollarsReturned|avg', 'CasesReturned|avg']
     _agg_byproduct_combined = _agg_byproduct_combined[reorder_cols]
     
-    print('Deriving "dumped" quantity by subtracting returns from unsaleables.')
-    _agg_byproduct_combined['DollarsDumped|sum'] = np.subtract(_agg_byproduct_combined['DollarsUnsaleable|sum'], _agg_byproduct_combined['DollarsReturned|sum'])
-    _agg_byproduct_combined['DollarsDumped|avg'] = np.subtract(_agg_byproduct_combined['DollarsUnsaleable|avg'], _agg_byproduct_combined['DollarsReturned|avg'])    
-    _agg_byproduct_combined['CasesDumped|sum'] = np.subtract(_agg_byproduct_combined['CasesUnsaleable|sum'], _agg_byproduct_combined['CasesReturned|sum'])   
-    _agg_byproduct_combined['CasesDumped|avg'] = np.subtract(_agg_byproduct_combined['CasesUnsaleable|avg'], _agg_byproduct_combined['CasesReturned|avg'])  
-
     print('Mapping in attribute columns.')
     _attrs = ['ProductId', 'Size', 'Class', 'QPC']
     _attributes = pwrct1[_attrs].drop_duplicates(subset='ProductId')
@@ -207,6 +198,9 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     
     print('Checking for and dropping Duplicates.\n\n\n')
     _agg_byproduct_combined.drop_duplicates(inplace=True)
+    
+    print('Sorting descending on total unsaleables.')
+    _agg_byproduct_combined.sort_values('DollarsUnsaleable|sum', ascending=False, inplace=True)    
     
     print('Compare values below to originals. \n\n\n')
     new_tot_unsaleable = np.sum(_agg_byproduct_combined['DollarsUnsaleable|sum'])
@@ -221,19 +215,45 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
 unsaleables_by_product = aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy)
 
 
-summary_cols = ['DollarsUnsaleable|sum', 'DollarsReturned|sum', 'DollarsDumped|sum', 
-                'CasesUnsaleable|sum', 'CasesReturned|sum', 'CasesDumped|sum']
-DataFrame(unsaleables_by_product.groupby('Director')[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False)
+
+def create_summaries(unsaleables_by_product):
+    '''
+    Creates useful one-look summaries for management.
+    '''
+    pass
+summary_cols = ['DollarsUnsaleable|sum', 'DollarsReturned|sum', 
+                'CasesUnsaleable|sum', 'CasesReturned|sum']
+
+print('Summarizing Directors.')
+by_director = DataFrame(unsaleables_by_product.groupby('Director')[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False)
+
+print('Summarizing Suppliers.')
+by_supplier = DataFrame(unsaleables_by_product.groupby(['Director','Supplier'])[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False).reset_index(level='Director', drop=False)
+by_supplier.head(50)
+
+print('Summarizing by Class.')
+by_class = DataFrame(unsaleables_by_product.groupby(['Class', 'QPC'])[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False)
+
+print('Summarizing by Class.')
+by_qpc = DataFrame(unsaleables_by_product.groupby(['QPC'])[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False)
 
 
-unsaleables_by_product.columns
+
+def customer_return_summary():
+    '''
+    '''
+    pass
 
 
-unsaleables_by_product.head()
+
+unsaleables_by_product.head(50)
 
 
 
-
+def create_visualizations():
+    '''
+    '''
+    pass
 
 
 
