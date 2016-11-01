@@ -27,13 +27,13 @@ pwunsale = pd.read_csv(input_folder + 'pwunsale.csv', header=0, encoding='ISO-88
 print('''
 Reading in supplier/product lookup table. The query is pw_supprod in the AS400. Last updated 10/31/2016.
 
-Reading in director lookup table from Diver. Last updated Feb 2016. en Directors change suppliers you will need to change the input for the merge.
+Reading in director lookup table from Diver. Last updated 11/01/2016. 
 
 Reading in customer attribute lookup table. The query is pw_cusattr. Last updated 10/31/2016.
 ''')
 pw_supprod = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_supprod.csv', 
                         header=0, encoding='ISO-8859-1', names=['ProductId','Product','SupplierId','Supplier']) 
-directors = pd.read_csv(input_folder + 'supplier_director_lookup_table_as_of_02102016.csv', 
+directors = pd.read_csv(input_folder + 'supplier_director_lookup_table.csv', 
                         header=0, encoding='ISO-8859-1')
 pw_cusattr = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_cusattr.csv', 
                         header=0, encoding='ISO-8859-1', names=['CustomerId','Customer','OnPremise','Latitude','Longitude'])
@@ -112,6 +112,9 @@ def pre_process_unsaleables_returns_dumps(pwunsale, pwrct1, pw_supprod, director
     merge_cols = ['SupplierId','ProductId']
     pwunsale = pwunsale.merge(pw_supprod, on='ProductId', how='left')
     pwrct1 = pwrct1.drop(labels=['Supplier','Product'], axis=1).merge(pw_supprod, on=merge_cols, how='left')
+    
+    print('Merging in standard Customer attributes.')
+    pwunsale = pwunsale.merge(pw_cusattr, on='CustomerId', how='left')
     
     print('Finished pre-processing the queries.')
     
@@ -196,10 +199,13 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     print('\nUpdated Unsaleables: $%.2f' % np.sum(_agg_byproduct_combined['DollarsUnsaleable|sum']))
     print('Updated Returns: $%.2f \n' % np.sum(_agg_byproduct_combined['DollarsReturned|sum']))
     
-    print('Checking for and dropping Duplicates.\n\n\n')
+    print('Checking for and dropping Duplicates.')
     _agg_byproduct_combined.drop_duplicates(inplace=True)
     
-    print('Sorting descending on total unsaleables.')
+    print('Replacing NaN values with zeros for readability.')
+    _agg_byproduct_combined.fillna(0, inplace=True)
+    
+    print('Sorting in descending order on total unsaleables.\n\n\n')
     _agg_byproduct_combined.sort_values('DollarsUnsaleable|sum', ascending=False, inplace=True)    
     
     print('Compare values below to originals. \n\n\n')
@@ -207,12 +213,14 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     new_returned = np.sum(_agg_byproduct_combined['DollarsReturned|sum'])
     
     print('Original Unsaleables:  $%.2f \nPost-Processing Unsaleables:  $%.2f \n' % (tot_unsaleable, new_tot_unsaleable)) 
-    print('Original Returns:  $%.2f \nPost-Processing Returns:  $%.2f' % (returned, new_returned)) 
+    print('Original Returns:  $%.2f \nPost-Processing Returns:  $%.2f \n\n\n' % (returned, new_returned)) 
     
     return _agg_byproduct_combined
 
 
 unsaleables_by_product = aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy)
+
+unsaleables_by_product.head()
 
 
 
@@ -220,35 +228,53 @@ def create_summaries(unsaleables_by_product):
     '''
     Creates useful one-look summaries for management.
     '''
-    pass
-summary_cols = ['DollarsUnsaleable|sum', 'DollarsReturned|sum', 
-                'CasesUnsaleable|sum', 'CasesReturned|sum']
+    summary_cols = ['DollarsUnsaleable|sum', 'DollarsReturned|sum', 
+                    'CasesUnsaleable|sum', 'CasesReturned|sum']
+    
+    print('\n\n\nSummarizing Directors.')
+    by_director = DataFrame(unsaleables_by_product.groupby('Director')[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False)
+    
+    print('Summarizing Suppliers.')
+    by_supplier = DataFrame(unsaleables_by_product.groupby(['Director','Supplier'])[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False).reset_index(level='Director', drop=False)
+    by_supplier.head(50)
+    
+    print('Summarizing by Class.\n\n\n')
+    by_class = DataFrame(unsaleables_by_product.groupby(['Class'])[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False)
+    
+    return by_supplier, by_director, by_class
+    
 
-print('Summarizing Directors.')
-by_director = DataFrame(unsaleables_by_product.groupby('Director')[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False)
-
-print('Summarizing Suppliers.')
-by_supplier = DataFrame(unsaleables_by_product.groupby(['Director','Supplier'])[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False).reset_index(level='Director', drop=False)
-by_supplier.head(50)
-
-print('Summarizing by Class.')
-by_class = DataFrame(unsaleables_by_product.groupby(['Class', 'QPC'])[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False)
-
-print('Summarizing by Class.')
-by_qpc = DataFrame(unsaleables_by_product.groupby(['QPC'])[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False)
+supplier_summary, director_summary, class_summary = create_summaries(unsaleables_by_product)
 
 
 
-def customer_return_summary():
+
+
+
+def customer_return_summary(pw_cusattr, pwunsale_tidy):
     '''
+    Derives intelligence out of MTC1 data 
+    on customer returns. 
     '''
     pass
 
+len_unique = lambda x: len(pd.unique(x))
+agg_funcs_returns = {'ExtCost': {'DollarsReturned|sum':np.mean, 'DollarsReturned|sum':np.sum},
+                     'CasesReturned': {'CasesReturned|avg':np.mean, 'CasesReturned|sum':np.sum},
+                     'Invoice':len_unique }
+    
+customer_returns = DataFrame(pwunsale_tidy.groupby(['CustomerId','Customer'])[['ExtCost','CasesReturned']].agg(agg_funcs_returns)).reset_index(drop=False)
+customer_returns.rename(columns={'<lambda>':'Returns|count'}, inplace=True) 
+customer_returns.sort_values('DollarsReturned|sum', ascending=False, inplace=True)
 
 
-unsaleables_by_product.head(50)
+customer_returns.head()
+returns_by_invoice.head()
 
 
+pw_cusattr.tail()
+pw_supprod.head()
+pwunsale_tidy.head()
 
 def create_visualizations():
     '''
