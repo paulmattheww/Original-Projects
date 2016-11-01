@@ -192,11 +192,10 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     _agg_byproduct_combined = _agg_byproduct_combined[reorder_cols]
     
     print('Deriving "dumped" quantity by subtracting returns from unsaleables.')
-    flip_sign = lambda x: np.multiply(x, -1)
-    _agg_byproduct_combined['DollarsDumped|sum'] = np.subtract(_agg_byproduct_combined['DollarsReturned|sum'], _agg_byproduct_combined['DollarsUnsaleable|sum']).apply(flip_sign) 
-    _agg_byproduct_combined['DollarsDumped|avg'] = np.subtract(_agg_byproduct_combined['DollarsReturned|avg'], _agg_byproduct_combined['DollarsUnsaleable|avg']).apply(flip_sign)    
-    _agg_byproduct_combined['CasesDumped|sum'] = np.subtract(_agg_byproduct_combined['CasesReturned|sum'], _agg_byproduct_combined['CasesUnsaleable|sum']).apply(flip_sign)    
-    _agg_byproduct_combined['CasesDumped|avg'] = np.subtract(_agg_byproduct_combined['CasesReturned|avg'], _agg_byproduct_combined['CasesUnsaleable|avg']).apply(flip_sign)    
+    _agg_byproduct_combined['DollarsDumped|sum'] = np.subtract(_agg_byproduct_combined['DollarsUnsaleable|sum'], _agg_byproduct_combined['DollarsReturned|sum'])
+    _agg_byproduct_combined['DollarsDumped|avg'] = np.subtract(_agg_byproduct_combined['DollarsUnsaleable|avg'], _agg_byproduct_combined['DollarsReturned|avg'])    
+    _agg_byproduct_combined['CasesDumped|sum'] = np.subtract(_agg_byproduct_combined['CasesUnsaleable|sum'], _agg_byproduct_combined['CasesReturned|sum'])   
+    _agg_byproduct_combined['CasesDumped|avg'] = np.subtract(_agg_byproduct_combined['CasesUnsaleable|avg'], _agg_byproduct_combined['CasesReturned|avg'])  
 
     print('Mapping in attribute columns.')
     _attrs = ['ProductId', 'Size', 'Class', 'QPC']
