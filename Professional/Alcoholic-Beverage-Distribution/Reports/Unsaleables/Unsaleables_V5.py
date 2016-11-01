@@ -271,7 +271,7 @@ unsaleables_by_product.head()
 
 
 
-def create_summaries(unsaleables_by_product):
+def create_summaries(unsaleables_by_product, pw_ytdsupp):
     '''
     Creates useful one-look summaries for management.
     '''
@@ -284,8 +284,11 @@ def create_summaries(unsaleables_by_product):
     by_director = DataFrame(unsaleables_by_product.groupby('Director')[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False)
     
     print('Summarizing Suppliers.')
-    by_supplier = DataFrame(unsaleables_by_product.groupby(['Director','Supplier'])[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False).reset_index(level='Director', drop=False)
-    by_supplier.head(50)
+    by_supplier = DataFrame(unsaleables_by_product.groupby(['Director','SupplierId','Supplier'])[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False).reset_index(level=['Director','SupplierId','Supplier'], drop=False)
+
+    print('Merging in YTD sales by supplier and deriving percent of sales.')    
+    by_supplier = by_supplier.merge(pw_ytdsupp, on='SupplierId', how='left')
+    by_supplier['PercentSales'] = np.divide(by_supplier['DollarsUnsaleable|sum'], by_supplier['DollarSales|bysupplier'])
     
     print('Summarizing by Class.\n\n\n')
     by_class = DataFrame(unsaleables_by_product.groupby(['Class'])[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False)
@@ -297,9 +300,11 @@ def create_summaries(unsaleables_by_product):
     return by_supplier, by_director, by_class
     
 
-supplier_summary, director_summary, class_summary = create_summaries(unsaleables_by_product)
+supplier_summary, director_summary, class_summary = create_summaries(unsaleables_by_product, pw_ytdsupp)
 
-
+supplier_summary.head(25)
+director_summary
+class_summary
 
 
 
@@ -309,38 +314,53 @@ def customer_return_summary(pw_cusattr, pwunsale_tidy, pw_ytdcust):
     Derives intelligence out of MTC1 data 
     on customer returns. 
     '''
-    pass
-print('*'*100)
-print('Creating summary of returns.')
-print('*'*100)
-
-len_unique = lambda x: len(pd.unique(x))
-agg_funcs_returns = {'ExtCost': {'DollarsReturned|sum':np.mean, 'DollarsReturned|sum':np.sum},
-                     'CasesReturned': {'CasesReturned|avg':np.mean, 'CasesReturned|sum':np.sum},
-                     'Invoice':len_unique }
+    print('*'*100)
+    print('Creating summary of returns.')
+    print('*'*100)
     
-customer_returns = DataFrame(pwunsale_tidy.groupby(['CustomerId','Customer'])[['ExtCost','CasesReturned']].agg(agg_funcs_returns)).reset_index(drop=False)
-customer_returns.rename(columns={'<lambda>':'Returns|count'}, inplace=True) 
-customer_returns.sort_values('DollarsReturned|sum', ascending=False, inplace=True)
+    len_unique = lambda x: len(pd.unique(x))
+    agg_funcs_returns = {'ExtCost': {'DollarsReturned|avg':np.mean, 'DollarsReturned|sum':np.sum},
+                         'CasesReturned': {'CasesReturned|avg':np.mean, 'CasesReturned|sum':np.sum},
+                         'Invoice':len_unique }
+    
+    print('\n\n\nAggregating tidy dataset.')
+    customer_returns = DataFrame(pwunsale_tidy.groupby(['CustomerId','Customer'])[['ExtCost','CasesReturned']].agg(agg_funcs_returns)).reset_index(drop=False)
+    customer_returns.rename(columns={'<lambda>':'Returns|count'}, inplace=True) 
+    customer_returns.drop('Customer', inplace=True, axis=1)
+    
+    print('Merging in YTD sales by Customer')
+    customer_returns = customer_returns.merge(pw_ytdcust, on='CustomerId', how='left')
+    
+    print('Deriving returns as a percent of sales for each Customer.')
+    customer_returns['PercentSales'] = np.divide(customer_returns['DollarsReturned|sum'], customer_returns['DollarSales|bycustomer'])
+    
+    print('Merge in customer attributes.')
+    customer_returns = customer_returns.merge(pw_cusattr, on='CustomerId', how='left')
+    
+    print('Sorting in descending order on Dollars returned.\n\n\n')
+    customer_returns.sort_values('DollarsReturned|sum', ascending=False, inplace=True)
+    
+    print('Reorder columns for readability.')
+    reorder_cols = ['CustomerId','Customer','Returns|count',
+                    'PercentSales','DollarSales|bycustomer',
+                    'DollarsReturned|sum','DollarsReturned|avg',
+                    'CasesReturned|sum','CasesReturned|avg',
+                    'OnPremise','Latitude','Longitude']
+    customer_returns = customer_returns[reorder_cols]
+    
+    print('*'*100)
+    print('Finished summarizing returns.')
+    print('*'*100)
+    
+    return customer_returns
 
-print('Merging in YTD sales by Customer')
-customer_returns = customer_returns.merge(pw_ytdcust, on='CustomerId', how='left')
-customer_returns['PercentSales']
 
-print('Deriving returns as a percent of sales for each Customer.')
-
-print('*'*100)
-print('Finished summarizing returns.')
-print('*'*100)
-
-
+customer_returns = customer_return_summary(pw_cusattr, pwunsale_tidy, pw_ytdcust)
 
 customer_returns.head()
 
 
-pw_cusattr.tail()
-pw_supprod.head()
-pwunsale_tidy.head()
+
 
 def create_visualizations():
     '''
