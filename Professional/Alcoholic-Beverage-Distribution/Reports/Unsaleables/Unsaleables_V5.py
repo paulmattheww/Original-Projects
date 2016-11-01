@@ -139,11 +139,11 @@ def pre_process_unsaleables_returns_dumps(pwunsale, pwrct1, pw_supprod, director
     pwunsale = pwunsale.merge(pw_supprod, on='ProductId', how='left')
     pwrct1 = pwrct1.drop(labels=['Supplier','Product'], axis=1).merge(pw_supprod, on=merge_cols, how='left')
     
-    print('Merging in standard Customer attributes.')
+    print('Merging in standard Customer attributes.\n\n\n')
     pwunsale = pwunsale.merge(pw_cusattr, on='CustomerId', how='left')
     
     print('*'*100)
-    print('Finished pre-processing the queries.\n\n\n')
+    print('Finished pre-processing the queries.')
     print('*'*100)
     
     return pwunsale, pwrct1
@@ -267,7 +267,7 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy, pw_ytdprod, pw_
 
 unsaleables_by_product = aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy, pw_ytdprod, pw_ytdsupp)
 
-unsaleables_by_product.head()
+unsaleables_by_product.head(50)
 
 
 
@@ -357,7 +357,8 @@ def customer_return_summary(pw_cusattr, pwunsale_tidy, pw_ytdcust):
 
 customer_returns = customer_return_summary(pw_cusattr, pwunsale_tidy, pw_ytdcust)
 
-customer_returns.head()
+customer_returns.head(50)
+
 
 
 
