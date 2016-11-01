@@ -37,7 +37,7 @@ pw_ytdsupp
 pwrct1 = pd.read_csv(input_folder + 'pwrct1.csv', header=0, encoding='ISO-8859-1')
 pwunsale = pd.read_csv(input_folder + 'pwunsale.csv', header=0, encoding='ISO-8859-1')
 pw_ytdcust = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_ytdcust.csv', 
-                        header=0, encoding='ISO-8859-1', names=['CustomerID','DollarSales|bycustomer'])
+                        header=0, encoding='ISO-8859-1', names=['CustomerId','DollarSales|bycustomer'])
 pw_ytdsupp = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_ytdsupp.csv', 
                         header=0, encoding='ISO-8859-1', names=['SupplierId','DollarSales|bysupplier'])
 pw_ytdprod = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_ytdprod.csv', 
@@ -67,7 +67,11 @@ def pre_process_unsaleables_returns_dumps(pwunsale, pwrct1, pw_supprod, director
     Pre-processes raw queries and lookup tables
     to get them into a format conducive for intelligence.
     '''
-    print('Mapping column names.')
+    print('*'*100)
+    print('Pre-processing data.')
+    print('*'*100)
+    
+    print('\n\n\nMapping column names.')
     pwunsale_col_map = {'#MIVND':'Invoice', '#MINP#':'ProductId', '#MTRCD':'TransactionCode',
                         '#MIVDT':'Date', '#MCUS#':'CustomerId', '#MQTYS':'Quantity', 
                         '#MCOS$':'Cost', '#MEXT$':'ExtCost', '#MQPC':'QPC',
@@ -138,8 +142,9 @@ def pre_process_unsaleables_returns_dumps(pwunsale, pwrct1, pw_supprod, director
     print('Merging in standard Customer attributes.')
     pwunsale = pwunsale.merge(pw_cusattr, on='CustomerId', how='left')
     
+    print('*'*100)
     print('Finished pre-processing the queries.\n\n\n')
-    print('*'*50)
+    print('*'*100)
     
     return pwunsale, pwrct1
 
@@ -253,9 +258,9 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy, pw_ytdprod, pw_
     print('Original Unsaleables:  $%.2f \nPost-Processing Unsaleables:  $%.2f \n' % (tot_unsaleable, new_tot_unsaleable)) 
     print('Original Returns:  $%.2f \nPost-Processing Returns:  $%.2f \n\n\n' % (returned, new_returned)) 
     
-    print('*'*50)
+    print('*'*100)
     print('If the numbers above do not match then there is a bug in the program.')
-    print('*'*50)
+    print('*'*100)
     
     return _agg_byproduct_combined
 
@@ -270,6 +275,8 @@ def create_summaries(unsaleables_by_product):
     '''
     Creates useful one-look summaries for management.
     '''
+    print('*'*100)
+    print('Creating summaries.')
     summary_cols = ['DollarsUnsaleable|sum', 'DollarsReturned|sum', 
                     'CasesUnsaleable|sum', 'CasesReturned|sum']
     
@@ -282,6 +289,10 @@ def create_summaries(unsaleables_by_product):
     
     print('Summarizing by Class.\n\n\n')
     by_class = DataFrame(unsaleables_by_product.groupby(['Class'])[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False)
+
+    print('*'*100)
+    print('Finished creating summaries.')   
+    print('*'*100)
     
     return by_supplier, by_director, by_class
     
@@ -293,12 +304,15 @@ supplier_summary, director_summary, class_summary = create_summaries(unsaleables
 
 
 
-def customer_return_summary(pw_cusattr, pwunsale_tidy):
+def customer_return_summary(pw_cusattr, pwunsale_tidy, pw_ytdcust):
     '''
     Derives intelligence out of MTC1 data 
     on customer returns. 
     '''
     pass
+print('*'*100)
+print('Creating summary of returns.')
+print('*'*100)
 
 len_unique = lambda x: len(pd.unique(x))
 agg_funcs_returns = {'ExtCost': {'DollarsReturned|sum':np.mean, 'DollarsReturned|sum':np.sum},
@@ -308,6 +322,17 @@ agg_funcs_returns = {'ExtCost': {'DollarsReturned|sum':np.mean, 'DollarsReturned
 customer_returns = DataFrame(pwunsale_tidy.groupby(['CustomerId','Customer'])[['ExtCost','CasesReturned']].agg(agg_funcs_returns)).reset_index(drop=False)
 customer_returns.rename(columns={'<lambda>':'Returns|count'}, inplace=True) 
 customer_returns.sort_values('DollarsReturned|sum', ascending=False, inplace=True)
+
+print('Merging in YTD sales by Customer')
+customer_returns = customer_returns.merge(pw_ytdcust, on='CustomerId', how='left')
+customer_returns['PercentSales']
+
+print('Deriving returns as a percent of sales for each Customer.')
+
+print('*'*100)
+print('Finished summarizing returns.')
+print('*'*100)
+
 
 
 customer_returns.head()
