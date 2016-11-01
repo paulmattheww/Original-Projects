@@ -192,15 +192,16 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     _agg_byproduct_combined = _agg_byproduct_combined[reorder_cols]
     
     print('Deriving "dumped" quantity by subtracting returns from unsaleables.')
-    _agg_byproduct_combined['DollarsDumped|sum'] = np.subtract(_agg_byproduct_combined['DollarsUnsaleable|sum'], _agg_byproduct_combined['DollarsReturned|sum'])    
-    _agg_byproduct_combined['DollarsDumped|avg'] = np.subtract(_agg_byproduct_combined['DollarsUnsaleable|avg'], _agg_byproduct_combined['DollarsReturned|avg'])    
-    _agg_byproduct_combined['CasesDumped|sum'] = np.subtract(_agg_byproduct_combined['CasesUnsaleable|sum'], _agg_byproduct_combined['CasesReturned|sum'])    
-    _agg_byproduct_combined['CasesDumped|avg'] = np.subtract(_agg_byproduct_combined['CasesUnsaleable|avg'], _agg_byproduct_combined['CasesReturned|avg'])    
+    flip_sign = lambda x: np.multiply(x, -1)
+    _agg_byproduct_combined['DollarsDumped|sum'] = np.subtract(_agg_byproduct_combined['DollarsReturned|sum'], _agg_byproduct_combined['DollarsUnsaleable|sum']).apply(flip_sign) 
+    _agg_byproduct_combined['DollarsDumped|avg'] = np.subtract(_agg_byproduct_combined['DollarsReturned|avg'], _agg_byproduct_combined['DollarsUnsaleable|avg']).apply(flip_sign)    
+    _agg_byproduct_combined['CasesDumped|sum'] = np.subtract(_agg_byproduct_combined['CasesReturned|sum'], _agg_byproduct_combined['CasesUnsaleable|sum']).apply(flip_sign)    
+    _agg_byproduct_combined['CasesDumped|avg'] = np.subtract(_agg_byproduct_combined['CasesReturned|avg'], _agg_byproduct_combined['CasesUnsaleable|avg']).apply(flip_sign)    
 
     print('Mapping in attribute columns.')
     _attrs = ['ProductId', 'Size', 'Class', 'QPC']
     _attributes = pwrct1[_attrs].drop_duplicates(subset='ProductId')
-    _agg_byproduct_combined = _agg_byproduct_combined.merge(_attributes, on='ProductId', how='inner')
+    _agg_byproduct_combined = _agg_byproduct_combined.merge(_attributes, on='ProductId', how='left')
     
     print('\nUpdated Unsaleables: $%.2f' % np.sum(_agg_byproduct_combined['DollarsUnsaleable|sum']))
     print('Updated Returns: $%.2f \n' % np.sum(_agg_byproduct_combined['DollarsReturned|sum']))
@@ -220,6 +221,13 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
 
 unsaleables_by_product = aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy)
 
+
+summary_cols = ['DollarsUnsaleable|sum', 'DollarsReturned|sum', 'DollarsDumped|sum', 
+                'CasesUnsaleable|sum', 'CasesReturned|sum', 'CasesDumped|sum']
+DataFrame(unsaleables_by_product.groupby('Director')[summary_cols].sum()).sort_values('DollarsUnsaleable|sum', ascending=False)
+
+
+unsaleables_by_product.columns
 
 
 unsaleables_by_product.head()
