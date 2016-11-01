@@ -17,19 +17,42 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 100)
 pd.set_option('display.width', 100)
 
-
-
 input_folder = 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Unsaleables/'
 
+
+print('''
+The following queries should all be run using the same teimframe
+
+Raw query is ready to use in this report
+------------------------------------------------------------
+pwrct1
+pwunsale
+
+Delete first two columns before using
+------------------------------------------------------------
+pw_ytdcust 
+pw_ytdsupp 
+
+''')
 pwrct1 = pd.read_csv(input_folder + 'pwrct1.csv', header=0, encoding='ISO-8859-1')
 pwunsale = pd.read_csv(input_folder + 'pwunsale.csv', header=0, encoding='ISO-8859-1')
+pw_ytdcust = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_ytdcust.csv', 
+                        header=0, encoding='ISO-8859-1', names=['CustomerID','DollarSales|bycustomer'])
+pw_ytdsupp = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_ytdsupp.csv', 
+                        header=0, encoding='ISO-8859-1', names=['SupplierId','DollarSales|bysupplier'])
+pw_ytdprod = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_ytdprod.csv', 
+                        header=0, encoding='ISO-8859-1', names=['ProductId','DollarSales|byproduct'])
                         
 print('''
 Reading in supplier/product lookup table. The query is pw_supprod in the AS400. Last updated 10/31/2016.
+------------------------------------------------------------
 
 Reading in director lookup table from Diver. Last updated 11/01/2016. 
+------------------------------------------------------------
 
 Reading in customer attribute lookup table. The query is pw_cusattr. Last updated 10/31/2016.
+------------------------------------------------------------
+
 ''')
 pw_supprod = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_supprod.csv', 
                         header=0, encoding='ISO-8859-1', names=['ProductId','Product','SupplierId','Supplier']) 
@@ -37,7 +60,6 @@ directors = pd.read_csv(input_folder + 'supplier_director_lookup_table.csv',
                         header=0, encoding='ISO-8859-1')
 pw_cusattr = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_cusattr.csv', 
                         header=0, encoding='ISO-8859-1', names=['CustomerId','Customer','OnPremise','Latitude','Longitude'])
-
 
 
 def pre_process_unsaleables_returns_dumps(pwunsale, pwrct1, pw_supprod, directors):
@@ -116,7 +138,8 @@ def pre_process_unsaleables_returns_dumps(pwunsale, pwrct1, pw_supprod, director
     print('Merging in standard Customer attributes.')
     pwunsale = pwunsale.merge(pw_cusattr, on='CustomerId', how='left')
     
-    print('Finished pre-processing the queries.')
+    print('Finished pre-processing the queries.\n\n\n')
+    print('*'*50)
     
     return pwunsale, pwrct1
 
@@ -127,7 +150,7 @@ pwunsale_tidy, pwrct1_tidy = pre_process_unsaleables_returns_dumps(pwunsale, pwr
 
 
 
-def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
+def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy, pw_ytdprod, pw_ytdsupp):
     '''
     Aggregates unsaleables returns & dumps by product.
     
@@ -196,6 +219,18 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     _attributes = pwrct1[_attrs].drop_duplicates(subset='ProductId')
     _agg_byproduct_combined = _agg_byproduct_combined.merge(_attributes, on='ProductId', how='left')
     
+    print('Mapping in YTD sales by Product.')
+    _agg_byproduct_combined = _agg_byproduct_combined.merge(pw_ytdprod, on='ProductId', how='left')
+    
+    print('Mapping in YTD sales by Supplier.')
+    _agg_byproduct_combined = _agg_byproduct_combined.merge(pw_ytdsupp, on='SupplierId', how='left')
+    
+    print('Deriving percenteage of sales by Product.')
+    _agg_byproduct_combined['PercentSales|byproduct'] = np.divide(_agg_byproduct_combined['DollarsUnsaleable|sum'], _agg_byproduct_combined['DollarSales|byproduct'])
+    
+    print('Deriving percenteage of sales by Suppplier.')
+    _agg_byproduct_combined['PercentSales|bysupplier'] = np.divide(_agg_byproduct_combined['DollarsUnsaleable|sum'], _agg_byproduct_combined['DollarSales|bysupplier'])    
+        
     print('\nUpdated Unsaleables: $%.2f' % np.sum(_agg_byproduct_combined['DollarsUnsaleable|sum']))
     print('Updated Returns: $%.2f \n' % np.sum(_agg_byproduct_combined['DollarsReturned|sum']))
     
@@ -206,7 +241,10 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     _agg_byproduct_combined.fillna(0, inplace=True)
     
     print('Sorting in descending order on total unsaleables.\n\n\n')
-    _agg_byproduct_combined.sort_values('DollarsUnsaleable|sum', ascending=False, inplace=True)    
+    _agg_byproduct_combined.sort_values('DollarsUnsaleable|sum', ascending=False, inplace=True)
+
+    print('Resetting index.')
+    _agg_byproduct_combined.reset_index(inplace=True)    
     
     print('Compare values below to originals. \n\n\n')
     new_tot_unsaleable = np.sum(_agg_byproduct_combined['DollarsUnsaleable|sum'])
@@ -215,10 +253,14 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy):
     print('Original Unsaleables:  $%.2f \nPost-Processing Unsaleables:  $%.2f \n' % (tot_unsaleable, new_tot_unsaleable)) 
     print('Original Returns:  $%.2f \nPost-Processing Returns:  $%.2f \n\n\n' % (returned, new_returned)) 
     
+    print('*'*50)
+    print('If the numbers above do not match then there is a bug in the program.')
+    print('*'*50)
+    
     return _agg_byproduct_combined
 
 
-unsaleables_by_product = aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy)
+unsaleables_by_product = aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy, pw_ytdprod, pw_ytdsupp)
 
 unsaleables_by_product.head()
 
@@ -269,7 +311,6 @@ customer_returns.sort_values('DollarsReturned|sum', ascending=False, inplace=Tru
 
 
 customer_returns.head()
-returns_by_invoice.head()
 
 
 pw_cusattr.tail()
