@@ -21,17 +21,29 @@ input_folder = 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Unsaleables/'
 
 
 print('''
-The following queries should all be run using the same teimframe
+#README
+The following queries must be run for the same timeframe,
+if and only if a date range is a criteria of the query.
 
-Raw query is ready to use in this report
+Main Queries for Report.
 ------------------------------------------------------------
-pwrct1
-pwunsale
+pwrct1 - Queries RCT1 for unsaleables
+pwunsale - Queries MTC1 for returns
 
-Delete first two columns before using
+
+Supplemental/Contextual Queries
 ------------------------------------------------------------
-pw_ytdcust 
-pw_ytdsupp 
+pw_supprod : Supplier-Product relationships for lookup
+pw_cusattr : Customer attributes for lookup
+directors : DIVER-Director-Supplier relationships for lookup
+
+
+Delete the first two columns after running all these queries.
+These queries are sum sales by {Customer, Supplier, Product}.
+------------------------------------------------------------
+pw_ytdcust - Sales over timeframe X-Y by Customer
+pw_ytdsupp - Sales over timeframe X-Y by Supplier
+pw_ytdprod - Sales over timeframe X-Y by Product
 
 ''')
 pwrct1 = pd.read_csv(input_folder + 'pwrct1.csv', header=0, encoding='ISO-8859-1')
@@ -42,18 +54,6 @@ pw_ytdsupp = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generali
                         header=0, encoding='ISO-8859-1', names=['SupplierId','DollarSales|bysupplier'])
 pw_ytdprod = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_ytdprod.csv', 
                         header=0, encoding='ISO-8859-1', names=['ProductId','DollarSales|byproduct'])
-                        
-print('''
-Reading in supplier/product lookup table. The query is pw_supprod in the AS400. Last updated 10/31/2016.
-------------------------------------------------------------
-
-Reading in director lookup table from Diver. Last updated 11/01/2016. 
-------------------------------------------------------------
-
-Reading in customer attribute lookup table. The query is pw_cusattr. Last updated 10/31/2016.
-------------------------------------------------------------
-
-''')
 pw_supprod = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_supprod.csv', 
                         header=0, encoding='ISO-8859-1', names=['ProductId','Product','SupplierId','Supplier']) 
 directors = pd.read_csv(input_folder + 'supplier_director_lookup_table.csv', 
