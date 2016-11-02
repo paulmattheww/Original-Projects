@@ -136,8 +136,6 @@ def clean_pw_offday(pw_offday, weeklookup):
     _n_days = deliveries.set_index('CustomerId')['AllottedWeeklyDeliveryDays'].to_dict()
     
     print('*'*100)    
-    print(deliveries.head(),'\n\n\n\n',deliveries.tail())
-    print('*'*100)
     
     print('Aggregating by Day.')
     len_unique = lambda x: len(pd.unique(x))
@@ -284,23 +282,24 @@ def clean_pw_offday(pw_offday, weeklookup):
 
 high_level_summary, summary, by_customer, by_day = clean_pw_offday(pw_offday, weeklookup)
 
-
-print(summary)
+print('Summary of data so far: \n\n\n')
 print(high_level_summary)
+print('\n\n\n')
 
 
 def identify_focus_areas(by_customer):
     '''
     Extract prospects for improvement & needed action
     '''
+    print('\n\n\n')
     print('*'*100)
-    print('Identifying focus areas.\n\n\n')
+    print('Identifying focus areas.')
     print('*'*100)
     
+    print('Segregating Customers with no delivery days assigned.')
     need_cols = ['CustomerId','Customer','CustomerSetup','Warehouse','Deliveries','Cases','Dollars']
     need_delivery_days = by_customer[(by_customer['Tier'] == 'No Delivery Days Assigned')]
     need_delivery_days = need_delivery_days[need_cols].sort_values('Deliveries', ascending=False)
-    print(need_delivery_days.head(10))    
     
     output_cols = ['CustomerId','Customer','Warehouse','OffDayDeliveries/Deliveries',
                    'AdditionalDeliveries/Deliveries','AllottedDeliveryDays',
@@ -308,15 +307,14 @@ def identify_focus_areas(by_customer):
                    'OnPremise','CustomerType','DeliveryDays','ShipWeekPlan',
                    'CasesPerDelivery','Tier']
     
+    print('Isolating customers that may be better off switching delivery days.\n\n\n')
     switch_criteria = (by_customer['Tier'] != 'No Delivery Days Assigned') & (by_customer['OffDayDeliveries/Deliveries'] > 0.9 )
     switch_day_prospects = by_customer[switch_criteria].sort_values('OffDayDeliveries/Deliveries', ascending=False).reset_index(drop=True).head(50)
     switch_day_prospects = switch_day_prospects[output_cols]
-    print(switch_day_prospects.head(10))
     
     add_day_criteria = (by_customer['Tier'] != 'No Delivery Days Assigned') 
     add_day_prospects = by_customer[add_day_criteria].sort_values('AdditionalDeliveries/Deliveries', ascending=False).reset_index(drop=True).head(50)
     add_day_prospects = add_day_prospects[output_cols]
-    print(add_day_prospects.head(10))
     
     print('*'*100)
     print('Done identifying focus areas')
