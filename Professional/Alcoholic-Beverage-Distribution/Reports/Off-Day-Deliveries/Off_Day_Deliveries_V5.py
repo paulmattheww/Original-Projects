@@ -376,8 +376,8 @@ def write_offday_report_to_excel(high_level_summary, summary, by_customer, by_da
     summary_tab.set_column('F:F',10, format_thousands)
     summary_tab.set_column('G:G',16)
     summary_tab.set_column('H:H',19)
-    summary_tab.set_column('I:I',12, format_thousands)
-    summary_tab.set_column('J:J',22.5, format_thousands)
+    summary_tab.set_column('I:I',12, format_float)
+    summary_tab.set_column('J:J',22.5, format_float)
     summary_tab.set_column('K:K',13, format_dollars)
     
     print('Formatting the Customer tab for visual purposes.')
