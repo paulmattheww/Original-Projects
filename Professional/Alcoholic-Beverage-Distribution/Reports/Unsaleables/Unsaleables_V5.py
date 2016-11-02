@@ -249,7 +249,7 @@ def aggregate_unsaleables_by_product(pwunsale_tidy, pwrct1_tidy, pw_ytdprod, pw_
     _agg_byproduct_combined.sort_values('DollarsUnsaleable|sum', ascending=False, inplace=True)
 
     print('Resetting index.')
-    _agg_byproduct_combined.reset_index(inplace=True)    
+    _agg_byproduct_combined.reset_index(inplace=True, drop=True)    
     
     print('Compare values below to originals. \n\n\n')
     new_tot_unsaleable = np.sum(_agg_byproduct_combined['DollarsUnsaleable|sum'])
@@ -364,7 +364,7 @@ supplier_summary.head(25)
 director_summary
 class_summary
 customer_returns.head(25)
-unsaleables_by_product.head(50)
+unsaleables_by_product.head()
 
 
 
@@ -390,23 +390,66 @@ def write_unsaleables_to_excel(class_summary, director_summary, supplier_summary
     print('Writing Product summary to file.')
     unsaleables_by_product.to_excel(file_out, sheet_name='Products', index=False)
     
-    # Declare formats
+    print('Saving number formats for re-use.')
     format_thousands = workbook.add_format({'num_format': '#,##0'})
     format_dollars = workbook.add_format({'num_format': '$#,##0'})
     format_float = workbook.add_format({'num_format': '###0.#0'})    
     format_percent = workbook.add_format({'num_format': '0%'})
     
-    print('Formatting the document for visual purposes.')
-    # Set column widths
+    print('Formatting Summary tab for visual purposes.')
     summary_tab = file_out.sheets['Summary']
     summary_tab.set_column('A:A',30)
     summary_tab.set_column('D:E',25, format_thousands)
     summary_tab.set_column('B:C',25, format_dollars)
     
+    print('Formatting Customers tab for visual purposes.')
+    customers_tab = file_out.sheets['Customers']
+    customers_tab.set_column('A:A',11)
+    customers_tab.set_column('B:B',35)
+    customers_tab.set_column('C:C',13.3)
+    customers_tab.set_column('D:D',12, format_percent)
+    customers_tab.set_column('E:G',22.5, format_dollars)
+    customers_tab.set_column('H:I',19, format_float) 
+    customers_tab.set_column('J:L',10.3)
+    
+    print('Formatting Suppliers tab for visual purposes.')
+    suppliers_tab = file_out.sheets['Suppliers']
+    suppliers_tab.set_column('A:A',30)
+    suppliers_tab.set_column('B:B',9.5)
+    suppliers_tab.set_column('C:C',36)
+    suppliers_tab.set_column('D:E',21.6, format_dollars) 
+    suppliers_tab.set_column('F:G',20.3, format_float)
+    suppliers_tab.set_column('H:H',21, format_dollars)
+    suppliers_tab.set_column('I:I',12, format_percent)    
 
- 
-    print('Saving File.')
-    file_out.save()
+    print('Formatting Products tab for visual purposes.')
+    products_tab = file_out.sheets['Products']
+    products_tab.set_column('A:A',30)
+    products_tab.set_column('B:B',9.5)
+    products_tab.set_column('C:C',36)
+    products_tab.set_column('D:D',9.3)    
+    products_tab.set_column('E:E',43)
+    products_tab.set_column('F:F',21.6, format_dollars) 
+    products_tab.set_column('G:G',20.3, format_float)
+    products_tab.set_column('H:H',21.6, format_dollars) 
+    products_tab.set_column('I:I',20.3, format_float)    
+    products_tab.set_column('J:J',21.6, format_dollars) 
+    products_tab.set_column('K:K',20.3, format_float)    
+    products_tab.set_column('L:L',21.6, format_dollars) 
+    products_tab.set_column('M:M',20.3, format_float) 
+    products_tab.set_column('N:N',7)
+    products_tab.set_column('O:O',14)
+    products_tab.set_column('P:P',4)
+    products_tab.set_column('Q:R',20.5, format_dollars)
+    products_tab.set_column('S:T',22.4, format_percent)
+        
+    print('Saving File on the STL Common drive.')
+    file_out.save()    
+    
+    print('*'*100)
+    print('Finished writing file to common drive.')
+    print('*'*100)
+    
 
 
 last_mon = dt.now().month - 1
