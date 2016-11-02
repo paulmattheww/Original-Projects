@@ -12,15 +12,21 @@ Send to group
 '''
 
 import pandas as pd
-from pandas import read_excel, Series, Panel, DataFrame
+from pandas import read_excel, Series, DataFrame
 import numpy as np
 import re
+from datetime import datetime as dt
 
-report_month = input('Enter full month and year for the report: ')
+
+ttl_cs = np.float64(input('Enter total cases expected from Compleo export: '))#202084
+ttl_btl = np.float64(input('Enter total bottles expected from Compleo export: '))#6167.42
 
 
-ttl_cs = 266760.00
-ttl_btl = 10266.66
+last_mon = dt.now().month - 1
+report_month = dt.now().replace(month=last_mon).strftime('%B')
+report_year = dt.now().year
+report_month_year = str(report_month) + ' ' + str(report_year)
+
 
 print('''
 
@@ -34,30 +40,32 @@ raw = read_excel('C:/Users/pmwash/Desktop/Re-Engineered Reports/Velocity/Data/ve
 
 def pre_process_kc(raw):
     '''Accepts a .xls output from Compleo'''
-    # Remove whitespace from column names
+    print('-'*100)
+    print('Pre-processing output from Compleo/AS400.')
+    print('-'*100)
+    
+    print('\n\n\nRemoving whitespace from column names.')
     raw.columns = [x.strip().replace(' ','') for x in raw.columns]
     
-    # Locate first row where the dataframe begins referring to cases 
+    print('Locating case/bottle split in document.') 
     find_btl_split = Series(raw['SIZE'].astype(str).tolist())
     find_btl_split = Series([x.strip().replace(' ','') for x in find_btl_split])
     
     find_case_split = Series(raw['BOTTLESALES'].astype(str).tolist())
     find_case_split = Series([x.strip().replace(' ','') for x in find_case_split])
     
-    
     btl_end_ix = min(find_btl_split[find_btl_split == 'OTAL'].index)
     case_start_ix = min(find_case_split[find_case_split == 'CASESALES'].index)
     
-    # Split out bottles and cases by finding first case instance
+    print('Splitting cases from bottles.')
     btls = raw.loc[0:btl_end_ix-1]
     cases = raw.loc[case_start_ix+1:].reset_index(drop=True)
     
-    # Format columns for cases 
-    ##case_cols = cases.iloc[0].astype(str).reset_index(drop=True).tolist()
+    print('Formatting column names.')
     cases.columns = ['PRODUCT#', 'SIZE', 'ANDDESCRIPTION', 'CASESALES', 'PICKFREQUENCY', 'CSE.LOC.',
        'BTL.LOC.', 'BULK1', 'BOTTLESONHAND']
     
-    # Remove invalid data from cases and btls
+    print('Removing invalid data.')
     remove_rows_cases = cases['PRODUCT#'].astype(str).apply(lambda x: str.isnumeric(x) )
     cases = cases[remove_rows_cases == True].reset_index(drop=True)
     
@@ -70,7 +78,7 @@ def pre_process_kc(raw):
         head, sep, tail = source_string.rpartition(replace_what)
         return head + replace_with + tail
 
-
+    print('Formatting negative numbers.')
     btl_sales = btls['BOTTLESALES'].astype(str).tolist()
     btl_sales = [b.strip().replace(' ','') for b in btl_sales]
     btl_sales = [b.strip().replace(',','') for b in btl_sales]    
@@ -88,24 +96,29 @@ def pre_process_kc(raw):
     check_btls = np.sum(btls['BOTTLESALES'])
     check_cses = np.sum(cases['CASESALES'])
     
-    print('Total bottles: ', check_btls, '\n',
-          'Total cases: ', check_cses)
+    print('Total bottles: ', check_btls, '\nTotal cases: ', check_cses, '\n\n\n')
     
     cases.columns = ['PRODUCT#','SIZE','DESCRIPTION','CASESALES','PICKFREQUENCY','CSE.LOC.','BTL.LOC.','BULK1','BOTTLESONHAND']
     btls.columns = ['PRODUCT#','SIZE','DESCRIPTION','BOTTLESALES','PICKFREQUENCY','CSE.LOC.','BTL.LOC.','BULK1','BOTTLESONHAND']
+    
+    print('-'*100)
+    print('Finished pre-processing data.')
+    print('-'*100, '\n\n\n')
     
     return btls, cases
 
 
 
 BTLS,CASES = pre_process_kc(raw)
-print('\n\n\nBOTTLES HEADER \n\n\n',BTLS.head(),'\n\n\nCASES HEADER \n',CASES.head())
 
 
 
 
 def map_kc_lines(BTLS,CASES):
     '''Map KC Lines to locations'''
+    print('-'*100)
+    print('Mapping lines to product locations.')
+    print('-'*100, '\n\n\n')
     
     CASES['CASELINE'] = CASES['CSE.LOC.'].astype(str).str[:2]
     c_lines = list()
@@ -152,6 +165,9 @@ CASES,BTLS = map_kc_lines(BTLS,CASES)
 
 def extract_features(CASES, BTLS, production_days=18):
     '''Extracts features from the data'''
+    print('-'*100)
+    print('Extracting features from data.')
+    print('-'*100, '\n\n\n')
     
     CASES['CASE.SALES.PER.DAY'] = round(CASES.CASESALES / production_days,4)
     BTLS['BTL.SALES.PER.DAY'] = round(BTLS.BOTTLESALES / production_days,4)
@@ -167,6 +183,10 @@ CASES, BTLS = extract_features(CASES, BTLS)
 
 def create_summary(CASES, BTLS, production_days=18):
     '''Summarize case lines for KC'''
+    print('-'*100)
+    print('Creating summary.')
+    print('-'*100, '\n\n\n')    
+    
     cs_count_items_on_line = CASES[['CASELINE','CASESALES']].groupby('CASELINE').count()
     cs_count_items_on_line.columns = ['N_SKUS']
     cs_volume_on_line = CASES[['CASELINE','CASESALES']].groupby('CASELINE').sum()
@@ -196,8 +216,14 @@ def create_summary(CASES, BTLS, production_days=18):
 
 def write_kc_to_xlsx(CASES, BTLS, month):
     '''Write the output to file'''
+    print('-'*100)
+    print('Writing output to Excel file on the KC common drive.')
+    print('-'*100, '\n\n\n')    
+    
     file_out = pd.ExcelWriter('M:/Operations Intelligence/Monthly Reports/Velocity/Velocity-'+month+'.xlsx', engine='xlsxwriter')
     workbook = file_out.book
+      
+    format_percent = workbook.add_format({'num_format': '0%'})
     
     cs_summary, btl_summary = create_summary(CASES, BTLS)
     cs_summary.to_excel(file_out, sheet_name='Summary', index=True)
@@ -208,7 +234,7 @@ def write_kc_to_xlsx(CASES, BTLS, month):
     summary_tab.set_column('B:B',9)
     summary_tab.set_column('C:C',16)
     summary_tab.set_column('D:E',19)
-    summary_tab.set_column('F:F',24)
+    summary_tab.set_column('F:F',24, format_percent)
     
     cs_lines = ['C100','C200','C300','C400','OddBall','WineRoom']
     btl_lines = ['A Line', 'B Line', 'OddBall']
@@ -246,84 +272,17 @@ def write_kc_to_xlsx(CASES, BTLS, month):
         sheet.set_column('K:K',19)
     
     file_out.save()
+    print('\n\n\n')
+    print('-'*100)
+    print('Finished writing data to file.')
+    print('-'*100, '\n\n\n') 
     
 
 
 
-write_kc_to_xlsx(CASES, BTLS, month=report_month)
+write_kc_to_xlsx(CASES, BTLS, month=report_month_year)
   
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Visualization R&D 
-## Also look into the slowest items on each line, see which can be swapped out
-#
-#from ggplot import *
-#
-#CASES.groupby('CASELINE')['PICKFREQUENCY'].hist(by=CASES['CASELINE'], bins=100)
-#
-#
-#g = ggplot(CASES, aes(x='DESCRIPTION',y='PICKFREQUENCY', colour='CASELINE'))
-#g + geom_bar(aes(colour='CASELINE')) + \
-#    facet_wrap('CASELINE')
-#
-#
-#
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# all_sizes = raw['SIZEANDDESCRIPTION'].tolist()
-# keg_sizes = ["\\<1/6BL\\>","\\<1/2BL\\>","\\<1/4BL\\>","\\<20L\\>","\\<10.8G\\>","\\<15.5G\\>","\\<15L\\>",
-# "\\<2.6G\\>","\\<19L\\>","\\<3.3G\\>","\\<4.9G\\>","\\<5.16G\\>","\\<5.2G\\>","\\<5.4G\\>","\\<19.5L\\>",
-# "\\<50L\\>","\\<30L\\>","\\<5G\\>","\\<25L\\>"]
-# keg_sizes = '(' + ')|('.join(keg_sizes) + ')'
-
-# [re.match(k,a) for k,a in zip(keg_sizes,all_sizes)]
-
-# re.match(keg_sizes,'1/6BL')
 
 
