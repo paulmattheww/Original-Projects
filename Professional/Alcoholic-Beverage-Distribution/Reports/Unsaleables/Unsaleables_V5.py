@@ -277,6 +277,8 @@ def create_summaries(unsaleables_by_product, pw_ytdsupp):
     '''
     print('*'*100)
     print('Creating summaries.')
+    print('*'*100)    
+    
     summary_cols = ['DollarsUnsaleable|sum', 'DollarsReturned|sum', 
                     'CasesUnsaleable|sum', 'CasesReturned|sum']
     
@@ -302,9 +304,7 @@ def create_summaries(unsaleables_by_product, pw_ytdsupp):
 
 supplier_summary, director_summary, class_summary = create_summaries(unsaleables_by_product, pw_ytdsupp)
 
-supplier_summary.head(25)
-director_summary
-class_summary
+
 
 
 
@@ -337,10 +337,10 @@ def customer_return_summary(pw_cusattr, pwunsale_tidy, pw_ytdcust):
     print('Merge in customer attributes.')
     customer_returns = customer_returns.merge(pw_cusattr, on='CustomerId', how='left')
     
-    print('Sorting in descending order on Dollars returned.\n\n\n')
+    print('Sorting in descending order on Dollars returned.')
     customer_returns.sort_values('DollarsReturned|sum', ascending=False, inplace=True)
     
-    print('Reorder columns for readability.')
+    print('Reorder columns for readability.\n\n\n')
     reorder_cols = ['CustomerId','Customer','Returns|count',
                     'PercentSales','DollarSales|bycustomer',
                     'DollarsReturned|sum','DollarsReturned|avg',
@@ -357,7 +357,81 @@ def customer_return_summary(pw_cusattr, pwunsale_tidy, pw_ytdcust):
 
 customer_returns = customer_return_summary(pw_cusattr, pwunsale_tidy, pw_ytdcust)
 
-customer_returns.head(50)
+
+
+
+supplier_summary.head(25)
+director_summary
+class_summary
+customer_returns.head(25)
+unsaleables_by_product.head(50)
+
+
+
+def write_unsaleables_to_excel(class_summary, director_summary, supplier_summary, customer_returns, unsaleables_by_product, month='YOU FORGOT TO SPECIFY THE MONTH'):
+    '''
+    Write report to Excel with formatting.
+    '''
+    file_out = pd.ExcelWriter('N:/Operations Intelligence/Monthly Reports/Unsaleables/Unsaleables & Returns  -  '+month+'.xlsx', engine='xlsxwriter')
+    workbook = file_out.book
+    
+    print('Writing Class summary to file.')
+    class_summary.to_excel(file_out, sheet_name='Summary', index=True)
+    
+    print('Writing Director summary to file.')
+    director_summary.to_excel(file_out, sheet_name='Summary', index=True, startrow=9)
+
+    print('Writing Customer Returns summary to file.')
+    customer_returns.to_excel(file_out, sheet_name='Customers', index=False)    
+    
+    print('Writing Supplier summary to file.')
+    supplier_summary.to_excel(file_out, sheet_name='Suppliers', index=False)
+
+    print('Writing Product summary to file.')
+    unsaleables_by_product.to_excel(file_out, sheet_name='Products', index=False)
+    
+    # Declare formats
+    format_thousands = workbook.add_format({'num_format': '#,##0'})
+    format_dollars = workbook.add_format({'num_format': '$#,##0'})
+    format_float = workbook.add_format({'num_format': '###0.#0'})    
+    format_percent = workbook.add_format({'num_format': '0%'})
+    
+    print('Formatting the document for visual purposes.')
+    # Set column widths
+    summary_tab = file_out.sheets['Summary']
+    summary_tab.set_column('A:A',30)
+    summary_tab.set_column('D:E',25, format_thousands)
+    summary_tab.set_column('B:C',25, format_dollars)
+    
+
+ 
+    print('Saving File.')
+    file_out.save()
+
+
+last_mon = dt.now().month - 1
+report_month = dt.now().replace(month=last_mon).strftime('%B')
+report_year = dt.now().year
+report_month_year = str(report_month) + ' ' + str(report_year)
+
+write_unsaleables_to_excel(class_summary, director_summary, supplier_summary, customer_returns, unsaleables_by_product, month=report_month_year)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
