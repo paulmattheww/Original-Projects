@@ -21,9 +21,21 @@ input_folder = 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Unsaleables/'
 
 
 print('''
-#README
-The following queries must be run for the same timeframe,
-if and only if a date range is a criteria of the query.
+Run time-sensitive queries for the same timeframe.
+
+After running them in the AS400, use the Excel add-in to 
+extract the data and overwrite the existing files in the
+input folder.
+
+All queries can be accessed from files in the AS400 by
+the same name.
+
+Contextual lookup queries need to be updated periodically.
+
+THESE QUERIES MUST BE RUN FOR THE SAME TIMEFRAME.
+------------------------------------------------------------
+pwrct1, pwunsale, pw_ytdcust, pw_ytdsupp, pw_ytdprod
+
 
 Main Queries for Report.
 ------------------------------------------------------------
@@ -31,7 +43,7 @@ pwrct1 - Queries RCT1 for unsaleables
 pwunsale - Queries MTC1 for returns
 
 
-Supplemental/Contextual Queries
+Supplemental/Contextual Queries.
 ------------------------------------------------------------
 pw_supprod : Supplier-Product relationships for lookup
 pw_cusattr : Customer attributes for lookup
@@ -40,6 +52,8 @@ directors : DIVER-Director-Supplier relationships for lookup
 
 Delete the first two columns after running all these queries.
 These queries are sum sales by {Customer, Supplier, Product}.
+If you choose a long timeframe for these then you should expect
+a long query-time. YTD queries are best run at lunch or EOTD.
 ------------------------------------------------------------
 pw_ytdcust - Sales over timeframe X-Y by Customer
 pw_ytdsupp - Sales over timeframe X-Y by Supplier
@@ -360,6 +374,48 @@ customer_returns = customer_return_summary(pw_cusattr, pwunsale_tidy, pw_ytdcust
 
 
 
+def returns_customer_product_time(pwunsale_tidy, pw_ytdcust, pw_cusattr):
+    '''
+    Meant to feed into a Pivot requested by Mitch Turner.
+    
+    Aggregates the same as above but includes time and product data.
+    '''
+    dat = pwunsale_tidy['Date'].tolist()
+    pwunsale_tidy['Month'] = [d.strftime('%B') for d in dat]    
+    
+    print('Aggregating custom pivot for Mitch.')
+    len_unique = lambda x: len(pd.unique(x))
+    agg_funcs_returns = {'ExtCost': {'DollarsReturned|avg':np.mean, 'DollarsReturned|sum':np.sum},
+                         'CasesReturned': {'CasesReturned|avg':np.mean, 'CasesReturned|sum':np.sum},
+                         'Invoice':len_unique }
+    
+    custom_cols = ['Month','CustomerId','Customer','ProductId','Product']    
+    
+    customer_returns = DataFrame(pwunsale_tidy.groupby(custom_cols)[['ExtCost','CasesReturned']].agg(agg_funcs_returns)).reset_index(drop=False)
+    customer_returns.rename(columns={'<lambda>':'Returns|count'}, inplace=True) 
+    customer_returns.drop('Customer', inplace=True, axis=1)
+    
+    print('Merging in YTD sales by Customer')
+    customer_returns = customer_returns.merge(pw_ytdcust, on='CustomerId', how='left')
+    
+    print('Deriving returns as a percent of sales for each Customer.')
+    customer_returns['PercentSales'] = np.divide(customer_returns['DollarsReturned|sum'], customer_returns['DollarSales|bycustomer'])
+    
+    print('Merge in customer attributes.')
+    customer_returns = customer_returns.merge(pw_cusattr, on='CustomerId', how='left')
+    
+    print('Sorting in descending order on Dollars returned.')
+    customer_returns.sort_values('DollarsReturned|sum', ascending=False, inplace=True)
+
+    return customer_returns
+
+
+for_mitch = returns_customer_product_time(pwunsale_tidy, pw_ytdcust, pw_cusattr)
+
+for_mitch.reset_index(drop=True).to_excel('C:/Users/pmwash/Desktop/Disposable Docs/YTD Returns as of 10-31 by Customer-Product-Month.xlsx', sheet_name='Raw Data')
+
+
+
 supplier_summary.head(25)
 director_summary
 class_summary
@@ -375,7 +431,11 @@ def write_unsaleables_to_excel(class_summary, director_summary, supplier_summary
     file_out = pd.ExcelWriter('N:/Operations Intelligence/Monthly Reports/Unsaleables/Unsaleables & Returns  -  '+month+'.xlsx', engine='xlsxwriter')
     workbook = file_out.book
     
-    print('Writing Class summary to file.')
+    print('*'*100)
+    print('Writing finished product to the STL Common Drive.')
+    print('*'*100)
+    
+    print('\n\n\nWriting Class summary to file.')
     class_summary.to_excel(file_out, sheet_name='Summary', index=True)
     
     print('Writing Director summary to file.')
@@ -443,7 +503,7 @@ def write_unsaleables_to_excel(class_summary, director_summary, supplier_summary
     products_tab.set_column('Q:R',20.5, format_dollars)
     products_tab.set_column('S:T',22.4, format_percent)
         
-    print('Saving File on the STL Common drive.')
+    print('Saving File on the STL Common drive.\n\n\n')
     file_out.save()    
     
     print('*'*100)
@@ -455,7 +515,7 @@ def write_unsaleables_to_excel(class_summary, director_summary, supplier_summary
 last_mon = dt.now().month - 1
 report_month = dt.now().replace(month=last_mon).strftime('%B')
 report_year = dt.now().year
-report_month_year = str(report_month) + ' ' + str(report_year)
+report_month_year = str(report_month) + ' ' + str(report_year) + ' Year to Date'
 
 write_unsaleables_to_excel(class_summary, director_summary, supplier_summary, customer_returns, unsaleables_by_product, month=report_month_year)
 
