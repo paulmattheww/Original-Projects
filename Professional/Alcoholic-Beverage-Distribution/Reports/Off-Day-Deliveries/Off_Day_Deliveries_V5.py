@@ -40,7 +40,7 @@ def clean_pw_offday(pw_offday, weeklookup):
     def sum_digits_in_string(digit):
         return sum(int(x) for x in digit if x.isdigit())
         
-    print('Mapping Columns)
+    print('Mapping Columns.')
     deliveries.columns = ['Date', 'Division', 'Invoice', 'CustomerId', 'Call', 'Priority', 
                'Warehouse', 'Cases', 'Dollars', 'Ship', 'Salesperson', 
                'ShipWeekPlan', 'Merchandising', 'OnPremise', 
