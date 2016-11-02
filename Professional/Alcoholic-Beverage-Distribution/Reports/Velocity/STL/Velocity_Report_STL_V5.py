@@ -10,16 +10,23 @@ Run velocity separation process
 Print to file
 Send to group
 '''
-report_month = input('Enter full month and year for the report: ')
 
 import pandas as pd
 from pandas import read_excel, Series, DataFrame
 import numpy as np
+from datetime import datetime as dt
 
 raw = read_excel('C:/Users/pmwash/Desktop/Re-Engineered Reports/Velocity/Data/velocity_stl.xlsx',header=0)
 
-ttl_cs = 110250
-ttl_btl = 5426.64
+ttl_cs = np.float64(input('Enter total cases expected from Compleo export: '))#270206
+ttl_btl = np.float64(input('Enter total bottles expected from Compleo export: '))#9259.37
+
+
+last_mon = dt.now().month - 1
+report_month = dt.now().replace(month=last_mon).strftime('%B')
+report_year = dt.now().year
+report_month_year = str(report_month) + ' ' + str(report_year)
+
 
 print('''
 
@@ -30,11 +37,17 @@ Expecting cases to be %.2f and bottles to be %.2f
 ''' % (ttl_cs,ttl_btl))
 
 def pre_process_stl(raw):
-    '''Accepts a .xls output from Compleo unformatted'''
-    # Remove whitespace from column names
+    '''
+    Accepts a .xls output from Compleo unformatted
+    '''
+    print('-'*100)
+    print('Pre-processing raw Compleo export from the AS400.')
+    print('-'*100)    
+    
+    print('\n\n\nRemoving whitespace from column names.')
     raw.columns = [x.strip().replace(' ','') for x in raw.columns]
     
-    # Locate first row where the dataframe begins referring to cases 
+    print('Locating the case/bottle split in the document to separate the two.') 
     find_btl_split = Series(raw['SIZE'].astype(str).tolist())
     find_btl_split = Series([x.strip().replace(' ','') for x in find_btl_split])
     
@@ -45,16 +58,15 @@ def pre_process_stl(raw):
     btl_end_ix = min(find_btl_split[find_btl_split == 'OTAL'].index)
     case_start_ix = min(find_case_split[find_case_split == 'CASESALES'].index)
     
-    # Split out bottles and cases by finding first case instance
+    print('Splitting out cases from bottles.')
     btls = raw.loc[0:btl_end_ix-1].reset_index(drop=True)
     cases = raw.loc[case_start_ix:].reset_index(drop=True)
     
-    # Format columns for cases 
+    print('Mapping column names.') 
     cases.columns = ['PRODUCT#', 'SIZE', 'ANDDESCRIPTION', 'CASESALES', 'PICKFREQUENCY', 'CSE.LOC.',
            'BTL.LOC.', 'BULK1', 'BOTTLESONHAND']
     
-    # Remove invalid data from cases and btls
-     # Remove invalid data from cases and btls
+    print('Removing invalid data.')
     remove_rows_cases = cases['PRODUCT#'].astype(str).apply(lambda x: str.isnumeric(x) )
     cases = cases[remove_rows_cases == True].reset_index(drop=True)
     
@@ -66,7 +78,7 @@ def pre_process_stl(raw):
         head, sep, tail = source_string.rpartition(replace_what)
         return head + replace_with + tail
     
-    
+    print('Formatting negative numbers so negative sign is before value.')
     btl_sales = btls['BOTTLESALES'].astype(str).tolist()
     btl_sales = [b.strip().replace(' ','') for b in btl_sales]
     btl_sales = [b.strip().replace(',','') for b in btl_sales]
@@ -81,27 +93,37 @@ def pre_process_stl(raw):
     case_sales = Series(case_sales)
     cases['CASESALES'] = case_sales.astype(np.float64)
     
+    print('Performing checks with expected values.')
     check_btls = np.sum(btls['BOTTLESALES'])
     check_cses = np.sum(cases['CASESALES'])
     
-    print('\n\n\nTotal bottles: ', check_btls, '\n\n',
-          'Total cases: ', check_cses)
+    print('Total bottles: ', check_btls, '\n\nTotal cases: ', check_cses, '\n\n\n')
     
     cases.columns = ['PRODUCT#','SIZE','DESCRIPTION','CASESALES','PICKFREQUENCY','CSE.LOC.','BTL.LOC.','BULK1','BOTTLESONHAND']
     btls.columns = ['PRODUCT#','SIZE','DESCRIPTION','BOTTLESALES','PICKFREQUENCY','CSE.LOC.','BTL.LOC.','BULK1','BOTTLESONHAND']
+    
+    print('-'*100)
+    print('Finished pre-processing data.')    
+    print('-'*100)
+    print('\n\n\n')
     
     return btls, cases
 
 
 
 BTLS,CASES = pre_process_stl(raw)
-print('\n\n\nBOTTLES HEADER \n\n\n',BTLS.head(),'\n\n\nCASES HEADER \n',CASES.head())
 
 
 
 
 def map_stl_lines(BTLS,CASES):
-    '''Map STL Lines to locations'''
+    '''
+    Map STL Lines to locations
+    '''
+    print('-'*100)
+    print('Mapping lines to the dataset.') 
+    print('-'*100)
+    
     CASES['CASELINE'] = CASES['CSE.LOC.'].astype(str).str[:1]
     c_lines = list()
     
@@ -164,6 +186,10 @@ CASES, BTLS = extract_features(CASES, BTLS)
 
 def create_summary(CASES, BTLS, production_days=18):
     '''Summarize case lines for STL'''
+    print('-'*100)
+    print('Creating summary.')
+    print('-'*100)
+    
     cs_count_items_on_line = CASES[['CASELINE','CASESALES']].groupby('CASELINE').count()
     cs_count_items_on_line.columns = ['N_SKUS']
     cs_volume_on_line = CASES[['CASELINE','CASESALES']].groupby('CASELINE').sum()
@@ -186,6 +212,8 @@ def create_summary(CASES, BTLS, production_days=18):
     total_bottle_volume = btl_summary['BOTTLE_VOLUME'].sum()
     btl_summary['PERCENT_TOTAL_VOLUME'] = round(btl_summary.BOTTLE_VOLUME / total_bottle_volume, 4)
     
+    print('\n\n\n')    
+    
     return cs_summary, btl_summary
 
 
@@ -193,19 +221,26 @@ def create_summary(CASES, BTLS, production_days=18):
 
 def write_stl_to_xlsx(CASES, BTLS, month):
     '''Write the output to file'''
+    print('-'*100)
+    print('Writing data to Excel file on the STL Common drive.')
+    print('-'*100)    
+    
     file_out = pd.ExcelWriter('N:/Operations Intelligence/Monthly Reports/Velocity/Velocity-'+month+'.xlsx', engine='xlsxwriter')
     workbook = file_out.book
     
     cs_summary, btl_summary = create_summary(CASES, BTLS)
     cs_summary.to_excel(file_out, sheet_name='Summary', index=True)
     btl_summary.to_excel(file_out, sheet_name='Summary', startrow=12, index=True)
+
+    print('Defining number formats for later use.')    
+    format_percent = workbook.add_format({'num_format': '0%'})
     
     summary_tab = file_out.sheets['Summary']
     summary_tab.set_column('A:A',11)
     summary_tab.set_column('B:B',9)
     summary_tab.set_column('C:C',16)
     summary_tab.set_column('D:E',19)
-    summary_tab.set_column('F:F',24)
+    summary_tab.set_column('F:F',24, format_percent)
     
     cs_lines = ['C-Line','D-Line','E-Line','F-Line','G-Line','OddBall-C','WineRoom']
     btl_lines = ['A Line','B Line','OddBall-B']
@@ -246,9 +281,12 @@ def write_stl_to_xlsx(CASES, BTLS, month):
         sheet.set_column('K:K',19)    
     
     file_out.save()
-    
+    print('\n\n\n')
+    print('-'*100)
+    print('Finished writing data to file.')
+    print('-'*100)    
 
-write_stl_to_xlsx(CASES, BTLS, month=report_month)
+write_stl_to_xlsx(CASES, BTLS, month=report_month_year)
   
 
 
