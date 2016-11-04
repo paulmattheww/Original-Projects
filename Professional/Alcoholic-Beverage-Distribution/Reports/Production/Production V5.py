@@ -18,39 +18,61 @@ pd.set_option('display.max_columns', 100)
 pd.set_option('display.width', 200)
 
 
+print('Defining functions for utility.')
+def extract_stl_production_tab(file, df):
+        '''Gets date from filename'''
+        regex_criteria = re.compile(r'[0-9]+-[0-9]+')    
+        dat = re.findall(regex_criteria, file)
+        
+        exclude = set(string.punctuation)
+        dat = ''.join(d for d in dat if d not in exclude)
+        
+        this_year = str(dt.today().year)
+        dat = str(dat + '-' + this_year)
+        dat = str(dt.strptime(str(dat), "%m-%d-%Y").date())
+        
+        df['Date'] = dat
+        df.reset_index(drop=True, inplace=True)
+        
+        df['Warehouse'] = 'STL'
+        
+        df = df[df['Driver'] != 'Totals:']        
+        
+        keep_cols = ['Date','Warehouse','LOC','RTE','Driver','Truck#','Stops',
+                     'TTL Cs/splt','Cs','Btls','Start Hr',
+                     'End Hr','Ttl Hrs','Ttl Mi']
+        df = df[keep_cols].drop_duplicates()
+        
+        DATE, WAREHOUSE, ROUTE, DRIVER, TRUCK, CASES = df.Date.astype(str), df.Warehouse.astype(str), df.RTE.astype(str), df.Driver.astype(str), df['Truck#'].astype(str), df['TTL Cs/splt'].astype(str)
+        new_index = DATE + '_' + WAREHOUSE + '_' + ROUTE + '_' + DRIVER + '_' + TRUCK + '_' + CASES
+        df.set_index(new_index, inplace=True)
+        
+        return df, dat
+
 
 print('Read in files.')
 temp_location = 'C:\\Users\\pmwash\\Desktop\\Disposable Docs\\Production Data\\'
 file_list = glob.glob(temp_location + '*.xls*')
 
-
-str(file_list).punctuation
-
-
 panel_data = {}
 
 for i, file in enumerate(file_list):
     df = pd.read_excel(file, sheetname='Production')
-
-    regex_criteria = re.compile(r'[0-9]+-[0-9]+')    
-    dat = re.findall(regex_criteria, file)
     
-    exclude = set(string.punctuation)
-    dat = ''.join(d for d in dat if d not in exclude)
-    
-    this_year = str(dt.today().year)
-    dat = str(dat + '-' + this_year)
-
-    dat = dt.strptime(str(dat), "%m-%d-%Y").date()
+    df, dat = extract_stl_production_tab(file, df)
         
     panel_data[dat] = df
     print(dat)
 
 
+panel_data['2016-10-03'].columns
 
+panel_data['2016-10-03'].tail()
 
 Production_Tab = pd.Panel(data=panel_data)
 
+
+Production_Tab
 
 
 
