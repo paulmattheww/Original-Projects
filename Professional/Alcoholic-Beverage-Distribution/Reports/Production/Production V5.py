@@ -158,84 +158,65 @@ NightlyHours_Tab.head(100)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# testing
-extract_stl_night_hours_tab(file_list[1])
-
-
-file = '10-02.xlsx'
-
-senior = pd.read_excel(temp_location + file, sheetname='Night hours', skiprows=6, skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0)
-casual = pd.read_excel(temp_location + file, sheetname='Night hours', skiprows=34, skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0)
-
-dat = extract_date_stl(file)
-
-senior['Date'] = casual['Date'] = dat 
-senior['Month'] = casual['Month']  = dat.strftime('%B')
-senior['Weekday'] = casual['Weekday']  = dat.strftime('%A')
-senior['WeekNumber'] = casual['WeekNumber'] = dat.strftime('%U')
-senior['DOTM'] = casual['DOTM'] = dat.strftime('%d')
-senior['Warehouse'] = casual['Warehouse'] = 'STL'
-
-keep_cols = ['Date','NAME','HRS WORKED','REG TIME','O.T HOURS',
-            'Month','Weekday','WeekNumber','DOTM','Warehouse']
-    
-senior = senior[keep_cols].drop_duplicates()
-casual = casual[keep_cols].drop_duplicates()
-
-senior['Type'] = 'Senior'
-casual['Type'] = 'Casual'
-
-senior = senior[senior['NAME'].isnull() == False]
-casual = casual[casual['NAME'].isnull() == False]
-
-df = senior.append(casual)
-df.reset_index(drop=True, inplace=True)
+def extract_stl_over_short_tabs(file):
+        '''
+        Takes in and formats BOTH O/S tabs from Daily Report. 
+        Extracts date from filename and creates index.
+        Puts into a dictionary of dataframes 
+        for input into a pandas DataFrame.
+        '''
+        dtypes = {'Driver #':np.int,'Customer #':np.int,'RTE':np.int,'Item #':int,'CS':np.float64,'BTL':np.float64}
+        stl_os = pd.read_excel(file, sheetname='Over-Short', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, dtypes=col_dtypes)
+        col_os = pd.read_excel(file, sheetname='Col. Over - Short', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, col_dtypes=dtypes)
         
-df.head(50)
+        dat = extract_date_stl(file)
+        
+        stl_os['Date'] = col_os['Date'] = dat 
+        stl_os['Month'] = col_os['Month']  = dat.strftime('%B')
+        stl_os['Weekday'] = col_os['Weekday']  = dat.strftime('%A')
+        stl_os['WeekNumber'] = col_os['WeekNumber'] = dat.strftime('%U')
+        stl_os['DOTM'] = col_os['DOTM'] = dat.strftime('%d')
+        stl_os['Warehouse'] = col_os['Warehouse'] = 'STL'
+        
+        keep_cols = ['Date','Driver #','Customer #','RTE','Item #',
+                    'CS','BTL','Month','Weekday','WeekNumber','DOTM','Warehouse']
+            
+        stl_os = stl_os[keep_cols].reset_index(drop=True)
+        col_os = col_os[keep_cols].reset_index(drop=True)
+        
+        stl_os['Type'] = 'STL'
+        col_os['Type'] = 'COL'
+        
+        stl_os = stl_os[stl_os['RTE'].isnull() == False]
+        col_os = col_os[col_os['RTE'].isnull() == False]
+        
+        df = stl_os.append(col_os)
+        
+        non_decimal = re.compile(r'[^\d.]+')
+        drv_no, cus_no, itm_no = df['Driver #'].astype(str).tolist(), df['Customer #'].astype(str).tolist(), df['Item #'].astype(str).tolist()
+        df['Driver #'] = [non_decimal.sub('', d) for d in drv_no]
+        df['Customer #'] = [non_decimal.sub('', c) for c in cus_no]
+        df['Item #'] = [non_decimal.sub('', i) for i in itm_no]
+        
+        # filter_out_criteria = (df['Driver #'] != '') | (df['Customer #'] != '') | (df['Item #'] != '')
+        # df = df[filter_out_criteria]
+        
+        df.reset_index(drop=True, inplace=True)
+        
+        return df
+        
+        
+        
+OverShort_Tab = pd.DataFrame()        
+
+for i, file in enumerate(file_list):
+    df = extract_stl_over_short_tabs(file)
+    OverShort_Tab = OverShort_Tab.append(df)
+    OverShort_Tab.reset_index(drop=True, inplace=True)
+    
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Production_Panel = pd.Panel(data=panel_data)
-
-Production_Panel.groupby(axis=1, function=np.sum)
-
-Production_Panel['2016-10-06'].tail(50)
-
-
-Production_Panel['2016-10-03'].columns
-
-
-
-
-
+OverShort_Tab.head(50)
 
 
 
