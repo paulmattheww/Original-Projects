@@ -198,6 +198,14 @@ def extract_stl_over_short_tabs(file):
         df['Customer #'] = [non_decimal.sub('', c) for c in cus_no]
         df['Item #'] = [non_decimal.sub('', i) for i in itm_no]
         
+        df['Driver #'] = pd.to_numeric(df['Driver #'], errors='coerce')
+        df['Customer #'] = pd.to_numeric(df['Customer #'], errors='coerce')
+        df['Item #'] = pd.to_numeric(df['Item #'], errors='coerce')
+        df.fillna(0, inplace=True)
+        
+        df[['Driver #','Customer #','Item #']] = df[['Driver #','Customer #','Item #']].astype(int)
+        
+        #df[['Driver #','Customer #','Item #']] = df[['Driver #','Customer #','Item #']].astype(int)
         # filter_out_criteria = (df['Driver #'] != '') | (df['Customer #'] != '') | (df['Item #'] != '')
         # df = df[filter_out_criteria]
         
