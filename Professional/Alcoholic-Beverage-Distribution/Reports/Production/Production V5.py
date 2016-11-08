@@ -205,10 +205,6 @@ def extract_stl_over_short_tabs(file):
         
         df[['Driver #','Customer #','Item #']] = df[['Driver #','Customer #','Item #']].astype(int)
         
-        #df[['Driver #','Customer #','Item #']] = df[['Driver #','Customer #','Item #']].astype(int)
-        # filter_out_criteria = (df['Driver #'] != '') | (df['Customer #'] != '') | (df['Item #'] != '')
-        # df = df[filter_out_criteria]
-        
         df.reset_index(drop=True, inplace=True)
         
         return df
@@ -229,6 +225,107 @@ OverShort_Tab.head(50)
 
 
 
+
+
+
+
+
+
+
+
+def extract_stl_returns_tab(file):
+        '''
+        Takes in and formats the Returns tab from Daily Report. 
+        Extracts date from filename and creates index.
+        Puts into a dictionary of dataframes 
+        for input into a pandas DataFrame.
+        '''
+        dtypes = {'Driver #':np.int,'Inv#':np.int64,'Customer':str,'Cust#':np.int64,
+            'Driver #':np.int64,'Driver':str,'Reason':str,'Cases':np.float64,
+            'Bottles':np.float64,'Pick up Cases':np.float64,'Empty Boxes':np.float64,
+            'PLLTS':np.int64,'Kegs':np.int64,'POS':np.int64,'Bonus':np.float64,'Inv Amt':np.float64,
+            'Driver Return or Customer Return':str,'Inv#':np.int64
+        }
+        returns = pd.read_excel(file, sheetname='Returns', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, dtypes=col_dtypes, skiprows=2)
+        
+        returns.fillna(0, inplace=True)
+        dat = extract_date_stl(file)
+        
+        returns['Date'] =  dat 
+        returns['Month'] = dat.strftime('%B')
+        returns['Weekday'] = dat.strftime('%A')
+        returns['WeekNumber'] = dat.strftime('%U')
+        returns['DOTM'] = dat.strftime('%d')
+        returns['Warehouse'] = 'STL'
+        
+        keep_cols = ['Date','Driver Return or Customer Return','Inv#',
+                    'Cust#','Customer','Driver #','Driver','Reason','Cases','Bottles',
+                    'Pick up Cases','Empty Boxes','PLLTS','Kegs','Empty Kegs',
+                    'POS','Bonus','Inv Amt','Sales Person',
+                    'Month','Weekday','WeekNumber','DOTM','Warehouse']
+            
+        returns = returns[keep_cols].reset_index(drop=True)
+
+        returns = returns[returns['Driver Return or Customer Return'] != 0]
+        
+        returns.reset_index(drop=True, inplace=True)
+        
+        return returns
+        
+        
+        
+Returns_Tab = pd.DataFrame()        
+
+for i, file in enumerate(file_list):
+    df = extract_stl_returns_tab(file)
+    Returns_Tab = Returns_Tab.append(df)
+    Returns_Tab.reset_index(drop=True, inplace=True)
+    
+    
+Returns_Tab.head(20)
+    
+    
+    
+    
+    
+    
+    
+
+
+
+
+
+
+
+# TESTING
+dtypes = {'Driver #':np.int,'Customer #':np.int,'RTE':np.int,'Item #':int,'CS':np.float64,'BTL':np.float64}
+returns = pd.read_excel(file, sheetname='Returns', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, dtypes=col_dtypes, skiprows=2)
+
+
+dat = extract_date_stl(file)
+
+returns['Date'] =  dat 
+returns['Month'] = dat.strftime('%B')
+returns['Weekday'] = dat.strftime('%A')
+returns['WeekNumber'] = dat.strftime('%U')
+returns['DOTM'] = dat.strftime('%d')
+returns['Warehouse'] = 'STL'
+
+keep_cols = ['Date','Driver #','Customer #','RTE','Item #',
+            'CS','BTL','Month','Weekday','WeekNumber','DOTM','Warehouse']
+    
+returns = returns[keep_cols].reset_index(drop=True)
+
+returns['Type'] = 'STL'
+
+returns = returns[returns['RTE'].isnull() == False]
+
+df.reset_index(drop=True, inplace=True)
+
+
+
+
+returns.head()
 
 
 
