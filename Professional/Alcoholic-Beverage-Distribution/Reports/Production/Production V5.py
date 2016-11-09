@@ -476,51 +476,59 @@ def prepare_summary_output(Summary_Tab_Combined):
     '''
     Aggregates data for presentation to present to management
     '''
-summary_cols = {'Cases|total' : {'sum':np.sum, 'avg':np.mean},
-                'Cases|stl' : {'sum':np.sum, 'avg':np.mean},
-                'Cases|col' : {'sum':np.sum, 'avg':np.mean},
-                'Cases|cape' : {'sum':np.sum, 'avg':np.mean},
-                'Bottles|total' : {'sum':np.sum, 'avg':np.mean}, 
-                'Cases|kctransfer' : {'sum':np.sum, 'avg':np.mean},
-                'CPMH' : np.mean,
-                'CPMH|adjusted' : np.mean, 
-                'Hours|total' : {'sum':np.sum, 'avg':np.mean},
-                'Hours|regular' : {'sum':np.sum, 'avg':np.mean},
-                'Hours|overtime' : {'sum':np.sum, 'avg':np.mean},
-                'Hours|senior' : {'sum':np.sum, 'avg':np.mean},
-                'Hours|casual' : {'sum':np.sum, 'avg':np.mean},
-                'Employees|total' : np.mean,
-                'TotalErrors' : np.sum,
-                'Mispicks' : np.sum,
-                'Overs' : np.sum,
-                'Shorts' : np.sum,
-                'Trucks|total' : np.mean,
-                'Trucks|package' : np.mean,
-                'Trucks|keg' : np.mean,
-                'Stops|total' : {'sum':np.sum, 'avg':np.mean},
-                'Stops|stl' : {'sum':np.sum, 'avg':np.mean},
-                'Stops|cape' : {'sum':np.sum, 'avg':np.mean},
-                'Stops|col' : {'sum':np.sum, 'avg':np.mean},
-                'Returns|dollars' : np.sum
-}
+    summary_cols = {'Cases|total' : {'sum':np.sum, 'avg':np.mean},
+                    'Cases|stl' : {'sum':np.sum, 'avg':np.mean},
+                    'Cases|col' : {'sum':np.sum, 'avg':np.mean},
+                    'Cases|cape' : {'sum':np.sum, 'avg':np.mean},
+                    'Bottles|total' : {'sum':np.sum, 'avg':np.mean}, 
+                    'Cases|kctransfer' : {'sum':np.sum, 'avg':np.mean},
+                    'CPMH' : np.mean,
+                    'CPMH|adjusted' : np.mean, 
+                    'Hours|total' : {'sum':np.sum, 'avg':np.mean},
+                    'Hours|regular' : {'sum':np.sum, 'avg':np.mean},
+                    'Hours|overtime' : {'sum':np.sum, 'avg':np.mean},
+                    'Hours|senior' : {'sum':np.sum, 'avg':np.mean},
+                    'Hours|casual' : {'sum':np.sum, 'avg':np.mean},
+                    'Employees|total' : np.mean,
+                    'TotalErrors' : np.sum,
+                    'Mispicks' : np.sum,
+                    'Overs' : np.sum,
+                    'Shorts' : np.sum,
+                    'Trucks|total' : np.mean,
+                    'Trucks|package' : np.mean,
+                    'Trucks|keg' : np.mean,
+                    'Stops|total' : {'sum':np.sum, 'avg':np.mean},
+                    'Stops|stl' : {'sum':np.sum, 'avg':np.mean},
+                    'Stops|cape' : {'sum':np.sum, 'avg':np.mean},
+                    'Stops|col' : {'sum':np.sum, 'avg':np.mean},
+                    'Returns|dollars' : np.sum
+    }
+    
+    output_summary = pd.DataFrame(Summary_Tab_Combined.groupby('Year').agg(summary_cols))
+    output_summary.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in output_summary.columns]  
+    output_summary = output_summary.T
+    output_summary.reset_index(drop=False, inplace=True)
+    output_summary.sort_values('index', ascending=True, inplace=True)
+    output_summary.set_index(keys='index', drop=True, inplace=True)
+    
+    abs_diff = np.subtract(output_summary['2016'], output_summary['2015'])
+    output_summary['Percent Change'] = np.divide(abs_diff, output_summary['2015'])
+    
+    return output_summary
 
-output_summary = pd.DataFrame(Summary_Tab_Combined.groupby('Year').agg(summary_cols))
-output_summary.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in output_summary.columns]  
-output_summary = output_summary.T
-output_summary.reset_index(drop=False, inplace=True)
-output_summary.sort_values('index', ascending=True, inplace=True)
-output_summary.set_index(keys='index', drop=True, inplace=True)
 
-abs_diff = np.subtract(output_summary['2016'], output_summary['2015'])
-output_summary['Percent Change'] = np.divide(abs_diff, output_summary['2015'])
-
-return output_summary
+Monthly_Summary = prepare_summary_output(Summary_Tab_Combined)
+Monthly_Summary.head()
 
 
 
-Summary_Tab_Combined.groupby('Year').sum()
+def write_production_to_excel(output_summary):
+    '''Writes to Excel'''
+output_path = 'N:\\Operations Intelligence\\Monthly Reports\\Production\\'
+report_month, report_year = dt.strftime(dt.now() - datetime.timedelta(days=20), '%B'), dt.now().year
+output_file_name = output_path + 'Production Report - ' + str(report_month) + ' ' + str(report_year) + '.xlsx'
 
-Summary_Tab_Combined.dtypes
+output_summary.to_excel(output_file_name, sheet_name='Summary')
 
 
 
