@@ -476,16 +476,16 @@ def prepare_summary_output(Summary_Tab_Combined):
     '''
     Aggregates data for presentation to present to management
     '''
-    summary_cols = {'Cases|total' : {'sum':np.sum, 'avg':np.mean},
-                    'Bottles|total' : {'sum':np.sum, 'avg':np.mean}, 
-                    'Kegs' : {'sum':np.sum, 'avg':np.mean}, 
+    summary_cols = {'Cases|total' : {'sum':np.sum, 'mean':np.mean},
+                    'Bottles|total' : {'sum':np.sum, 'mean':np.mean}, 
+                    'Kegs' : {'sum':np.sum, 'mean':np.mean}, 
                     'CPMH' : np.mean,
                     'CPMH|adjusted' : np.mean, 
-                    'Hours|total' : {'sum':np.sum, 'avg':np.mean},
-                    'Hours|regular' : {'sum':np.sum, 'avg':np.mean},
-                    'Hours|overtime' : {'sum':np.sum, 'avg':np.mean},
-                    'Hours|senior' : {'sum':np.sum, 'avg':np.mean},
-                    'Hours|casual' : {'sum':np.sum, 'avg':np.mean},
+                    'Hours|total' : {'sum':np.sum, 'mean':np.mean},
+                    'Hours|regular' : {'sum':np.sum, 'mean':np.mean},
+                    'Hours|overtime' : {'sum':np.sum, 'mean':np.mean},
+                    'Hours|senior' : {'sum':np.sum, 'mean':np.mean},
+                    'Hours|casual' : {'sum':np.sum, 'mean':np.mean},
                     'Employees|total' : np.mean,
                     'TotalErrors' : np.sum,
                     'Mispicks' : np.sum,
@@ -494,10 +494,10 @@ def prepare_summary_output(Summary_Tab_Combined):
                     'Trucks|total' : np.mean,
                     'Trucks|package' : np.mean,
                     'Trucks|keg' : np.mean,
-                    'Stops|total' : {'sum':np.sum, 'avg':np.mean},
-                    'Stops|stl' : {'sum':np.sum, 'avg':np.mean},
-                    'Stops|cape' : {'sum':np.sum, 'avg':np.mean},
-                    'Stops|col' : {'sum':np.sum, 'avg':np.mean},
+                    'Stops|total' : {'sum':np.sum, 'mean':np.mean},
+                    'Stops|stl' : {'sum':np.sum, 'mean':np.mean},
+                    'Stops|cape' : {'sum':np.sum, 'mean':np.mean},
+                    'Stops|col' : {'sum':np.sum, 'mean':np.mean},
                     'Returns|dollars' : np.sum
     }
     
@@ -555,14 +555,34 @@ format_percent = workbook.add_format({'num_format': '0%'})
 format_justification = workbook.add_format()
 format_justification = format_justification.set_align('right')
 
-
-print('Formatting Summary tab for visual purposes.')
 summary_tab = file_out.sheets['Summary']
 summary_tab.set_column('A:A',31)
 summary_tab.set_column('B:B',15,format_float)
 summary_tab.set_column('C:C',15,format_float)
-
 summary_tab.set_column('D:D',15,format_percent)
+
+daily_summary_tab = file_out.sheets['Daily Summary']
+daily_summary_tab.set_column('A:A',31)
+daily_summary_tab.set_column('B:B',15,format_float)
+daily_summary_tab.set_column('C:C',15,format_float)
+
+returns_tab = file_out.sheets['Returns']
+returns_tab.set_column('A:A',31)
+returns_tab.set_column('B:B',15,format_float)
+returns_tab.set_column('C:C',15,format_float)
+
+overshort_tab = file_out.sheets['SumOver-Shortmary']
+overshort_tab.set_column('A:A',31)
+overshort_tab.set_column('B:B',15,format_float)
+overshort_tab.set_column('C:C',15,format_float)
+
+nightlyhours_tab = file_out.sheets['Summary']
+nightlyhours_tab.set_column('A:A',31)
+nightlyhours_tab.set_column('B:B',15,format_float)
+nightlyhours_tab.set_column('C:C',15,format_float)
+
+
+
 
 file_out.save()    
 
