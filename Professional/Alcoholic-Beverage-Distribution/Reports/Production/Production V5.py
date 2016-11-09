@@ -507,7 +507,15 @@ summary_cols = {'Cases|total' : {'sum':np.sum, 'avg':np.mean},
 output_summary = pd.DataFrame(Summary_Tab_Combined.groupby('Year').agg(summary_cols))
 output_summary.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in output_summary.columns]  
 output_summary = output_summary.T
-output_summary.sort_index(axis=0, level=[0,1], inplace=True)
+output_summary.reset_index(drop=False, inplace=True)
+output_summary.sort_values('index', ascending=True, inplace=True)
+output_summary.set_index(keys='index', drop=True, inplace=True)
+
+abs_diff = np.subtract(output_summary['2016'], output_summary['2015'])
+output_summary['Percent Change'] = np.divide(abs_diff, output_summary['2015'])
+
+return output_summary
+
 
 
 Summary_Tab_Combined.groupby('Year').sum()
