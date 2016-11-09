@@ -297,6 +297,181 @@ Returns_Tab.head(20)
 
 
 
+
+
+
+
+
+def extract_stl_summary_tab(file):
+    '''
+    Extracts summary tab by cell.
+    '''
+    summary_tab = pd.read_excel(file, sheetname='Summary', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, skiprows=1, names=np.arange(1,14))
+    keep_cols = [1,2,4,5,9,10,12,13]
+    summary_tab = summary_tab[keep_cols]
+    summary_tab.head(25)
+    
+    cases_returned = summary_tab.loc[2,2]#
+    btls_returned = summary_tab.loc[3,2]
+    dollars_returned = summary_tab.loc[5,2]
+    overs = summary_tab.loc[8,2]
+    shorts = summary_tab.loc[9,2]
+    mispicks = summary_tab.loc[12,2]
+    total_errors = summary_tab.loc[17,2]
+    
+    total_cases = summary_tab.loc[2,5]#
+    total_cases_contech = summary_tab.loc[48,10]
+    cases_stl = summary_tab.loc[3,5]
+    kegs = summary_tab.loc[20,10] #from Contech
+    kc_transfer = summary_tab.loc[5,5]
+    cases_col = summary_tab.loc[6,5]
+    cases_cape = summary_tab.loc[7,5]
+    
+    total_bottles = summary_tab.loc[9,5]#
+    stl_btls = summary_tab.loc[10,5]
+    col_btls = summary_tab.loc[11,5]
+    cap_btls = summary_tab.loc[12,5]
+    
+    total_stops = summary_tab.loc[13,5]#
+    stops_stl = summary_tab.loc[14,5]
+    stops_cape = summary_tab.loc[15,5]
+    stops_col = summary_tab.loc[16,5]
+    total_trucks = summary_tab.loc[17,5] 
+    trucks_package = summary_tab.loc[18,5]
+    trucks_keg = summary_tab.loc[19,5]
+    
+    total_hours = summary_tab.loc[31,5]
+    loading_hours = summary_tab.loc[26,10]
+    senior_hours = summary_tab.loc[32,5]
+    casual_hours = summary_tab.loc[33,5]
+    total_reg_hours = summary_tab.loc[34,5]
+    senior_reg_hours = summary_tab.loc[35,5]
+    casual_reg_hours = summary_tab.loc[36,5]
+    total_ot_hours = summary_tab.loc[37,5]
+    senior_ot_hours = summary_tab.loc[38,5]
+    casual_ot_hours = summary_tab.loc[39,5]
+    temp_hours = summary_tab.loc[40,5]
+    total_absent_employees = summary_tab.loc[42,5]
+    senior_absent = summary_tab.loc[43,5]
+    casual_absent = summary_tab.loc[44,5]
+    total_employees_on_hand = summary_tab.loc[47,5]
+    completion_time = summary_tab.loc[48,5]
+    
+    number_of_waves = summary_tab.loc[49,10]
+    non_conveyable = summary_tab.loc[24,10]
+    pallet_picks = summary_tab.loc[25,10]
+    sorter_run_time = summary_tab.loc[27,10]
+    loading_hours = summary_tab.loc[26,10]
+    jackpot_cases = summary_tab.loc[30,10]
+    
+    cpmh = summary_tab.loc[49,5]
+    cpmh_adjusted = summary_tab.loc[50,5]
+    cases_per_hour = summary_tab.loc[20,5]
+    cpmh_c = summary_tab.loc[24,5]
+    cpmh_d = summary_tab.loc[25,5]
+    cpmh_e = summary_tab.loc[26,5]
+    cpmh_f = summary_tab.loc[27,5]
+    cpmh_g = summary_tab.loc[28,5]
+    cases_c = summary_tab.loc[4,10]
+    cases_d = summary_tab.loc[6,10]
+    cases_e = summary_tab.loc[8,10]
+    cases_f = summary_tab.loc[10,10]
+    cases_g = summary_tab.loc[12,10]
+    cases_w = summary_tab.loc[14,10]
+    hours_w = summary_tab.loc[15,10]
+    cpmh_w = cases_w / hours_w
+    cases_oddball = summary_tab.loc[16,10]
+    hours_oddball = summary_tab.loc[17,10]
+    cpmh_oddball = cases_oddball / hours_oddball
+    
+    dat = extract_date_stl(file)
+    
+    the_row = {'Date':dat, 
+                'CPMH':cpmh, 'CPMH|adjusted':cpmh_adjusted, 
+                'Cases|total':total_cases, 'Cases|contech':total_cases_contech, 'Cases|perhour':cases_per_hour,
+                'Cases|stl':cases_stl, 'Cases|col':cases_col, 'Cases|cape':cases_cape,
+                'Kegs':kegs, 'Cases|kctransfer':kc_transfer, 
+                'Bottles|total':total_bottles, 'Bottles|stl':stl_btls, 'Bottles|col':col_btls, 
+                'Bottles|cape':cap_btls,
+                'Returns|cases':cases_returned, 'Returns|btls':btls_returned, 'Returns|dollars':dollars_returned,
+                'Overs':overs, 'Shorts':shorts, 'Mispicks':mispicks, 'TotalErrors':total_errors,
+                'Stops|total':total_stops, 'Stops|stl':stops_stl, 'Stops|cape':stops_cape,
+                'Stops|col':stops_col,
+                'Trucks|total':total_trucks, 'Trucks|package':trucks_package, 'Trucks|keg':trucks_keg,
+                'Hours|loading':loading_hours,
+                'Hours|total':total_hours, 'Hours|senior':senior_hours, 'Hours|casual':casual_hours,
+                'Hours|regular':total_reg_hours, 'Hours|regular|senior':senior_reg_hours, 'Hours|regular|casual':casual_reg_hours,
+                'Hours|overtime':total_ot_hours, 'Hours|overtime|senior':senior_ot_hours, 'Hours|overtime|casual':casual_ot_hours,
+                'Hours|temp':temp_hours, 'Hours|loading':loading_hours, 'Hours|oddball':hours_oddball,
+                'Employees|absent':total_absent_employees, 'Employees|absent|senior':senior_absent, 'Employees|absent|casual':casual_absent,
+                'Employees|total':total_employees_on_hand, 
+                'CPMH|cline':cpmh_c, 'CPMH|dline':cpmh_d, 'CPMH|eline':cpmh_e, 'CPMH|fline':cpmh_f, 
+                'CPMH|gline':cpmh_g, 'CPMH|wine':cpmh_w, 'CPMH|oddball':cpmh_oddball, 
+                'Cases|cline':cases_c, 'Cases|dline':cases_d, 'Cases|eline':cases_e, 'Cases|fline':cases_f, 
+                'Cases|gline':cases_g, 'Cases|wine':cases_w, 'Cases|oddball':cases_oddball, 
+                'CompletionTime':completion_time,
+                'Waves':number_of_waves, 'NonConveyable':non_conveyable, 'PalletPicks':pallet_picks,
+                 'SorterRunTime':sorter_run_time, 'JackpotCases':jackpot_cases
+    }
+               
+            
+    summary_dataframe = pd.DataFrame()
+    summary_dataframe = summary_dataframe.append(the_row, ignore_index=True)
+    
+    summary_dataframe['Date'] =  dat 
+    summary_dataframe['Month'] = dat.strftime('%B')
+    summary_dataframe['Weekday'] = dat.strftime('%A')
+    summary_dataframe['WeekNumber'] = dat.strftime('%U')
+    summary_dataframe['DOTM'] = dat.strftime('%d')
+    summary_dataframe['Warehouse'] = 'STL'
+    
+    summary_dataframe.reset_index(drop=True, inplace=True)
+    
+    return summary_dataframe
+
+
+
+
+Summary_Tab = pd.DataFrame()        
+
+for i, file in enumerate(file_list):
+    df = extract_stl_summary_tab(file)
+    Summary_Tab = Summary_Tab.append(df)
+    Summary_Tab.reset_index(drop=True, inplace=True)
+    
+    
+Summary_Tab.head(20)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # TESTING
 summary_tab = pd.read_excel(file, sheetname='Summary', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, skiprows=1, names=np.arange(1,14))
 keep_cols = [1,2,4,5,9,10,12,13]
@@ -324,7 +499,7 @@ stl_btls = summary_tab.loc[10,5]
 col_btls = summary_tab.loc[11,5]
 cap_btls = summary_tab.loc[12,5]
 
-total_stops = summary_tab.loc[13,5]
+total_stops = summary_tab.loc[13,5]#
 stops_stl = summary_tab.loc[14,5]
 stops_cape = summary_tab.loc[15,5]
 stops_col = summary_tab.loc[16,5]
@@ -378,42 +553,51 @@ cpmh_oddball = cases_oddball / hours_oddball
 
 dat = extract_date_stl(file)
 
-the_row = {'Date':dat, 'Cases|total':total_cases, 'Cases|contech':total_cases_contech,
+the_row = {'Date':dat, 
+            'CPMH':cpmh, 'CPMH|adjusted':cpmh_adjusted, 
+            'Cases|total':total_cases, 'Cases|contech':total_cases_contech, 'Cases|perhour':cases_per_hour,
             'Cases|stl':cases_stl, 'Cases|col':cases_col, 'Cases|cape':cases_cape,
             'Kegs':kegs, 'Cases|kctransfer':kc_transfer, 
             'Bottles|total':total_bottles, 'Bottles|stl':stl_btls, 'Bottles|col':col_btls, 
             'Bottles|cape':cap_btls,
             'Returns|cases':cases_returned, 'Returns|btls':btls_returned, 'Returns|dollars':dollars_returned,
             'Overs':overs, 'Shorts':shorts, 'Mispicks':mispicks, 'TotalErrors':total_errors,
+            'Stops|total':total_stops, 'Stops|stl':stops_stl, 'Stops|cape':stops_cape,
+            'Stops|col':stops_col,
+            'Trucks|total':total_trucks, 'Trucks|package':trucks_package, 'Trucks|keg':trucks_keg,
+            'Hours|loading':loading_hours,
+            'Hours|total':total_hours, 'Hours|senior':senior_hours, 'Hours|casual':casual_hours,
+            'Hours|regular':total_reg_hours, 'Hours|regular|senior':senior_reg_hours, 'Hours|regular|casual':casual_reg_hours,
+            'Hours|overtime':total_ot_hours, 'Hours|overtime|senior':senior_ot_hours, 'Hours|overtime|casual':casual_ot_hours,
+            'Hours|temp':temp_hours, 'Hours|loading':loading_hours, 'Hours|oddball':hours_oddball,
+            'Employees|absent':total_absent_employees, 'Employees|absent|senior':senior_absent, 'Employees|absent|casual':casual_absent,
+            'Employees|total':total_employees_on_hand, 
+            'CPMH|cline':cpmh_c, 'CPMH|dline':cpmh_d, 'CPMH|eline':cpmh_e, 'CPMH|fline':cpmh_f, 
+            'CPMH|gline':cpmh_g, 'CPMH|wine':cpmh_w, 'CPMH|oddball':cpmh_oddball, 
+            'Cases|cline':cases_c, 'Cases|dline':cases_d, 'Cases|eline':cases_e, 'Cases|fline':cases_f, 
+            'Cases|gline':cases_g, 'Cases|wine':cases_w, 'Cases|oddball':cases_oddball, 
+            'CompletionTime':completion_time,
+            'Waves':number_of_waves, 'NonConveyable':non_conveyable, 'PalletPicks':pallet_picks,
+             'SorterRunTime':sorter_run_time, 'JackpotCases':jackpot_cases
+}
+           
+        
+summary_dataframe = pd.DataFrame()
+summary_dataframe = summary_dataframe.append(the_row, ignore_index=True)
+
+summary_dataframe['Date'] =  dat 
+summary_dataframe['Month'] = dat.strftime('%B')
+summary_dataframe['Weekday'] = dat.strftime('%A')
+summary_dataframe['WeekNumber'] = dat.strftime('%U')
+summary_dataframe['DOTM'] = dat.strftime('%d')
+summary_dataframe['Warehouse'] = 'STL'
+
+summary_dataframe.reset_index(drop=True, inplace=True)
+
+return summary_dataframe
 
 
-
-
-
-
-
-summary_tab['Date'] =  dat 
-summary_tab['Month'] = dat.strftime('%B')
-summary_tab['Weekday'] = dat.strftime('%A')
-summary_tab['WeekNumber'] = dat.strftime('%U')
-summary_tab['DOTM'] = dat.strftime('%d')
-summary_tab['Warehouse'] = 'STL'
-
-keep_cols = ['Date','Driver #','Customer #','RTE','Item #',
-            'CS','BTL','Month','Weekday','WeekNumber','DOTM','Warehouse']
-    
-summary_tab = summary_tab[keep_cols].reset_index(drop=True)
-
-summary_tab['Type'] = 'STL'
-
-summary_tab = summary_tab[summary_tab['RTE'].isnull() == False]
-
-summary_tab.reset_index(drop=True, inplace=True)
-
-
-
-
-summary_tab.head()
+summary_dataframe.head()
 
 
 
