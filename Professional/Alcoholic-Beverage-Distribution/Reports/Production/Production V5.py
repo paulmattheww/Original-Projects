@@ -101,6 +101,10 @@ Production_Tab.groupby(['LOC'])[cols].sum()
 
 
 
+
+
+
+
 def extract_stl_night_hours_tab(file):
         '''
         Takes in and formats Night Hours tab from Daily Report. 
@@ -134,6 +138,8 @@ def extract_stl_night_hours_tab(file):
         
         df = senior.append(casual)
         df = df[df['NAME'] != 'NAME']
+        df = df[df['NAME'] != '0']
+        df = df[df['NAME'] != 0]
         df.reset_index(drop=True, inplace=True)
         
         return df
@@ -473,6 +479,10 @@ Summary_Tab_Combined.tail()
 
 
 
+
+
+
+
 def prepare_summary_output(Summary_Tab_Combined):
     '''
     Aggregates data for presentation to present to management
@@ -545,6 +555,7 @@ def write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab
         
     Monthly_Summary.to_excel(file_out, sheet_name='Summary', index=True)
     Summary_Tab_Combined.to_excel(file_out, sheet_name='Daily Summary', index=True)
+    Production_Tab.to_excel(file_out, sheet_name='Production', index=True)
     Returns_Tab.to_excel(file_out, sheet_name='Returns', index=False)
     OverShort_Tab.to_excel(file_out, sheet_name='Over-Short', index=False)
     NightlyHours_Tab.to_excel(file_out, sheet_name='Nightly Hours', index=False)
@@ -566,6 +577,10 @@ def write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab
     daily_summary_tab.set_column('A:A',18)
     daily_summary_tab.set_column('B:BT',15.6,format_float)
     
+    production_tab = file_out.sheets['Production']
+    production_tab.set_column('A:A',18)
+    production_tab.set_column('B:BT',15.6,format_float)
+    
     returns_tab = file_out.sheets['Returns']
     returns_tab.set_column('A:A',10)
     returns_tab.set_column('B:B',32)
@@ -583,12 +598,22 @@ def write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab
     nightlyhours_tab = file_out.sheets['Nightly Hours']
     nightlyhours_tab.set_column('A:A',9.5)
     nightlyhours_tab.set_column('B:B',25)
-    nightlyhours_tab.set_column('C:D',12.5,format_float)
+    nightlyhours_tab.set_column('C:E',12.5,format_float)
     nightlyhours_tab.set_column('F:K',11,format_float)
     
     file_out.save()    
     print('Finished writing analysis to file.')
 
+
+
+
+
+
+
+
+
+
+write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab, OverShort_Tab, NightlyHours_Tab)
 
 
 
