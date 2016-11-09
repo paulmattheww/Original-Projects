@@ -553,7 +553,7 @@ format_dollars = workbook.add_format({'num_format': '$#,##0'})
 format_float = workbook.add_format({'num_format': '#,##0.#0'})    
 format_percent = workbook.add_format({'num_format': '0%'})
 format_justification = workbook.add_format()
-format_justification = format_justification.set_align('right')
+format_justification.set_align('right')
 
 summary_tab = file_out.sheets['Summary']
 summary_tab.set_column('A:A',31)
@@ -562,24 +562,28 @@ summary_tab.set_column('C:C',15,format_float)
 summary_tab.set_column('D:D',15,format_percent)
 
 daily_summary_tab = file_out.sheets['Daily Summary']
-daily_summary_tab.set_column('A:A',31)
-daily_summary_tab.set_column('B:B',15,format_float)
-daily_summary_tab.set_column('C:C',15,format_float)
+daily_summary_tab.set_column('A:A',18)
+daily_summary_tab.set_column('B:BT',15.6,format_float)
 
 returns_tab = file_out.sheets['Returns']
-returns_tab.set_column('A:A',31)
-returns_tab.set_column('B:B',15,format_float)
-returns_tab.set_column('C:C',15,format_float)
+returns_tab.set_column('A:A',10)
+returns_tab.set_column('B:B',32)
+returns_tab.set_column('C:D',8)
+returns_tab.set_column('E:E',31)
+returns_tab.set_column('F:F',8)
+returns_tab.set_column('G:H',26)
+returns_tab.set_column('I:R',8,format_thousands)
+returns_tab.set_column('S:X',13.5)
 
-overshort_tab = file_out.sheets['SumOver-Shortmary']
-overshort_tab.set_column('A:A',31)
-overshort_tab.set_column('B:B',15,format_float)
-overshort_tab.set_column('C:C',15,format_float)
+overshort_tab = file_out.sheets['Over-Short']
+overshort_tab.set_column('A:M',13.3)
+overshort_tab.set_column('F:G',13.3,format_float)
 
-nightlyhours_tab = file_out.sheets['Summary']
-nightlyhours_tab.set_column('A:A',31)
-nightlyhours_tab.set_column('B:B',15,format_float)
-nightlyhours_tab.set_column('C:C',15,format_float)
+nightlyhours_tab = file_out.sheets['Nightly Hours']
+nightlyhours_tab.set_column('A:A',9.5)
+nightlyhours_tab.set_column('B:B',25)
+nightlyhours_tab.set_column('C:D',12.5,format_float)
+nightlyhours_tab.set_column('F:K',11,format_float)
 
 
 
