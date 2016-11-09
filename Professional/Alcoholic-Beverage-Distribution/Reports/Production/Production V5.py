@@ -432,12 +432,7 @@ def extract_stl_summary_tab(file, this_year=True):
     
     summary_dataframe['Date'] =  dat 
     summary_dataframe['Month'] = dat.strftime('%B')
-    
-    if this_year:
-        summary_dataframe['Year'] = dat.strftime('%Y')
-    else:
-        summary_dataframe['Year'] = dat.strftime('%Y')
-        
+    summary_dataframe['Year'] = dat.strftime('%Y')
     summary_dataframe['Weekday'] = dat.strftime('%A')
     summary_dataframe['WeekNumber'] = dat.strftime('%U')
     summary_dataframe['DOTM'] = dat.strftime('%d')
@@ -510,9 +505,9 @@ summary_cols = {'Cases|total' : {'sum':np.sum, 'avg':np.mean},
 }
 
 output_summary = pd.DataFrame(Summary_Tab_Combined.groupby('Year').agg(summary_cols))
-#output_summary.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in output_summary.columns]                  
+output_summary.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in output_summary.columns]  
 output_summary = output_summary.T
-output_summary.sort_index(level=0, inplace=True)
+output_summary.sort_index(axis=0, level=[0,1], inplace=True)
 
 
 Summary_Tab_Combined.groupby('Year').sum()
