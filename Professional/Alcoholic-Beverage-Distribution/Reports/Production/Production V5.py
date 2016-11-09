@@ -25,7 +25,7 @@ file_list = glob.glob(temp_location + '*.xls*')
 file_list_last_year = glob.glob(temp_location_last_year + '*.xls*')
 
 
-def extract_date_stl(file, last_year=False):
+def extract_date_stl(file, this_year=True):
         '''Takes date from file name'''
         regex_criteria = re.compile(r'[0-9]+-[0-9]+')    
         dat = re.findall(regex_criteria, file)
@@ -33,7 +33,7 @@ def extract_date_stl(file, last_year=False):
         exclude = set(string.punctuation)
         dat = ''.join(d for d in dat if d not in exclude)
         
-        if last_year == False:
+        if this_year == True:
             this_year = str(dt.today().year)
         else:
             this_year = str(pd.to_numeric(dt.today().year) - 1)
@@ -392,11 +392,11 @@ def extract_stl_summary_tab(file, this_year=True):
     cpmh_oddball = cases_oddball / hours_oddball
     
     if this_year:
-        this_or_last = False
+        this = True
     else:
-        this_or_last = True
+        this = False
         
-    dat = extract_date_stl(file, last_year=this_or_last)
+    dat = extract_date_stl(file, this_year=this)
     
     the_row = {'Date':dat, 
                 'CPMH':cpmh, 'CPMH|adjusted':cpmh_adjusted, 
@@ -436,7 +436,7 @@ def extract_stl_summary_tab(file, this_year=True):
     if this_year:
         summary_dataframe['Year'] = dat.strftime('%Y')
     else:
-        summary_dataframe['Year'] = int(pd.to_numeric(dat.strftime('%Y')) - 1)
+        summary_dataframe['Year'] = dat.strftime('%Y')
         
     summary_dataframe['Weekday'] = dat.strftime('%A')
     summary_dataframe['WeekNumber'] = dat.strftime('%U')
