@@ -454,8 +454,8 @@ for i, file in enumerate(file_list_last_year):
     Summary_Tab_LastYr.reset_index(drop=True, inplace=True)
     
 Summary_Tab_Combined = Summary_Tab.append(Summary_Tab_LastYr)
-Summary_Tab_Combined.reset_index(drop=True)
-    
+Summary_Tab_Combined.set_index(keys='Date', drop=False, inplace=True)
+
     
 Summary_Tab_Combined.head(20)
 
