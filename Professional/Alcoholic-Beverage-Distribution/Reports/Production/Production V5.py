@@ -545,7 +545,8 @@ workbook = file_out.book
 Monthly_Summary.to_excel(file_out, sheet_name='Summary', index=True)
 Summary_Tab_Combined.to_excel(file_out, sheet_name='Daily Summary', index=True)
 Returns_Tab.to_excel(file_out, sheet_name='Returns', index=False)
-OverShort_Tab.to_excel(file_out, sheet_name='Returns', index=False)
+OverShort_Tab.to_excel(file_out, sheet_name='Over-Short', index=False)
+NightlyHours_Tab.to_excel(file_out, sheet_name='Nightly Hours', index=False)
 
 format_thousands = workbook.add_format({'num_format': '#,##0'})
 format_dollars = workbook.add_format({'num_format': '$#,##0'})
@@ -571,7 +572,7 @@ Monthly_Summary
 Returns_Tab.head(50)
 Summary_Tab_Combined.head(50)
 OverShort_Tab.head(50)
-NightlyHours_Tab
+NightlyHours_Tab.head(50)
 ## Take in last year data too
 
 
