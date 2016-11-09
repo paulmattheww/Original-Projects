@@ -133,6 +133,7 @@ def extract_stl_night_hours_tab(file):
         casual = casual[casual['NAME'].isnull() == False]
         
         df = senior.append(casual)
+        df = df[df['NAME'] != 'NAME']
         df.reset_index(drop=True, inplace=True)
         
         return df
