@@ -298,30 +298,28 @@ Returns_Tab.head(20)
 
 
 # TESTING
-dtypes = {'Driver #':np.int,'Customer #':np.int,'RTE':np.int,'Item #':int,'CS':np.float64,'BTL':np.float64}
 summary_tab = pd.read_excel(file, sheetname='Summary', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, skiprows=1, names=np.arange(1,14))
 keep_cols = [1,2,4,5,9,10,12,13]
 summary_tab = summary_tab[keep_cols]
 summary_tab.head(25)
 
-#[row,col]
-cases_returned = summary_tab.loc[2,2]
+cases_returned = summary_tab.loc[2,2]#
 btls_returned = summary_tab.loc[3,2]
-stop_return_count = summary_tab.loc[4,2]
 dollars_returned = summary_tab.loc[5,2]
 overs = summary_tab.loc[8,2]
 shorts = summary_tab.loc[9,2]
 mispicks = summary_tab.loc[12,2]
 total_errors = summary_tab.loc[17,2]
 
-total_cases = summary_tab.loc[2,5]
+total_cases = summary_tab.loc[2,5]#
+total_cases_contech = summary_tab.loc[48,10]
 cases_stl = summary_tab.loc[3,5]
-kegs = summary_tab.loc[4,5]
+kegs = summary_tab.loc[20,10] #from Contech
 kc_transfer = summary_tab.loc[5,5]
 cases_col = summary_tab.loc[6,5]
 cases_cape = summary_tab.loc[7,5]
 
-total_bottles = summary_tab.loc[9,5]
+total_bottles = summary_tab.loc[9,5]#
 stl_btls = summary_tab.loc[10,5]
 col_btls = summary_tab.loc[11,5]
 cap_btls = summary_tab.loc[12,5]
@@ -335,11 +333,31 @@ trucks_package = summary_tab.loc[18,5]
 trucks_keg = summary_tab.loc[19,5]
 
 total_hours = summary_tab.loc[31,5]
+loading_hours = summary_tab.loc[26,10]
 senior_hours = summary_tab.loc[32,5]
 casual_hours = summary_tab.loc[33,5]
 total_reg_hours = summary_tab.loc[34,5]
+senior_reg_hours = summary_tab.loc[35,5]
+casual_reg_hours = summary_tab.loc[36,5]
+total_ot_hours = summary_tab.loc[37,5]
+senior_ot_hours = summary_tab.loc[38,5]
+casual_ot_hours = summary_tab.loc[39,5]
+temp_hours = summary_tab.loc[40,5]
+total_absent_employees = summary_tab.loc[42,5]
+senior_absent = summary_tab.loc[43,5]
+casual_absent = summary_tab.loc[44,5]
+total_employees_on_hand = summary_tab.loc[47,5]
+completion_time = summary_tab.loc[48,5]
 
+number_of_waves = summary_tab.loc[49,10]
+non_conveyable = summary_tab.loc[24,10]
+pallet_picks = summary_tab.loc[25,10]
+sorter_run_time = summary_tab.loc[27,10]
+loading_hours = summary_tab.loc[26,10]
+jackpot_cases = summary_tab.loc[30,10]
 
+cpmh = summary_tab.loc[49,5]
+cpmh_adjusted = summary_tab.loc[50,5]
 cases_per_hour = summary_tab.loc[20,5]
 cpmh_c = summary_tab.loc[24,5]
 cpmh_d = summary_tab.loc[25,5]
@@ -358,8 +376,21 @@ cases_oddball = summary_tab.loc[16,10]
 hours_oddball = summary_tab.loc[17,10]
 cpmh_oddball = cases_oddball / hours_oddball
 
-
 dat = extract_date_stl(file)
+
+the_row = {'Date':dat, 'Cases|total':total_cases, 'Cases|contech':total_cases_contech,
+            'Cases|stl':cases_stl, 'Cases|col':cases_col, 'Cases|cape':cases_cape,
+            'Kegs':kegs, 'Cases|kctransfer':kc_transfer, 
+            'Bottles|total':total_bottles, 'Bottles|stl':stl_btls, 'Bottles|col':col_btls, 
+            'Bottles|cape':cap_btls,
+            'Returns|cases':cases_returned, 'Returns|btls':btls_returned, 'Returns|dollars':dollars_returned,
+            'Overs':overs, 'Shorts':shorts, 'Mispicks':mispicks, 'TotalErrors':total_errors,
+
+
+
+
+
+
 
 summary_tab['Date'] =  dat 
 summary_tab['Month'] = dat.strftime('%B')
