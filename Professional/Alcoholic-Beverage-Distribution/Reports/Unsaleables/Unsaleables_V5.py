@@ -21,6 +21,35 @@ input_folder = 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Unsaleables/'
 
 
 print('''
+SYSTEM REQUIREMENTS
+------------------------------------------------------------
+This report is run using Python 3.x
+Windows is the preferred OS for this report's output
+
+The Anaconda distribution of Python 3.x will come
+out of the box with all of the modules necessary
+for this script to run.
+
+Anaconda also ships with a wonderful IDE called Spyder.
+This is the IDE of choice for this report.
+
+If you do not have Anaconda you will need to install 
+pandas and numpy at the command shell using:
+
+pip install pandas
+pip install numpy
+
+It is easier to download all at once using Anaconda's 
+ready-made download.
+
+pandas and numpy are both optimized for linear
+equations using the C programming language. All operations
+are vectorized for speed (meaning equations are applied one
+column at a time, rather than one entity within a column at 
+a time.) These two packages are hands down the most
+powerful open source scientific computing modules used
+by data scientists today.
+
 Run time-sensitive queries for the same timeframe.
 
 After running them in the AS400, use the Excel add-in to 
@@ -30,35 +59,42 @@ input folder.
 All queries can be accessed from files in the AS400 by
 the same name.
 
-Contextual lookup queries need to be updated periodically.
+Contextual lookup queries need to be updated when changes are made.
 
 THESE QUERIES MUST BE RUN FOR THE SAME TIMEFRAME.
 ------------------------------------------------------------
 pwrct1, pwunsale, pw_ytdcust, pw_ytdsupp, pw_ytdprod
 
 
-Main Queries for Report.
+MAIN REPORT QUERIES
 ------------------------------------------------------------
 pwrct1 - Queries RCT1 for unsaleables
 pwunsale - Queries MTC1 for returns
 
 
-Supplemental/Contextual Queries.
+QUERIES FOR LOOKING UP SUPPLIER/CUSTOMER/DIRECTOR ATTRIBUTES
 ------------------------------------------------------------
 pw_supprod : Supplier-Product relationships for lookup
 pw_cusattr : Customer attributes for lookup
 directors : DIVER-Director-Supplier relationships for lookup
 
 
-Delete the first two columns after running all these queries.
+NOTE ON FOLLOWING QUERIES:
+Immediately after running these queries in the AS400, make sure to delete
+the first two columns. These are just break-points and
+contain no data.
+
 These queries are sum sales by {Customer, Supplier, Product}.
 If you choose a long timeframe for these then you should expect
 a long query-time. YTD queries are best run at lunch or EOTD.
+
+PERIOD-TO-DATE QUERIES OF CUSTOMER/SUPPLIER/PRODUCT SALES
 ------------------------------------------------------------
 pw_ytdcust - Sales over timeframe X-Y by Customer
 pw_ytdsupp - Sales over timeframe X-Y by Supplier
 pw_ytdprod - Sales over timeframe X-Y by Product
 
+Contact paul.washburn@majorbrands.com with questions.
 ''')
 pwrct1 = pd.read_csv(input_folder + 'pwrct1.csv', header=0, encoding='ISO-8859-1')
 pwunsale = pd.read_csv(input_folder + 'pwunsale.csv', header=0, encoding='ISO-8859-1')
@@ -515,7 +551,7 @@ def write_unsaleables_to_excel(class_summary, director_summary, supplier_summary
 last_mon = dt.now().month - 1
 report_month = dt.now().replace(month=last_mon).strftime('%B')
 report_year = dt.now().year
-report_month_year = str(report_month) + ' ' + str(report_year) + ' Year to Date'
+report_month_year = str(report_month) + ' ' + str(report_year)# + ' Year to Date'
 
 write_unsaleables_to_excel(class_summary, director_summary, supplier_summary, customer_returns, unsaleables_by_product, month=report_month_year)
 
