@@ -555,7 +555,7 @@ def write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab
         
     Monthly_Summary.to_excel(file_out, sheet_name='Summary', index=True)
     Summary_Tab_Combined.to_excel(file_out, sheet_name='Daily Summary', index=True)
-    Production_Tab.to_excel(file_out, sheet_name='Production', index=True)
+    Production_Tab.to_excel(file_out, sheet_name='Production', index=False)
     Returns_Tab.to_excel(file_out, sheet_name='Returns', index=False)
     OverShort_Tab.to_excel(file_out, sheet_name='Over-Short', index=False)
     NightlyHours_Tab.to_excel(file_out, sheet_name='Nightly Hours', index=False)
@@ -578,8 +578,13 @@ def write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab
     daily_summary_tab.set_column('B:BT',15.6,format_float)
     
     production_tab = file_out.sheets['Production']
-    production_tab.set_column('A:A',18)
-    production_tab.set_column('B:BT',15.6,format_float)
+    production_tab.set_column('A:B',10)
+    production_tab.set_column('C:C',10.7)
+    production_tab.set_column('D:E',5)
+    production_tab.set_column('F:F',25)
+    production_tab.set_column('G:G',11)
+    production_tab.set_column('H:O',10.5,format_float)
+    production_tab.set_column('P:S',13.3)
     
     returns_tab = file_out.sheets['Returns']
     returns_tab.set_column('A:A',10)
@@ -614,6 +619,7 @@ def write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab
 
 
 write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab, OverShort_Tab, NightlyHours_Tab)
+
 
 
 
