@@ -246,7 +246,7 @@ def extract_stl_returns_tab(file):
             'PLLTS':np.int64,'Kegs':np.int64,'POS':np.int64,'Bonus':np.float64,'Inv Amt':np.float64,
             'Driver Return or Customer Return':str,'Inv#':np.int64
         }
-        returns = pd.read_excel(file, sheetname='Returns', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, dtypes=col_dtypes, skiprows=2)
+        returns = pd.read_excel(file, sheetname='Returns', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, col_dtypes=dtypes, skiprows=2)
         
         returns.fillna(0, inplace=True)
         dat = extract_date_stl(file)
@@ -299,33 +299,78 @@ Returns_Tab.head(20)
 
 # TESTING
 dtypes = {'Driver #':np.int,'Customer #':np.int,'RTE':np.int,'Item #':int,'CS':np.float64,'BTL':np.float64}
-returns = pd.read_excel(file, sheetname='Returns', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, dtypes=col_dtypes, skiprows=2)
+summary_tab = pd.read_excel(file, sheetname='Summary', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, skiprows=1, names=np.arange(1,14))
+keep_cols = [1,2,4,5,9,10,12,13]
+summary_tab = summary_tab[keep_cols]
+summary_tab.head(25)
+
+#[row,col]
+cases_returned = summary_tab.loc[2,2]
+btls_returned = summary_tab.loc[3,2]
+stop_return_count = summary_tab.loc[4,2]
+dollars_returned = summary_tab.loc[5,2]
+overs = summary_tab.loc[8,2]
+shorts = summary_tab.loc[9,2]
+mispicks = summary_tab.loc[12,2]
+total_errors = summary_tab.loc[17,2]
+
+total_cases = summary_tab.loc[2,5]
+cases_stl = summary_tab.loc[3,5]
+kegs = summary_tab.loc[4,5]
+kc_transfer = summary_tab.loc[5,5]
+cases_col = summary_tab.loc[6,5]
+cases_cape = summary_tab.loc[7,5]
+
+total_bottles = summary_tab.loc[9,5]
+stl_btls = summary_tab.loc[10,5]
+col_btls = summary_tab.loc[11,5]
+cap_btls = summary_tab.loc[12,5]
+
+total_stops = summary_tab.loc[13,5]
+stops_stl = summary_tab.loc[14,5]
+stops_cape = summary_tab.loc[15,5]
+stops_col = summary_tab.loc[16,5]
+total_trucks = summary_tab.loc[17,5] 
+trucks_package = summary_tab.loc[18,5]
+trucks_keg = summary_tab.loc[19,5]
+
+cases_per_hour = summary_tab.loc[20,5]
+cpmh_c = summary_tab.loc[24,5]
+cpmh_d = summary_tab.loc[25,5]
+cpmh_e = summary_tab.loc[26,5]
+cpmh_f = summary_tab.loc[27,5]
+cpmh_g = summary_tab.loc[28,5]
+cases_c = summary_tab.loc[4,10]
+cases_d = summary_tab.loc[6,10]
+cases_e = summary_tab.loc[8,10]
+cases_f = summary_tab.loc[27,10]
+cases_g = summary_tab.loc[28,10]
 
 
 dat = extract_date_stl(file)
 
-returns['Date'] =  dat 
-returns['Month'] = dat.strftime('%B')
-returns['Weekday'] = dat.strftime('%A')
-returns['WeekNumber'] = dat.strftime('%U')
-returns['DOTM'] = dat.strftime('%d')
-returns['Warehouse'] = 'STL'
+summary_tab['Date'] =  dat 
+summary_tab['Month'] = dat.strftime('%B')
+summary_tab['Weekday'] = dat.strftime('%A')
+summary_tab['WeekNumber'] = dat.strftime('%U')
+summary_tab['DOTM'] = dat.strftime('%d')
+summary_tab['Warehouse'] = 'STL'
 
 keep_cols = ['Date','Driver #','Customer #','RTE','Item #',
             'CS','BTL','Month','Weekday','WeekNumber','DOTM','Warehouse']
     
-returns = returns[keep_cols].reset_index(drop=True)
+summary_tab = summary_tab[keep_cols].reset_index(drop=True)
 
-returns['Type'] = 'STL'
+summary_tab['Type'] = 'STL'
 
-returns = returns[returns['RTE'].isnull() == False]
+summary_tab = summary_tab[summary_tab['RTE'].isnull() == False]
 
-df.reset_index(drop=True, inplace=True)
-
-
+summary_tab.reset_index(drop=True, inplace=True)
 
 
-returns.head()
+
+
+summary_tab.head()
 
 
 
