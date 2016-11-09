@@ -536,70 +536,58 @@ Monthly_Summary
 
 def write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab, OverShort_Tab, NightlyHours_Tab):
     '''Writes to Excel'''
-output_path = 'N:\\Operations Intelligence\\Monthly Reports\\Production\\'
-report_month, report_year = dt.strftime(dt.now() - datetime.timedelta(days=20), '%B'), dt.now().year
-output_file_name = output_path + 'Production Report - ' + str(report_month) + ' ' + str(report_year) + '.xlsx'
-
-file_out = pd.ExcelWriter(output_file_name, engine='xlsxwriter')
-workbook = file_out.book
+    output_path = 'N:\\Operations Intelligence\\Monthly Reports\\Production\\'
+    report_month, report_year = dt.strftime(dt.now() - datetime.timedelta(days=20), '%B'), dt.now().year
+    output_file_name = output_path + 'Production Report - ' + str(report_month) + ' ' + str(report_year) + '.xlsx'
     
-Monthly_Summary.to_excel(file_out, sheet_name='Summary', index=True)
-Summary_Tab_Combined.to_excel(file_out, sheet_name='Daily Summary', index=True)
-Returns_Tab.to_excel(file_out, sheet_name='Returns', index=False)
-OverShort_Tab.to_excel(file_out, sheet_name='Over-Short', index=False)
-NightlyHours_Tab.to_excel(file_out, sheet_name='Nightly Hours', index=False)
-
-format_thousands = workbook.add_format({'num_format': '#,##0'})
-format_dollars = workbook.add_format({'num_format': '$#,##0'})
-format_float = workbook.add_format({'num_format': '#,##0.#0'})    
-format_percent = workbook.add_format({'num_format': '0%'})
-format_justification = workbook.add_format()
-format_justification.set_align('right')
-
-summary_tab = file_out.sheets['Summary']
-summary_tab.set_column('A:A',31)
-summary_tab.set_column('B:B',15,format_float)
-summary_tab.set_column('C:C',15,format_float)
-summary_tab.set_column('D:D',15,format_percent)
-
-daily_summary_tab = file_out.sheets['Daily Summary']
-daily_summary_tab.set_column('A:A',18)
-daily_summary_tab.set_column('B:BT',15.6,format_float)
-
-returns_tab = file_out.sheets['Returns']
-returns_tab.set_column('A:A',10)
-returns_tab.set_column('B:B',32)
-returns_tab.set_column('C:D',8)
-returns_tab.set_column('E:E',31)
-returns_tab.set_column('F:F',8)
-returns_tab.set_column('G:H',26)
-returns_tab.set_column('I:R',8,format_thousands)
-returns_tab.set_column('S:X',13.5)
-
-overshort_tab = file_out.sheets['Over-Short']
-overshort_tab.set_column('A:M',13.3)
-overshort_tab.set_column('F:G',13.3,format_float)
-
-nightlyhours_tab = file_out.sheets['Nightly Hours']
-nightlyhours_tab.set_column('A:A',9.5)
-nightlyhours_tab.set_column('B:B',25)
-nightlyhours_tab.set_column('C:D',12.5,format_float)
-nightlyhours_tab.set_column('F:K',11,format_float)
-
-
-
-
-file_out.save()    
-
-
-
-Monthly_Summary
-Returns_Tab.head(50)
-Summary_Tab_Combined.head(50)
-OverShort_Tab.head(50)
-NightlyHours_Tab.head(50)
-## Take in last year data too
-
+    file_out = pd.ExcelWriter(output_file_name, engine='xlsxwriter')
+    workbook = file_out.book
+        
+    Monthly_Summary.to_excel(file_out, sheet_name='Summary', index=True)
+    Summary_Tab_Combined.to_excel(file_out, sheet_name='Daily Summary', index=True)
+    Returns_Tab.to_excel(file_out, sheet_name='Returns', index=False)
+    OverShort_Tab.to_excel(file_out, sheet_name='Over-Short', index=False)
+    NightlyHours_Tab.to_excel(file_out, sheet_name='Nightly Hours', index=False)
+    
+    format_thousands = workbook.add_format({'num_format': '#,##0'})
+    format_dollars = workbook.add_format({'num_format': '$#,##0'})
+    format_float = workbook.add_format({'num_format': '#,##0.#0'})    
+    format_percent = workbook.add_format({'num_format': '0%'})
+    format_justification = workbook.add_format()
+    format_justification.set_align('right')
+    
+    summary_tab = file_out.sheets['Summary']
+    summary_tab.set_column('A:A',31)
+    summary_tab.set_column('B:B',15,format_float)
+    summary_tab.set_column('C:C',15,format_float)
+    summary_tab.set_column('D:D',15,format_percent)
+    
+    daily_summary_tab = file_out.sheets['Daily Summary']
+    daily_summary_tab.set_column('A:A',18)
+    daily_summary_tab.set_column('B:BT',15.6,format_float)
+    
+    returns_tab = file_out.sheets['Returns']
+    returns_tab.set_column('A:A',10)
+    returns_tab.set_column('B:B',32)
+    returns_tab.set_column('C:D',8)
+    returns_tab.set_column('E:E',31)
+    returns_tab.set_column('F:F',8)
+    returns_tab.set_column('G:H',26)
+    returns_tab.set_column('I:R',8,format_thousands)
+    returns_tab.set_column('S:X',13.5)
+    
+    overshort_tab = file_out.sheets['Over-Short']
+    overshort_tab.set_column('A:M',13.3)
+    overshort_tab.set_column('F:G',13.3,format_float)
+    
+    nightlyhours_tab = file_out.sheets['Nightly Hours']
+    nightlyhours_tab.set_column('A:A',9.5)
+    nightlyhours_tab.set_column('B:B',25)
+    nightlyhours_tab.set_column('C:D',12.5,format_float)
+    nightlyhours_tab.set_column('F:K',11,format_float)
+    
+    file_out.save()    
+    print('Finished writing analysis to file.')
 
 
 
