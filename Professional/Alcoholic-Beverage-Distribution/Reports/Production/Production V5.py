@@ -520,7 +520,20 @@ Monthly_Summary
 
 
 
-def write_production_to_excel(output_summary):
+
+
+
+
+
+
+
+
+
+
+
+
+
+def write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab, OverShort_Tab, NightlyHours_Tab):
     '''Writes to Excel'''
 output_path = 'N:\\Operations Intelligence\\Monthly Reports\\Production\\'
 report_month, report_year = dt.strftime(dt.now() - datetime.timedelta(days=20), '%B'), dt.now().year
@@ -530,33 +543,35 @@ file_out = pd.ExcelWriter(output_file_name, engine='xlsxwriter')
 workbook = file_out.book
     
 Monthly_Summary.to_excel(file_out, sheet_name='Summary', index=True)
+Summary_Tab_Combined.to_excel(file_out, sheet_name='Daily Summary', index=True)
+Returns_Tab.to_excel(file_out, sheet_name='Returns', index=False)
+OverShort_Tab.to_excel(file_out, sheet_name='Returns', index=False)
 
 format_thousands = workbook.add_format({'num_format': '#,##0'})
 format_dollars = workbook.add_format({'num_format': '$#,##0'})
-format_float = workbook.add_format({'num_format': '###0.#0'})    
+format_float = workbook.add_format({'num_format': '#,##0.#0'})    
 format_percent = workbook.add_format({'num_format': '0%'})
+format_justification = workbook.add_format()
+format_justification = format_justification.set_align('right')
 
 
 print('Formatting Summary tab for visual purposes.')
 summary_tab = file_out.sheets['Summary']
 summary_tab.set_column('A:A',31)
-summary_tab.set_column('B:B',15,format_thousands)
-summary_tab.set_column('C:C',15,format_thousands)
-summary_tab.set_column('D:D',15,format_percent)
-summary_tab.set_row(row=3,cell_format=format_float)
-summary_tab.set_row(row=4,cell_format=format_float)
-summary_tab.set_row(row=3,cell_format=format_float)
-summary_tab.set_row(row=32,cell_format=format_float)
-summary_tab.set_row(row=33,cell_format=format_float)
-summary_tab.set_row(row=34,cell_format=format_float)
+summary_tab.set_column('B:B',15,format_float)
+summary_tab.set_column('C:C',15,format_float)
 
+summary_tab.set_column('D:D',15,format_percent)
 
 file_out.save()    
 
 
 
-
-
+Monthly_Summary
+Returns_Tab.head(50)
+Summary_Tab_Combined.head(50)
+OverShort_Tab.head(50)
+NightlyHours_Tab
 ## Take in last year data too
 
 
