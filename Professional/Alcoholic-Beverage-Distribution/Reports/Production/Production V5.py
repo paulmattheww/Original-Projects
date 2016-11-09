@@ -25,7 +25,7 @@ file_list = glob.glob(temp_location + '*.xls*')
 file_list_last_year = glob.glob(temp_location_last_year + '*.xls*')
 
 
-def extract_date_stl(file):
+def extract_date_stl(file, last_year=False):
         '''Takes date from file name'''
         regex_criteria = re.compile(r'[0-9]+-[0-9]+')    
         dat = re.findall(regex_criteria, file)
@@ -33,9 +33,14 @@ def extract_date_stl(file):
         exclude = set(string.punctuation)
         dat = ''.join(d for d in dat if d not in exclude)
         
-        this_year = str(dt.today().year)
+        if last_year == False:
+            this_year = str(dt.today().year)
+        else:
+            this_year = str(pd.to_numeric(dt.today().year) - 1)
+        
         dat = str(dat + '-' + this_year)
         dat = dt.strptime(str(dat), "%m-%d-%Y").date()
+        
         return dat
 
 
@@ -313,51 +318,51 @@ def extract_stl_summary_tab(file, this_year=True):
     summary_tab = summary_tab[keep_cols]
     summary_tab.head(25)
     
-    cases_returned = summary_tab.loc[2,2]#
-    btls_returned = summary_tab.loc[3,2]
-    dollars_returned = summary_tab.loc[5,2]
-    overs = summary_tab.loc[8,2]
-    shorts = summary_tab.loc[9,2]
-    mispicks = summary_tab.loc[12,2]
+    cases_returned = np.float64(summary_tab.loc[2,2])
+    btls_returned = np.float64(summary_tab.loc[3,2])
+    dollars_returned = np.float64(summary_tab.loc[5,2])
+    overs = np.float64(summary_tab.loc[8,2])
+    shorts = np.float64(summary_tab.loc[9,2])
+    mispicks = np.float64(summary_tab.loc[12,2])
     total_errors = summary_tab.loc[17,2]
     
-    total_cases = summary_tab.loc[2,5]#
-    total_cases_contech = summary_tab.loc[48,10]
-    cases_stl = summary_tab.loc[3,5]
-    kegs = summary_tab.loc[20,10] #from Contech
-    kc_transfer = summary_tab.loc[5,5]
-    cases_col = summary_tab.loc[6,5]
-    cases_cape = summary_tab.loc[7,5]
+    total_cases = np.float64(summary_tab.loc[2,5])
+    total_cases_contech = np.float64(summary_tab.loc[48,10])
+    cases_stl = np.float64(summary_tab.loc[3,5])
+    kegs = np.float64(summary_tab.loc[20,10]) #from Contech
+    kc_transfer = np.float64(summary_tab.loc[5,5])
+    cases_col = np.float64(summary_tab.loc[6,5])
+    cases_cape = np.float64(summary_tab.loc[7,5])
     
-    total_bottles = summary_tab.loc[9,5]#
+    total_bottles = np.float64(summary_tab.loc[9,5])
     stl_btls = summary_tab.loc[10,5]
     col_btls = summary_tab.loc[11,5]
     cap_btls = summary_tab.loc[12,5]
     
-    total_stops = summary_tab.loc[13,5]#
-    stops_stl = summary_tab.loc[14,5]
-    stops_cape = summary_tab.loc[15,5]
-    stops_col = summary_tab.loc[16,5]
-    total_trucks = summary_tab.loc[17,5] 
-    trucks_package = summary_tab.loc[18,5]
-    trucks_keg = summary_tab.loc[19,5]
+    total_stops = np.float64(summary_tab.loc[13,5])
+    stops_stl = np.float64(summary_tab.loc[14,5])
+    stops_cape = np.float64(summary_tab.loc[15,5])
+    stops_col = np.float64(summary_tab.loc[16,5])
+    total_trucks = np.float64(summary_tab.loc[17,5])
+    trucks_package = np.float64(summary_tab.loc[18,5])
+    trucks_keg = np.float64(summary_tab.loc[19,5])
     
-    total_hours = summary_tab.loc[31,5]
+    total_hours = np.float64(summary_tab.loc[31,5])
     loading_hours = summary_tab.loc[26,10]
-    senior_hours = summary_tab.loc[32,5]
-    casual_hours = summary_tab.loc[33,5]
-    total_reg_hours = summary_tab.loc[34,5]
-    senior_reg_hours = summary_tab.loc[35,5]
-    casual_reg_hours = summary_tab.loc[36,5]
-    total_ot_hours = summary_tab.loc[37,5]
-    senior_ot_hours = summary_tab.loc[38,5]
-    casual_ot_hours = summary_tab.loc[39,5]
-    temp_hours = summary_tab.loc[40,5]
-    total_absent_employees = summary_tab.loc[42,5]
-    senior_absent = summary_tab.loc[43,5]
-    casual_absent = summary_tab.loc[44,5]
-    total_employees_on_hand = summary_tab.loc[47,5]
-    completion_time = summary_tab.loc[48,5]
+    senior_hours = np.float64(summary_tab.loc[32,5])
+    casual_hours = np.float64(summary_tab.loc[33,5])
+    total_reg_hours = np.float64(summary_tab.loc[34,5])
+    senior_reg_hours = np.float64(summary_tab.loc[35,5])
+    casual_reg_hours = np.float64(summary_tab.loc[36,5])
+    total_ot_hours = np.float64(summary_tab.loc[37,5])
+    senior_ot_hours = np.float64(summary_tab.loc[38,5])
+    casual_ot_hours = np.float64(summary_tab.loc[39,5])
+    temp_hours = np.float64(summary_tab.loc[40,5])
+    total_absent_employees = np.float64(summary_tab.loc[42,5])
+    senior_absent = np.float64(summary_tab.loc[43,5])
+    casual_absent = np.float64(summary_tab.loc[44,5])
+    total_employees_on_hand = np.float64(summary_tab.loc[47,5])
+    completion_time = np.float64(summary_tab.loc[48,5])
     
     number_of_waves = summary_tab.loc[49,10]
     non_conveyable = summary_tab.loc[24,10]
@@ -367,7 +372,7 @@ def extract_stl_summary_tab(file, this_year=True):
     jackpot_cases = summary_tab.loc[30,10]
     
     cpmh = summary_tab.loc[49,5]
-    cpmh_adjusted = summary_tab.loc[50,5]
+    cpmh_adjusted = np.float64(summary_tab.loc[50,5])
     cases_per_hour = summary_tab.loc[20,5]
     cpmh_c = summary_tab.loc[24,5]
     cpmh_d = summary_tab.loc[25,5]
@@ -386,7 +391,12 @@ def extract_stl_summary_tab(file, this_year=True):
     hours_oddball = summary_tab.loc[17,10]
     cpmh_oddball = cases_oddball / hours_oddball
     
-    dat = extract_date_stl(file)
+    if this_year:
+        this_or_last = False
+    else:
+        this_or_last = True
+        
+    dat = extract_date_stl(file, last_year=this_or_last)
     
     the_row = {'Date':dat, 
                 'CPMH':cpmh, 'CPMH|adjusted':cpmh_adjusted, 
@@ -422,10 +432,12 @@ def extract_stl_summary_tab(file, this_year=True):
     
     summary_dataframe['Date'] =  dat 
     summary_dataframe['Month'] = dat.strftime('%B')
+    
     if this_year:
         summary_dataframe['Year'] = dat.strftime('%Y')
     else:
         summary_dataframe['Year'] = int(pd.to_numeric(dat.strftime('%Y')) - 1)
+        
     summary_dataframe['Weekday'] = dat.strftime('%A')
     summary_dataframe['WeekNumber'] = dat.strftime('%U')
     summary_dataframe['DOTM'] = dat.strftime('%d')
@@ -455,23 +467,57 @@ for i, file in enumerate(file_list_last_year):
     
 Summary_Tab_Combined = Summary_Tab.append(Summary_Tab_LastYr)
 Summary_Tab_Combined.set_index(keys='Date', drop=False, inplace=True)
+Summary_Tab_Combined.sort_values('Date', inplace=True, ascending=False)
 
     
-Summary_Tab_Combined.head(20)
+Summary_Tab_Combined.tail()
 
 
 
 
 
 
-def prepare_summary_output(Summary_Tab):
+def prepare_summary_output(Summary_Tab_Combined):
     '''
     Aggregates data for presentation to present to management
     '''
-    
+summary_cols = {'Cases|total' : {'sum':np.sum, 'avg':np.mean},
+                'Cases|stl' : {'sum':np.sum, 'avg':np.mean},
+                'Cases|col' : {'sum':np.sum, 'avg':np.mean},
+                'Cases|cape' : {'sum':np.sum, 'avg':np.mean},
+                'Bottles|total' : {'sum':np.sum, 'avg':np.mean}, 
+                'Cases|kctransfer' : {'sum':np.sum, 'avg':np.mean},
+                'CPMH' : np.mean,
+                'CPMH|adjusted' : np.mean, 
+                'Hours|total' : {'sum':np.sum, 'avg':np.mean},
+                'Hours|regular' : {'sum':np.sum, 'avg':np.mean},
+                'Hours|overtime' : {'sum':np.sum, 'avg':np.mean},
+                'Hours|senior' : {'sum':np.sum, 'avg':np.mean},
+                'Hours|casual' : {'sum':np.sum, 'avg':np.mean},
+                'Employees|total' : np.mean,
+                'TotalErrors' : np.sum,
+                'Mispicks' : np.sum,
+                'Overs' : np.sum,
+                'Shorts' : np.sum,
+                'Trucks|total' : np.mean,
+                'Trucks|package' : np.mean,
+                'Trucks|keg' : np.mean,
+                'Stops|total' : {'sum':np.sum, 'avg':np.mean},
+                'Stops|stl' : {'sum':np.sum, 'avg':np.mean},
+                'Stops|cape' : {'sum':np.sum, 'avg':np.mean},
+                'Stops|col' : {'sum':np.sum, 'avg':np.mean},
+                'Returns|dollars' : np.sum
+}
+
+output_summary = pd.DataFrame(Summary_Tab_Combined.groupby('Year').agg(summary_cols))
+#output_summary.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in output_summary.columns]                  
+output_summary = output_summary.T
+output_summary.sort_index(level=0, inplace=True)
 
 
+Summary_Tab_Combined.groupby('Year').sum()
 
+Summary_Tab_Combined.dtypes
 
 
 
