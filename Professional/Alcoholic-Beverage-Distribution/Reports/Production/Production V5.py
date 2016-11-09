@@ -334,6 +334,12 @@ total_trucks = summary_tab.loc[17,5]
 trucks_package = summary_tab.loc[18,5]
 trucks_keg = summary_tab.loc[19,5]
 
+total_hours = summary_tab.loc[31,5]
+senior_hours = summary_tab.loc[32,5]
+casual_hours = summary_tab.loc[33,5]
+total_reg_hours = summary_tab.loc[34,5]
+
+
 cases_per_hour = summary_tab.loc[20,5]
 cpmh_c = summary_tab.loc[24,5]
 cpmh_d = summary_tab.loc[25,5]
@@ -343,8 +349,14 @@ cpmh_g = summary_tab.loc[28,5]
 cases_c = summary_tab.loc[4,10]
 cases_d = summary_tab.loc[6,10]
 cases_e = summary_tab.loc[8,10]
-cases_f = summary_tab.loc[27,10]
-cases_g = summary_tab.loc[28,10]
+cases_f = summary_tab.loc[10,10]
+cases_g = summary_tab.loc[12,10]
+cases_w = summary_tab.loc[14,10]
+hours_w = summary_tab.loc[15,10]
+cpmh_w = cases_w / hours_w
+cases_oddball = summary_tab.loc[16,10]
+hours_oddball = summary_tab.loc[17,10]
+cpmh_oddball = cases_oddball / hours_oddball
 
 
 dat = extract_date_stl(file)
