@@ -477,11 +477,8 @@ def prepare_summary_output(Summary_Tab_Combined):
     Aggregates data for presentation to present to management
     '''
     summary_cols = {'Cases|total' : {'sum':np.sum, 'avg':np.mean},
-                    'Cases|stl' : {'sum':np.sum, 'avg':np.mean},
-                    'Cases|col' : {'sum':np.sum, 'avg':np.mean},
-                    'Cases|cape' : {'sum':np.sum, 'avg':np.mean},
                     'Bottles|total' : {'sum':np.sum, 'avg':np.mean}, 
-                    'Cases|kctransfer' : {'sum':np.sum, 'avg':np.mean},
+                    'Kegs' : {'sum':np.sum, 'avg':np.mean}, 
                     'CPMH' : np.mean,
                     'CPMH|adjusted' : np.mean, 
                     'Hours|total' : {'sum':np.sum, 'avg':np.mean},
@@ -510,6 +507,7 @@ def prepare_summary_output(Summary_Tab_Combined):
     output_summary.reset_index(drop=False, inplace=True)
     output_summary.sort_values('index', ascending=True, inplace=True)
     output_summary.set_index(keys='index', drop=True, inplace=True)
+    output_summary.index.names = ['']
     
     abs_diff = np.subtract(output_summary['2016'], output_summary['2015'])
     output_summary['Percent Change'] = np.divide(abs_diff, output_summary['2015'])
@@ -518,7 +516,7 @@ def prepare_summary_output(Summary_Tab_Combined):
 
 
 Monthly_Summary = prepare_summary_output(Summary_Tab_Combined)
-Monthly_Summary.head()
+Monthly_Summary
 
 
 
@@ -528,12 +526,32 @@ output_path = 'N:\\Operations Intelligence\\Monthly Reports\\Production\\'
 report_month, report_year = dt.strftime(dt.now() - datetime.timedelta(days=20), '%B'), dt.now().year
 output_file_name = output_path + 'Production Report - ' + str(report_month) + ' ' + str(report_year) + '.xlsx'
 
-output_summary.to_excel(output_file_name, sheet_name='Summary')
+file_out = pd.ExcelWriter(output_file_name, engine='xlsxwriter')
+workbook = file_out.book
+    
+Monthly_Summary.to_excel(file_out, sheet_name='Summary', index=True)
+
+format_thousands = workbook.add_format({'num_format': '#,##0'})
+format_dollars = workbook.add_format({'num_format': '$#,##0'})
+format_float = workbook.add_format({'num_format': '###0.#0'})    
+format_percent = workbook.add_format({'num_format': '0%'})
 
 
+print('Formatting Summary tab for visual purposes.')
+summary_tab = file_out.sheets['Summary']
+summary_tab.set_column('A:A',31)
+summary_tab.set_column('B:B',15,format_thousands)
+summary_tab.set_column('C:C',15,format_thousands)
+summary_tab.set_column('D:D',15,format_percent)
+summary_tab.set_row(row=3,cell_format=format_float)
+summary_tab.set_row(row=4,cell_format=format_float)
+summary_tab.set_row(row=3,cell_format=format_float)
+summary_tab.set_row(row=32,cell_format=format_float)
+summary_tab.set_row(row=33,cell_format=format_float)
+summary_tab.set_row(row=34,cell_format=format_float)
 
 
-
+file_out.save()    
 
 
 
