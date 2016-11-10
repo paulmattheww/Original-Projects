@@ -123,7 +123,7 @@ Production_Tab = pd.DataFrame()
 for i, file in enumerate(file_list):
     df = extract_kc_production_tab(file)
     Production_Tab = Production_Tab.append(df)
-    print('Adding production tab data for %s' % dat)
+    print('Adding production tab data for %s' % extract_date_kc(file))
 
 
 Production_Tab.head(50)
@@ -552,7 +552,7 @@ Monthly_Summary
 
 def write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab, OverShort_Tab, NightlyHours_Tab):
     '''Writes to Excel'''
-    output_path = 'N:/Operations Intelligence/Monthly Reports/Production/'
+    output_path = 'M:/Operations Intelligence/Monthly Reports/Production/'
     report_month, report_year = dt.strftime(dt.now() - datetime.timedelta(days=20), '%B'), dt.now().year
     output_file_name = output_path + 'Production Report - ' + str(report_month) + ' ' + str(report_year) + '.xlsx'
     
@@ -625,6 +625,8 @@ def write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab
 
 
 write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab, OverShort_Tab, NightlyHours_Tab)
+
+
 
 
 
