@@ -354,20 +354,19 @@ total_cases = np.float64(summary_tab.loc[2,5])
 cases_kc = np.float64(summary_tab.loc[3,5])
 cases_spfd = np.float64(summary_tab.loc[6,5])
 #kegs = np.float64(summary_tab.loc[20,10]) #not currently tracked for KC
-stl_transfer = np.float64(summary_tab.loc[5,5])#
+stl_transfer = np.float64(summary_tab.loc[5,5])
 
-total_bottles = np.float64(summary_tab.loc[9,5])
-kc_btls = summary_tab.loc[10,5]
-col_btls = summary_tab.loc[11,5]
-cap_btls = summary_tab.loc[12,5]
+total_bottles = np.float64(summary_tab.loc[7,5])
+kc_btls = summary_tab.loc[8,5]
+spfd_btls = summary_tab.loc[9,5]
 
-total_stops = np.float64(summary_tab.loc[13,5])
-stops_kc = np.float64(summary_tab.loc[14,5])
-stops_cape = np.float64(summary_tab.loc[15,5])
-stops_col = np.float64(summary_tab.loc[16,5])
-total_trucks = np.float64(summary_tab.loc[17,5])
-trucks_package = np.float64(summary_tab.loc[18,5])
-trucks_keg = np.float64(summary_tab.loc[19,5])
+stops_kc = np.float64(summary_tab.loc[10,5])
+stops_spfd = np.float64(summary_tab.loc[11,5])
+total_stops = stops_kc + stops_spfd
+
+trucks_kc = np.float64(summary_tab.loc[12,5])
+trucks_spfd = np.float64(summary_tab.loc[13,5])
+total_trucks = trucks_kc + trucks_spfd
 
 total_hours = np.float64(summary_tab.loc[31,5])
 loading_hours = summary_tab.loc[26,10]
@@ -425,12 +424,12 @@ the_row = {'Date':dat,
             'Cases|total':total_cases, 'Cases|perhour':cases_per_hour,
             'Cases|spfd':cases_spfd, 'Cases|kc':cases_kc,
             'Kegs':kegs, 'Cases|stltransfer':stl_transfer, 
-            'Bottles|total':total_bottles, 'Bottles|stl':kc_btls, 'Bottles|col':col_btls, 
+            'Bottles|total':total_bottles, 'Bottles|kc':kc_btls, 'Bottles|spfd':spfdl_btls, 
             'Bottles|cape':cap_btls,
             'Returns|cases':cases_returned, 'Returns|btls':btls_returned,
             'Overs':overs, 'Shorts':shorts, 'Mispicks':mispicks, 'TotalErrors':total_errors,
-            'Stops|total':total_stops, 'Stops|stl':stops_kc, 'Stops|cape':stops_cape,
-            'Stops|col':stops_col,
+            'Stops|total':total_stops, 'Stops|total':total_stops, 'Stops|kc':stops_kc,
+            'Stops|spfd':stops_spfd,
             'Trucks|total':total_trucks, 'Trucks|package':trucks_package, 'Trucks|keg':trucks_keg,
             'Hours|loading':loading_hours,
             'Hours|total':total_hours, 'Hours|senior':senior_hours, 'Hours|casual':casual_hours,
