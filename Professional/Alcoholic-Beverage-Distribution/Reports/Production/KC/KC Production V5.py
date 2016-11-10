@@ -338,127 +338,122 @@ def extract_kc_summary_tab(file, this_year=True):
     '''
     Extracts summary tab by cell.
     '''
-summary_tab = pd.read_excel(file, sheetname='Summary', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, skiprows=0, names=np.arange(1,11))
-keep_cols = [1,2,4,5,9,10]
-summary_tab = summary_tab[keep_cols]
-
-cases_returned = np.float64(summary_tab.loc[2,2])
-btls_returned = np.float64(summary_tab.loc[3,2])
-
-overs = np.float64(summary_tab.loc[6,2])
-shorts = np.float64(summary_tab.loc[7,2])
-mispicks = np.float64(summary_tab.loc[10,2])
-total_errors = summary_tab.loc[15,2]
-
-total_cases = np.float64(summary_tab.loc[2,5])
-cases_kc = np.float64(summary_tab.loc[3,5])
-cases_spfd = np.float64(summary_tab.loc[6,5])
-#kegs = np.float64(summary_tab.loc[20,10]) #not currently tracked for KC
-stl_transfer = np.float64(summary_tab.loc[5,5])
-
-total_bottles = np.float64(summary_tab.loc[7,5])
-kc_btls = summary_tab.loc[8,5]
-spfd_btls = summary_tab.loc[9,5]
-
-stops_kc = np.float64(summary_tab.loc[10,5])
-stops_spfd = np.float64(summary_tab.loc[11,5])
-total_stops = stops_kc + stops_spfd
-
-trucks_kc = np.float64(summary_tab.loc[12,5])
-trucks_spfd = np.float64(summary_tab.loc[13,5])
-total_trucks = trucks_kc + trucks_spfd
-
-total_hours = np.float64(summary_tab.loc[23,5])
-senior_hours = np.float64(summary_tab.loc[24,5])
-casual_hours = np.float64(summary_tab.loc[25,5])
-total_reg_hours = np.float64(summary_tab.loc[26,5])
-senior_reg_hours = np.float64(summary_tab.loc[27,5])
-casual_reg_hours = np.float64(summary_tab.loc[28,5])
-total_ot_hours = np.float64(summary_tab.loc[29,5])
-senior_ot_hours = np.float64(summary_tab.loc[30,5])
-casual_ot_hours = np.float64(summary_tab.loc[31,5])
-temp_hours = np.float64(summary_tab.loc[32,5])
-total_absent_employees = np.float64(summary_tab.loc[33,5])
-senior_absent = np.float64(summary_tab.loc[34,5])
-casual_absent = np.float64(summary_tab.loc[35,5])
-total_employees_on_hand = np.float64(summary_tab.loc[38,5])
-completion_time = summary_tab.loc[36,10]
-
-number_of_waves = summary_tab.loc[33,10]
-non_conveyable = summary_tab.loc[17,10]
-pallet_picks = summary_tab.loc[18,10]
-sorter_run_time = summary_tab.loc[20,10]
-loading_hours = summary_tab.loc[19,10]
-jackpot_cases = summary_tab.loc[23,10]
-
-cpmh = np.float64(total_cases / total_hours)
-cpmh_adjusted = np.float64(total_cases / total_reg_hours)
-###cases_per_hour = summary_tab.loc[20,5]
-cpmh_c = summary_tab.loc[24,5]
-cpmh_d = summary_tab.loc[25,5]
-cpmh_e = summary_tab.loc[26,5]
-cpmh_f = summary_tab.loc[27,5]
-cpmh_g = summary_tab.loc[28,5]
-cases_c = summary_tab.loc[4,10]
-cases_d = summary_tab.loc[6,10]
-cases_e = summary_tab.loc[8,10]
-cases_f = summary_tab.loc[10,10]
-cases_g = summary_tab.loc[12,10]
-cases_w = summary_tab.loc[14,10]
-hours_w = summary_tab.loc[15,10]
-cpmh_w = cases_w / hours_w
-cases_oddball = summary_tab.loc[16,10]
-hours_oddball = summary_tab.loc[17,10]
-cpmh_oddball = cases_oddball / hours_oddball
-
-if this_year:
-    this = True
-else:
-    this = False
+    summary_tab = pd.read_excel(file, sheetname='Summary', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, skiprows=0, names=np.arange(1,11))
+    keep_cols = [1,2,4,5,9,10]
+    summary_tab = summary_tab[keep_cols]
     
-dat = extract_date_kc(file, this_year=this)
-
-the_row = {'Date':dat, 
-            'CPMH':cpmh, 'CPMH|adjusted':cpmh_adjusted, 
-            'Cases|total':total_cases, 'Cases|perhour':cases_per_hour,
-            'Cases|spfd':cases_spfd, 'Cases|kc':cases_kc,
-            'Kegs':kegs, 'Cases|stltransfer':stl_transfer, 
-            'Bottles|total':total_bottles, 'Bottles|kc':kc_btls, 'Bottles|spfd':spfdl_btls, 
-            'Bottles|cape':cap_btls,
-            'Returns|cases':cases_returned, 'Returns|btls':btls_returned,
-            'Overs':overs, 'Shorts':shorts, 'Mispicks':mispicks, 'TotalErrors':total_errors,
-            'Stops|total':total_stops, 'Stops|total':total_stops, 'Stops|kc':stops_kc,
-            'Stops|spfd':stops_spfd,
-            'Trucks|total':total_trucks, 'Trucks|kc':trucks_kc, 'Trucks|spfd':trucks_spfd,
-            'Hours|loading':loading_hours,
-            'Hours|total':total_hours, 'Hours|senior':senior_hours, 'Hours|casual':casual_hours,
-            'Hours|regular':total_reg_hours, 'Hours|regular|senior':senior_reg_hours, 'Hours|regular|casual':casual_reg_hours,
-            'Hours|overtime':total_ot_hours, 'Hours|overtime|senior':senior_ot_hours, 'Hours|overtime|casual':casual_ot_hours,
-            'Hours|temp':temp_hours, 'Hours|loading':loading_hours, 'Hours|oddball':hours_oddball,
-            'Employees|absent':total_absent_employees, 'Employees|absent|senior':senior_absent, 'Employees|absent|casual':casual_absent,
-            'Employees|total':total_employees_on_hand, 
-            'CPMH|cline':cpmh_c, 'CPMH|dline':cpmh_d, 'CPMH|eline':cpmh_e, 'CPMH|fline':cpmh_f, 
-            'CPMH|gline':cpmh_g, 'CPMH|wine':cpmh_w, 'CPMH|oddball':cpmh_oddball, 
-            'Cases|cline':cases_c, 'Cases|dline':cases_d, 'Cases|eline':cases_e, 'Cases|fline':cases_f, 
-            'Cases|gline':cases_g, 'Cases|wine':cases_w, 'Cases|oddball':cases_oddball, 
-            'CompletionTime':completion_time,
-            'Waves':number_of_waves, 'NonConveyable':non_conveyable, 'PalletPicks':pallet_picks,
-             'SorterRunTime':sorter_run_time, 'JackpotCases':jackpot_cases
-}
-           
+    cases_returned = np.float64(summary_tab.loc[2,2])
+    btls_returned = np.float64(summary_tab.loc[3,2])
+    
+    overs = np.float64(summary_tab.loc[6,2])
+    shorts = np.float64(summary_tab.loc[7,2])
+    mispicks = np.float64(summary_tab.loc[10,2])
+    total_errors = summary_tab.loc[15,2]
+    
+    total_cases = np.float64(summary_tab.loc[2,5])
+    cases_kc = np.float64(summary_tab.loc[3,5])
+    cases_spfd = np.float64(summary_tab.loc[6,5])
+    #kegs = np.float64(summary_tab.loc[20,10]) #not currently tracked for KC
+    stl_transfer = np.float64(summary_tab.loc[5,5])
+    
+    total_bottles = np.float64(summary_tab.loc[7,5])
+    kc_btls = summary_tab.loc[8,5]
+    spfd_btls = summary_tab.loc[9,5]
+    btls_oddball = summary_tab.loc[15,10]
+    
+    stops_kc = np.float64(summary_tab.loc[10,5])
+    stops_spfd = np.float64(summary_tab.loc[11,5])
+    total_stops = stops_kc + stops_spfd
+    
+    trucks_kc = np.float64(summary_tab.loc[12,5])
+    trucks_spfd = np.float64(summary_tab.loc[13,5])
+    total_trucks = trucks_kc + trucks_spfd
+    
+    total_hours = np.float64(summary_tab.loc[23,5])
+    senior_hours = np.float64(summary_tab.loc[24,5])
+    casual_hours = np.float64(summary_tab.loc[25,5])
+    total_reg_hours = np.float64(summary_tab.loc[26,5])
+    senior_reg_hours = np.float64(summary_tab.loc[27,5])
+    casual_reg_hours = np.float64(summary_tab.loc[28,5])
+    total_ot_hours = np.float64(summary_tab.loc[29,5])
+    senior_ot_hours = np.float64(summary_tab.loc[30,5])
+    casual_ot_hours = np.float64(summary_tab.loc[31,5])
+    temp_hours = np.float64(summary_tab.loc[32,5])
+    total_absent_employees = np.float64(summary_tab.loc[33,5])
+    senior_absent = np.float64(summary_tab.loc[34,5])
+    casual_absent = np.float64(summary_tab.loc[35,5])
+    total_employees_on_hand = np.float64(summary_tab.loc[38,5])
+    completion_time = summary_tab.loc[36,10]
+    hours_oddball = np.float64(summary_tab.loc[12,10]) + np.float64(summary_tab.loc[16,10])
+    
+    number_of_waves = summary_tab.loc[33,10]
+    non_conveyable = summary_tab.loc[17,10]
+    pallet_picks = summary_tab.loc[18,10]
+    sorter_run_time = summary_tab.loc[20,10]
+    loading_hours = summary_tab.loc[19,10]
+    jackpot_cases = summary_tab.loc[23,10]
+    
+    cpmh = np.float64(total_cases / total_hours)
+    cpmh_adjusted = np.float64(total_cases / total_reg_hours)
+    bpmh = summary_tab.loc[15,5]
+    cpmh_c100 = summary_tab.loc[16,5]
+    cpmh_c200 = summary_tab.loc[17,5]
+    cpmh_c300_c400 = summary_tab.loc[18,5]
+    cpmh_oddball = summary_tab.loc[19,5]
+    
+    cases_100 = summary_tab.loc[3,10]
+    cases_200 = summary_tab.loc[5,10]
+    cases_300_400 = summary_tab.loc[7,10]
+    cases_oddball = summary_tab.loc[11,10]
+    cases_w = summary_tab.loc[9,10]
+    hours_w = summary_tab.loc[10,10]
+    cpmh_w = cases_w / hours_w
+    
+    if this_year:
+        this = True
+    else:
+        this = False
         
-summary_dataframe = pd.DataFrame()
-summary_dataframe = summary_dataframe.append(the_row, ignore_index=True)
-
-summary_dataframe['Date'] =  dat 
-summary_dataframe['Month'] = dat.strftime('%B')
-summary_dataframe['Year'] = dat.strftime('%Y')
-summary_dataframe['Weekday'] = dat.strftime('%A')
-summary_dataframe['WeekNumber'] = dat.strftime('%U')
-summary_dataframe['DOTM'] = dat.strftime('%d')
-summary_dataframe['Warehouse'] = 'KC'
-
-summary_dataframe.reset_index(drop=True, inplace=True)
+    dat = extract_date_kc(file, this_year=this)
+    
+    the_row = {'Date':dat, 
+                'CPMH':cpmh, 'CPMH|adjusted':cpmh_adjusted, 
+                'Cases|total':total_cases, 'Cases|spfd':cases_spfd, 'Cases|kc':cases_kc,
+                'Cases|stltransfer':stl_transfer, 
+                'Bottles|total':total_bottles, 'Bottles|kc':kc_btls, 'Bottles|spfd':spfd_btls, 
+                'Bottles|oddball':btls_oddball,
+                'Returns|cases':cases_returned, 'Returns|btls':btls_returned,
+                'Overs':overs, 'Shorts':shorts, 'Mispicks':mispicks, 'TotalErrors':total_errors,
+                'Stops|total':total_stops, 'Stops|kc':stops_kc, 'Stops|spfd':stops_spfd,
+                'Trucks|total':total_trucks, 'Trucks|kc':trucks_kc, 'Trucks|spfd':trucks_spfd,
+                'Hours|loading':loading_hours,
+                'Hours|total':total_hours, 'Hours|senior':senior_hours, 'Hours|casual':casual_hours,
+                'Hours|regular':total_reg_hours, 'Hours|regular|senior':senior_reg_hours, 'Hours|regular|casual':casual_reg_hours,
+                'Hours|overtime':total_ot_hours, 'Hours|overtime|senior':senior_ot_hours, 'Hours|overtime|casual':casual_ot_hours,
+                'Hours|temp':temp_hours, 'Hours|loading':loading_hours, 'Hours|oddball':hours_oddball,
+                'Employees|absent':total_absent_employees, 'Employees|absent|senior':senior_absent, 'Employees|absent|casual':casual_absent,
+                'Employees|total':total_employees_on_hand, 
+                'CPMH|c100':cpmh_c100, 'CPMH|c200':cpmh_c200, 'CPMH|c300-400':cpmh_c300_c400, 
+                'CPMH|wine':cpmh_w, 'CPMH|oddball':cpmh_oddball, 
+                'Cases|c100':cases_100, 'Cases|c200':cases_200, 'Cases|c300-c400':cases_300_400, 'Cases|wine':cases_w, 'Cases|oddball':cases_oddball, 
+                'CompletionTime':completion_time,
+                'Waves':number_of_waves, 'NonConveyable':non_conveyable, 'PalletPicks':pallet_picks,
+                'SorterRunTime':sorter_run_time, 'JackpotCases':jackpot_cases
+    }
+               
+            
+    summary_dataframe = pd.DataFrame()
+    summary_dataframe = summary_dataframe.append(the_row, ignore_index=True)
+    
+    summary_dataframe['Date'] =  dat 
+    summary_dataframe['Month'] = dat.strftime('%B')
+    summary_dataframe['Year'] = dat.strftime('%Y')
+    summary_dataframe['Weekday'] = dat.strftime('%A')
+    summary_dataframe['WeekNumber'] = dat.strftime('%U')
+    summary_dataframe['DOTM'] = dat.strftime('%d')
+    summary_dataframe['Warehouse'] = 'KC'
+    
+    summary_dataframe.reset_index(drop=True, inplace=True)
 
     return summary_dataframe
 
@@ -502,7 +497,6 @@ def prepare_summary_output(Summary_Tab_Combined):
     '''
     summary_cols = {'Cases|total' : {'sum':np.sum, 'mean':np.mean},
                     'Bottles|total' : {'sum':np.sum, 'mean':np.mean}, 
-                    'Kegs' : {'sum':np.sum, 'mean':np.mean}, 
                     'CPMH' : np.mean,
                     'CPMH|adjusted' : np.mean, 
                     'Hours|total' : {'sum':np.sum, 'mean':np.mean},
@@ -515,14 +509,13 @@ def prepare_summary_output(Summary_Tab_Combined):
                     'Mispicks' : np.sum,
                     'Overs' : np.sum,
                     'Shorts' : np.sum,
+                    'Trucks|kc' : np.mean,
+                    'Trucks|spfd' : np.mean,
                     'Trucks|total' : np.mean,
-                    'Trucks|package' : np.mean,
-                    'Trucks|keg' : np.mean,
                     'Stops|total' : {'sum':np.sum, 'mean':np.mean},
-                    'Stops|stl' : {'sum':np.sum, 'mean':np.mean},
-                    'Stops|cape' : {'sum':np.sum, 'mean':np.mean},
-                    'Stops|col' : {'sum':np.sum, 'mean':np.mean},
-                    'Returns|dollars' : np.sum
+                    'Stops|kc' : {'sum':np.sum, 'mean':np.mean},
+                    'Stops|spfd' : {'sum':np.sum, 'mean':np.mean},
+                    'Returns|cases' : np.sum
     }
     
     output_summary = pd.DataFrame(Summary_Tab_Combined.groupby('Year').agg(summary_cols))
