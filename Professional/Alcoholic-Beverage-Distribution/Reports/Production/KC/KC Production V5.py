@@ -278,11 +278,9 @@ def extract_kc_returns_tab(file):
         Puts into a dictionary of dataframes 
         for input into a pandas DataFrame.
         '''
-        dtypes = {'Driver #':np.int,'Inv#':np.int64,'Customer':str,'Cust#':np.int64,
-            'Driver #':np.int64,'Driver':str,'Reason':str,'Cases':np.float64,
-            'Bottles':np.float64,'Pick up Cases':np.float64,'Empty Boxes':np.float64,
-            'PLLTS':np.int64,'Kegs':np.int64,'POS':np.int64,'Bonus':np.float64,'Inv Amt':np.float64,
-            'Driver Return or Customer Return':str,'Inv#':np.int64
+        dtypes = {'Inv#':np.int64,'Customer':str,'Cust#':np.int64,'Rte':str,
+            'Driver':str,'Reason':str,'Cases':np.float64,
+            'Bottles':np.float64,'Sales Person':str, 'Reason':str
         }
         returns = pd.read_excel(file, sheetname='Returns', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, col_dtypes=dtypes, skiprows=2)
         
@@ -296,15 +294,12 @@ def extract_kc_returns_tab(file):
         returns['DOTM'] = dat.strftime('%d')
         returns['Warehouse'] = 'KC'
         
-        keep_cols = ['Date','Driver Return or Customer Return','Inv#',
-                    'Cust#','Customer','Driver #','Driver','Reason','Cases','Bottles',
-                    'Pick up Cases','Empty Boxes','PLLTS','Kegs','Empty Kegs',
-                    'POS','Bonus','Inv Amt','Sales Person',
-                    'Month','Weekday','WeekNumber','DOTM','Warehouse']
+        keep_cols = ['Date','Inv#','Cust#','Customer','Driver','Cases','Bottles','Rte',
+                    'Reason','Sales Person','Month','Weekday','WeekNumber','DOTM','Warehouse']
             
         returns = returns[keep_cols].reset_index(drop=True)
-
-        returns = returns[returns['Driver Return or Customer Return'] != 0]
+        
+        returns = returns[returns['Rte'] != 0]
         
         returns.reset_index(drop=True, inplace=True)
         
@@ -338,7 +333,7 @@ Returns_Tab.head(20)
 
 
 
-
+##vetted up to here
 
 def extract_kc_summary_tab(file, this_year=True):
     '''
