@@ -496,6 +496,10 @@ def prepare_summary_output(Summary_Tab_Combined):
     Aggregates data for presentation to present to management
     '''
     summary_cols = {'Cases|total' : {'sum':np.sum, 'mean':np.mean},
+                    'Cases|kc' : {'sum':np.sum, 'mean':np.mean},
+                    'Cases|spfd' : {'sum':np.sum, 'mean':np.mean},
+                    'Cases|stltransfer' : {'sum':np.sum, 'mean':np.mean},
+                    'Cases|oddball' : {'sum':np.sum, 'mean':np.mean},
                     'Bottles|total' : {'sum':np.sum, 'mean':np.mean}, 
                     'CPMH' : np.mean,
                     'CPMH|adjusted' : np.mean, 
@@ -504,7 +508,12 @@ def prepare_summary_output(Summary_Tab_Combined):
                     'Hours|overtime' : {'sum':np.sum, 'mean':np.mean},
                     'Hours|senior' : {'sum':np.sum, 'mean':np.mean},
                     'Hours|casual' : {'sum':np.sum, 'mean':np.mean},
+                    'Hours|regular|senior' : {'sum':np.sum, 'mean':np.mean},
+                    'Hours|regular|casual' : {'sum':np.sum, 'mean':np.mean},
+                    'Hours|overtime|senior' : {'sum':np.sum, 'mean':np.mean},
+                    'Hours|overtime|casual' : {'sum':np.sum, 'mean':np.mean},
                     'Employees|total' : np.mean,
+                    'Employees|absent' : np.mean,
                     'TotalErrors' : np.sum,
                     'Mispicks' : np.sum,
                     'Overs' : np.sum,
