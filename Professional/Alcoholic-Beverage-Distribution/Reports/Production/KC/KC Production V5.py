@@ -368,33 +368,32 @@ trucks_kc = np.float64(summary_tab.loc[12,5])
 trucks_spfd = np.float64(summary_tab.loc[13,5])
 total_trucks = trucks_kc + trucks_spfd
 
-total_hours = np.float64(summary_tab.loc[31,5])
-loading_hours = summary_tab.loc[26,10]
-senior_hours = np.float64(summary_tab.loc[32,5])
-casual_hours = np.float64(summary_tab.loc[33,5])
-total_reg_hours = np.float64(summary_tab.loc[34,5])
-senior_reg_hours = np.float64(summary_tab.loc[35,5])
-casual_reg_hours = np.float64(summary_tab.loc[36,5])
-total_ot_hours = np.float64(summary_tab.loc[37,5])
-senior_ot_hours = np.float64(summary_tab.loc[38,5])
-casual_ot_hours = np.float64(summary_tab.loc[39,5])
-temp_hours = np.float64(summary_tab.loc[40,5])
-total_absent_employees = np.float64(summary_tab.loc[42,5])
-senior_absent = np.float64(summary_tab.loc[43,5])
-casual_absent = np.float64(summary_tab.loc[44,5])
-total_employees_on_hand = np.float64(summary_tab.loc[47,5])
-completion_time = np.float64(summary_tab.loc[48,5])
+total_hours = np.float64(summary_tab.loc[23,5])
+senior_hours = np.float64(summary_tab.loc[24,5])
+casual_hours = np.float64(summary_tab.loc[25,5])
+total_reg_hours = np.float64(summary_tab.loc[26,5])
+senior_reg_hours = np.float64(summary_tab.loc[27,5])
+casual_reg_hours = np.float64(summary_tab.loc[28,5])
+total_ot_hours = np.float64(summary_tab.loc[29,5])
+senior_ot_hours = np.float64(summary_tab.loc[30,5])
+casual_ot_hours = np.float64(summary_tab.loc[31,5])
+temp_hours = np.float64(summary_tab.loc[32,5])
+total_absent_employees = np.float64(summary_tab.loc[33,5])
+senior_absent = np.float64(summary_tab.loc[34,5])
+casual_absent = np.float64(summary_tab.loc[35,5])
+total_employees_on_hand = np.float64(summary_tab.loc[38,5])
+completion_time = summary_tab.loc[36,10]
 
-number_of_waves = summary_tab.loc[49,10]
-non_conveyable = summary_tab.loc[24,10]
-pallet_picks = summary_tab.loc[25,10]
-sorter_run_time = summary_tab.loc[27,10]
-loading_hours = summary_tab.loc[26,10]
-jackpot_cases = summary_tab.loc[30,10]
+number_of_waves = summary_tab.loc[33,10]
+non_conveyable = summary_tab.loc[17,10]
+pallet_picks = summary_tab.loc[18,10]
+sorter_run_time = summary_tab.loc[20,10]
+loading_hours = summary_tab.loc[19,10]
+jackpot_cases = summary_tab.loc[23,10]
 
-cpmh = summary_tab.loc[49,5]
-cpmh_adjusted = np.float64(summary_tab.loc[50,5])
-cases_per_hour = summary_tab.loc[20,5]
+cpmh = np.float64(total_cases / total_hours)
+cpmh_adjusted = np.float64(total_cases / total_reg_hours)
+###cases_per_hour = summary_tab.loc[20,5]
 cpmh_c = summary_tab.loc[24,5]
 cpmh_d = summary_tab.loc[25,5]
 cpmh_e = summary_tab.loc[26,5]
@@ -430,7 +429,7 @@ the_row = {'Date':dat,
             'Overs':overs, 'Shorts':shorts, 'Mispicks':mispicks, 'TotalErrors':total_errors,
             'Stops|total':total_stops, 'Stops|total':total_stops, 'Stops|kc':stops_kc,
             'Stops|spfd':stops_spfd,
-            'Trucks|total':total_trucks, 'Trucks|package':trucks_package, 'Trucks|keg':trucks_keg,
+            'Trucks|total':total_trucks, 'Trucks|kc':trucks_kc, 'Trucks|spfd':trucks_spfd,
             'Hours|loading':loading_hours,
             'Hours|total':total_hours, 'Hours|senior':senior_hours, 'Hours|casual':casual_hours,
             'Hours|regular':total_reg_hours, 'Hours|regular|senior':senior_reg_hours, 'Hours|regular|casual':casual_reg_hours,
