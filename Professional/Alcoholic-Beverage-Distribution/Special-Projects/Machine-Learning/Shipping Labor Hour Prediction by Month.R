@@ -9,8 +9,7 @@ labor_model = 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Projects/Shipping L
 monthly_data = read.csv(labor_model, header=TRUE)
 monthly_data = monthly_data %>% filter(Year %in% c(2015, 2016))
 
-
-plot(monthly_data$Production.Days, monthly_data$Cases.Delivered)
+# CHECK OND AS FACTOR
 
 print('Check production days')
 p = ggplot(data=monthly_data, aes(x=Production.Days, y=Night.Ship.Hours, group=House))
@@ -22,7 +21,7 @@ p + geom_point(aes(colour=House)) +
 
 print('Check cases')
 p = ggplot(data=monthly_data, aes(x=Cases.Delivered, y=Night.Ship.Hours, group=House))
-p + geom_point(aes(colour=factor(Production.Days), size=Production.Days)) + 
+p + geom_point(aes(colour=factor(OND), size=Production.Days)) + 
   facet_wrap(~House, scales='free') +
   geom_smooth(method='lm',aes(group=House)) +
   scale_y_continuous(labels=comma) +
@@ -30,7 +29,7 @@ p + geom_point(aes(colour=factor(Production.Days), size=Production.Days)) +
 
 
 print('Check the most intuitive model')
-model = lm(Night.Ship.Hours ~ House + Cases.Delivered + Production.Days, data=monthly_data)
+model = lm(Night.Ship.Hours ~ House + Cases.Delivered + Production.Days + OND, data=monthly_data)
 summary(model)
 
 
@@ -48,6 +47,6 @@ summary(model)
 
 
 
-names(monthly_data)
+head(monthly_data)
 
 
