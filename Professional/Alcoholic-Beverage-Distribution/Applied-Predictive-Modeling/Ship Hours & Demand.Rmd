@@ -1,0 +1,183 @@
+---
+title: "<b><h1>Shipping Labor</h1></b>"
+subtitle: "<b><small>Predictive Model for Budgeting</small></b>"
+author: "<small>Paul M. Washburn - Operations Analyst</small>"
+date: "<small>November 2016</small>"
+output: revealjs::revealjs_presentation#html_document #ioslides_presentation #slidy_presentation #beamer_presentation #revealjs::revealjs_presentation
+theme: solarized
+center: true
+fig_width: 10
+fig_height: 5
+fig_caption: true
+widescreen: true
+transition: slide
+autosize: true
+---
+
+```{r setup, include=FALSE}
+if (Sys.getenv("JAVA_HOME")!="")
+  Sys.setenv(JAVA_HOME="")
+
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(caret)
+library(plotly)
+
+labor_model = 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Projects/Shipping Labor Prediction Model/Labor Prediction Model Data.csv'
+
+monthly_data_all = read.csv(labor_model, header=TRUE)
+monthly_data = monthly_data_all %>% filter(Year %in% c(2015, 2016))
+
+
+##PREDICTIVE LABOR MODEL
+p = ggplot(data=monthly_data, aes(x=Cases.Delivered, y=Night.Ship.Hours, group=House))
+Labor_Model_Plot = p + geom_point(aes(colour=factor(House), size=Production.Days)) + 
+  #facet_wrap(~House, scales='free') +
+  geom_smooth(method='lm',aes(group=House, colour=House, fill=House)) +
+  scale_y_continuous(labels=comma) +
+  scale_x_continuous(labels=comma) +
+  theme(legend.position='none') +
+  labs(title='Predictive Model: Monthly Shipping Labor Hours')
+
+
+labor_model = lm(Night.Ship.Hours ~ House + Cases.Delivered, data=monthly_data) # + Production.Days
+summary(labor_model)
+
+
+
+
+
+##3 MONTH QTY DEMANDED MODEL OF STD CASES SOLD AS FN OF GP HOUSE AND PRODUCTION DAY S
+three_mo_demand_model = lm(Std.Cases.Sold ~ Mark.Up + House + Production.Days, data=monthly_data_all) #Gross.Proft..Percent
+summary(three_mo_demand_model)
+
+intercept = summary(three_mo_demand_model)$coefficients[1]
+markup_coefficient = summary(three_mo_demand_model)$coefficients[2]
+house_coefficient = summary(three_mo_demand_model)$coefficients[3]
+prodday_coefficient = summary(three_mo_demand_model)$coefficients[4]
+
+quantity_demanded = function(mark_up, house, production_days) {
+  house = ifelse(house=='STL', 1, 0)
+  Q = intercept + markup_coefficient*mark_up + house_coefficient*house + prodday_coefficient*production_days
+  Q
+}
+
+
+quantity_demanded(mark_up=0.29, house='STL', production_days=19)
+```
+
+
+# <b>Executive Summmary</b> <br><small>This analysis reviews monthly data from 2011-2016 with the goal of finding a predictive model for night-time shipping hours.<br><br>Two demand models were developed for this project in order to feed into the predictive model - one for 1-3 months out and another for 4-12 months.<br><br>The sole function of these demand models is to forecast cases demanded at each house based on factors that are known ahead of time. The output of these models is then fed into the night labor prediction model.</small> {data-background=#e6e6e6}
+
+## <b>Executive Summary</b> <br><small>One-to-three month demand was modeled on Avg Mark-Up, House & Production Days.<br><br>Four-to-twelve month demand is modeled on XXXXXXXXXXXX.<br><br>Total monthly night shipping hours is modeled on House and cases delivered (which is derived from one of the above demand models).<br><br>All models are highly predictive.</small> {data-background=#e6e6e6}
+
+
+## <b>Executive Summary</b> <br><small>Night shipping hours is highly dependent upon the quantity of cases demanded for that month.<br/><br/>Due to this reality, an aggregate demand model was derived in order to provide input for the labor model. This model is valid for the 1-3 month time horizon.<br/><br/>Beyond this horizon, demand is modeled based on pre-set $ revenue goals for the month.</small> {data-background=#e6e6e6}
+
+
+# <b>Approach</b> <br><small>Hypothesis: Shipping labor hours per month is determined by the number of cases produced for that month and from that warehouse.<br/><br/>We must know the predictive variables ahead of time.<br><br>We will not know cases produced for any given month in the future, so a model must be produced to give an accurate prediction of demand.<br><br></small> {data-background=#e6e6e6}
+
+
+
+
+## One-Three Month Labor Model
+<ul> 
+  <li>A highly predictive model was derived from data</li>
+  <li>Modeled on house, cases shipped, and ship days</li>
+  <li>Model explains >90% of the variation in the data</li>
+  <li>Cases delivered can be derived from the demand model</li>
+</ul>
+
+
+
+
+## One-Three Month Labor Model
+<center><small>
+$$Y_{HOURS} = \beta_0 + \beta_{STL}*X_{STL} + \beta_{CASES}*X_{CASES} + \beta_{SHIPDAYS}*X_{SHIPDAYS}$$
+
+where $$Y_{HOURS}=ShipHoursToPredict$$ $$X_{STL} = {0, 1}$$ $$X_{CASES}=TotalCasesDelivered$$ $$X_{SHIPDAYS}=MonthlyShipDays$$ 
+
+and $$\beta_{ALL}=CoefficientsDerivedFromData$$ $$\beta_{0}=yIntercept$$
+
+
+<br><br>
+<b>This model explains more than 90% of the variation in shipping hours. This is highly predictive!</b>
+
+<b>All that needs to be fed into this model is (1) which house  you're predicting (STL=1, KC=0), (2) projected demand (in cases)
+from the demand model for that house/month, and (3) how many ship days will be in that month.</b>
+</small></center><br/>
+
+
+
+
+## One-Three Month Labor Model
+```{r ship_labor_plot, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
+
+ggplotly(Labor_Model_Plot)
+
+```
+
+
+## XXXXXXXXXXXXXXXXXXXXXX
+<ul> 
+  <li>XXXXXXXXXXXXXXXXXXXXXX</li>
+</ul>
+
+
+## XXXXXXXXXXXXXXXXXXXXXX
+<ul> 
+  <li>XXXXXXXXXXXXXXXXXXXXXXP</li>
+</ul>
+
+
+## Challenges & Unresolved Issues
+<ul> 
+  <li>XXXXXXXXXXXXXXXXXXXXXX</li>
+</ul>
+
+
+## XXXXXXXXXXXXXXXXXXXXXX
+<ul> 
+  <li>XXXXXXXXXXXXXXXXXXXXXX</li>
+</ul>
+  
+  
+  
+  
+
+
+
+# <b>Questions, Comments & Discussion</b> <br><small>Please take this time to clarify understanding, raise concerns, or provide input on the findings.<br><br>Thank you for your time!</small> {data-background=#e6e6e6}
+
+
+
+
+
+
+
+
+
+
+# <b>Parting Words of Wisdom</b> <br><small>"The part that is stable we shall predict. The part that is unstable we shall control" -John von Neumann<br><br>"The day science begins to study non-physical phenomena, it will make more progress in one decade than in all the previous centuries of its existence." -Nikola Tesla <br><br>"Madness is rare in individuals-but in groups, parties, nations, and ages it is the rule" -Peter Thiel</small> {data-background=#e6e6e6}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
