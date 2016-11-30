@@ -1,0 +1,293 @@
+---
+title: "<b><h1>Inbound Shipments</h1></b>"
+subtitle: "<b><small>Capacity & Constraints</small></b>"
+author: "<small>Paul M. Washburn - Operations Analyst</small>"
+date: "<small>December 2016</small>"
+output: revealjs::revealjs_presentation#html_document #ioslides_presentation #slidy_presentation #beamer_presentation #revealjs::revealjs_presentation
+theme: solarized
+center: true
+fig_width: 10
+fig_height: 5
+fig_caption: true
+widescreen: true
+transition: slide
+autosize: true
+---
+
+```{r setup, include=FALSE}
+if (Sys.getenv("JAVA_HOME")!="")
+  Sys.setenv(JAVA_HOME="")
+## Load Libraries
+library(ggplot2)
+library(plotly)
+library(scales)
+library(dplyr)
+library(zoo)
+library(plotly)
+library(lubridate)
+library(plyr)
+library(DT)
+source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
+
+## Pre-process data
+DAILY_SUMMARY = read.csv('C:/Users/pmwash/Desktop/R_files/Data Input/SUMMARY INBOUND SHIPMENTS.csv', header=TRUE)
+DAILY_SUMMARY$Weekday = factor(DAILY_SUMMARY$Weekday, levels=c('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')) 
+DAILY_SUMMARY = DAILY_SUMMARY %>% filter(CasesPerPOLine <= 1000)
+DAILY_SUMMARY$IsWeekend = DAILY_SUMMARY$Weekday %in% c('Saturday','Sunday')
+DAILY_SUMMARY$IsMonday = DAILY_SUMMARY$Weekday %in% c('Monday')
+
+
+## MARK THRESHOLDS FOR VIOLATIONS
+THRESH = 0.95
+
+KC_MAX_CASESIN = ddply(DAILY_SUMMARY, 'Warehouse', summarise, Percentile=quantile(Cases_Received, THRESH))[1,2]
+STL_MAX_CASESIN = ddply(DAILY_SUMMARY, 'Warehouse', summarise, Percentile=quantile(Cases_Received, THRESH))[2,2]
+
+KC_MAX_POLINES = ddply(DAILY_SUMMARY, 'Warehouse', summarise, Percentile=quantile(PO_._Line_Number, THRESH))[1,2]
+STL_MAX_POLINES = ddply(DAILY_SUMMARY, 'Warehouse', summarise, Percentile=quantile(PO_._Line_Number, THRESH))[2,2]
+
+max_cs = round(c(STL_MAX_CASESIN, KC_MAX_CASESIN))
+max_po = round(c(STL_MAX_POLINES, KC_MAX_POLINES))
+thresh_df = data.frame(cbind(max_cs, max_po))
+row.names(thresh_df) = c('STL', 'KC')
+names(thresh_df) = c('95th Percentile - Cases Received', '95th Percentile - PO Lines Received')
+
+LINES = DAILY_SUMMARY$PO_._Line_Number
+CASES = DAILY_SUMMARY$Cases_Received
+WHSE = DAILY_SUMMARY$Warehouse
+
+DAILY_SUMMARY$OPERATIONAL_THRESHOLD_EXCEEDED = 
+  ifelse(WHSE == 'Saint Louis' & (CASES >= STL_MAX_CASESIN | LINES >= STL_MAX_POLINES)==T, TRUE,
+       ifelse(WHSE == 'Kansas City' & (CASES >= KC_MAX_CASESIN | LINES >= KC_MAX_POLINES)==T, TRUE, FALSE) )
+
+
+
+
+#PAIR PLOTS FOR CORRELATIONS AMONGS PREDICTORS
+panel.cor <- function(x, y, digits=2, cex.cor)
+{
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- abs(cor(x, y))
+  txt <- format(c(r, 0.123456789), digits=digits)[1]
+  test <- cor.test(x,y)
+  Signif <- ifelse(round(test$p.value,3)<0.050,"Significant at\n p < 0.050",paste("p=",round(test$p.value,3)))  
+  text(0.5, 0.25, paste("r=",txt))
+  text(.5, .75, Signif)
+}
+
+panel.smooth<-function (x, y, col = "blue", bg = NA, pch = 18, 
+                        cex = 0.8, col.smooth = "red", span = 2/3, iter = 3, ...) 
+{
+  points(x, y, pch = pch, col = col, bg = bg, cex = cex)
+  ok <- is.finite(x) & is.finite(y)
+  if (any(ok)) 
+    lines(stats::lowess(x[ok], y[ok], f = span, iter = iter), 
+          col = col.smooth, ...)
+}
+
+panel.hist <- function(x, ...)
+{
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(usr[1:2], 0, 1.5) )
+  h <- hist(x, plot = FALSE)
+  breaks <- h$breaks; nB <- length(breaks)
+  y <- h$counts; y <- y/max(y)
+  rect(breaks[-nB], 0, breaks[-1], y, col="cyan", ...)
+}
+
+
+stl = DAILY_SUMMARY %>% filter(Warehouse=='Saint Louis')
+stl = stl[, c(7:11,14)]
+stl_pairs = pairs(stl, lower.panel=panel.cor, diag.panel=panel.hist, upper.panel=panel.smooth, main='Inbound Shipment Correlations in STL')
+
+
+kc = DAILY_SUMMARY %>% filter(Warehouse=='Kansas City')
+kc = kc[, c(7:11,14)]
+kc_pairs = pairs(kc, lower.panel=panel.smooth, diag.panel=panel.hist, upper.panel=panel.cor, main='Inbound Shipment Correlations in KC')
+
+
+
+#POLINES - DAILY BY MONTH AND WAREHOUSE
+p = ggplot(data=DAILY_SUMMARY, aes(x=factor(Month), y=PO_._Line_Number, group=Year))
+DAILY_POLINES_PLOT = p +
+  geom_boxplot(aes(fill=Warehouse, group=Month, alpha=0.7)) +
+  facet_grid(Warehouse ~ Year, scales='free_y') +
+  geom_jitter(alpha=0.2, size=1) +
+  theme(legend.position='none', axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(title='Daily PO Lines Received by House/Month', x='Month', y='PO Lines') +
+  scale_y_continuous(labels=comma) +
+  geom_hline(yintercept=STL_MAX_POLINES, colour='blue', size=2, alpha=0.1) +
+  geom_hline(yintercept=KC_MAX_POLINES, colour='red', size=2, alpha=0.1)
+#DAILY_POLINES_PLOT
+
+#POLINES - DAILY BY WEEKDAY AND WAREHOUSE
+p = ggplot(data=DAILY_SUMMARY, aes(x=factor(Weekday), y=PO_._Line_Number, group=Year))
+WEEKDAY_POLINES_PLOT = p +
+  geom_boxplot(aes(fill=Warehouse, group=Weekday, alpha=0.7)) +
+  facet_grid(Warehouse ~ Year, scales='free_y') +
+  geom_jitter(alpha=0.2, size=1) +
+  theme(legend.position='none', axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(title='Daily PO Lines Received by House/Weekday', x='Month', y='PO Lines') +
+  scale_y_continuous(labels=comma) +
+  geom_hline(yintercept=STL_MAX_POLINES, colour='blue', size=2, alpha=0.1) +
+  geom_hline(yintercept=KC_MAX_POLINES, colour='red', size=2, alpha=0.1)
+#WEEKDAY_POLINES_PLOT
+
+
+
+#CASES - DAILY BY MONTH AND WAREHOUSE
+p = ggplot(data=DAILY_SUMMARY, aes(x=factor(Month), y=Cases_Received, group=Year))
+DAILY_CASES_PLOT = p +
+  geom_boxplot(aes(fill=Warehouse, group=Month, alpha=0.7)) +
+  facet_grid(Warehouse ~ Year, scales='free_y') +
+  geom_jitter(alpha=0.2, size=1) +
+  theme(legend.position='none', axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(title='Daily Cases Received by House/Month', x='Month', y='PO Lines') +
+  scale_y_continuous(labels=comma) +
+  geom_hline(yintercept=STL_MAX_CASESIN, colour='blue', size=2, alpha=0.1) +
+  geom_hline(yintercept=KC_MAX_CASESIN, colour='red', size=2, alpha=0.1)
+#DAILY_CASES_PLOT
+
+#CASES - DAILY BY WEEKDAY AND WAREHOUSE
+p = ggplot(data=DAILY_SUMMARY, aes(x=factor(Weekday), y=Cases_Received, group=Year))
+WEEKDAY_CASES_PLOT = p +
+  geom_boxplot(aes(fill=Warehouse, group=Weekday, alpha=0.7)) +
+  facet_grid(Warehouse ~ Year, scales='free_y') +
+  geom_jitter(alpha=0.2, none=1) +
+  theme(legend.position='none', axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(title='Daily Cases Received by House/Weekday', x='Weekday', y='Cases Received') +
+  scale_y_continuous(labels=comma) +
+  geom_hline(yintercept=STL_MAX_CASESIN, colour='blue', size=2, alpha=0.1) +
+  geom_hline(yintercept=KC_MAX_CASESIN, colour='red', size=2, alpha=0.1)
+#WEEKDAY_CASES_PLOT
+#ggplotly(WEEKDAY_CASES_PLOT)
+
+
+
+#SCATTERPLOT - PO LINES AND CASES RECEIVED
+p = ggplot(data=DAILY_SUMMARY, aes(x=PO_._Line_Number, y=Cases_Received, group=Warehouse, label=Date_Received))
+SCATTER_POLINES_CASES = p + 
+  geom_point(aes(colour=IsWeekend), alpha=0.4) +
+  facet_wrap(~Warehouse, scales='free_x') +
+  theme(legend.position='bottom', axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(labels=comma) +
+  labs(title='PO Lines Received/day vs. Cases Received/day', x='PO Lines Received/Day', y='Cases Received/Day') +
+  geom_smooth(method='lm', se=F, colour='black', size=.9, alpha=0.3) 
+#ggplotly(SCATTER_POLINES_CASES)
+
+```
+
+
+# <b>Executive Summmary</b> <br><small>This analysis reviews DAILY INBOUND SHIPMENT data from 2015-2016 with the goal of finding criteria for <i>planning & scheduling purchases</i> amidst operational constraints.<br><br>Operational constraints are simplified (due to complexity); a violation of capacity is defined as either:<br>(1) exceeding the 95th-percentile of cases received per day for that warehouse, OR <br>(2) exceeding the 95th-percentile of PO lines received per day for that warehouse.</small> {data-background=#e6e6e6}
+
+## <b>Executive Summary</b> <br><small>This model is simple -- yet can be extended.<br><br>More real-world constraints can be added to the model in future to develop better decision support parameters.<br><br>The most logical next constraint to add in would be receiving labor hours -- defining another operational capacity violation as "days we exceeded X% overtime hours for the receiving crew."<br><br>Further extensions to the model are possible.</small> {data-background=#e6e6e6}
+
+
+
+
+
+# <b>Defining Capacity</b> <br><small>The following information is based on DAILY DATA.<br><br>The information is grouped by Warehouse, Month and Weekday in an effort to look for patterms.<br><br>The boxes contain 75% of the total occurrences for that month/weekday, and the dark middle line represents the mid-point for that month/weekday.<br><br>Outliers are represented by the dots, & the capacity of the warehouses are shown by horizontal lines matching the color of that warehouse.</small> {data-background=#e6e6e6}
+
+
+## Simple Capacity Constraints
+```{r cap_cons, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
+datatable(thresh_df, filter='none', selection='none', options=list(dom='t'))
+```
+<br>
+<b><center>Constraints that are not priced into the model include labor availability, receiving dock space, carrier, time of day, number of trucks, full vs. mixed pallets, LTLs, fork lift availability, detention fees and door availability.</b></center>
+<ul>
+  <li>However, PO lines & cases received dominate the problem</li>
+  <li>Avoiding these violations can reduce operational stress</li>
+  <li>Even when these are satisfied other constraints may be taxed</li>
+  <li>Model must be expanded to better represent reality</li>
+</ul>
+
+## Cases Received by Weekday
+```{r weekday_casess, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
+WEEKDAY_CASES_PLOT
+```
+
+## PO Lines Received by Weekday
+```{r weekday_lines, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
+WEEKDAY_POLINES_PLOT
+```
+
+## Cases Received by Month
+```{r month_casess, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
+DAILY_CASES_PLOT
+```
+
+## PO Lines Received by Month
+```{r month_lines, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
+DAILY_POLINES_PLOT
+```
+
+
+
+
+# <b>Operational Barriers</b> <br><small><br><br></small> {data-background=#e6e6e6}
+
+
+<!-- Data availability - scheduling tool - replenishment policy - transhipment providers canceling - unifying operations with sales purchasing decisions/ meeting supply with demand -->
+
+
+
+
+
+<!-- ## One-Three Month Labor Model -->
+<!-- <ul>  -->
+<!--   <li>A highly predictive model was derived from data</li> -->
+<!--   <li>Modeled on house, cases shipped, and ship days</li> -->
+<!--   <li>Model explains >90% of the variation in the data</li> -->
+<!--   <li>Cases delivered can be derived from the demand model</li> -->
+<!-- </ul> -->
+
+
+
+
+<!-- ## One-Three Month Labor Model -->
+<!-- <center><small> -->
+<!-- $$Y_{HOURS} = \beta_0 + \beta_{STL}*X_{STL} + \beta_{CASES}*X_{CASES} + \beta_{SHIPDAYS}*X_{SHIPDAYS}$$ -->
+
+<!-- where $$Y_{HOURS}=ShipHoursToPredict$$ $$X_{STL} = {0, 1}$$ $$X_{CASES}=TotalCasesDelivered$$ $$X_{SHIPDAYS}=MonthlyShipDays$$  -->
+
+<!-- and $$\beta_{ALL}=CoefficientsDerivedFromData$$ $$\beta_{0}=yIntercept$$ -->
+
+
+
+
+
+# <b>Questions, Comments & Discussion</b> <br><small>Please take this time to clarify understanding, raise concerns, or provide input on the findings.<br><br>Thank you for your time!</small> {data-background=#e6e6e6}
+
+
+
+
+
+
+
+
+
+
+# <b>Parting Words of Wisdom</b> <br><small>"The part that is stable we shall predict. The part that is unstable we shall control" -John von Neumann<br><br>"The day science begins to study non-physical phenomena, it will make more progress in one decade than in all the previous centuries of its existence." -Nikola Tesla <br><br>"Madness is rare in individuals-but in groups, parties, nations, and ages it is the rule" -Peter Thiel</small> {data-background=#e6e6e6}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
