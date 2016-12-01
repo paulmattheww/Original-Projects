@@ -27,6 +27,7 @@ library(plotly)
 library(lubridate)
 library(plyr)
 library(DT)
+library(tidyr)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 
 ## Pre-process data
@@ -166,20 +167,116 @@ WEEKDAY_CASES_PLOT = p +
 
 
 #SCATTERPLOT - PO LINES AND CASES RECEIVED
+library(reshape2)
+for_merge = DAILY_SUMMARY[,c('Warehouse','PO_._Line_Number','Cases_Received',
+                             'CasesPerPOLine')]
+for_merge$CasesReceivedSTL = ifelse(for_merge$Warehouse == 'Kansas City', NA, for_merge$Cases_Received)
+for_merge$CasesReceivedKC = ifelse(for_merge$Warehouse == 'Kansas City', for_merge$Cases_Received, NA)
+for_merge$Cases_Received = NULL
+
+names(for_merge) = c('Warehouse', 'POLines','CasesPerPOLine', 'CasesReceivedSTL','CasesReceivedKC')
+head(for_merge, 20)
+
+
+constraint_slope_stl = (-STL_MAX_CASESIN / STL_MAX_POLINES)
+constraint_slope_kc = (-KC_MAX_CASESIN / KC_MAX_POLINES)
+x = c(1:max(STL_MAX_POLINES, KC_MAX_POLINES))
+
+stl_function = 18072 + constraint_slope_stl*x
+stl_function = ifelse(stl_function < 0, NA, stl_function)
+
+kc_function = 12997 + constraint_slope_kc*x
+kc_function = ifelse(kc_function < 0, NA, kc_function)
+
+
+# Make into dataframe
+con_df = data.frame(cbind(x, stl_function, kc_function))
+names(con_df) = c('POLines', 'STLConstraint', 'KCConstraint')
+con_df$CasesPerPOLineSTL = (con_df$STLConstraint / con_df$POLines)
+con_df$CasesPerPOLineKC = (con_df$KCConstraint / con_df$POLines)
+
+
+# Merge in contextual data
+con_df = unique(merge(con_df, for_merge, by='POLines', all.y=TRUE))
+head(con_df, 20)
+
+stl = con_df %>% filter(Warehouse == 'Saint Louis')
+
+g = ggplot(data=stl, aes(x=POLines, y=STLConstraint, label=CasesPerPOLine))
+constraints_plot_stl = g +  
+  geom_point(aes(x=POLines, y=CasesReceivedSTL, size=CasesPerPOLine), colour='blue', alpha=0.7) +
+  labs(title='STL Receiving Capacity Constraints in Context of History', x='PO Lines/Day',
+       y='Cases Received/Day') +
+  geom_hline(yintercept=STL_MAX_CASESIN, colour='black', size=2, alpha=0.15) +
+  geom_vline(xintercept=STL_MAX_POLINES, colour='black', size=2, alpha=0.15) +
+  geom_line(aes(label=CasesPerPOLineSTL), colour='black', size=2, alpha=0.15) +
+  scale_y_continuous(label=comma) +
+  geom_smooth(aes(x=POLines, y=CasesReceivedSTL), se=F, colour='black') +
+  theme(legend.position='none')
+
+
+
+kc = con_df %>% filter(Warehouse == 'Kansas City')
+
+g = ggplot(data=kc, aes(x=POLines, y=KCConstraint, label=CasesPerPOLine))
+constraints_plot_kc = g +  
+  geom_point(aes(x=POLines, y=CasesReceivedKC, size=CasesPerPOLine), colour='red', alpha=0.7) +
+  labs(title='KC Receiving Capacity Constraints in Context of History', x='PO Lines/Day',
+       y='Cases Received/Day') +
+  geom_hline(yintercept=KC_MAX_CASESIN, colour='black', size=2, alpha=0.15) +
+  geom_vline(xintercept=KC_MAX_POLINES, colour='black', size=2, alpha=0.15) +
+  geom_line(aes(label=CasesPerPOLineKC), colour='black', size=2, alpha=0.15) +
+  scale_y_continuous(label=comma) +
+  geom_smooth(aes(x=POLines, y=CasesReceivedKC), se=F, colour='black') +
+  theme(legend.position='none')
+
+
+#library(gridExtra)
+#plts = grid.arrange(constraints_plot_stl, constraints_plot_kc, nrow=1)
+
+
+## for reference to above
+
+
+#SCATTERPLOT - PO LINES AND CASES RECEIVED
 p = ggplot(data=DAILY_SUMMARY, aes(x=PO_._Line_Number, y=Cases_Received, group=Warehouse, label=Date_Received))
 SCATTER_POLINES_CASES = p + 
-  geom_point(aes(colour=IsWeekend), alpha=0.4) +
+  geom_point(aes(colour=Weekday), alpha=0.4) +
   facet_wrap(~Warehouse, scales='free_x') +
   theme(legend.position='bottom', axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_y_continuous(labels=comma) +
-  labs(title='PO Lines Received/day vs. Cases Received/day', x='PO Lines Received/Day', y='Cases Received/Day') +
+  labs(title='PO Lines/day vs. Cases Received/day', x='PO Lines Received/Day', y='Cases Received/Day') +
   geom_smooth(method='lm', se=F, colour='black', size=.9, alpha=0.3) 
-#ggplotly(SCATTER_POLINES_CASES)
+
+SCATTER_POLINES_CASES
+ggplotly(SCATTER_POLINES_CASES)
+
+
+
+
+
+
+
+
+## Decision tree
+library(party)
+tree_data = DAILY_SUMMARY
+names(tree_data) = c('X','Warehouse','Date','Year','Month','Weekday',
+                     'Cases_Received','Weight','Ext_Cost','PO_Lines_Received',
+                     'Case_per_PO_Line','Is_Weekend','Is_Monday','Operational_Threshold_Exceeded')
+
+# Create the tree.
+output.tree <- ctree(
+  Operational_Threshold_Exceeded ~ Cases_Received + PO_Lines_Received + Warehouse, 
+  data = tree_data)
+
+
+
 
 ```
 
 
-# <b>Executive Summmary</b> <br><small>This analysis reviews DAILY INBOUND SHIPMENT data from 2015-2016 with the goal of finding criteria for <i>planning & scheduling purchases</i> amidst operational constraints.<br><br>Operational constraints are simplified (due to complexity); a violation of capacity is defined as either:<br>(1) exceeding the 95th-percentile of cases received per day for that warehouse, OR <br>(2) exceeding the 95th-percentile of PO lines received per day for that warehouse.</small> {data-background=#e6e6e6}
+# <b>Executive Summmary</b> <br><small>This analysis reviews DAILY INBOUND SHIPMENT data from 2015-2016 with the goal of finding criteria for <i>planning & scheduling deliveries</i> amidst operational constraints.<br><br>Operational constraints have been simplified.<br><br>Capacity violations, defined by warehouse, are defined by days in which we exceed:<br>(1) the 95th-percentile of cases received, OR <br>(2) the 95th-percentile of PO lines received.</small> {data-background=#e6e6e6}
 
 ## <b>Executive Summary</b> <br><small>This model is simple -- yet can be extended.<br><br>More real-world constraints can be added to the model in future to develop better decision support parameters.<br><br>The most logical next constraint to add in would be receiving labor hours -- defining another operational capacity violation as "days we exceeded X% overtime hours for the receiving crew."<br><br>Further extensions to the model are possible.</small> {data-background=#e6e6e6}
 
@@ -187,7 +284,7 @@ SCATTER_POLINES_CASES = p +
 
 
 
-# <b>Defining Capacity</b> <br><small>The following information is based on DAILY DATA.<br><br>The information is grouped by Warehouse, Month and Weekday in an effort to look for patterms.<br><br>The boxes contain 75% of the total occurrences for that month/weekday, and the dark middle line represents the mid-point for that month/weekday.<br><br>Outliers are represented by the dots, & the capacity of the warehouses are shown by horizontal lines matching the color of that warehouse.</small> {data-background=#e6e6e6}
+# <b>Defining Capacity</b> <br><small>The following information is based on DAILY DATA.<br><br>This daily information is visualized by house and grouped by either Month or Weekday.<br><br>The visualizations are shown as <a href=https://www.r-bloggers.com/whisker-of-boxplot/>boxplots</a> in order to characterize the distribution of the observations.<br><br>The bottom of the box represents the 25th percentile and the top is the 75th percentile (together, the middle 50%). Outliers (shown by dots) fall outside of 3 standard deviations for that group.</small> {data-background=#e6e6e6}
 
 
 ## Simple Capacity Constraints
@@ -199,60 +296,176 @@ datatable(thresh_df, filter='none', selection='none', options=list(dom='t'))
 <ul>
   <li>However, PO lines & cases received dominate the problem</li>
   <li>Avoiding these violations can reduce operational stress</li>
-  <li>Even when these are satisfied other constraints may be taxed</li>
+  <li>Even if satisfied, unconsidered constraints may be violated</li>
   <li>Model must be expanded to better represent reality</li>
 </ul>
 
+
+## Capacity Constraint Violations
+<b><center>If any of the afforementioned values was exceeded on a certain day, that day was marked as being in "violation" of our capacity to receive.<br><br>Capacity for KC and capacity for STL are shown on the following plots by a red and blue horizontal line, respectively.<br><br>These visuals are meant to display the constraints for contextual purposes.</b></center>
+
+
 ## Cases Received by Weekday
 ```{r weekday_casess, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
-WEEKDAY_CASES_PLOT
+ggplotly(WEEKDAY_CASES_PLOT)
 ```
 
 ## PO Lines Received by Weekday
 ```{r weekday_lines, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
-WEEKDAY_POLINES_PLOT
+ggplotly(WEEKDAY_POLINES_PLOT)
 ```
 
 ## Cases Received by Month
 ```{r month_casess, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
-DAILY_CASES_PLOT
+ggplotly(DAILY_CASES_PLOT)
 ```
 
 ## PO Lines Received by Month
 ```{r month_lines, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
-DAILY_POLINES_PLOT
+ggplotly(DAILY_POLINES_PLOT)
 ```
 
 
 
 
-# <b>Operational Barriers</b> <br><small><br><br></small> {data-background=#e6e6e6}
+
+# <b>Avoiding Capacity Violations</b> <br><small>Again -- this model is simple.<br><br>There are clear upper limits to each house's capacity to receive inventory, and the dominant constraints are the number of PO Lines and the number of Cases received per day.<br><br>The following decision tree model uses a <a href=https://cran.r-project.org/web/packages/partykit/vignettes/ctree.pdf>conditional inference tree algorithm</a> to derive a solution based on the model provided.<br><br>The following is meant to help schedulers.</small> {data-background=#e6e6e6}
 
 
-<!-- Data availability - scheduling tool - replenishment policy - transhipment providers canceling - unifying operations with sales purchasing decisions/ meeting supply with demand -->
+## Theoretical Capacity vs History
+```{r stl_cap_scatter, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
+ggplotly(constraints_plot_stl)
+```
 
-
-
-
-
-<!-- ## One-Three Month Labor Model -->
-<!-- <ul>  -->
-<!--   <li>A highly predictive model was derived from data</li> -->
-<!--   <li>Modeled on house, cases shipped, and ship days</li> -->
-<!--   <li>Model explains >90% of the variation in the data</li> -->
-<!--   <li>Cases delivered can be derived from the demand model</li> -->
-<!-- </ul> -->
+## Theoretical Capacity vs History
+```{r kc_cap_scatter, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
+ggplotly(constraints_plot_kc)
+```
 
 
 
+## Decision Tree - Quick & Dirty
+<b><center>Simply abide by this capacity grid.</b></center>
+<br><br>
+```{r cap_cons2, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=10}
+datatable(thresh_df, filter='none', selection='none', options=list(dom='t'))
+```
 
-<!-- ## One-Three Month Labor Model -->
-<!-- <center><small> -->
-<!-- $$Y_{HOURS} = \beta_0 + \beta_{STL}*X_{STL} + \beta_{CASES}*X_{CASES} + \beta_{SHIPDAYS}*X_{SHIPDAYS}$$ -->
 
-<!-- where $$Y_{HOURS}=ShipHoursToPredict$$ $$X_{STL} = {0, 1}$$ $$X_{CASES}=TotalCasesDelivered$$ $$X_{SHIPDAYS}=MonthlyShipDays$$  -->
+## Decision Tree - Expanded
+```{r decision_tree, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
+# Plot the tree.
+plot(output.tree, type='simple')
+```
 
-<!-- and $$\beta_{ALL}=CoefficientsDerivedFromData$$ $$\beta_{0}=yIntercept$$ -->
+
+## Decision Tree - In English
+<b><center>Do not schedule any more trucks for a given day if:</b></center>
+<ul>
+  <li>If PO lines is over 379 (both houses)</li>
+  <li>Above is false, but cases coming in is over 18,048 (both)</li>
+  <li>All above are false, but PO lines exceed 323 (KC)</li>
+  <li>All above are false but cases in is over 13,052</li>
+</ul>
+<br><br>
+<b><center>Above takes the sequential approach that can be simplified further.</b></center>
+
+
+## Decision Tree - In English
+<b><center>Subjective Criteria:</b></center>
+<ul>
+  <li>Try to stagger high PO lines w/ low PO lines</li>
+  <li>Subjectively account for kegs -- not tracked</li>
+  <li>Consider detention costs at trans-shipment brokers</li>
+  <li>Pre-emptively plan put-away -- night crew can help</li>
+  <li>Consecutive capacity violations will cause an issue</li>
+  <li>If heavy receiving week decide whether to open Sat/Sun</li>
+</ul>
+
+
+
+# <b>Further Considerations</b> <br><small>The following is based on either limited data or interviews with managers/workers at each location, and should be discounted due to this fact.<br><br> The following information can be quantified in future improvements on this model.<br><br>These factors are certainly relevant to the overall process.</small> {data-background=#e6e6e6}
+
+<!-- # <b>Further Considerations</b><br><small>The following is based on either limited data or interviews with managers/workers at each location, and should be discounted due to this fact.<br><br> The following information can be quantified in future improvements on this model.<br><br>These factors are certainly relevant to the overall process.</small></center> {data-background=#e6e6e6} -->
+
+## Saint Louis Specific
+<ul>
+  <li>Max trucks to STL's main receiving: 12/day</li>
+  <li>Max trucks to STL's beer receiving: 8/day</li>
+  <li>Max trucks to STL's LTL/Door1 receiving: 4/day</li>
+  <li>STL day receiving crew ~10 people</li>
+  <li>Max 2 people in STL cooler limits beer putaway rate</li>
+  <li>Receiving space is limited at each door</li>
+  <li>Timely clearing of receiving aids efficiency</li>
+  <li>Timely bulk to forward pick replenishment aids efficiency</li>
+  <li>Kegs are not properly documented in the process</li>
+  <li>STL does not put everything away each day</li>
+  <li>Receives ~2 transfers from KC per week on avg.</li>
+</ul>
+
+
+## Kansas City Specific
+<ul>
+  <li>Max trucks to KC's receiving: 12/day</li>
+  <li>Avg trucks to KC's receiving : 9/day</li>
+  <li>KC day receiving crew 5-6 people on MF & 6-7 on TWR</li>
+  <li>3 pallet jacks & 3 Toyota sit down lifts (4th requested)</li>
+  <li>Receiving space is typically not a constraint</li>
+  <li>Receives ~3 transfers from STL per week</li>
+  <li>KC unloads 1 truck at a time</li>
+  <li>Kegs are not properly documented in the process</li>
+  <li>KC puts everything away on most days</li>
+</ul>
+
+
+
+
+
+# <b>Barriers to Optimality</b> <br><small>Using the afforementioned guidelines in scheduling can reap a marginal benefit.<br><br>However there are barriers.<br><br>The main barriers include the tool used for scheduling shipments, the availability of information for use in scheduling, and an established replenishment policy.<br><br>The first two are necessary to address. The latter should be addressed to speed up the whole process.</small> {data-background=#e6e6e6}
+
+
+
+## Data Availability
+<b><center>We lack insight into key parameters.</b></center>
+<ul>
+  <li>Kegs are not specified in DISC receiving data</li>
+  <li>Time slots are tracked outside DISC in Excel</li>
+  <li>Truck type & receiving door are not specified</li>
+  <li>Daily receiving hours is not tracked</li>
+  <li>No data on our network of carriers & their costs</li>
+  <li>No data on average lead time per carrier/supplier</li>
+</ul>
+
+
+## Scheduling Tool/Process
+<b><center>The current tool is an Excel document.</b></center>
+<ul>
+  <li>Data is inconsistent and difficult to extract</li>
+  <li>Prone to error when others open the document</li>
+  <li>Difficult to analyze from the document</li>
+  <li>Cancellations by brokers cause disruptions</li>
+  <li>Inventory aggregators ship unpredictably</li>
+  <li>Multiple brokers scheduled for one trans-shipment</li>
+  <li>Ops team currently working miracles with available tool</li>
+</ul>
+
+
+
+## Forward Pick Replenishment
+<b><center>A few tweaks may benefit receiving's efficiency. These are subjective recommendations based on observations & interviews.</b></center>
+<ul>
+  <li>Prompt night putaways following busy receiving days</li>
+  <li>Proactive replenishment will increase efficiency</li>
+  <li>Potential ERP triggers for replenishment tied to sales</li>
+</ul>
+
+
+
+
+
+
+# <b>Conclusions</b> <br><small>This model can and should be refined over time.<br><br>By staying within these constraints we can cut out most disruptive receiving days.<br><br>By addressing putaways and scheduling the entire process can be made more efficient.<br><br>Diligent planning of this function in the new ERP will reap significant benefits.</small> {data-background=#e6e6e6}
+
 
 
 
@@ -269,7 +482,7 @@ DAILY_POLINES_PLOT
 
 
 
-# <b>Parting Words of Wisdom</b> <br><small>"The part that is stable we shall predict. The part that is unstable we shall control" -John von Neumann<br><br>"The day science begins to study non-physical phenomena, it will make more progress in one decade than in all the previous centuries of its existence." -Nikola Tesla <br><br>"Madness is rare in individuals-but in groups, parties, nations, and ages it is the rule" -Peter Thiel</small> {data-background=#e6e6e6}
+# <b>Parting Words of Wisdom</b> <br><small>"Restlessness is discontent and discontent is the first necessity of progress. Show me a thoroughly satisifed man and I will show you a failure." -Thomas Edison<br><br>"No one would have crossed the ocean if he could have gotten off the ship in the storm." -Charles Kettering</small> {data-background=#e6e6e6}
 
 
 
