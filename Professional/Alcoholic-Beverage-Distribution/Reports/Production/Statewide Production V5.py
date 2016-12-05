@@ -1,5 +1,5 @@
 '''
-Production Report
+Production Report - STL first then KC
 Re-Engineered November 2016
 '''
 
@@ -20,8 +20,8 @@ pd.set_option('display.width', 200)
 
 
 
-this_year_files = 'N:/Daily Report/2016/OCT/*.xls*'
-last_year_files = 'N:/Daily Report/2015/OCT/*.xls*'
+this_year_files = 'N:/Daily Report/2016/NOV/*.xls*'
+last_year_files = 'N:/Daily Report/2015/NOV/*.xls*'
 
 def copy_kc_daily_reports_local(this_year_files, last_year_files):
     '''Copies (not moves) files from M drive to local drive'''
@@ -29,7 +29,7 @@ def copy_kc_daily_reports_local(this_year_files, last_year_files):
     files_to_copy_last_year = glob.glob(last_year_files)
     
     temp_location = os.path.dirname('C:\\Users\\pmwash\\Desktop\\Disposable Docs\\Production Data\\This Year\\')
-    temp_location_last_year = os.path.dirname('C:\\Users\\pmwash\\Desktop\\Disposable Docs\\Production Data\\Last Year\\'')
+    temp_location_last_year = os.path.dirname('C:\\Users\\pmwash\\Desktop\\Disposable Docs\\Production Data\\Last Year\\')
     
     for file in files_to_copy:
         if 'Template' not in file:
@@ -43,7 +43,7 @@ def copy_kc_daily_reports_local(this_year_files, last_year_files):
     print('Finished copying KC Daily Reports -- Ready for report.')
     
 
-copy_stl_daily_reports_local(this_year_files, last_year_files)
+copy_kc_daily_reports_local(this_year_files, last_year_files)
 
 
 
@@ -74,7 +74,7 @@ def extract_date_stl(file, this_year=True):
         return dat
 
 
-def extract_stl_production_tab(file, df):
+def extract_stl_production_tab(file):
         '''
         Takes in and formats Production Tab from Daily Report. 
         Extracts date from filename and creates index.
@@ -112,18 +112,18 @@ def extract_stl_production_tab(file, df):
         df['Date'] = df['Date'].replace(to_replace='NaN', value='')
         df = df[df['Date'].isnull() == False]
         
-        return df, dat
+        return df
 
 
 Production_Tab = pd.DataFrame()        
 
 for i, file in enumerate(file_list):
-    df, dat = extract_stl_production_tab(file, df)
+    df  = extract_stl_production_tab(file)
     Production_Tab = Production_Tab.append(df)
-    print('Adding production tab data for %s' % dat)
+    print('Adding production tab data.')
 
 
-Production_Tab.head(100)
+Production_Tab.head(12)
 cols = ['Stops','TTL Cs/splt', 'Ttl Mi']
 Production_Tab.groupby(['LOC'])[cols].sum()
 
