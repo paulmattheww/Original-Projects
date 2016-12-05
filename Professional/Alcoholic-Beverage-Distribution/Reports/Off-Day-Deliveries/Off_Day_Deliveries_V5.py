@@ -34,7 +34,7 @@ def clean_pw_offday(pw_offday, weeklookup):
         '''Accepts date as formatted in AS400'''
         dat = str(dat)
         dat = dat[-6:]
-        dat = str(dt.date(dt.strptime(dat, '%y%m%d')))
+        dat = dt.date(dt.strptime(dat, '%y%m%d'))
         return dat
         
     def sum_digits_in_string(digit):
@@ -61,11 +61,13 @@ def clean_pw_offday(pw_offday, weeklookup):
     
     print('Processing dates.')
     deliveries.Date = [as400_date(d) for d in deliveries.Date.astype(str).tolist()]    
+    weeklookup['Date'] = [dt.date(dt.strptime(w_Dat, '%m/%d/%Y')) for w_Dat in weeklookup['Date'].astype(str).tolist()]
+    
+    print('Merging on dates with week lookup.')
     deliveries = deliveries.merge(weeklookup, on='Date')
     
     dat = Series(deliveries.Date.tolist())
-    dat_f = Series([dt.strptime(d, '%Y-%m-%d') for d in dat])
-    deliveries['Weekday'] = Series([dt.strftime(d, '%A') for d in dat_f])
+    deliveries['Weekday'] = Series([dt.strftime(d, '%A') for d in dat])
     
     week_plan = deliveries.ShipWeekPlan.tolist()
     week_shipped = deliveries.ShipWeek.tolist()
@@ -135,7 +137,9 @@ def clean_pw_offday(pw_offday, weeklookup):
     deliveries['AllottedWeeklyDeliveryDays'] = [a if w not in ['A','B'] else 0.5 for a, w in zip(_allot, _week_ind)]
     _n_days = deliveries.set_index('CustomerId')['AllottedWeeklyDeliveryDays'].to_dict()
     
-    print('*'*100)    
+    print('\n')
+    print('-'*100)    
+    print('\n')    
     
     print('Aggregating by Day.')
     len_unique = lambda x: len(pd.unique(x))
@@ -254,7 +258,7 @@ def clean_pw_offday(pw_offday, weeklookup):
     overall_summary.columns = ['NewCustomers','Customers','AvgAllottedDeliveryDays','Deliveries','OffDayDeliveries','AdditionalDeliveries',
                                        'Cases|mean','CasesPerDelivery|mean','Dollars|mean']
     
-    print('Creating High-Level Summary.')
+    print('Creating High-Level Summary.\n\n\n')
     agg_funcs_HL_summary = {'Deliveries':sum,
                          'OffDayDeliveries':sum,
                          'AdditionalDeliveries':sum,
@@ -276,7 +280,7 @@ def clean_pw_offday(pw_offday, weeklookup):
     print('*'*100)
     print('Finished creating summaries at high level, overall, and aggregating by customer and by day.')
     print('*'*100)    
-    
+
     return high_level_summary, overall_summary, _agg_bycust, _agg_byday
 
 
@@ -285,6 +289,10 @@ high_level_summary, summary, by_customer, by_day = clean_pw_offday(pw_offday, we
 print('Summary of data so far: \n\n\n')
 print(high_level_summary)
 print('\n\n\n')
+
+
+
+
 
 
 def identify_focus_areas(by_customer):
@@ -296,22 +304,24 @@ def identify_focus_areas(by_customer):
     print('Identifying focus areas.')
     print('*'*100)
     
-    print('Segregating Customers with no delivery days assigned.')
+    print('\n\n\nSegregating Customers with no delivery days assigned.')
     need_cols = ['CustomerId','Customer','CustomerSetup','Warehouse','Deliveries','Cases','Dollars']
     need_delivery_days = by_customer[(by_customer['Tier'] == 'No Delivery Days Assigned')]
     need_delivery_days = need_delivery_days[need_cols].sort_values('Deliveries', ascending=False)
     
+    print('Defining output columns.')
     output_cols = ['CustomerId','Customer','Warehouse','OffDayDeliveries/Deliveries',
                    'AdditionalDeliveries/Deliveries','AllottedDeliveryDays',
                    'Deliveries','OffDayDeliveries','AdditionalDeliveries',
                    'OnPremise','CustomerType','DeliveryDays','ShipWeekPlan',
                    'CasesPerDelivery','Tier']
     
-    print('Isolating customers that may be better off switching delivery days.\n\n\n')
+    print('Isolating customers that may be better off switching delivery days.')
     switch_criteria = (by_customer['Tier'] != 'No Delivery Days Assigned') & (by_customer['OffDayDeliveries/Deliveries'] > 0.9 )
     switch_day_prospects = by_customer[switch_criteria].sort_values('OffDayDeliveries/Deliveries', ascending=False).reset_index(drop=True).head(50)
     switch_day_prospects = switch_day_prospects[output_cols]
     
+    print('Filtering to select for high proprotion of Additional deliveries.\n\n\n')
     add_day_criteria = (by_customer['Tier'] != 'No Delivery Days Assigned') 
     add_day_prospects = by_customer[add_day_criteria].sort_values('AdditionalDeliveries/Deliveries', ascending=False).reset_index(drop=True).head(50)
     add_day_prospects = add_day_prospects[output_cols]
