@@ -341,8 +341,8 @@ Returns_Tab.head(20)
 
 
 
-
-
+file = file_list_last_year[7]
+this_year=False
 
 
 
@@ -353,7 +353,7 @@ def extract_stl_summary_tab(file, this_year=True):
     summary_tab = pd.read_excel(file, sheetname='Summary', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, skiprows=1, names=np.arange(1,14))
     keep_cols = [1,2,4,5,9,10,12,13]
     summary_tab = summary_tab[keep_cols]
-
+    
     cases_returned = np.float64(summary_tab.loc[2,2])
     btls_returned = np.float64(summary_tab.loc[3,2])
     dollars_returned = np.float64(summary_tab.loc[5,2])
@@ -492,9 +492,14 @@ for i, file in enumerate(file_list):
 Summary_Tab_LastYr = pd.DataFrame()
 
 for i, file in enumerate(file_list_last_year):
-    df = extract_stl_summary_tab(file, this_year=False)
-    Summary_Tab_LastYr = Summary_Tab_LastYr.append(df)
-    Summary_Tab_LastYr.reset_index(drop=True, inplace=True)
+    try:
+        df = extract_stl_summary_tab(file, this_year=False)
+        Summary_Tab_LastYr = Summary_Tab_LastYr.append(df)
+        Summary_Tab_LastYr.reset_index(drop=True, inplace=True)
+    except ValueError:
+        print('There is an issue with the Daily Report template not matching the otehers.\n\n')
+        pass
+        print('Last year\'s file for %s has a different template and will not be in final report.' %file)
     
 Summary_Tab_Combined = Summary_Tab.append(Summary_Tab_LastYr)
 Summary_Tab_Combined.set_index(keys='Date', drop=False, inplace=True)
@@ -660,6 +665,15 @@ write_stl_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab
 
 
 
+
+
+
+
+
+
+
+
+
 print('''
 Begin Kansas City Production Report
 ''')
@@ -686,8 +700,8 @@ pd.set_option('display.width', 200)
 
 
 
-this_year_files = 'M:/Share/Daily Report KC/2016/October 2016/*.xls*'
-last_year_files = 'M:/Share/Daily Report KC/2015/Oct 2015/*.xls*'
+this_year_files = 'M:/Share/Daily Report KC/2016/November 2016/*.xls*'
+last_year_files = 'M:/Share/Daily Report KC/2015/Nov 2015/*.xls*'
 
 def copy_kc_daily_reports_local(this_year_files, last_year_files):
     '''Copies (not moves) files from M drive to local drive'''
