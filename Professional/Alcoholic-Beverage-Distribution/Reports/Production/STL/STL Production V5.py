@@ -1,5 +1,5 @@
 '''
-Production Report
+Production Report - STL first then KC
 Re-Engineered November 2016
 '''
 
@@ -20,8 +20,8 @@ pd.set_option('display.width', 200)
 
 
 
-this_year_files = 'N:/Daily Report/2016/OCT/*.xls*'
-last_year_files = 'N:/Daily Report/2015/OCT/*.xls*'
+this_year_files = 'N:/Daily Report/2016/NOV/*.xls*'
+last_year_files = 'N:/Daily Report/2015/NOV/*.xls*'
 
 def copy_kc_daily_reports_local(this_year_files, last_year_files):
     '''Copies (not moves) files from M drive to local drive'''
@@ -29,7 +29,7 @@ def copy_kc_daily_reports_local(this_year_files, last_year_files):
     files_to_copy_last_year = glob.glob(last_year_files)
     
     temp_location = os.path.dirname('C:\\Users\\pmwash\\Desktop\\Disposable Docs\\Production Data\\This Year\\')
-    temp_location_last_year = os.path.dirname('C:\\Users\\pmwash\\Desktop\\Disposable Docs\\Production Data\\Last Year\\'')
+    temp_location_last_year = os.path.dirname('C:\\Users\\pmwash\\Desktop\\Disposable Docs\\Production Data\\Last Year\\')
     
     for file in files_to_copy:
         if 'Template' not in file:
@@ -43,7 +43,7 @@ def copy_kc_daily_reports_local(this_year_files, last_year_files):
     print('Finished copying KC Daily Reports -- Ready for report.')
     
 
-copy_stl_daily_reports_local(this_year_files, last_year_files)
+copy_kc_daily_reports_local(this_year_files, last_year_files)
 
 
 
@@ -74,7 +74,7 @@ def extract_date_stl(file, this_year=True):
         return dat
 
 
-def extract_stl_production_tab(file, df):
+def extract_stl_production_tab(file):
         '''
         Takes in and formats Production Tab from Daily Report. 
         Extracts date from filename and creates index.
@@ -112,18 +112,18 @@ def extract_stl_production_tab(file, df):
         df['Date'] = df['Date'].replace(to_replace='NaN', value='')
         df = df[df['Date'].isnull() == False]
         
-        return df, dat
+        return df
 
 
 Production_Tab = pd.DataFrame()        
 
 for i, file in enumerate(file_list):
-    df, dat = extract_stl_production_tab(file, df)
+    df  = extract_stl_production_tab(file)
     Production_Tab = Production_Tab.append(df)
-    print('Adding production tab data for %s' % dat)
+    print('Adding production tab data.')
 
 
-Production_Tab.head(100)
+Production_Tab.head(12)
 cols = ['Stops','TTL Cs/splt', 'Ttl Mi']
 Production_Tab.groupby(['LOC'])[cols].sum()
 
@@ -341,8 +341,8 @@ Returns_Tab.head(20)
 
 
 
-
-
+file = file_list_last_year[7]
+this_year=False
 
 
 
@@ -353,7 +353,7 @@ def extract_stl_summary_tab(file, this_year=True):
     summary_tab = pd.read_excel(file, sheetname='Summary', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, skiprows=1, names=np.arange(1,14))
     keep_cols = [1,2,4,5,9,10,12,13]
     summary_tab = summary_tab[keep_cols]
-
+    
     cases_returned = np.float64(summary_tab.loc[2,2])
     btls_returned = np.float64(summary_tab.loc[3,2])
     dollars_returned = np.float64(summary_tab.loc[5,2])
@@ -492,9 +492,14 @@ for i, file in enumerate(file_list):
 Summary_Tab_LastYr = pd.DataFrame()
 
 for i, file in enumerate(file_list_last_year):
-    df = extract_stl_summary_tab(file, this_year=False)
-    Summary_Tab_LastYr = Summary_Tab_LastYr.append(df)
-    Summary_Tab_LastYr.reset_index(drop=True, inplace=True)
+    try:
+        df = extract_stl_summary_tab(file, this_year=False)
+        Summary_Tab_LastYr = Summary_Tab_LastYr.append(df)
+        Summary_Tab_LastYr.reset_index(drop=True, inplace=True)
+    except ValueError:
+        print('There is an issue with the Daily Report template not matching the otehers.\n\n')
+        pass
+        print('Last year\'s file for %s has a different template and will not be in final report.' %file)
     
 Summary_Tab_Combined = Summary_Tab.append(Summary_Tab_LastYr)
 Summary_Tab_Combined.set_index(keys='Date', drop=False, inplace=True)
@@ -573,7 +578,7 @@ Monthly_Summary
 
 
 
-def write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab, OverShort_Tab, NightlyHours_Tab):
+def write_stl_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab, OverShort_Tab, NightlyHours_Tab):
     '''Writes to Excel'''
     output_path = 'N:\\Operations Intelligence\\Monthly Reports\\Production\\'
     report_month, report_year = dt.strftime(dt.now() - datetime.timedelta(days=20), '%B'), dt.now().year
@@ -647,8 +652,7 @@ def write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab
 
 
 
-write_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab, OverShort_Tab, NightlyHours_Tab)
-
+write_stl_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab, OverShort_Tab, NightlyHours_Tab)
 
 
 
