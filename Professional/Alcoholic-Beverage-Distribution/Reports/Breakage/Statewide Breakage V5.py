@@ -176,7 +176,8 @@ def write_breakage_to_excel(summary, clean_breakage_data, month='YOU FORGOT TO S
     format_thousands = workbook.add_format({'num_format': '#,##0.0'})
     format_dollars = workbook.add_format({'num_format': '$#,##0'})
     format_float = workbook.add_format({'num_format': '###0.#0'})    
-    format_percent = workbook.add_format({'num_format': '0%'})
+    format_percent = workbook.add_format({'num_format': '0.0%'})
+    format_percent_precise = workbook.add_format({'num_format': '0.##0%'})
     
     print('Formatting Summary tab for visual purposes.')
     summary_tab = file_out.sheets['Summary']
@@ -184,7 +185,7 @@ def write_breakage_to_excel(summary, clean_breakage_data, month='YOU FORGOT TO S
     summary_tab.set_column('B:B',28)
     summary_tab.set_column('C:D',25, format_dollars)
     summary_tab.set_column('E:E',25, format_percent)
-    summary_tab.set_column('F:F',25, format_percent)
+    summary_tab.set_column('F:F',25, format_percent_precise)
     summary_tab.set_column('G:H',25, format_thousands)
     summary_tab.set_column('I:I',25, format_percent)
     
