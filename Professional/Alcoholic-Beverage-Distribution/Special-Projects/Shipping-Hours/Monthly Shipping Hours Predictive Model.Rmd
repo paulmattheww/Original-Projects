@@ -384,7 +384,7 @@ Labor_Model_Plot = p +
   scale_x_continuous(labels=comma) +
   theme(legend.position='none') +
   labs(title='Predictive Model: Monthly Shipping Labor Hours', y='Monthly Night Ship Hours',
-       x='Cases Delivered')
+       x='Actual Cases Delivered')
 ggplotly(Labor_Model_Plot)
 ```
 
@@ -392,20 +392,20 @@ ggplotly(Labor_Model_Plot)
 
 
 
-## A Closer Look
+## Model Prediction vs. Actual
 ```{r CLOSER_LABOR_MODEL_PLOT, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
 ##PREDICTIVE LABOR MODEL
-p = ggplot(data=m, aes(x=Forecast.Production[,1], y=Night.Ship.Hours, group=House, label=Month))
+p = ggplot(data=m, aes(x=Forecast.Production[,1], y=Night.Ship.Hours, group=House, label=Year.Month))
 CLOSER_LABOR_MODEL = p + geom_point(aes(colour=factor(House), size=Production.Days)) + 
-  facet_wrap(House~Production.Days, ncol=3) + #, scales='free') +
+  facet_wrap(~Production.Days, ncol=4, scales='free') +
   scale_y_continuous(labels=comma) +
   scale_x_continuous(labels=comma) +
   theme(legend.position='none') +
-  geom_point(aes(x=Forecast.Production[,1], y=Forecast.Ship.Hours[,1])) +
-  geom_line(aes(x=Forecast.Production[,1], y=Forecast.Ship.Hours[,1])) +
+  geom_point(aes(group=House, x=Forecast.Production[,1], y=Forecast.Ship.Hours[,1])) +
+  geom_line(aes(group=House, x=Forecast.Production[,1], y=Forecast.Ship.Hours[,1])) +
   geom_ribbon(aes(group=House, ymin=Forecast.Ship.Hours[,2], ymax=Forecast.Ship.Hours[,3]), alpha=0.3) +
   labs(title='Predictive Model: Monthly Shipping Labor Hours', y='Monthly Night Ship Hours',
-       x='Cases Delivered')
+       x='Prediction of Cases Delivered')
 ggplotly(CLOSER_LABOR_MODEL)
 ```
 
