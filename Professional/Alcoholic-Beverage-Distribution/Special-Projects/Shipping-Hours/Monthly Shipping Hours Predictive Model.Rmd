@@ -25,6 +25,7 @@ library(lubridate)
 library(chron)
 library(timeDate)
 library(scatterplot3d)
+library(DT)
 
 
 start_date = ISOdate(year=2011, month=1, day=1, hour=0, min=0, sec=0)
@@ -152,7 +153,34 @@ m$Error.Forecast.Ship.Hours = m$Night.Ship.Hours - m$Forecast.Ship.Hours[,1]
 
 
 
+
+
+
+
+
+
 # <b>Overview of Shipping Labor</b> <br><small>Monthly Shipping Hours tracks most strongly with Monthly Case Production. <br><br>The following slides provide an exploratory summary of Total Monthly Shipping Hours by Warehouse, and are meant to supply context to consumers of this information.</small> {data-background=#e6e6e6}
+
+
+## Summary of Monthly Data
+Below is a summary of important variables in this monthly dataset.
+```{r DATATABLE, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=8, fig.height=6}
+DF = data.frame(m %>% group_by(House) %>% 
+                  summarise(Avg.Night.Hours=round(mean(Night.Ship.Hours)),
+                Avg.Cases.Delivered=round(mean(Cases.Delivered)),
+                Avg.Production.Days=round(mean(Production.Days), 1),
+                Percent.Months.Exceed.Projection=round(sum(Met.Sales.Goal) / length(Met.Sales.Goal), 3),
+                Avg.Miss.Projections=round(mean(abs(Over.Short.of.Projection))),
+                Avg.Mark.Up=round(mean(Mark.Up), 3)) )
+datatable(DF, filter='none', selection='none',
+          extensions = 'FixedColumns',
+          options = list(
+            dom = 't',
+            scrollX = TRUE,
+            scrollCollapse = TRUE))
+```
+
+
 
 ## Distribution of Night Hours
 ```{r ship_hours_distribution, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
@@ -209,10 +237,10 @@ ggplotly(NIGHT_TIME_SERIES)
 
 
 
-# <b>Demand Model, 1-3 Month</b> <br><small>This is a multi-variable predictive model that uses Percent Mark-Up, Production Days and Warehouse to predict Monthly Std. Cases Sold.<br><br>This model has an R-squared of 0.888, meaning 88.8% of the variation in Monthly Std. Cases Sold is explained by Warehouse, Mark-Up, and Ship Days.<br><br></small> {data-background=#e6e6e6}
+# <b>Demand Model, 1-3 Month</b> <br><small>This is a multi-variable predictive model that uses Percent Mark-Up, Production Days and Warehouse to predict Monthly Std. Cases Sold.<br><br>This model has an R-squared of 0.888, meaning 88.8% of the variation in Monthly Std. Cases Sold is explained by Warehouse, Mark-Up, and Ship Days.<br><br>This model is included because it is consistent with economic theory and independent of subjective influence (unlike the 4-12 month model).</small> {data-background=#e6e6e6}
 
 
-## Demand Model: One-Three Month
+## Demand Model, 1-3 Month
 <center><small>
 $$Y_{CASESSOLD} = \beta_0 + \beta_{STL}*X_{STL} + \beta_{MARKUP}*X_{MARKUP} + \beta_{SHIPDAYS}*X_{SHIPDAYS}$$
 
@@ -230,7 +258,7 @@ and $$\beta_{ALL}=CoefficientsDerivedFromData$$ $$\beta_{0}=yIntercept$$
 <!-- </ul> -->
 
 
-## Demand Model: One-Three Month 
+## Demand Model, 1-3 Month
 ```{r night_ship_labor_plot, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
 # ON AVERAGE WE WERE OFF BY BELOW
 SQRT_MSE = sqrt(mean(abs(three_mo_demand_model$residuals^2)))
@@ -251,10 +279,10 @@ DEMAND_PLOT_3MO = p +
 ggplotly(DEMAND_PLOT_3MO)
 ```
 
-## Demand Model: One-Three Month
+## Demand Model, 1-3 Month
 ```{r 3d_plot, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=8, fig.height=6}
 scatterplot3d(m$Mark.Up, m$Production.Days, m$Std.Cases.Sold, 
-              color=as.numeric(m$House), angle=-205, main='3d-Scatterplot of 3 Month Demand Model',
+              color=as.numeric(m$House), angle=-205, main='3d-Scatterplot of 1-3 Month Demand Model',
               pch=19, xlab='Percent Mark Up', ylab='Production Days in Month', zlab='Monthly Std. Cases Sold')
 ```
 
@@ -272,7 +300,18 @@ scatterplot3d(m$Mark.Up, m$Production.Days, m$Std.Cases.Sold,
 # <b>Demand Model, 4-12 Month</b> <br><small>This is a single variable predictive model that uses Monthly Sales Projections/Budgets to predict Monthly Std. Cases Sold.<br><br>This model has an R-Squared of 0.929, meaning 92.9% of the variation in Monthly Std. Cases Sold is explained by our own projections.<br><br>This is less of a model and more of a correlation, reflecting that we do well getting close to our goals.</small> {data-background=#e6e6e6}
 
 
-## Demand Model: Four-Twelve Month
+## Demand Model, 4-12 Month
+<ul>
+  <li>Trained on data from 2015 forward</li>
+  <li>Mid-Mo projections distributed based on Sales (53%/47%)</li>
+  <li>Finance's 2016 ratios were pushed back through time for 2015</li>
+  <li>This model could substitute for the 1-3 month</li>
+  <li>Note there is no theoretical causal relationship here</li>
+  <li>May be a manifestation of self-fulfillment</li>
+</ul>
+
+
+## Demand Model, 4-12 Month
 ```{r four_to_twelve_plot, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
 ## 4-12 MONTH DEMAND MODEL
 four_to_twelve_demand_model = lm(monthly_data$Std.Cases.Sold ~ monthly_data$Sales.Projections)
