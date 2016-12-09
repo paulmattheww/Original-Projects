@@ -26,6 +26,7 @@ library(chron)
 library(timeDate)
 library(scatterplot3d)
 library(DT)
+library(DiagrammeR)
 
 
 start_date = ISOdate(year=2011, month=1, day=1, hour=0, min=0, sec=0)
@@ -149,6 +150,111 @@ m$Error.Forecast.Ship.Hours = m$Night.Ship.Hours - m$Forecast.Ship.Hours[,1]
 
 ## <b>Executive Summary</b> <br><small>All models are highly predictive.<br><br>The flow of predictions was tested in the context of historical data, and results appear to hold well at both warehouses.<br><br>The prediction flow follows:<br>DEMAND => PRODUCTION => SHIP HOURS<br><br>As always with machine leraning it is important to test the assumptions of these models over time, including conducting sensitivity analysis.</small> {data-background=#e6e6e6}
 
+## High-Level Overview
+```{r flow_diagram, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
+
+
+grViz("
+  digraph dot {
+
+      graph [compound = true, nodesep = .5, ranksep = 0.5,
+      color = crimson, label='Flow of Predictions for Monthly Shipping Hours Model'
+      /*, rankdir='LR', style=filled, fillcolor = blue*/
+      ]
+
+      node [shape = rectangle,
+      color = black,
+      style = filled,
+      fillcolor = grey]
+      InternalInformation
+      
+      node [shape = diamond,
+      color = black]
+      Warehouse
+      
+      node [shape = diamond,
+      color = black]
+      ProductionDays
+
+      node [shape = diamond,
+      color = black]
+      PercentMarkup
+
+      node [shape = diamond,
+      color = black]
+      SalesBudgetProjections
+
+      node [shape = rectangle,
+      style = filled,
+      fillcolor = yellow]
+      DemandModel3Mo     
+
+      node [shape = rectangle]
+      DemandModel12Mo     
+
+      node [shape = oval,
+      style = filled,
+      fillcolor = lightblue]
+      PredictedCaseMonthlyDemand
+
+      edge [color = black]
+      ProductionDays -> DemandModel3Mo
+      Warehouse -> DemandModel3Mo
+      PercentMarkup -> DemandModel3Mo
+      SalesBudgetProjections -> DemandModel12Mo
+      DemandModel3Mo -> PredictedCaseMonthlyDemand
+      DemandModel12Mo -> PredictedCaseMonthlyDemand
+      InternalInformation -> ProductionDays
+      InternalInformation -> SalesBudgetProjections
+      InternalInformation -> PercentMarkup
+      InternalInformation -> Warehouse
+
+      
+      node [shape = rectangle,
+      style = filled,
+      fillcolor = yellow]
+      ProductionModel      
+
+      node [shape = oval,
+      style = filled,
+      fillcolor = lightblue]
+      PredictedCaseProduction
+
+      edge [color = black]
+      PredictedCaseMonthlyDemand -> ProductionModel
+      ProductionModel -> PredictedCaseProduction
+
+      subgraph cluster1 {
+
+      node [shape = rectangle,
+      color = black,
+      style = filled,
+      fillcolor = yellow]
+      LaborModel
+
+      node [shape = oval,
+      style = filled,
+      fillcolor = lightblue]
+      PredictedShipHours
+
+      node [shape = triangle,
+      style = filled,
+      fillcolor = lightgreen]
+      ShippingLaborBudgetItem
+
+      edge [color = black]
+      PredictedCaseProduction -> LaborModel
+      Warehouse -> LaborModel
+      ProductionDays -> LaborModel
+      LaborModel -> PredictedShipHours
+      PredictedShipHours -> ShippingLaborBudgetItem
+      label='Goal -- Predict Total Shipping Hours for Budgeting'
+      }
+
+      }
+      ",
+      engine = "dot")
+```
 
 
 
@@ -157,9 +263,7 @@ m$Error.Forecast.Ship.Hours = m$Night.Ship.Hours - m$Forecast.Ship.Hours[,1]
 
 
 
-
-
-# <b>Overview of Shipping Labor</b> <br><small>Monthly Shipping Hours tracks most strongly with Monthly Case Production. <br><br>The following slides provide an exploratory summary of Total Monthly Shipping Hours by Warehouse, and are meant to supply context to consumers of this information.</small> {data-background=#e6e6e6}
+# <b>Dataset Summary</b> <br><small>Monthly Shipping Hours tracks most strongly with Monthly Case Production. <br><br>The following slides provide an exploratory summary of Total Monthly Shipping Hours by Warehouse, and are meant to supply context to consumers of this information.</small> {data-background=#e6e6e6}
 
 
 ## Summary of Monthly Data
@@ -207,7 +311,7 @@ ggplotly(Night_Hours_Histogram)
 ## Monthly Shipping Hours
 ```{r ship_hours_timeseries, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
 ##TIME SERIES LABOR HOURS
-p = ggplot(data=m, aes(x=Month, y=Night.Ship.Hours, group=House, label=Year.Month))
+p = ggplot(data=monthly_data, aes(x=Month, y=Night.Ship.Hours, group=House, label=Year.Month))
 NIGHT_TIME_SERIES = p + 
   geom_bar(stat='identity',aes(fill=House), colour='black', alpha=0.5) + 
   # geom_point(aes(x=Month, y=Forecast.Ship.Hours[,1], group=House, size=Production.Days), 
@@ -244,18 +348,18 @@ ggplotly(NIGHT_TIME_SERIES)
 <center><small>
 $$Y_{CASESSOLD} = \beta_0 + \beta_{STL}*X_{STL} + \beta_{MARKUP}*X_{MARKUP} + \beta_{SHIPDAYS}*X_{SHIPDAYS}$$
 
-where $$Y_{CASESSOLD}=MonthlyStdCasesSold$$ $$X_{STL} = {0, 1}$$ $$X_{MARKUP}=TotalCasesDelivered$$ $$X_{SHIPDAYS}=MonthlyShipDays$$ 
+where $$Y_{CASESSOLD}=MonthlyStdCasesSold$$ $$X_{STL} = {0, 1}$$ $$X_{MARKUP}=PercentMarkup$$ $$X_{SHIPDAYS}=MonthlyShipDays$$ 
 
 and $$\beta_{ALL}=CoefficientsDerivedFromData$$ $$\beta_{0}=yIntercept$$
+
+
+<br><br>
+<b>This model explains 88.8% of the variance of Monthly Demand (Std. Cases Sold) around its mean.</b>
+
+<b>This model is to be used for 1-3 month horizons (to adjust forecasts from the 4-12 month model). This is because pricing is "set in stone" three months out, meaning we can access what our average mark-up will be. <br><br>This will require a weighted average of mark-up prior to feeding into the model.</b>
 </small></center><br/>
 
-<!-- ## Demand Model: One-Three Month -->
-<!-- <ul> -->
-<!--   <li>R-Squared (adjusted) = 0.888</li> -->
-<!--   <li>Modeled on house, cases shipped, and ship days</li> -->
-<!--   <li>Model explains >90% of the variation in the data</li> -->
-<!--   <li>Cases delivered can be derived from the demand model</li> -->
-<!-- </ul> -->
+
 
 
 ## Demand Model, 1-3 Month
@@ -304,10 +408,12 @@ scatterplot3d(m$Mark.Up, m$Production.Days, m$Std.Cases.Sold,
 <ul>
   <li>Trained on data from 2015 forward</li>
   <li>Mid-Mo projections distributed based on Sales (53%/47%)</li>
-  <li>Finance's 2016 ratios were pushed back through time for 2015</li>
+  <li>Finance's 2016 ratios were used for 2015</li>
   <li>This model could substitute for the 1-3 month</li>
-  <li>Note there is no theoretical causal relationship here</li>
   <li>May be a manifestation of self-fulfillment</li>
+  <li>Note there is no theoretical causal relationship here</li>
+  <li>Sales projection methodology is unscientific</li>
+  <li>Thus, this model's input is not scientifically valid</li>
 </ul>
 
 
@@ -371,12 +477,42 @@ ggplotly(CUMULATIVE_PROJECTION_PLOT)
 
 
 
-# <b>Production Model</b> <br><small>This model is a simple regression where Cases Sold is a predictor of Cases Produced.<br><br>This model is meant to translate how many cases we sell in a given month into how many cases we'll actually distribute to market in that same month.<br><br>This simple model has an R-squared of 0.859, meaning 85.9% of the variation in Cases Produced is explained by <i><b>our prediction of Demand</b></i>.</small> {data-background=#e6e6e6}
+# <b>Production Model</b> <br><small>This model is a simple regression where Cases Sold is a predictor of Cases Produced.<br><br>This model is meant to translate how many cases we sell in a given month into how many cases we'll actually distribute to market in that same month.<br><br>This simple model has an R-squared of 0.859, meaning <i><b>85.9% of the variation in Cases Produced is explained by our prediction of Demand</b></i>.</small> {data-background=#e6e6e6}
 
 
+## Production Model
+<center><small>
+$$Y_{CASESPRODUCED} = \beta_0 + \beta_{CASESSOLD}*X_{STL}$$
+
+where $$Y_{CASESPRODUCED}=CasesShippedToMarket$$ $$X_{CASESSOLD}=OutputFromDemandModel$$
+
+and $$\beta_{ALL}=CoefficientsDerivedFromData$$ $$\beta_{0}=yIntercept$$
 
 
+<br><br>
+<b>This model explains 85.9% of the variance of Monthly Case Production around its mean.</b>
 
+<b>This model is needed to translate sales into how many cases we actually deliver to market. Due to bill & holds (etc.) the two numbers are rarely the same.</b>
+
+</small></center><br/>
+
+
+## Production Model
+```{r PRODUCTION_PLOT, echo=FALSE, cache=FALSE, align='center', warning=FALSE, results=FALSE, message=FALSE, fig.width=10, fig.height=6}
+##PRODUCTION_PLOT
+p = ggplot(data=m, aes(x=Forecast.Demand.3.Mo[,1], y=Cases.Delivered, group=House, label=Year.Month))
+PRODUCTION_PLOT = p + 
+  geom_point(aes(colour=factor(House), size=Production.Days)) + 
+  scale_y_continuous(labels=comma) +
+  scale_x_continuous(labels=comma) +
+  geom_point(aes(group=House, x=Forecast.Demand.3.Mo[,1], y=Forecast.Production[,1])) +
+  geom_line(aes(group=House, x=Forecast.Demand.3.Mo[,1], y=Forecast.Production[,1])) +
+  geom_ribbon(aes(ymin=Forecast.Production[,2], ymax=Forecast.Production[,3]), alpha=0.3) +
+  theme(legend.position='none') +
+  labs(title='Using Demand Prediction to Predict Case Production', y='Montly Case Production/Deliveries',
+       x='Monthly Case Demand/Sales')
+ggplotly(PRODUCTION_PLOT)
+```
 
 
 
@@ -397,15 +533,14 @@ ggplotly(CUMULATIVE_PROJECTION_PLOT)
 <center><small>
 $$Y_{HOURS} = \beta_0 + \beta_{STL}*X_{STL} + \beta_{CASES}*X_{CASES} + \beta_{SHIPDAYS}*X_{SHIPDAYS}$$
 
-where $$Y_{HOURS}=ShipHoursToPredict$$ $$X_{STL} = {0, 1}$$ $$X_{CASES}=TotalCasesDelivered$$ $$X_{SHIPDAYS}=MonthlyShipDays$$ 
+where $$Y_{HOURS}=ShipHoursToPredict$$ $$X_{STL} = {0, 1}$$ $$X_{CASES}=PredictedCasesDelivered$$ $$X_{SHIPDAYS}=MonthlyShipDays$$ 
 
 and $$\beta_{ALL}=CoefficientsDerivedFromData$$ $$\beta_{0}=yIntercept$$
 
 
 <br><br>
-<b>This model explains 89% of the variance of Monthly Night Ship Hours around its mean.</b>
+<b>This model explains 93.9% of the variance of Monthly Night Ship Hours around its mean.</b>
 
-<b>This model is to be used for 1-3 month horizons (to adjust forecasts from teh 4-12 month model). This is because pricing is "set in stone" three months out, meaning we can access what our average mark-up will be. This will require a weighted average (simple calculation) prior to feeding into the model.</b>
 </small></center><br/>
 
 
@@ -418,7 +553,7 @@ and $$\beta_{ALL}=CoefficientsDerivedFromData$$ $$\beta_{0}=yIntercept$$
 p = ggplot(data=monthly_data, aes(x=Cases.Delivered, y=Night.Ship.Hours, group=House, label=Year.Month))
 Labor_Model_Plot = p + 
   geom_point(aes(colour=factor(House), size=Production.Days)) + 
-  geom_smooth(method='lm',aes(group=House, colour=House), colour='black', alpha=0.1) +
+  geom_smooth(method='lm',aes(group=House, colour=House), colour='black', alpha=0.1, se=F) +
   scale_y_continuous(labels=comma) +
   scale_x_continuous(labels=comma) +
   theme(legend.position='none') +
@@ -444,7 +579,7 @@ CLOSER_LABOR_MODEL = p + geom_point(aes(colour=factor(House), size=Production.Da
   geom_line(aes(group=House, x=Forecast.Production[,1], y=Forecast.Ship.Hours[,1])) +
   geom_ribbon(aes(group=House, ymin=Forecast.Ship.Hours[,2], ymax=Forecast.Ship.Hours[,3]), alpha=0.3) +
   labs(title='Predictive Model: Monthly Shipping Labor Hours', y='Monthly Night Ship Hours',
-       x='Prediction of Cases Delivered')
+       x='Cases Delivered (Predicted in black & Actual in color)')
 ggplotly(CLOSER_LABOR_MODEL)
 ```
 
@@ -458,8 +593,8 @@ ggplotly(CLOSER_LABOR_MODEL)
 p = ggplot(data=m, aes(x=Month, y=Night.Ship.Hours, group=House, label=Year.Month))
 NIGHT_TIME_SERIES = p + 
   geom_bar(stat='identity', fill='grey', colour='black', alpha=0.5) + 
-  geom_point(aes(x=Month, y=Forecast.Ship.Hours[,1], group=House, size=Production.Days, fill=House), 
-             fill='black', alpha=0.5) + 
+  geom_point(aes(x=Month, y=Forecast.Ship.Hours[,1], group=House, size=Production.Days), 
+             colour='green', alpha=0.8) + 
   scale_y_continuous(labels=comma) +
   theme(legend.position='none', axis.text.x = element_text(angle = 90, hjust = 1)) +
   labs(title='Time Series of Total Monthly Shipping Labor Hours', y='Total Monthly Night Ship Hours',
@@ -473,6 +608,15 @@ ggplotly(NIGHT_TIME_SERIES)
 
 
 
+
+
+
+
+
+
+
+
+# <b>Conclusions</b> <br><small>We can chain together 3 models to get a statistically valid prediction of Monthly Shipping Hours.<br><br>These models are all highly predictive - however sensitivity analysis and model tuning will be necessary to explore the robustness of each model.<br><br>For budgeting purposes, this approach should work well.</small> {data-background=#e6e6e6}
 
 
 
