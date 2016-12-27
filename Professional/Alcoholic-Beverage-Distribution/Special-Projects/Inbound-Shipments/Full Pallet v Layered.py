@@ -76,6 +76,8 @@ def merge_datasets(pw_polines, pw_ytdpwar, ab_items):
     inbound_shipments['PurchasingPolicy'] = ''
     inbound_shipments.loc[inbound_shipments.Date_Received < datetime.date(year=2016, month=8, day=1), 'PurchasingPolicy'] = 'Layered'
     inbound_shipments.loc[inbound_shipments.Date_Received >= datetime.date(year=2016, month=8, day=1), 'PurchasingPolicy'] = 'Pallet'
+    inbound_shipments.loc[(inbound_shipments.Date_Received < datetime.date(year=2016, month=8, day=1)) & (inbound_shipments.FullPalletIncrease == ''), 'PurchasingPolicy'] = ''
+    
     inbound_shipments.FullPalletIncrease.fillna('', inplace=True)
     
     return inbound_shipments
@@ -87,12 +89,12 @@ inbound_ab_items.tail()
 
 def prepare_ab_summary(inbound_ab_items):
     '''Prepares daily summary of items in question'''
-    
-    grp_cols = ['Warehouse','FullPalletIncrease','AB','SupplierId','ProductId','Product','Date_Received','Year','Month','Weekday']
-    agg_funcs = {'PO_&_Line_Number' : lambda x: len(pd.unique(x)),
+    len_unique = lambda x: len(pd.unique(x))
+    grp_cols = ['Warehouse','PurchasingPolicy','FullPalletIncrease','AB','SupplierId','ProductId','Product','Date_Received','Year','Month','Weekday']
+    agg_funcs = {'PO_&_Line_Number' : len_unique,
                 'Ext_Cost' : np.sum,
                 'Cases_Received' : np.sum,
-                'Weight' : np.sum }
+                'Sales|Dollars' : np.sum}
     
     ab_item_summary = pd.DataFrame(inbound_ab_items.groupby(grp_cols).agg(agg_funcs)).reset_index(drop=False)
     ab_item_summary['CasesPerPOLine'] = np.divide(ab_item_summary['Cases_Received'], ab_item_summary['PO_&_Line_Number'])
@@ -104,40 +106,105 @@ def prepare_ab_summary(inbound_ab_items):
     ab_item_summary.Month = ab_item_summary.Month.astype('category')
     ab_item_summary.Month.cat.reorder_categories(['January','February','March','April','May','June','July','August','September','October','November','December'])
     
-    ab_item_summary.to_excel('C:/Users/pmwash/Desktop/Disposable Docs/AB Items by Date.xlsx', sheet_name='Daily Data')
+    ab_item_summary.drop_duplicates(inplace=True)
+    #ab_item_summary.to_excel('C:/Users/pmwash/Desktop/Disposable Docs/AB Items by Date.xlsx', sheet_name='Daily Data')
     
     return ab_item_summary
 
 
 ab_item_summary = prepare_ab_summary(inbound_ab_items)
 ab_item_summary = ab_item_summary[ab_item_summary.Date_Received > datetime.date(year=2016, month=2, day=28)]
+ab_item_summary.tail()
 
-ab_item_summary.DaysSinceLastReceipt.mean()
-ab_item_summary.head()
 
-new_grp_cols = ['Warehouse','SupplierId','AB','ProductId','Product','FullPalletIncrease']
-len_unique = lambda x: len(pd.unique(x))
-agg_funcs2 = {'Cases_Received': {np.sum, np.mean, np.count_nonzero}, 'ProductId': len_unique }
-##################lunchtime
-ab_item_highlevel = pd.DataFrame(ab_item_summary.groupby(new_grp_cols).agg(agg_funcs2))
-ab_item_highlevel.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in ab_item_highlevel.columns]    
 
+new_grp_cols = ['Warehouse','FullPalletIncrease','Product','PurchasingPolicy']
+inquiry_cols = ['DaysSinceLastReceipt']
+
+frequency_by_product = pd.DataFrame(np.divide(pd.DataFrame(ab_item_summary.groupby(new_grp_cols)[inquiry_cols].sum()), pd.DataFrame(ab_item_summary.groupby(new_grp_cols)[inquiry_cols].count())))
+frequency_by_product.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in frequency_by_product.columns]    
+frequency_by_product.head(20)
 
 #ab_item_highlevel = ab_item_summary.groupby(new_grp_cols).mean()
+#ab_item_summary.to_excel('C:/Users/pmwash/Desktop/Disposable Docs/AB Items by Date.xlsx', sheet_name='Daily Summary')
+#ab_item_highlevel.to_excel('C:/Users/pmwash/Desktop/Disposable Docs/AB Items Before & After.xlsx', sheet_name='High Level Summary')
+frequency_by_product.to_excel('C:/Users/pmwash/Desktop/Disposable Docs/AB Items Before & After.xlsx', sheet_name='Frequency by Product')
 
-ab_item_highlevel.to_excel('C:/Users/pmwash/Desktop/Disposable Docs/AB Items by Date.xlsx', sheet_name='High Level Summary')
 ab_item_highlevel.head()
 
 
 
-#ab_item_summary.DaysSinceLastReceipt.dtype
-# Count up days and cases of last 30 days of purchases grouped by product
-#ab_item_summary.groupby(['Warehouse','ProductId','Product']).Cases_Received.rolling(3).count().plot()
 
 
 
 
-ab_item_summary.tail(10)
+
+
+
+
+
+
+
+
+def write_to_excel(details, summary):
+    '''
+    Write report to Excel with formatting.
+    '''
+    file_out = pd.ExcelWriter('N:/Operations Intelligence/Monthly Reports/Unsaleables/Unsaleables & Returns  -  '+month+'.xlsx', engine='xlsxwriter')
+    workbook = file_out.book
+    
+    print('*'*100)
+    print('Writing finished product to the STL Common Drive.')
+    print('*'*100)
+    
+    print('\n\n\nWriting Class summary to file.')
+    class_summary.to_excel(file_out, sheet_name='Summary', index=True)
+    
+    print('Writing Director summary to file.')
+    director_summary.to_excel(file_out, sheet_name='Summary', index=True, startrow=9)
+
+    print('Writing Customer Returns summary to file.')
+    customer_returns.to_excel(file_out, sheet_name='Customers', index=False)    
+    
+    print('Writing Supplier summary to file.')
+    supplier_summary.to_excel(file_out, sheet_name='Suppliers', index=False)
+
+    print('Writing Product summary to file.')
+    unsaleables_by_product.to_excel(file_out, sheet_name='Products', index=False)
+    
+    print('Saving number formats for re-use.')
+    format_thousands = workbook.add_format({'num_format': '#,##0'})
+    format_dollars = workbook.add_format({'num_format': '$#,##0'})
+    format_float = workbook.add_format({'num_format': '###0.#0'})    
+    format_percent = workbook.add_format({'num_format': '0%'})
+    
+    print('Formatting Summary tab for visual purposes.')
+    summary_tab = file_out.sheets['Summary']
+    summary_tab.set_column('A:A',30)
+    summary_tab.set_column('D:E',25, format_thousands)
+    summary_tab.set_column('B:C',25, format_dollars)
+    
+    print('Formatting Customers tab for visual purposes.')
+    customers_tab = file_out.sheets['Customers']
+    customers_tab.set_column('A:A',11)
+    customers_tab.set_column('B:B',35)
+    customers_tab.set_column('C:C',13.3)
+    customers_tab.set_column('D:D',12, format_percent)
+   
+    file_out.save()    
+    
+    print('*'*100)
+    print('Finished writing file to common drive.')
+    print('*'*100)
+    
+
+
+last_mon = dt.now().month - 1
+report_month = dt.now().replace(month=last_mon).strftime('%B')
+report_year = dt.now().year
+report_month_year = str(report_month) + ' ' + str(report_year)# + ' Year to Date'
+
+write_unsaleables_to_excel(class_summary, director_summary, supplier_summary, customer_returns, unsaleables_by_product, month=report_month_year)
 
 
 
