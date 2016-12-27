@@ -88,7 +88,7 @@ inbound_ab_items.tail()
 def prepare_ab_summary(inbound_ab_items):
     '''Prepares daily summary of items in question'''
     
-    grp_cols = ['Warehouse','FullPalletIncrease','SupplierId','ProductId','Product','Date_Received','Year','Month','Weekday']
+    grp_cols = ['Warehouse','FullPalletIncrease','AB','SupplierId','ProductId','Product','Date_Received','Year','Month','Weekday']
     agg_funcs = {'PO_&_Line_Number' : lambda x: len(pd.unique(x)),
                 'Ext_Cost' : np.sum,
                 'Cases_Received' : np.sum,
@@ -101,6 +101,8 @@ def prepare_ab_summary(inbound_ab_items):
     ab_item_summary['DOTY'], ab_item_summary['DOTM'] = [d.strftime('%j') for d in dat],  [d.strftime('%d') for d in dat]
     
     ab_item_summary.loc[ab_item_summary.ProductId == ab_item_summary.ProductId.shift(1), 'DaysSinceLastReceipt'] = ab_item_summary.Date_Received - ab_item_summary.Date_Received.shift(1)
+    ab_item_summary.Month = ab_item_summary.Month.astype('category')
+    ab_item_summary.Month.cat.reorder_categories(['January','February','March','April','May','June','July','August','September','October','November','December'])
     
     ab_item_summary.to_excel('C:/Users/pmwash/Desktop/Disposable Docs/AB Items by Date.xlsx', sheet_name='Daily Data')
     
@@ -108,13 +110,23 @@ def prepare_ab_summary(inbound_ab_items):
 
 
 ab_item_summary = prepare_ab_summary(inbound_ab_items)
-ab_item_summary = ab_item_summary[ab_item_summary.Date_Received > dt.date(year=2016, month=2, day=28)]
+ab_item_summary = ab_item_summary[ab_item_summary.Date_Received > datetime.date(year=2016, month=2, day=28)]
 
-new_grp_cols = ['Warehouse','ProductId','Product','Month','FullPalletIncrease']
-mean_times = lambda x: sum(x, datetime.timedelta().total_seconds()) / len(x)
-agg_funcs2 = {'Cases_Received': {np.sum, np.mean}, 'DaysSinceLastReceipt': np.mean }
-ab_item_summary.groupby(new_grp_cols).describe()
+ab_item_summary.DaysSinceLastReceipt.mean()
+ab_item_summary.head()
 
+new_grp_cols = ['Warehouse','SupplierId','AB','ProductId','Product','FullPalletIncrease']
+len_unique = lambda x: len(pd.unique(x))
+agg_funcs2 = {'Cases_Received': {np.sum, np.mean, np.count_nonzero}, 'ProductId': len_unique }
+##################lunchtime
+ab_item_highlevel = pd.DataFrame(ab_item_summary.groupby(new_grp_cols).agg(agg_funcs2))
+ab_item_highlevel.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in ab_item_highlevel.columns]    
+
+
+#ab_item_highlevel = ab_item_summary.groupby(new_grp_cols).mean()
+
+ab_item_highlevel.to_excel('C:/Users/pmwash/Desktop/Disposable Docs/AB Items by Date.xlsx', sheet_name='High Level Summary')
+ab_item_highlevel.head()
 
 
 
