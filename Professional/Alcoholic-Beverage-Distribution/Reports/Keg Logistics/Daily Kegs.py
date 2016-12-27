@@ -198,7 +198,7 @@ def prepare_keg_summary(Production_Tab_STL, Production_Tab_KC):
     MO_Kegs = MO_Kegs.sort_values(['Date','Warehouse'])
     MO_Kegs = MO_Kegs[['Date','TTL Cs/splt','Truck #','Stops','Ttl Mi','Warehouse','Month','WeekNumber','RTE','index',]]
     
-    keg_rtes = ['STL_366','STL_66','STL_67','STL_68','STL_69','STL_70','KC_75']
+    keg_rtes = ['STL_66','STL_67','STL_68','STL_69','KC_75'] #STL_366'
     MO_Kegs = MO_Kegs[MO_Kegs['index'].isin(keg_rtes)].reset_index(drop=True)
     MO_Kegs.rename(columns={'TTL Cs/splt':'Kegs','Truck #':'Truck','Ttl Mi':'Miles','WeekNumber':'Week','RTE':'Route'}, inplace=True)
     
@@ -264,7 +264,7 @@ export_to_excel(Daily_Summary_Kegs, MO_Kegs)
 
 
 Daily_Summary_Kegs['Kegs|sum'].plot()
-
+Daily_Summary_Kegs.groupby('Warehouse')['KegTrucks|count'].plot(subplots=True, kind='line')
 
 
 
