@@ -20,10 +20,10 @@ pd.set_option('display.width', 200)
 
 
 
-this_year_files = 'N:/Daily Report/2016/NOV/*.xls*'
-last_year_files = 'N:/Daily Report/2015/NOV/*.xls*'
+this_year_files = 'N:/Daily Report/2016/DEC/*.xls*'
+last_year_files = 'N:/Daily Report/2015/DEC/*.xls*'
 
-def copy_kc_daily_reports_local(this_year_files, last_year_files):
+def copy_stl_daily_reports_local(this_year_files, last_year_files):
     '''Copies (not moves) files from M drive to local drive'''
     files_to_copy = glob.glob(this_year_files)
     files_to_copy_last_year = glob.glob(last_year_files)
@@ -43,7 +43,7 @@ def copy_kc_daily_reports_local(this_year_files, last_year_files):
     print('Finished copying KC Daily Reports -- Ready for report.')
     
 
-copy_kc_daily_reports_local(this_year_files, last_year_files)
+copy_stl_daily_reports_local(this_year_files, last_year_files)
 
 
 
@@ -64,7 +64,10 @@ def extract_date_stl(file, this_year=True):
         dat = ''.join(d for d in dat if d not in exclude)
         
         if this_year == True:
-            this_year = str(dt.today().year)
+            if dt.now().month != 1:
+                this_year = str(dt.today().year)
+            else:
+                this_year = str(dt.today().year - 1)
         else:
             this_year = str(pd.to_numeric(dt.today().year) - 1)
         
@@ -341,8 +344,8 @@ Returns_Tab.head(20)
 
 
 
-file = file_list_last_year[7]
-this_year=False
+#file = file_list_last_year[7]
+#this_year=False
 
 
 
