@@ -1,6 +1,5 @@
 '''
-Breakage Report
-Re-Engineered October 2016
+Breakage 
 
 pw_break query encompasses the whole state
 Update monthly sales lookup table before running
@@ -10,8 +9,12 @@ Update monthly sales lookup table before running
 import pandas as pd
 import numpy as np
 from datetime import datetime as dt
+from pandas import DataFrame
 
-last_mon = dt.now().month - 1
+if dt.now().month == 1:
+    last_mon = 12
+else:
+    last_mon = dt.now().month - 1
 report_month = dt.now().replace(month=last_mon).strftime('%B')
 if dt.now().month == 1:
     report_year = dt.now().year - 1
@@ -26,8 +29,10 @@ dtypes = {'#RDATE':str, 'PBRAN#':np.int64, '#RPRD#':np.int64, '#RDESC':str,
             '#RCOMP':np.int64, '#RQPC':np.int64, 'PTYPE':np.int64, 'PONHD':np.int64 }
 
 pw_break = pd.read_csv(folder + 'pw_break.csv', header=0, encoding='ISO-8859-1', dtype=dtypes)
-pw_ytdprod = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_ytdprod.csv', header=0, encoding='ISO-8859-1')
-monthly_sales_lookup = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/monthly_sales_by_house.csv', header=0, encoding='ISO-8859-1')
+pw_ytdprod = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_ytdprod.csv', 
+                         header=0, encoding='ISO-8859-1', usecols=['#MINP#','#MEXT$01'], dtype={'#MINP#':np.int64,'#MEXT$01':np.float64})
+monthly_sales_lookup = pd.read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/monthly_sales_by_house.csv', 
+                                   header=0, encoding='ISO-8859-1')
 stl_sales_same_period = monthly_sales_lookup[(monthly_sales_lookup['Month'] == last_mon) & (monthly_sales_lookup['Year'] == report_year)  & (monthly_sales_lookup['House'] == 'Saint Louis')]
 kc_sales_same_period = monthly_sales_lookup[(monthly_sales_lookup['Month'] == last_mon) & (monthly_sales_lookup['Year'] == report_year)  & (monthly_sales_lookup['House'] == 'Kansas City')]
 stl_sales_same_period, kc_sales_same_period = np.float64(stl_sales_same_period['Dollars']), np.float64(kc_sales_same_period['Dollars'])
@@ -49,7 +54,6 @@ def process_breakage_data(pw_break, pw_ytdprod):
     pw_break.rename(columns=col_names, inplace=True)
     
     pw_ytdprod.rename(columns={'BREAKLVL':'x1', 'OVERFLOW':'x2', '#MINP#':'ProductId', '#MEXT$01':'Sales|Dollars'}, inplace=True)
-    pw_ytdprod.drop(pw_ytdprod[['x1','x2']], axis=1, inplace=True)
     
     
     brk_data = pw_break.merge(pw_ytdprod, on='ProductId', how='left')
@@ -183,10 +187,10 @@ def write_breakage_to_excel(summary, clean_breakage_data, month='YOU FORGOT TO S
     summary_tab = file_out.sheets['Summary']
     summary_tab.set_column('A:A',15)
     summary_tab.set_column('B:B',28)
-    summary_tab.set_column('C:D',25, format_dollars)
-    summary_tab.set_column('E:E',25, format_percent)
-    summary_tab.set_column('F:F',25, format_percent_precise)
-    summary_tab.set_column('G:H',25, format_thousands)
+    summary_tab.set_column('C:D',21, format_dollars)
+    summary_tab.set_column('E:E',26, format_percent)
+    summary_tab.set_column('F:F',17, format_percent_precise)
+    summary_tab.set_column('G:H',21, format_thousands)
     summary_tab.set_column('I:I',25, format_percent)
     
     print('Formatting Warehouse tab.')
