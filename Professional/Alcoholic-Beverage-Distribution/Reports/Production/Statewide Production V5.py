@@ -69,7 +69,10 @@ def extract_date_stl(file, this_year=True):
             else:
                 this_year = str(dt.today().year - 1)
         else:
-            this_year = str(pd.to_numeric(dt.today().year) - 1)
+            if dt.now().month != 1:
+                this_year = str(pd.to_numeric(dt.today().year) - 1)
+            else:
+                this_year = str(pd.to_numeric(dt.today().year) - 2)
         
         dat = str(dat + '-' + this_year)
         dat = dt.strptime(str(dat), "%m-%d-%Y").date()
