@@ -1,5 +1,5 @@
 '''
-Production Report - STL first then KC
+Production Report
 Re-Engineered November 2016
 '''
 
@@ -20,11 +20,11 @@ pd.set_option('display.width', 200)
 
 
 
-this_year_files = 'N:/Daily Report/2016/NOV/*.xls*'
-last_year_files = 'N:/Daily Report/2015/NOV/*.xls*'
+this_year_files = 'N:/Daily Report/2016/DEC/*.xls*'
+last_year_files = 'N:/Daily Report/2015/DEC/*.xls*'
 
-def copy_kc_daily_reports_local(this_year_files, last_year_files):
-    '''Copies (not moves) files from M drive to local drive'''
+def copy_stl_daily_reports_local(this_year_files, last_year_files):
+    '''Copies (not moves) files from N drive to local drive'''
     files_to_copy = glob.glob(this_year_files)
     files_to_copy_last_year = glob.glob(last_year_files)
     
@@ -56,63 +56,70 @@ file_list_last_year = glob.glob(temp_location_last_year + '*.xls*')
 
 
 def extract_date_stl(file, this_year=True):
-        '''Takes date from file name'''
-        regex_criteria = re.compile(r'[0-9]+-[0-9]+')    
-        dat = re.findall(regex_criteria, file)
-        
-        exclude = set(string.punctuation)
-        dat = ''.join(d for d in dat if d not in exclude)
-        
-        if this_year == True:
+    '''Takes date from file name'''
+    regex_criteria = re.compile(r'[0-9]+-[0-9]+')    
+    dat = re.findall(regex_criteria, file)
+    
+    exclude = set(string.punctuation)
+    dat = ''.join(d for d in dat if d not in exclude)
+    
+    if this_year == True:
+        if dt.now().month != 1:
             this_year = str(dt.today().year)
         else:
+            this_year = str(dt.today().year - 1)
+    else:
+        if dt.now().month != 1:
             this_year = str(pd.to_numeric(dt.today().year) - 1)
-        
-        dat = str(dat + '-' + this_year)
-        dat = dt.strptime(str(dat), "%m-%d-%Y").date()
-        
-        return dat
+        else:
+            this_year = str(pd.to_numeric(dt.today().year) - 2)
+    
+    dat = str(dat + '-' + this_year)
+    dat = dt.strptime(str(dat), "%m-%d-%Y").date()
+    
+    return dat
+
 
 
 def extract_stl_production_tab(file):
-        '''
-        Takes in and formats Production Tab from Daily Report. 
-        Extracts date from filename and creates index.
-        Puts into a dictionary of dataframes 
-        for input into a pandas DataFrame.
-        '''
-        dtypes = {'Date':dt.date, 'Warehouse':str,'LOC':str,'RTE':str,'Driver':str,'Truck#':str,
-                'Stops':np.float64,'TTL Cs/splt':np.float64,'Cs':np.float64,'Btls':np.float64,
-                'Start Hr':str, 'End Hr':str,'Ttl Hrs':str,'Ttl Mi':np.float64 }
-        df = pd.read_excel(file, sheetname='Production', converters=dtypes)
+    '''
+    Takes in and formats Production Tab from Daily Report. 
+    Extracts date from filename and creates index.
+    Puts into a dictionary of dataframes 
+    for input into a pandas DataFrame.
+    '''
+    dtypes = {'Date':dt.date, 'Warehouse':str,'LOC':str,'RTE':str,'Driver':str,'Truck#':str,
+            'Stops':np.float64,'TTL Cs/splt':np.float64,'Cs':np.float64,'Btls':np.float64,
+            'Start Hr':str, 'End Hr':str,'Ttl Hrs':str,'Ttl Mi':np.float64 }
+    df = pd.read_excel(file, sheetname='Production', converters=dtypes)
+
+    dat = extract_date_stl(file)
     
-        dat = extract_date_stl(file)
-        
-        df['Date'] = dat 
-        df['Month'] = dat.strftime('%B')
-        df['Weekday'] = dat.strftime('%A')
-        df['WeekNumber'] = dat.strftime('%U')
-        df['DOTM'] = dat.strftime('%d')
-        df['Warehouse'] = 'STL'
-        
-        keep_cols = ['Date','Warehouse','LOC','RTE','Driver','Truck#','Stops',
-                     'TTL Cs/splt','Cs','Btls','Start Hr',
-                     'End Hr','Ttl Hrs','Ttl Mi','Month','Weekday','WeekNumber',
-                     'DOTM']
-        df = df[keep_cols].drop_duplicates()
-        
-        WAREHOUSE, ROUTE = df.Warehouse.astype(str), df.RTE.astype(str)
-        new_index = WAREHOUSE + '_' + ROUTE 
-        
-        df.set_index(new_index, inplace=True)
-        
-        df = df[df['Driver'] != 'Totals:']        
-        df = df.sort_values(['Stops','TTL Cs/splt'], ascending=False).reset_index(drop=False)
-        
-        df['Date'] = df['Date'].replace(to_replace='NaN', value='')
-        df = df[df['Date'].isnull() == False]
-        
-        return df
+    df['Date'] = dat 
+    df['Month'] = dat.strftime('%B')
+    df['Weekday'] = dat.strftime('%A')
+    df['WeekNumber'] = dat.strftime('%U')
+    df['DOTM'] = dat.strftime('%d')
+    df['Warehouse'] = 'STL'
+    
+    keep_cols = ['Date','Warehouse','LOC','RTE','Driver','Truck#','Stops',
+                 'TTL Cs/splt','Cs','Btls','Start Hr',
+                 'End Hr','Ttl Hrs','Ttl Mi','Month','Weekday','WeekNumber',
+                 'DOTM']
+    df = df[keep_cols].drop_duplicates()
+    
+    WAREHOUSE, ROUTE = df.Warehouse.astype(str), df.RTE.astype(str)
+    new_index = WAREHOUSE + '_' + ROUTE 
+    
+    df.set_index(new_index, inplace=True)
+    
+    df = df[df['Driver'] != 'Totals:']        
+    df = df.sort_values(['Stops','TTL Cs/splt'], ascending=False).reset_index(drop=False)
+    
+    df['Date'] = df['Date'].replace(to_replace='NaN', value='')
+    df = df[df['Date'].isnull() == False]
+    
+    return df
 
 
 Production_Tab = pd.DataFrame()        
@@ -203,56 +210,56 @@ NightlyHours_Tab.head(100)
 
 
 def extract_stl_over_short_tabs(file):
-        '''
-        Takes in and formats BOTH O/S tabs from Daily Report. 
-        Extracts date from filename and creates index.
-        Puts into a dictionary of dataframes 
-        for input into a pandas DataFrame.
-        '''
-        dtypes = {'Driver #':np.int,'Customer #':np.int,'RTE':np.int,'Item #':int,'CS':np.float64,'BTL':np.float64}
-        stl_os = pd.read_excel(file, sheetname='Over-Short', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, col_dtypes=dtypes)
-        col_os = pd.read_excel(file, sheetname='Col. Over - Short', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, col_dtypes=dtypes)
+    '''
+    Takes in and formats BOTH O/S tabs from Daily Report. 
+    Extracts date from filename and creates index.
+    Puts into a dictionary of dataframes 
+    for input into a pandas DataFrame.
+    '''
+    dtypes = {'Driver #':np.int,'Customer #':np.int,'RTE':np.int,'Item #':int,'CS':np.float64,'BTL':np.float64}
+    stl_os = pd.read_excel(file, sheetname='Over-Short', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, col_dtypes=dtypes)
+    col_os = pd.read_excel(file, sheetname='Col. Over - Short', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, col_dtypes=dtypes)
+    
+    dat = extract_date_stl(file)
+    
+    stl_os['Date'] = col_os['Date'] = dat 
+    stl_os['Month'] = col_os['Month']  = dat.strftime('%B')
+    stl_os['Weekday'] = col_os['Weekday']  = dat.strftime('%A')
+    stl_os['WeekNumber'] = col_os['WeekNumber'] = dat.strftime('%U')
+    stl_os['DOTM'] = col_os['DOTM'] = dat.strftime('%d')
+    stl_os['Warehouse'] = col_os['Warehouse'] = 'STL'
+    
+    keep_cols = ['Date','Driver #','Customer #','RTE','Item #',
+                'CS','BTL','Month','Weekday','WeekNumber','DOTM','Warehouse']
         
-        dat = extract_date_stl(file)
-        
-        stl_os['Date'] = col_os['Date'] = dat 
-        stl_os['Month'] = col_os['Month']  = dat.strftime('%B')
-        stl_os['Weekday'] = col_os['Weekday']  = dat.strftime('%A')
-        stl_os['WeekNumber'] = col_os['WeekNumber'] = dat.strftime('%U')
-        stl_os['DOTM'] = col_os['DOTM'] = dat.strftime('%d')
-        stl_os['Warehouse'] = col_os['Warehouse'] = 'STL'
-        
-        keep_cols = ['Date','Driver #','Customer #','RTE','Item #',
-                    'CS','BTL','Month','Weekday','WeekNumber','DOTM','Warehouse']
-            
-        stl_os = stl_os[keep_cols].reset_index(drop=True)
-        col_os = col_os[keep_cols].reset_index(drop=True)
-        
-        stl_os['Type'] = 'STL'
-        col_os['Type'] = 'COL'
-        
-        stl_os = stl_os[stl_os['RTE'].isnull() == False]
-        col_os = col_os[col_os['RTE'].isnull() == False]
-        
-        df = stl_os.append(col_os)
-        
-        non_decimal = re.compile(r'[^\d.]+')
-        drv_no, cus_no, itm_no = df['Driver #'].astype(str).tolist(), df['Customer #'].astype(str).tolist(), df['Item #'].astype(str).tolist()
-        df['Driver #'] = [non_decimal.sub('', d) for d in drv_no]
-        df['Customer #'] = [non_decimal.sub('', c) for c in cus_no]
-        df['Item #'] = [non_decimal.sub('', i) for i in itm_no]
-        
-        df['Driver #'] = pd.to_numeric(df['Driver #'], errors='coerce')
-        df['Customer #'] = pd.to_numeric(df['Customer #'], errors='coerce')
-        df['Item #'] = pd.to_numeric(df['Item #'], errors='coerce')
-        df.fillna(0, inplace=True)
-        
-        df[['Driver #','Customer #','Item #']] = df[['Driver #','Customer #','Item #']].astype(int)
-        
-        df.reset_index(drop=True, inplace=True)
-        
-        return df
-        
+    stl_os = stl_os[keep_cols].reset_index(drop=True)
+    col_os = col_os[keep_cols].reset_index(drop=True)
+    
+    stl_os['Type'] = 'STL'
+    col_os['Type'] = 'COL'
+    
+    stl_os = stl_os[stl_os['RTE'].isnull() == False]
+    col_os = col_os[col_os['RTE'].isnull() == False]
+    
+    df = stl_os.append(col_os)
+    
+    non_decimal = re.compile(r'[^\d.]+')
+    drv_no, cus_no, itm_no = df['Driver #'].astype(str).tolist(), df['Customer #'].astype(str).tolist(), df['Item #'].astype(str).tolist()
+    df['Driver #'] = [non_decimal.sub('', d) for d in drv_no]
+    df['Customer #'] = [non_decimal.sub('', c) for c in cus_no]
+    df['Item #'] = [non_decimal.sub('', i) for i in itm_no]
+    
+    df['Driver #'] = pd.to_numeric(df['Driver #'], errors='coerce')
+    df['Customer #'] = pd.to_numeric(df['Customer #'], errors='coerce')
+    df['Item #'] = pd.to_numeric(df['Item #'], errors='coerce')
+    df.fillna(0, inplace=True)
+    
+    df[['Driver #','Customer #','Item #']] = df[['Driver #','Customer #','Item #']].astype(int)
+    
+    df.reset_index(drop=True, inplace=True)
+    
+    return df
+    
         
         
 OverShort_Tab = pd.DataFrame()        
@@ -278,43 +285,43 @@ OverShort_Tab.head(50)
 
 
 def extract_stl_returns_tab(file):
-        '''
-        Takes in and formats the Returns tab from Daily Report. 
-        Extracts date from filename and creates index.
-        Puts into a dictionary of dataframes 
-        for input into a pandas DataFrame.
-        '''
-        dtypes = {'Driver #':np.int,'Inv#':np.int64,'Customer':str,'Cust#':np.int64,
-            'Driver #':np.int64,'Driver':str,'Reason':str,'Cases':np.float64,
-            'Bottles':np.float64,'Pick up Cases':np.float64,'Empty Boxes':np.float64,
-            'PLLTS':np.int64,'Kegs':np.int64,'POS':np.int64,'Bonus':np.float64,'Inv Amt':np.float64,
-            'Driver Return or Customer Return':str,'Inv#':np.int64
-        }
-        returns = pd.read_excel(file, sheetname='Returns', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, col_dtypes=dtypes, skiprows=2)
+    '''
+    Takes in and formats the Returns tab from Daily Report. 
+    Extracts date from filename and creates index.
+    Puts into a dictionary of dataframes 
+    for input into a pandas DataFrame.
+    '''
+    dtypes = {'Driver #':np.int,'Inv#':np.int64,'Customer':str,'Cust#':np.int64,
+        'Driver #':np.int64,'Driver':str,'Reason':str,'Cases':np.float64,
+        'Bottles':np.float64,'Pick up Cases':np.float64,'Empty Boxes':np.float64,
+        'PLLTS':np.int64,'Kegs':np.int64,'POS':np.int64,'Bonus':np.float64,'Inv Amt':np.float64,
+        'Driver Return or Customer Return':str,'Inv#':np.int64
+    }
+    returns = pd.read_excel(file, sheetname='Returns', skip_footer=1, na_values=['NaN',np.nan,np.NaN,np.NAN], header=0, col_dtypes=dtypes, skiprows=2)
+    
+    returns.fillna(0, inplace=True)
+    dat = extract_date_stl(file)
+    
+    returns['Date'] =  dat 
+    returns['Month'] = dat.strftime('%B')
+    returns['Weekday'] = dat.strftime('%A')
+    returns['WeekNumber'] = dat.strftime('%U')
+    returns['DOTM'] = dat.strftime('%d')
+    returns['Warehouse'] = 'STL'
+    
+    keep_cols = ['Date','Driver Return or Customer Return','Inv#',
+                'Cust#','Customer','Driver #','Driver','Reason','Cases','Bottles',
+                'Pick up Cases','Empty Boxes','PLLTS','Kegs','Empty Kegs',
+                'POS','Bonus','Inv Amt','Sales Person',
+                'Month','Weekday','WeekNumber','DOTM','Warehouse']
         
-        returns.fillna(0, inplace=True)
-        dat = extract_date_stl(file)
-        
-        returns['Date'] =  dat 
-        returns['Month'] = dat.strftime('%B')
-        returns['Weekday'] = dat.strftime('%A')
-        returns['WeekNumber'] = dat.strftime('%U')
-        returns['DOTM'] = dat.strftime('%d')
-        returns['Warehouse'] = 'STL'
-        
-        keep_cols = ['Date','Driver Return or Customer Return','Inv#',
-                    'Cust#','Customer','Driver #','Driver','Reason','Cases','Bottles',
-                    'Pick up Cases','Empty Boxes','PLLTS','Kegs','Empty Kegs',
-                    'POS','Bonus','Inv Amt','Sales Person',
-                    'Month','Weekday','WeekNumber','DOTM','Warehouse']
-            
-        returns = returns[keep_cols].reset_index(drop=True)
+    returns = returns[keep_cols].reset_index(drop=True)
 
-        returns = returns[returns['Driver Return or Customer Return'] != 0]
-        
-        returns.reset_index(drop=True, inplace=True)
-        
-        return returns
+    returns = returns[returns['Driver Return or Customer Return'] != 0]
+    
+    returns.reset_index(drop=True, inplace=True)
+    
+    return returns
         
         
         
@@ -341,8 +348,8 @@ Returns_Tab.head(20)
 
 
 
-file = file_list_last_year[7]
-this_year=False
+#file = file_list_last_year[7]
+#this_year=False
 
 
 
@@ -581,8 +588,17 @@ Monthly_Summary
 def write_stl_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab, OverShort_Tab, NightlyHours_Tab):
     '''Writes to Excel'''
     output_path = 'N:\\Operations Intelligence\\Monthly Reports\\Production\\'
-    report_month, report_year = dt.strftime(dt.now() - datetime.timedelta(days=20), '%B'), dt.now().year
-    output_file_name = output_path + 'Production Report - ' + str(report_month) + ' ' + str(report_year) + '.xlsx'
+    if dt.now().month == 1:
+        last_mon = 12
+    else:
+        last_mon = dt.now().month - 1
+    report_month = dt.now().replace(month=last_mon).strftime('%B')
+    if dt.now().month == 1:
+        report_year = dt.now().year - 1
+    else:
+        report_year = dt.now().year
+    report_month_year = str(report_month) + ' ' + str(report_year)# + ' Year to Date'
+    output_file_name = output_path + 'Production Report - ' + report_month_year + '.xlsx'
     
     file_out = pd.ExcelWriter(output_file_name, engine='xlsxwriter')
     workbook = file_out.book
