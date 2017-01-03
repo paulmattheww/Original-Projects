@@ -18,14 +18,20 @@ from datetime import datetime as dt
 
 raw = read_excel('C:/Users/pmwash/Desktop/Re-Engineered Reports/Velocity/Data/velocity_stl.xlsx',header=0)
 
-ttl_cs = np.float64(input('Enter total cases expected from Compleo export: '))#270206
 ttl_btl = np.float64(input('Enter total bottles expected from Compleo export: '))#9259.37
+ttl_cs = np.float64(input('Enter total cases expected from Compleo export: '))#270206
 
 
-last_mon = dt.now().month - 1
+if dt.now().month == 1:
+    last_mon = 12
+else:
+    last_mon = dt.now().month - 1
 report_month = dt.now().replace(month=last_mon).strftime('%B')
-report_year = dt.now().year
-report_month_year = str(report_month) + ' ' + str(report_year)
+if dt.now().month == 1:
+    report_year = dt.now().year - 1
+else:
+    report_year = dt.now().year
+report_month_year = str(report_month) + ' ' + str(report_year)# + ' Year to Date'
 
 
 print('''
@@ -97,7 +103,7 @@ def pre_process_stl(raw):
     check_btls = np.sum(btls['BOTTLESALES'])
     check_cses = np.sum(cases['CASESALES'])
     
-    print('Total bottles: ', check_btls, '\n\nTotal cases: ', check_cses, '\n\n\n')
+    print('\n\n\nTotal bottles: ', check_btls, '\n\nTotal cases: ', check_cses, '\n\n\n')
     
     cases.columns = ['PRODUCT#','SIZE','DESCRIPTION','CASESALES','PICKFREQUENCY','CSE.LOC.','BTL.LOC.','BULK1','BOTTLESONHAND']
     btls.columns = ['PRODUCT#','SIZE','DESCRIPTION','BOTTLESALES','PICKFREQUENCY','CSE.LOC.','BTL.LOC.','BULK1','BOTTLESONHAND']
