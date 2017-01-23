@@ -1,11 +1,18 @@
 '''
 Analysis of A and B Products
+Ad Hoc Request Steve Lewis
 Before and after switch from layered to full pallet
 Jan 1 - Dec 27 2016
 
 Input data for A/B products from Steve L.
 Inbound shipment data from pw_polines AS400
 YTD Sales data from ytd_prod
+
+Data transferred into a CSV
+from Transfer Add In, outside of Excel
+Open with Notepad++ and
+replace all white space [.+(\s)+.+] or (\[.*)\s(.*\])
+with commas
 '''
 
 import pandas as pd
@@ -29,7 +36,67 @@ ab_items = pd.read_csv(path + 'AB Items.csv', header=0)
 ab_items.rename(columns={'PPROD#':'ProductId', 'PDESC':'Product', '#SRNAM':'Supplier', 'PMONI':'AB', 'Increases':'FullPalletIncrease'}, inplace=True)
 ab_items.FullPalletIncrease = ab_items.FullPalletIncrease.map({'XX':'Both Warehouses', 'X':'One Warehouse'})
 
-pw_ytdpwar = pd.read_csv(path + 'pw_ytdpwar Jan - Dec 2016.csv', header=0, usecols=['#MCMP','#MINP#','#MEXT$01'])
+
+with open(path + 'pw_ytdpwar Jan - Dec 2016.csv', 'r') as data:
+    plaintext = data.read()
+
+## Daily Sales by Product for Aggregating up to Weekly
+pw_ytdpwar = pd.read_csv(path + 'pw_ytdpwar Jan - Dec 2016.csv', header=None)
+
+
+
+
+
+
+split_up_col = lambda x: [' '.join(s.split(' ')) for s in x]
+
+x = [' '.join(s.split(' ')) for s in pw_ytdpwar[0].astype(str)]
+x
+
+#DAT = pw_ytdpwar[0].astype(str).tolist()
+
+x = pw_ytdpwar[0].apply(split_up_col)
+
+split_up_col(pw_ytdpwar[0])
+
+pw_ytdpwar.head()
+
+
+pd.DataFrame(DAT)
+
+
+[s.split(' ') for s in pw_ytdpwar.index.values.astype(str).tolist()]
+pw_ytdpwar.columns.values
+
+pw_ytdpwar.reset_index(drop=True, inplace=True)
+
+##############
+flatten = lambda l: [item for sublist in l for item in sublist]
+flatten(pw_ytdpwar.index.values.astype(str).tolist())
+
+
+pw_ytdpwar[pw_ytdpwar.index[0]]
+pw_ytdpwar.index[0].values
+
+
+# NAMZ = ['Warehouse','Date','ProductID','Sales|Dollars']
+# pw_ytdpwar.columns.names = NAMZ
+# pw_ytdpwar.head()
+
+
+# pw_ytdpwar.columns.names = 'X'
+# pw_ytdpwar.columns.names = ['Warehouse','Date','ProductId','Sales|Dollars']
+
+# pw_ytdpwar.rename(columns=['Warehouse','Date','ProductId','Sales|Dollars'], inplace=True)
+
+
+
+# [print(1) for name in pw_ytdpwar.columns.names]
+
+pw_ytdpwar.index.names[0] = ['Date','ProductId']
+
+new_names = ['Warehouse','Date','ProductId','Sales|Dollars']
+
 pw_ytdpwar.rename(columns={'#MCMP':'Warehouse','#MINP#':'ProductId','#MEXT$01':'Sales|Dollars'}, inplace=True)
 pw_ytdpwar.Warehouse = pw_ytdpwar.Warehouse.map({1:'Kansas City', 2:'Saint Louis', 3:'Saint Louis', 5:'Kansas City'})
 
@@ -40,9 +107,8 @@ def summarize_po_lines(pw_polines):
         '''Accepts list of dates as strings from theAS400'''
         try:
             dat = dt.date(dt.strptime(dat[-6:], '%y%m%d'))
-        except:
-            if dt.date(dt.strptime(dat[-6:], '%y%m%d')) == '1090001':
-                dat = None
+        except ValueError:
+            dat = dt.date(dt.strptime('160101', '%y%m%d'))
         return dat
 
     pw_polines.Warehouse = pw_polines.Warehouse.map({1:'Kansas City', 2:'Saint Louis'})
@@ -65,9 +131,14 @@ def summarize_po_lines(pw_polines):
     return pw_polines
 
 
-def merge_datasets(pw_polines, pw_ytdpwar, ab_items):
+pw_polines_clean = summarize_po_lines(pw_polines)
+pw_polines_clean.head()
+
+
+
+def merge_datasets(pw_polines_clean, pw_ytdpwar, ab_items):
     '''Merges inbound shipment data with sales by product/whse and Steve's experimental data'''
-    inbound_shipments = summarize_po_lines(pw_polines)
+    inbound_shipments = summarize_po_lines(pw_polines_clean)
     inbound_shipments = inbound_shipments.merge(pw_ytdpwar, on=['Warehouse','ProductId'], how='left')
     inbound_shipments = inbound_shipments.merge(ab_items, on='ProductId', how='right')
     
@@ -83,10 +154,12 @@ def merge_datasets(pw_polines, pw_ytdpwar, ab_items):
     return inbound_shipments
 
 
-inbound_ab_items = merge_datasets(pw_polines, pw_ytdpwar, ab_items)
+inbound_ab_items = merge_datasets(pw_polines_clean, pw_ytdpwar, ab_items)
 inbound_ab_items.tail()
 
-
+#########################################################################
+################################################ <###> ##################
+#########################################################################
 def prepare_ab_summary(inbound_ab_items):
     '''Prepares daily summary of items in question'''
     len_unique = lambda x: len(pd.unique(x))
@@ -103,8 +176,8 @@ def prepare_ab_summary(inbound_ab_items):
     ab_item_summary['DOTY'], ab_item_summary['DOTM'] = [d.strftime('%j') for d in dat],  [d.strftime('%d') for d in dat]
     
     ab_item_summary.loc[ab_item_summary.ProductId == ab_item_summary.ProductId.shift(1), 'DaysSinceLastReceipt'] = ab_item_summary.Date_Received - ab_item_summary.Date_Received.shift(1)
-    ab_item_summary.Month = ab_item_summary.Month.astype('category')
-    ab_item_summary.Month.cat.reorder_categories(['January','February','March','April','May','June','July','August','September','October','November','December'])
+    #ab_item_summary.Month = ab_item_summary.Month.astype('category')
+    #ab_item_summary.Month.cat.reorder_categories(['January','February','March','April','May','June','July','August','September','October','November','December'])
     
     ab_item_summary.drop_duplicates(inplace=True)
     #ab_item_summary.to_excel('C:/Users/pmwash/Desktop/Disposable Docs/AB Items by Date.xlsx', sheet_name='Daily Data')
@@ -115,6 +188,16 @@ def prepare_ab_summary(inbound_ab_items):
 ab_item_summary = prepare_ab_summary(inbound_ab_items)
 ab_item_summary = ab_item_summary[ab_item_summary.Date_Received > datetime.date(year=2016, month=2, day=28)]
 ab_item_summary.tail()
+
+print('''
+Omit August
+
+Bs only
+
+Just XX (both warehouses)
+
+Quantify sales by week side by side
+''')
 
 
 
