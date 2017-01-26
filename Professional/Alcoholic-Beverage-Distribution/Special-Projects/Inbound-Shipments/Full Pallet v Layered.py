@@ -19,6 +19,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime as dt
 import datetime
+import re
 
 path = 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Ad Hoc/Purchasing/Full Pallet v Layered/'
 pw_polines = pd.read_csv(path + 'pw_polines 01012016 through 12272016.csv', 
@@ -37,61 +38,48 @@ ab_items.rename(columns={'PPROD#':'ProductId', 'PDESC':'Product', '#SRNAM':'Supp
 ab_items.FullPalletIncrease = ab_items.FullPalletIncrease.map({'XX':'Both Warehouses', 'X':'One Warehouse'})
 
 
-with open(path + 'pw_ytdpwar Jan - Dec 2016.csv', 'r') as data:
-    plaintext = data.read()
-
 ## Daily Sales by Product for Aggregating up to Weekly
-pw_ytdpwar = pd.read_csv(path + 'pw_ytdpwar Jan - Dec 2016.csv', header=None)
+def generate_pw_ytdpwar(path):
+    '''
+    This is a huge file, so this function makes it manageable 
+    '''
+    import pandas as pd
+    
+    def as400_date(dat):
+        try:
+            d = dt.date(dt.strptime(dat[-6:], '%y%m%d'))
+        except ValueError:
+            d = dt.date(dt.strptime('1990909', '%y%m%d'))
+        return d
+    pw_ytdpwar = pd.read_csv(path + 'pw_ytdpwar Jan - Dec 2016.csv', header=None)
+    l = [re.sub(' +',',',STRING) for STRING in pw_ytdpwar[0].astype(str)]
+    pw_ytdpwar = pd.DataFrame([sub.split(',') for sub in l])
+    del l
+    pw_ytdpwar.rename(columns={0:'Warehouse',1:'Date',2:'ProductId',3:'Sales'}, inplace=True)
+    
+    pw_ytdpwar.Date = [as400_date(dat) for dat in pw_ytdpwar.Date.astype(str).tolist()]
+    dat = pw_ytdpwar.Date 
+    pw_ytdpwar['Year'] = [d.strftime('%Y') for d in dat]
+    pw_ytdpwar['Month'] = [d.strftime('%B') for d in dat]
+    pw_ytdpwar['Weekday'] = [d.strftime('%A') for d in dat]
+    pw_ytdpwar['DOTY'] = [d.strftime('%j') for d in dat]
+    pw_ytdpwar['WeekNumber'] = [d.strftime('%U') for d in dat]
+    pw_ytdpwar['DOTM'] = [d.strftime('%d') for d in dat]
+    
+    pw_ytdpwar = pw_ytdpwar.groupby(['Warehouse','ProductId','Week','Year'])
+    
+    return pw_ytdpwar
+
+generate_pw_ytdpwar(path).groupby(['Year','WeekNumber','Warehouse'])['Sales'].sum()
 
 
 
 
 
 
-split_up_col = lambda x: [' '.join(s.split(' ')) for s in x]
-
-x = [' '.join(s.split(' ')) for s in pw_ytdpwar[0].astype(str)]
-x
-
-#DAT = pw_ytdpwar[0].astype(str).tolist()
-
-x = pw_ytdpwar[0].apply(split_up_col)
-
-split_up_col(pw_ytdpwar[0])
-
-pw_ytdpwar.head()
-
-
-pd.DataFrame(DAT)
-
-
-[s.split(' ') for s in pw_ytdpwar.index.values.astype(str).tolist()]
-pw_ytdpwar.columns.values
-
-pw_ytdpwar.reset_index(drop=True, inplace=True)
-
-##############
-flatten = lambda l: [item for sublist in l for item in sublist]
-flatten(pw_ytdpwar.index.values.astype(str).tolist())
-
-
-pw_ytdpwar[pw_ytdpwar.index[0]]
-pw_ytdpwar.index[0].values
-
-
-# NAMZ = ['Warehouse','Date','ProductID','Sales|Dollars']
-# pw_ytdpwar.columns.names = NAMZ
-# pw_ytdpwar.head()
-
-
-# pw_ytdpwar.columns.names = 'X'
-# pw_ytdpwar.columns.names = ['Warehouse','Date','ProductId','Sales|Dollars']
-
-# pw_ytdpwar.rename(columns=['Warehouse','Date','ProductId','Sales|Dollars'], inplace=True)
 
 
 
-# [print(1) for name in pw_ytdpwar.columns.names]
 
 pw_ytdpwar.index.names[0] = ['Date','ProductId']
 
