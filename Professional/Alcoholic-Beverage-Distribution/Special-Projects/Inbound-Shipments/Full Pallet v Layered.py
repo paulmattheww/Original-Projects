@@ -21,6 +21,8 @@ from datetime import datetime as dt
 import datetime
 import re
 
+pd.set_option('display.float_format', lambda x: '%.3f' % x)
+
 path = 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Ad Hoc/Purchasing/Full Pallet v Layered/'
 pw_polines = pd.read_csv(path + 'pw_polines 01012016 through 12272016.csv', 
                 header=0, 
@@ -56,6 +58,7 @@ def generate_pw_ytdpwar(path):
     pw_ytdpwar = pd.DataFrame([sub.split(',') for sub in l])
     del l
     pw_ytdpwar.rename(columns={0:'Warehouse',1:'Date',2:'ProductId',3:'Sales'}, inplace=True)
+    pw_ytdpwar.Sales = pw_ytdpwar.Sales.apply(pd.to_numeric)
     
     pw_ytdpwar.Date = [as400_date(dat) for dat in pw_ytdpwar.Date.astype(str).tolist()]
     dat = pw_ytdpwar.Date 
@@ -66,11 +69,9 @@ def generate_pw_ytdpwar(path):
     pw_ytdpwar['WeekNumber'] = [d.strftime('%U') for d in dat]
     pw_ytdpwar['DOTM'] = [d.strftime('%d') for d in dat]
     
-    pw_ytdpwar = pw_ytdpwar.groupby(['Warehouse','ProductId','Week','Year'])
-    
     return pw_ytdpwar
 
-generate_pw_ytdpwar(path).groupby(['Year','WeekNumber','Warehouse'])['Sales'].sum()
+weekly_sales_sku_whse = generate_pw_ytdpwar(path).groupby(['Warehouse','ProductId','WeekNumber'])['Sales'].sum()
 
 
 
