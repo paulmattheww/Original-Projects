@@ -13,7 +13,7 @@ import datetime
 get_ipython().magic('matplotlib inline')
 
 
-# In[2]:
+# In[64]:
 
 path = 'C:\\Users\\pmwash\\Desktop\\Wal Mart\\Out of Stocks\\Raw Data\\*csv'
 
@@ -89,25 +89,17 @@ walmart_clean = integrate_walmart_data(path)
 print(walmart_clean.tail())
 
 
-# In[34]:
+# In[290]:
 
-def generate_weeks():
-    DAT = pd.date_range('1/1/2017', periods=366, freq='D')
-    WK = [d.strftime('%U') for d in DAT]
-    MO = [d.strftime('%B') for d in DAT]
+def aggregate_walmart_data(walmart_clean):
+    grp_cols = ['Store','UPC','Supplier','Brand','Item Description','Size']
+    walmart_oos_sums = pd.DataFrame(walmart_clean.groupby(grp_cols)['OOS'].sum()).reset_index(drop=False)
+    return walmart_oos_sums
 
-    DAYZ = pd.DataFrame({'Date':DAT, 'WeekNumber':WK, 'Month':MO})
+print(aggregate_walmart_data(walmart_clean).head())
 
-    DAYZ.loc[DAYZ.WeekNumber.isin(['00','01','02','03','04','05','06','07','08','09','50','51','52']), 'Season'] = 'Winter'
-    DAYZ.loc[DAYZ.WeekNumber.isin(['10','11','12','13','14','15','16','17','18','19','20','21','22']), 'Season'] = 'Spring'
-    DAYZ.loc[DAYZ.WeekNumber.isin(['23','24','25','26','27','28','29','30','31','32','33','34','35']), 'Season'] = 'Summer'
-    DAYZ.loc[DAYZ.WeekNumber.isin(['36','37','38','39','40','41','42','43','44','45','46','47','48','49']), 'Season'] = 'Autumn'
 
-    DAYZ.reset_index(drop=True, inplace=True)
-    
-    return DAYZ
-
-#print(generate_weeks().head(20))
+# In[289]:
 
 def munge_walmart_dive():
     walmart_dive = pd.read_csv('C:\\Users\\pmwash\\Desktop\\Wal Mart\\Out of Stocks\\Raw Data\\Wal Mart Dive YTD Sales.csv', 
@@ -158,7 +150,7 @@ walmart_receipts = munge_walmart_dive()
 print(walmart_receipts.head())
 
 
-# In[53]:
+# In[292]:
 
 def aggregate_walmart(walmart_receipts):
     ## Extract some knowledge
@@ -182,39 +174,120 @@ def aggregate_walmart(walmart_receipts):
     aggregated_walmart = aggregated_walmart.merge(agg_td_mean, on=grp_cols, how='outer')
     aggregated_walmart.rename(columns={'Days Since Order':'Avg Days Between Orders'}, inplace=True)
     
+    #aggregated_walmart.set_index(grp_cols, inplace=True)
+    
     return aggregated_walmart
 
 agg_walmart_receipts = aggregate_walmart(walmart_receipts)
-print(agg_walmart_receipts.head(50))
+print(agg_walmart_receipts.head())
 
 
-# In[ ]:
+# In[294]:
 
-def merge_walmart_diver_upc(walmart_clean, walmart_dive_clean):
+def merge_walmart_diver_upc(agg_walmart_receipts, walmart_clean):
     botupc = pd.read_csv('C:\\Users\\pmwash\\Desktop\\Wal Mart\\Out of Stocks\\Raw Data\\botupc.csv', 
                      header=0, 
                      names=['ProductId','UPC'],
                      dtype={'ProductId':int,'UPC':str})
+    botupc['UPC'] = botupc.UPC.str.strip()
+    botupc['UPC'] = [s[:-1] for s in botupc['UPC']]
+
+    oos_from_walmart = aggregate_walmart_data(walmart_clean)
+    oos_from_walmart.UPC = oos_from_walmart.UPC.astype(str)
+    oos_from_walmart['UPC'] = oos_from_walmart.UPC.str.strip()
+
+    upc_dict = dict(zip(botupc['ProductId'], botupc['UPC']))
+    agg_walmart_receipts['UPC'] = agg_walmart_receipts['Product ID'].map(upc_dict)
+    agg_walmart_receipts['Customer ID'] = agg_walmart_receipts['Customer ID'].astype(int)
+    agg_walmart_receipts['Customer ID'] = agg_walmart_receipts['Customer ID'].astype(str)
     
     ## Merge data sets
-    combined = walmart_dive_clean.merge(botupc, on='UPC', how='left')
-    combined = walmart_clean.merge(combined, 
-                                   left_on=['Date','Store','Product ID'], 
-                                   right_on=['Invoice Date','Wal Mart Store Number'], 
-                                   how='inner')
+    combined = oos_from_walmart.merge(agg_walmart_receipts, 
+                                      left_on=['Store','UPC'], 
+                                      right_on=['Wal Mart Store Number','UPC'],
+                                      how='inner')
+    combined.set_index(['Customer','Customer ID','Store','Supplier','UPC','Product ID','Brand','Item Description'], inplace=True)
+    combined.drop(labels=['Wal Mart Store Number'], axis=1, inplace=True)
+    combined.Size = [re.sub('[^0-9]','',s) for s in combined.Size]
+    combined.reset_index(drop=False, inplace=True)
     
     return combined
 
-MAIN_DF = merge_walmart_diver_upc(walmart_clean, walmart_dive_clean)
-print(MAIN_DF.head(20))
+MAIN_DF = merge_walmart_diver_upc(agg_walmart_receipts, walmart_clean)
+print(MAIN_DF.tail())
+
+
+# In[301]:
+
+def engineer_features(MAIN_DF):
+    '''Uses existing data to enrich the combined dataset'''
+    MAIN_DF['Avg Cases per Order'] = np.divide(MAIN_DF['NonStd Cases'], MAIN_DF['Number of Orders'])
+    MAIN_DF['Avg GP$ per Order'] = np.divide(MAIN_DF['GP $'], MAIN_DF['Number of Orders'])
+    MAIN_DF['Avg OOS per Order'] = np.divide(MAIN_DF['OOS'], MAIN_DF['Number of Orders'])
+    MAIN_DF['Avg Days Between Orders - Numeric'] = MAIN_DF['Avg Days Between Orders'].astype(str)
+    MAIN_DF['Avg Days Between Orders - Numeric'] = [int(s[:2]) for s in MAIN_DF['Avg Days Between Orders - Numeric']]
+    
+    return MAIN_DF
+
+print(engineer_features(MAIN_DF).head())
 
 
 # In[ ]:
 
+import matplotlib.pyplot as plt
+get_ipython().magic('matplotlib inline')
+fsz = (12,6)
 
+oos_by_store = np.divide(MAIN_DF.groupby('Store')['OOS'].sum(), MAIN_DF.groupby('Store')['Dollars'].sum())
+oos_by_store.sort_values(ascending=False, inplace=True)
+oos_by_store.plot(x='Store', y='OOS', 
+                  kind='bar', 
+                  figsize=(17,6), 
+                  title='Out of Stocks per Dollar Sold @ Store Level',
+                 )
+oos_by_store.plot('OOS', 
+                  kind='hist', 
+                  figsize=(17,6), 
+                  title='Out of Stocks per Dollar Sold @ Store Level',
+                 )
+MAIN_DF.plot(x='Avg Days Between Orders - Numeric', y='Avg Cases per Order', kind='scatter', figsize=fsz)
+MAIN_DF.plot(x='Avg Days Between Orders - Numeric', y='OOS', kind='scatter', figsize=fsz)
+MAIN_DF.plot(x='Number of Orders', y='OOS', kind='scatter', figsize=fsz)
+MAIN_DF.plot(x='Avg Cases per Order', y='Number of Orders', kind='scatter', figsize=fsz)
+MAIN_DF.hist('OOS', figsize=fsz, bins=35)
+MAIN_DF.hist('Avg Cases per Order', figsize=fsz, bins=25)
+
+
+# In[321]:
+
+#MAIN_DF.hist('OOS', figsize=(12,9), bins=35)
+print(MAIN_DF.head())
+plt.figure(num=None, figsize=(15, 9))
+plt.scatter(MAIN_DF['Avg Days Between Orders - Numeric'], MAIN_DF['Avg Cases per Order'],
+           s=MAIN_DF['Dollars'],
+           c=MAIN_DF['Store'],
+           alpha=.5)
+plt.xlabel('Avg Days betwen Orders @ SKU Level')
+plt.ylabel('Avg Cases per Order @ SKU Level')
+plt.show()
 
 
 # In[ ]:
+
+import seaborn as sns
+print(MAIN_DF.head())
+
+pplot_cols = ['Customer','OOS','Dollars', 'Costs', 'NonStd Cases', 'GP $', 'Mark Up',
+                      'Avg Cases per Order', 'Avg GP$ per Order',
+                      'Avg OOS per Order', 'Avg Days Between Orders - Numeric']
+g = sns.pairplot(MAIN_DF[pplot_cols], hue='Customer', 
+             dropna=True, 
+             diag_kind='kde',
+             kind='reg')
+g.map_upper(sns.residplot)
+
+
+# In[328]:
 
 def generate_weeks():
     DAT = pd.date_range('1/1/2017', periods=366, freq='D')
@@ -232,49 +305,11 @@ def generate_weeks():
     
     return DAYZ
 
-
-
-
-def impute_weeks(WEEKLY):
-    TO_STACK = ['Warehouse','Supplier_Name','ProductId','Product']
-    W_strings = WEEKLY[['Month','Season','Pre-Post Policy Chg','FullPalletIncrease','Class_Code','Size_Code','AB']].unstack('WeekNumber').fillna(method='bfill')
-    W_strings = W_strings.stack('WeekNumber')
-    
-    W_quants = WEEKLY[['SalesCases','Cases_Received','WeeksBetweenReceipts','Full_Pallets',
-                       'Pallet_Levels','WeeksThisYearReceived','Sales','SalesCount','CasesPerSale']].unstack('WeekNumber').fillna(0)
-    W_quants = W_quants.stack('WeekNumber')
-    
-    W = W_quants.join(W_strings)
-    W.reset_index(drop=False, inplace=True)
-    
-    W.WeeksBetweenReceipts = W.WeeksBetweenReceipts.replace(0, np.nan)
-    W.CasesPerSale = W.CasesPerSale.replace(0, np.nan)
-    W.Full_Pallets = W.Full_Pallets.replace([np.inf, -np.inf], np.nan)
-    W.Pallet_Levels = W.Pallet_Levels.replace([np.inf, -np.inf], np.nan)
-    
-    return W
-
 print(generate_weeks())
 
 
-# In[9]:
+# In[329]:
 
-#wine = [file for file in all_files if 'Wine' in file]
-def generate_weeks():
-    DAT = pd.date_range('1/1/2016', periods=366, freq='D')
-    WK = [d.strftime('%U') for d in DAT]
-    MO = [d.strftime('%B') for d in DAT]
-
-    DAYZ = pd.DataFrame({'Date':DAT, 'WeekNumber':WK, 'Month':MO})
-
-    DAYZ.loc[DAYZ.WeekNumber.isin(['00','01','02','03','04','05','06','07','08','09','50','51','52','53']), 'Season'] = 'Winter'
-    DAYZ.loc[DAYZ.WeekNumber.isin(['10','11','12','13','14','15','16','17','18','19','20','21','22']), 'Season'] = 'Spring'
-    DAYZ.loc[DAYZ.WeekNumber.isin(['23','24','25','26','27','28','29','30','31','32','33','34','35']), 'Season'] = 'Summer'
-    DAYZ.loc[DAYZ.WeekNumber.isin(['36','37','38','39','40','41','42','43','44','45','46','47','48','49']), 'Season'] = 'Autumn'
-
-    DAYZ.reset_index(drop=True, inplace=True)
-    
-    return DAYZ
-
-print(generate_weeks().head(50))
+wine = [file for file in all_files if 'Wine' in file]
+print(wine)
 
