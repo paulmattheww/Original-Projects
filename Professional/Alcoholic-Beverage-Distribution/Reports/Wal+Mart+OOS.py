@@ -13,7 +13,7 @@ import datetime
 get_ipython().magic('matplotlib inline')
 
 
-# In[64]:
+# In[2]:
 
 path = 'C:\\Users\\pmwash\\Desktop\\Wal Mart\\Out of Stocks\\Raw Data\\*csv'
 
@@ -89,7 +89,7 @@ walmart_clean = integrate_walmart_data(path)
 print(walmart_clean.tail())
 
 
-# In[290]:
+# In[3]:
 
 def aggregate_walmart_data(walmart_clean):
     grp_cols = ['Store','UPC','Supplier','Brand','Item Description','Size']
@@ -99,7 +99,7 @@ def aggregate_walmart_data(walmart_clean):
 print(aggregate_walmart_data(walmart_clean).head())
 
 
-# In[289]:
+# In[4]:
 
 def munge_walmart_dive():
     walmart_dive = pd.read_csv('C:\\Users\\pmwash\\Desktop\\Wal Mart\\Out of Stocks\\Raw Data\\Wal Mart Dive YTD Sales.csv', 
@@ -150,7 +150,7 @@ walmart_receipts = munge_walmart_dive()
 print(walmart_receipts.head())
 
 
-# In[292]:
+# In[5]:
 
 def aggregate_walmart(walmart_receipts):
     ## Extract some knowledge
@@ -182,7 +182,7 @@ agg_walmart_receipts = aggregate_walmart(walmart_receipts)
 print(agg_walmart_receipts.head())
 
 
-# In[294]:
+# In[6]:
 
 def merge_walmart_diver_upc(agg_walmart_receipts, walmart_clean):
     botupc = pd.read_csv('C:\\Users\\pmwash\\Desktop\\Wal Mart\\Out of Stocks\\Raw Data\\botupc.csv', 
@@ -217,7 +217,7 @@ MAIN_DF = merge_walmart_diver_upc(agg_walmart_receipts, walmart_clean)
 print(MAIN_DF.tail())
 
 
-# In[301]:
+# In[7]:
 
 def engineer_features(MAIN_DF):
     '''Uses existing data to enrich the combined dataset'''
@@ -232,7 +232,7 @@ def engineer_features(MAIN_DF):
 print(engineer_features(MAIN_DF).head())
 
 
-# In[ ]:
+# In[22]:
 
 import matplotlib.pyplot as plt
 get_ipython().magic('matplotlib inline')
@@ -245,20 +245,19 @@ oos_by_store.plot(x='Store', y='OOS',
                   figsize=(17,6), 
                   title='Out of Stocks per Dollar Sold @ Store Level',
                  )
-oos_by_store.plot('OOS', 
-                  kind='hist', 
-                  figsize=(17,6), 
-                  title='Out of Stocks per Dollar Sold @ Store Level',
-                 )
+
 MAIN_DF.plot(x='Avg Days Between Orders - Numeric', y='Avg Cases per Order', kind='scatter', figsize=fsz)
 MAIN_DF.plot(x='Avg Days Between Orders - Numeric', y='OOS', kind='scatter', figsize=fsz)
 MAIN_DF.plot(x='Number of Orders', y='OOS', kind='scatter', figsize=fsz)
 MAIN_DF.plot(x='Avg Cases per Order', y='Number of Orders', kind='scatter', figsize=fsz)
 MAIN_DF.hist('OOS', figsize=fsz, bins=35)
 MAIN_DF.hist('Avg Cases per Order', figsize=fsz, bins=25)
+MAIN_DF.hist('Avg Days Between Orders - Numeric', figsize=fsz, bins=25)
+pd.DataFrame(MAIN_DF.groupby('Store')['Avg Days Between Orders - Numeric'].min()).hist(figsize=fsz, bins=25)
+pd.DataFrame(MAIN_DF.groupby('Store')['Avg Days Between Orders - Numeric'].mean()).hist(figsize=fsz, bins=25)
 
 
-# In[321]:
+# In[23]:
 
 #MAIN_DF.hist('OOS', figsize=(12,9), bins=35)
 print(MAIN_DF.head())
@@ -272,7 +271,7 @@ plt.ylabel('Avg Cases per Order @ SKU Level')
 plt.show()
 
 
-# In[ ]:
+# In[27]:
 
 import seaborn as sns
 print(MAIN_DF.head())
@@ -280,14 +279,14 @@ print(MAIN_DF.head())
 pplot_cols = ['Customer','OOS','Dollars', 'Costs', 'NonStd Cases', 'GP $', 'Mark Up',
                       'Avg Cases per Order', 'Avg GP$ per Order',
                       'Avg OOS per Order', 'Avg Days Between Orders - Numeric']
-g = sns.pairplot(MAIN_DF[pplot_cols], hue='Customer', 
+g = sns.pairplot(MAIN_DF[pplot_cols], #hue='Customer', 
              dropna=True, 
              diag_kind='kde',
              kind='reg')
 g.map_upper(sns.residplot)
 
 
-# In[328]:
+# In[25]:
 
 def generate_weeks():
     DAT = pd.date_range('1/1/2017', periods=366, freq='D')
@@ -308,7 +307,7 @@ def generate_weeks():
 print(generate_weeks())
 
 
-# In[329]:
+# In[26]:
 
 wine = [file for file in all_files if 'Wine' in file]
 print(wine)
