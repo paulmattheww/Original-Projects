@@ -126,7 +126,66 @@ def extract_customer_delivery_info(deliveries, year):
     _allot = deliveries['AllottedWeeklyDeliveryDays'].tolist()
     _week_ind = deliveries['ShipWeekPlan'].tolist()
     deliveries['AllottedWeeklyDeliveryDays'] = [a if w not in ['A','B'] else 0.5 for a, w in zip(_allot, _week_ind)]
-    _n_days = deliveries.set_index('CustomerId')['AllottedWeeklyDeliveryDays'].to_dict()
+
+        ################################# 
+        #### come back later and get addl deliveries
+        #################################
+#     _n_days = deliveries.set_index('CustomerId')['AllottedWeeklyDeliveryDays'].to_dict()
+    
+#     for_addl_days = ['CustomerId','Week','AllottedWeeklyDeliveryDays','OffDayDeliveries']
+#     deliveries[for_addl_days].groupby(['CustomerId','Week'])
+#     deliveries['AdditionalDeliveryDays'] = 
+    
+#     print('Aggregating by Day.')
+#     len_unique = lambda x: len(pd.unique(x))
+#     agg_funcs_day = {'OffDayDeliveries' : {'Count':max}, 
+#                  'Date' : {'Count':len_unique},
+#                  'Cases' : {'Sum':sum, 'Avg':np.mean},
+#                  'Dollars' : {'Sum':sum, 'Avg':np.mean},
+#                  'NewCustomer': lambda x: min(x)}
+    
+#     pass_through_cols = ['CustomerId','Customer','Week','Date']
+#     _agg_byday = DataFrame(deliveries.groupby(pass_through_cols).agg(agg_funcs_day)).reset_index(drop=False)
+#     _agg_byday = DataFrame(_agg_byday[['CustomerId','Customer','Week','Date','OffDayDeliveries','NewCustomer','Cases','Dollars']])
+#     _agg_byday.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byday.columns]
+#     _agg_byday.columns = ['CustomerId','Customer','Week','Date','Delivery','OffDayDelivery','NewCustomer','Cases|Sum','Cases|Avg','Dollars|Sum','Dollars|Avg']
+#     _agg_byday['AllottedWeeklyDeliveryDays|Count'] = _agg_byday['CustomerId'].astype(int)
+#     _agg_byday['AllottedWeeklyDeliveryDays|Count'] = _agg_byday['AllottedWeeklyDeliveryDays|Count'].map(_n_days)
+    
+    
+#     print('Mapping number of deliveries to Customers.')
+#     # Map number of total deliveries each week by customer
+#     # to determine whether a customer with TWR deliveries 
+#     # got TWF deliveries -- which is an off-day delivery
+#     # but not an additional delivery. Use a dictionary {(cust#, week) : n_deliveries_total}
+#     agg_funcs_week = {'OffDayDelivery' : {'Count':sum},
+#                       'Delivery' : {'Count':sum},
+#                       'NewCustomer' : lambda x: min(x)}
+    
+#     _agg_byweek = DataFrame(_agg_byday.groupby(['CustomerId','Week']).agg(agg_funcs_week)).reset_index(drop=False)
+#     _agg_byweek.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in _agg_byweek.columns]
+
+#     _c = _agg_byweek['CustomerId'].astype(str).tolist()
+#     _w = _agg_byweek['Week'].astype(str).tolist()
+#     _agg_byweek['_X'] = [c + ',' + w for c,w in zip(_c,_w)]
+#     by_week_map = _agg_byweek.set_index('_X')['Delivery|Count'].to_dict()
+    
+#     cid = _agg_byday['CustomerId'].astype(str).tolist()
+#     wkk = _agg_byday['Week'].astype(str).tolist()
+#     _agg_byday['N_DeliveriesThisWeek'] = [c + ',' + w for c, w in zip(cid, wkk)]
+#     _agg_byday['N_DeliveriesThisWeek'] = _agg_byday['N_DeliveriesThisWeek'].map(Series(by_week_map))
+    
+    
+#     print('Using custom logic to define Additional Delivery Days.')
+#     addl_day_criteria_1 = ( _agg_byday.shift(1)['CustomerId'] == _agg_byday['CustomerId'] )
+#     addl_day_criteria_2 = ( _agg_byday.shift(1)['Week'] == _agg_byday['Week'] )
+#     addl_day_criteria_3 = ( _agg_byday['OffDayDelivery'] == 1 )
+#     addl_day_criteria_4 = ( _agg_byday['NewCustomer'] != 1 )
+#     addl_day_criteria_5 = ( _agg_byday['N_DeliveriesThisWeek'] > _agg_byday['AllottedWeeklyDeliveryDays|Count'] )
+    
+#     _agg_byday['AdditionalDeliveryDays'] = Series(addl_day_criteria_1 & addl_day_criteria_2 & addl_day_criteria_3 & addl_day_criteria_4 & addl_day_criteria_5).astype(int)
+    
+    
     
     return deliveries
 
@@ -213,6 +272,12 @@ def generate_customer_features(path, year):
         ## Append new data to a dataframe that compiles all of it
         DF_OUT = DF_OUT.append(c)
     
+    print(DF_OUT.head(), '\n\n\n')
+    
+    ## Save customer attributes from raw data
+    attr = ['CustomerId','DeliveryDays','CustomerType','SeasonCreditLimit','OnPremise','DisplayCaseClass']
+    customer_attributes = DF_OUT[attr].drop_duplicates()
+    
     ## Aggregate together
     print('\n\nAggregating by Customer\n\n')
     ## Aggregate data in-memory since files are too large to operate on in raw form
@@ -229,22 +294,42 @@ def generate_customer_features(path, year):
                      'TermsCode' : np.max,
                      'CreditLimit' : np.max,
                      'CasesSoldOnLastSellingDayOfMonth' : np.max,
-                     'CasesSoldOnHolidayWeeks' : np.max
+                     'CasesSoldOnHolidayWeeks' : np.max,
+                     'AllottedWeeklyDeliveryDays' : np.max,
+                     'OffDayDeliveries' : np.sum
                      }
     
     DF_OUT = pd.DataFrame(DF_OUT.groupby(['Warehouse','CustomerId']).agg(agg_functions)).reset_index(drop=False)
-    DF_OUT.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in DF_OUT.columns]
+    print(DF_OUT.head())
     
-    ## Derive daily data by summing up production days
+    ## Derive further attributes
     T_F = ['Tuesday','Wednesday','Thursday','Friday']
     PRODUCTION_DAYZ = np.sum(generate_calendar(year=year)['IsProductionDay']) 
-    per_day_cols = ['Cases|sum','Bottles|sum','Invoice|nunique','InvoiceLine|nunique','Revenue|sum']
+    per_day_cols = ['Cases','Bottles','Invoice','InvoiceLine','Revenue']
     colnames_perday = ['CasesPerDay','BottlesPerDay','InvoicesPerDay','InvoiceLinesPerDay','RevenuePerDay']
     DF_OUT[colnames_perday] = np.divide(DF_OUT[per_day_cols], PRODUCTION_DAYZ)
     DF_OUT['AvgDaysBetweenInvoices'] = np.divide(1, DF_OUT['InvoicesPerDay'])
-    DF_OUT['CasesSoldOnLastSellingDayOfMonth|percent'] = np.divide(DF_OUT['CasesSoldOnLastSellingDayOfMonth|amax'], DF_OUT['Cases|sum'])
+    DF_OUT['CasesSoldOnLastSellingDayOfMonth_PercentOfTotal'] = np.divide(DF_OUT['CasesSoldOnLastSellingDayOfMonth'], DF_OUT['Cases'])
+    DF_OUT['CasesSoldOnHolidayWeeks_PercentOfTotal'] = np.divide(DF_OUT['CasesSoldOnHolidayWeeks'], DF_OUT['Cases'])
+    DF_OUT['CasesPerUniqueBrand'] = np.divide(DF_OUT['Cases'], DF_OUT['BrandId'])
+    DF_OUT['CasesPerUniqueSalesperson'] = np.divide(DF_OUT['Cases'], DF_OUT['SalespersonId'])
+    DF_OUT['CasesPerInvoice'] = np.divide(DF_OUT['Cases'], DF_OUT['Invoice'])
+    DF_OUT['CasesPerInvoiceLine'] = np.divide(DF_OUT['Cases'], DF_OUT['InvoiceLine'])
+    DF_OUT['GP'] = np.divide(DF_OUT['Revenue'], DF_OUT['Cost'])
+    DF_OUT['GPperBrand'] = np.divide(DF_OUT['GP'], DF_OUT['BrandId'])
+    DF_OUT['GPperSalesperson'] = np.divide(DF_OUT['GP'], DF_OUT['SalespersonId'])
+    
+    DF_OUT = DF_OUT.merge(customer_attributes, on='CustomerId')
+    
+    ffill_cols = ['CasesSoldOnLastSellingDayOfMonth','CasesSoldOnHolidayWeeks',
+                  'CasesSoldOnLastSellingDayOfMonth_PercentOfTotal','CasesSoldOnHolidayWeeks_PercentOfTotal']
+    DF_OUT[ffill_cols] = DF_OUT[ffill_cols].fillna(0)
+    DF_OUT[ffill_cols] = DF_OUT[ffill_cols].replace(np.inf, 0)
+    DF_OUT['OnPremise'] = DF_OUT['OnPremise'].map({'Y':1,'N':0,'':0})
+    
+    DF_OUT.set_index(['Warehouse','CustomerId'], inplace=True)
     
     return DF_OUT
 
 CUSTOMER_SUMMARY = generate_customer_features(path, year=2016)
-print(CUSTOMER_SUMMARY)    
+print(CUSTOMER_SUMMARY.head())    
