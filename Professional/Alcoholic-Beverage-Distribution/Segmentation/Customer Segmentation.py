@@ -310,7 +310,9 @@ def generate_customer_features(path, year):
     DF_OUT[colnames_perday] = np.divide(DF_OUT[per_day_cols], PRODUCTION_DAYZ)
     DF_OUT['AvgDaysBetweenInvoices'] = np.divide(1, DF_OUT['InvoicesPerDay'])
     DF_OUT['CasesSoldOnLastSellingDayOfMonth_PercentOfTotal'] = np.divide(DF_OUT['CasesSoldOnLastSellingDayOfMonth'], DF_OUT['Cases'])
+    DF_OUT['CasesSoldOnLastSellingDayOfMonth_PercentOfTotal'] = DF_OUT['CasesSoldOnLastSellingDayOfMonth_PercentOfTotal'].fillna(0)
     DF_OUT['CasesSoldOnHolidayWeeks_PercentOfTotal'] = np.divide(DF_OUT['CasesSoldOnHolidayWeeks'], DF_OUT['Cases'])
+    DF_OUT['CasesSoldOnHolidayWeeks_PercentOfTotal'] = DF_OUT['CasesSoldOnHolidayWeeks_PercentOfTotal'].fillna(0)
     DF_OUT['CasesPerUniqueBrand'] = np.divide(DF_OUT['Cases'], DF_OUT['BrandId'])
     DF_OUT['CasesPerUniqueSalesperson'] = np.divide(DF_OUT['Cases'], DF_OUT['SalespersonId'])
     DF_OUT['CasesPerInvoice'] = np.divide(DF_OUT['Cases'], DF_OUT['Invoice'])
@@ -318,6 +320,7 @@ def generate_customer_features(path, year):
     DF_OUT['GP'] = np.divide(DF_OUT['Revenue'], DF_OUT['Cost'])
     DF_OUT['GPperBrand'] = np.divide(DF_OUT['GP'], DF_OUT['BrandId'])
     DF_OUT['GPperSalesperson'] = np.divide(DF_OUT['GP'], DF_OUT['SalespersonId'])
+    DF_OUT['BrandsPerSalesperson'] = np.divide(DF_OUT['BrandId'], DF_OUT['SalespersonId'])
     
     DF_OUT = DF_OUT.merge(customer_attributes, on='CustomerId')
     
