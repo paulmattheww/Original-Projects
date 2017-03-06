@@ -1,3 +1,31 @@
+
+# coding: utf-8
+
+# In[1]:
+
+print('''
+First extract features from Customer History. The source of these data will be (1) AS400 MTC1 (2) Roadnet.
+The features will include:
+    -Customer type
+    -On premise
+    -Days allotted
+    -Hours allotted per day (Roadnet)
+    -Average bottles per delivery (cases too)
+    -Average frequency between orders
+    -Total number of orders
+    -Average cases per week
+    -Distance from depot
+    -Number of unique SKUs
+    -Time for Driver to service account
+    -%Beer, %Wine, %Spirits
+    -Number of salespeople who sold to
+    -Profit; Profit/#sales
+    -Growing customers; Shrinking customers; Steady customers
+    -Length of time since customer setup
+    
+Break it up into parts
+''')
+
 import pandas as pd
 import numpy as np
 import glob
@@ -248,12 +276,7 @@ def generate_customer_features(path, year):
         c['CasesSoldOnHolidayWeeks'] = c.CustomerId.map(holidayweek_dict)
         
         ## Label customer types, call codes, class codes & warehouse
-        type_map = {'A':'Bar/Tavern','C':'Country Club','E':'Transportation/Airline','G':'Gambling',\
-                        'J':'Hotel/Motel','L':'Restaurant','M':'Military','N':'Fine Dining','O':'Internal',\
-                        'P':'Country/Western','S':'Package Store','T':'Supermarket/Grocery','V':'Drug Store',\
-                        'Y':'Convenience Store','Z':'Catering','3':'Night Club','5':'Adult Entertainment','6':'Sports Bar',\
-                        'I':'Church','F':'Membership Club','B':'Mass Merchandiser','H':'Fraternal Organization',\
-                        '7':'Sports Venue'}
+        type_map = {'A':'Bar/Tavern','C':'Country Club','E':'Transportation/Airline','G':'Gambling',                        'J':'Hotel/Motel','L':'Restaurant','M':'Military','N':'Fine Dining','O':'Internal',                        'P':'Country/Western','S':'Package Store','T':'Supermarket/Grocery','V':'Drug Store',                        'Y':'Convenience Store','Z':'Catering','3':'Night Club','5':'Adult Entertainment','6':'Sports Bar',                        'I':'Church','F':'Membership Club','B':'Mass Merchandiser','H':'Fraternal Organization',                        '7':'Sports Venue'}
         c.CustomerType = c.CustomerType.map(type_map)
         call_codes = {'01':'Customer Call','02':'ROE/EDI','03':'Salesperson Call','04':'Telesales','BH':'Bill & Hold',
                      'BR':'Breakage','CP':'Customer Pickup','FS':'Floor Stock','HJ':'High Jump','KR':'Keg Route',
@@ -271,8 +294,6 @@ def generate_customer_features(path, year):
         
         ## Append new data to a dataframe that compiles all of it
         DF_OUT = DF_OUT.append(c)
-    
-    print(DF_OUT.head(), '\n\n\n')
     
     ## Save customer attributes from raw data
     attr = ['CustomerId','DeliveryDays','CustomerType','SeasonCreditLimit','OnPremise','DisplayCaseClass']
@@ -300,7 +321,6 @@ def generate_customer_features(path, year):
                      }
     
     DF_OUT = pd.DataFrame(DF_OUT.groupby(['Warehouse','CustomerId']).agg(agg_functions)).reset_index(drop=False)
-    print(DF_OUT.head())
     
     ## Derive further attributes
     T_F = ['Tuesday','Wednesday','Thursday','Friday']
@@ -336,3 +356,128 @@ def generate_customer_features(path, year):
 
 CUSTOMER_SUMMARY = generate_customer_features(path, year=2016)
 print(CUSTOMER_SUMMARY.head())    
+
+
+# In[3]:
+
+## Merge in Roadnet data
+CUSTOMER_SUMMARY.reset_index(drop=False, inplace=True)
+
+def get_roadnet_customer_attributes():
+    new_path = 'C:\\Users\\pmwash\\Desktop\\Re-Engineered Reports\\Customer Segmentation\\Data\\Other Data Sources\\Service Locations from Roadnet.csv'
+    dtypes = {'CustomerId':str,'Description':str,'Zip':str,'Coordinate':str,'Priority':str}
+    RN = pd.read_csv(new_path, header=0, dtype=dtypes)
+    return RN
+
+CUSTOMER_SUMMARY = CUSTOMER_SUMMARY.merge(get_roadnet_customer_attributes(), on='CustomerId', how='left')
+
+CUSTOMER_SUMMARY.Coordinate = CUSTOMER_SUMMARY.Coordinate.fillna(0)
+CUSTOMER_SUMMARY['Latitude'] = [s[s.find('(')+1:s.find(',')] for s in CUSTOMER_SUMMARY.Coordinate.astype(str)]
+CUSTOMER_SUMMARY['Longitude'] = [s[s.find(',')+1:s.find(')')] for s in CUSTOMER_SUMMARY.Coordinate.astype(str)]
+CUSTOMER_SUMMARY[['Latitude','Longitude']] = CUSTOMER_SUMMARY[['Latitude','Longitude']].fillna('')
+CUSTOMER_SUMMARY[['Latitude','Longitude']] = CUSTOMER_SUMMARY[['Latitude','Longitude']].apply(pd.to_numeric, errors='coerce')
+
+print(CUSTOMER_SUMMARY.head())
+
+
+# In[4]:
+
+print('''
+Acquire distances of each customer from the warehouses.
+Estimate distance travelled given number of deliveries.
+''')
+
+from geopy.geocoders import Nominatim
+
+def get_distances_from_warehouses(CUSTOMER_SUMMARY):
+    def haversine_distance(lon1, lat1, lon2, lat2):
+        '''Calculates distance betwen two sets of coordinates'''
+        lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
+        dlon = lon2 - lon1
+        dlat = lat2 - lat1
+        a = np.sin(dlat/2.0)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2.0)**2
+        c = 2 * np.arcsin(np.sqrt(a))
+        km = 6367 * c
+        mi = .621371 * km
+        return mi
+
+    stl_add = '6701 Southwest Ave, Saint Louis, MO 63143 USA'
+    kc_add = '550 E 13th Ave, North Kansas City, MO 64116 USA'
+    col_add = '1502 Business Loop, Columbia, MO 65202 USA'
+    spfd_add = '455 N Belcrest Ave, Springfield, MO 65802 USA'
+
+    addresses = [stl_add, kc_add, col_add, spfd_add]
+    lat, lon = [], []
+    for add in addresses:
+        geolocator = Nominatim()
+        location = geolocator.geocode(add)
+        lat.append(location.latitude)
+        lon.append(location.longitude)
+
+    warehouse_locations = pd.DataFrame({'Warehouse':['STL','KC','COL','SPFD'], 
+                                       'Latitude':lat,
+                                       'Longitude':lon})
+    warehouse_locations.set_index('Warehouse', inplace=True)
+    print(warehouse_locations, '\n\n')
+
+
+    # CUSTOMER_SUMMARY.reset_index(inplace=True, drop=False)
+    LAT_STL = CUSTOMER_SUMMARY.loc[CUSTOMER_SUMMARY.Warehouse == 'Saint Louis', 'Latitude'].tolist() 
+    LON_STL = CUSTOMER_SUMMARY.loc[CUSTOMER_SUMMARY.Warehouse == 'Saint Louis', 'Longitude'].tolist()
+    stl_lat = warehouse_locations.loc[warehouse_locations.index.values=='STL', 'Latitude'].tolist()
+    stl_lon = warehouse_locations.loc[warehouse_locations.index.values=='STL', 'Longitude'].tolist()
+
+    LAT_KC = CUSTOMER_SUMMARY.loc[CUSTOMER_SUMMARY.Warehouse == 'Kansas City', 'Latitude'].tolist() 
+    LON_KC = CUSTOMER_SUMMARY.loc[CUSTOMER_SUMMARY.Warehouse == 'Kansas City', 'Longitude'].tolist()
+    kc_lat = warehouse_locations.loc[warehouse_locations.index.values=='KC', 'Latitude'].tolist()
+    kc_lon = warehouse_locations.loc[warehouse_locations.index.values=='KC', 'Longitude'].tolist()
+
+    LAT_COL = CUSTOMER_SUMMARY.loc[CUSTOMER_SUMMARY.Warehouse == 'Columbia', 'Latitude'].tolist() 
+    LON_COL = CUSTOMER_SUMMARY.loc[CUSTOMER_SUMMARY.Warehouse == 'Columbia', 'Longitude'].tolist()
+    col_lat = warehouse_locations.loc[warehouse_locations.index.values=='COL', 'Latitude'].tolist()
+    col_lon = warehouse_locations.loc[warehouse_locations.index.values=='COL', 'Longitude'].tolist()
+
+    LAT_SPFD = CUSTOMER_SUMMARY.loc[CUSTOMER_SUMMARY.Warehouse == 'Springfield', 'Latitude'].tolist() 
+    LON_SPFD = CUSTOMER_SUMMARY.loc[CUSTOMER_SUMMARY.Warehouse == 'Springfield', 'Longitude'].tolist()
+    spfd_lat = warehouse_locations.loc[warehouse_locations.index.values=='SPFD', 'Latitude'].tolist()
+    spfd_lon = warehouse_locations.loc[warehouse_locations.index.values=='SPFD', 'Longitude'].tolist()
+
+    STL_DIST = [haversine_distance(stl_lat,stl_lon,lat,lon) for lat,lon in zip(LAT_STL, LON_STL)]
+    KC_DIST = [haversine_distance(kc_lat,kc_lon,lat,lon) for lat,lon in zip(LAT_KC, LON_KC)]
+    COL_DIST = [haversine_distance(col_lat,col_lon,lat,lon) for lat,lon in zip(LAT_COL, LON_COL)]
+    SPFD_DIST = [haversine_distance(spfd_lat,spfd_lon,lat,lon) for lat,lon in zip(LAT_SPFD, LON_SPFD)]
+
+    CUSTOMER_SUMMARY.loc[CUSTOMER_SUMMARY.Warehouse == 'Saint Louis', 'DistanceFromWarehouse'] = STL_DIST
+    CUSTOMER_SUMMARY.loc[CUSTOMER_SUMMARY.Warehouse == 'Kansas City', 'DistanceFromWarehouse'] = KC_DIST
+    CUSTOMER_SUMMARY.loc[CUSTOMER_SUMMARY.Warehouse == 'Columbia', 'DistanceFromWarehouse'] = COL_DIST
+    CUSTOMER_SUMMARY.loc[CUSTOMER_SUMMARY.Warehouse == 'Springfield', 'DistanceFromWarehouse'] = SPFD_DIST
+    
+    importance_map = {np.nan:0,'Lowest':1,'Lower':2,'Normal':3,'Higher':4,'Highest':5,'Must Make Service Windows':6}
+    CUSTOMER_SUMMARY['ServiceWindowImportance'] = CUSTOMER_SUMMARY['Service Window Importance'].map(importance_map)
+    
+    return CUSTOMER_SUMMARY
+
+CUSTOMER_SUMMARY = get_distances_from_warehouses(CUSTOMER_SUMMARY)
+print(CUSTOMER_SUMMARY.head(50))
+
+
+# In[5]:
+
+from sklearn.cluster import KMeans
+
+cluster = KMeans(n_clusters=15, max_iter=10000)
+cluster_cols = ['Invoice','Cases','BrandId','AvgDaysBetweenInvoices','AllottedWeeklyDeliveryDays','OnPremise',
+               'CasesPerUniqueBrand','CasesPerInvoiceLine','CasesPerUniqueSalesperson','CasesPerInvoice','GP',
+               'GPperSalesperson','GPperBrand','BrandsPerSalesperson','DistanceFromWarehouse','ServiceWindowImportance']
+CUSTOMER_SUMMARY[cluster_cols] = CUSTOMER_SUMMARY[cluster_cols].fillna(0)
+CUSTOMER_SUMMARY[cluster_cols] = CUSTOMER_SUMMARY[cluster_cols].replace(np.inf, 0)
+CUSTOMER_SUMMARY['cluster'] = cluster.fit_predict(CUSTOMER_SUMMARY[cluster_cols])
+#CUSTOMER_SUMMARY['cluster'] = CUSTOMER_SUMMARY['cluster'].astype(str)
+print(CUSTOMER_SUMMARY.cluster.value_counts())
+
+
+# In[6]:
+
+CUSTOMER_SUMMARY.reset_index(drop=False, inplace=True)
+#CUSTOMER_SUMMARY.to_csv('C:\\Users\\pmwash\\Desktop\\Disposable Docs\\CUSTOMER SUMMARY 2016 SEGMENTATION.csv', index=False)
+
