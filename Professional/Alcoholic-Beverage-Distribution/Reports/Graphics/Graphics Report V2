@@ -1,0 +1,196 @@
+---
+title: "Graphics Report"
+author: "Paul Washburn"
+date: "May 16, 2017"
+output: 
+  pdf_document:
+      df_print: "kable" 
+      fig_width: 10
+      fig_height: 9
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+
+## Graphics data dump from Diver
+library(rpivotTable)
+library(dplyr)
+library(reshape2)
+library(lubridate)
+library(treemap)
+library(ggplot2)
+library(googleVis)
+library(plotly)
+library(stringr)
+source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
+
+this_yr = round(as.numeric(format(Sys.Date(), '%Y')),0)
+last_yr = round(as.numeric(format(Sys.Date(), '%Y')) - 1,0)
+
+## Read in and clean up the data
+df = read.csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/graphics_data_dump_diver.csv', header=TRUE)
+df$POSTERJob.ID = factor(df$POSTERJob.ID)
+df = df %>% filter(Year %in% c(last_yr, this_yr))
+df$Invoice.Date = dat = strptime(df$Invoice.Date, '%m/%d/%Y')
+df$Week = week(dat)
+df$Month = month(dat, TRUE, FALSE)
+df$ProjectID_LineID = paste0(df$POSTERJob.ID, '_', df$POSTER.Item.ID)
+df$POSTER.REPRINT = df$POSTER.REPRINT == 'Y'
+
+## Set rownames
+rownames(df) = c(1:NROW(df))
+
+## Test df
+#df = df[1:1000, ]
+
+## Get string for job status - parse for turnaround
+job_status = as.character(df$POSTER.JOB.STATUS)
+df$POSTER.JOB.STATUS = NULL
+names(job_status) = df$POSTERJob.ID
+job_status = strsplit(job_status, ',')
+
+for(i in 1:length(job_status)){
+  try({
+    start = regmatches(job_status[[i]][1][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][1][1], perl=T))
+    assgn = regmatches(job_status[[i]][2][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][2][1], perl=T))
+    brand = regmatches(job_status[[i]][3][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][3][1], perl=T))
+    costs = regmatches(job_status[[i]][4][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][4][1], perl=T))
+    artsy = regmatches(job_status[[i]][5][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][5][1], perl=T))
+    appro = regmatches(job_status[[i]][6][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][6][1], perl=T))
+    cmplt = regmatches(job_status[[i]][7][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][7][1], perl=T))
+    shipp = regmatches(job_status[[i]][8][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][8][1], perl=T))
+    
+    start = gsub("[()]", "", start)
+    assgn = gsub("[()]", "", assgn)
+    brand = gsub("[()]", "", brand)
+    costs = gsub("[()]", "", costs)
+    artsy = gsub("[()]", "", artsy)
+    appro = gsub("[()]", "", appro)
+    cmplt = gsub("[()]", "", cmplt)
+    shipp = gsub("[()]", "", shipp)
+    
+    start = gsub("\\s+", " ", start)
+    assgn = gsub("\\s+", " ", assgn)
+    brand = gsub("\\s+", " ", brand)
+    costs = gsub("\\s+", " ", costs)
+    artsy = gsub("\\s+", " ", artsy)
+    appro = gsub("\\s+", " ", appro)
+    cmplt = gsub("\\s+", " ", cmplt)
+    shipp = gsub("\\s+", " ", shipp)
+    
+    df[i, 'Kickoff'] = start
+    df[i, 'ArtistAssigned'] = assgn
+    df[i, 'ObtainBrandMentions'] = brand
+    df[i, 'CostApproved'] = costs
+    df[i, 'ArtworkComplete'] = artsy
+    df[i, 'RequesterApproved']= appro
+    df[i, 'JobComplete'] = cmplt
+    df[i, 'JobShipped'] = shipp
+  })
+}
+
+## Format as date for maths
+munge_date = function(dat) format(strptime(dat, '%b %d %Y %I:%M%p'), '%Y-%m-%d %H:%M')  
+dat_cols = c('Kickoff','ArtistAssigned','ObtainBrandMentions','CostApproved',
+             'ArtworkComplete','RequesterApproved','JobComplete','JobShipped')
+df[, dat_cols] = sapply(df[, dat_cols], munge_date)
+
+## Obtain time spent in each category
+df$Turnaround_KickoffToShip = round(difftime(df$JobShipped, df$Kickoff, units="days"), 1)
+df$Stage1_KickoffToAssignment = round(difftime(df$ArtistAssigned, df$Kickoff, units="days"), 1)
+df$Stage2_AssignmentToBrandMentions = round(difftime(df$ObtainBrandMentions, df$ArtistAssigned, units="days"), 1)
+df$Stage3_BrandMentionsToCostApproval = round(difftime(df$CostApproved, df$ObtainBrandMentions, units="days"), 1)
+df$Stage4_CostApprovalToArtworkComplete = round(difftime(df$ArtworkComplete, df$CostApproved,units="days"), 1)
+df$Stage5_ArtworkCompleteToRequesterApproval = round(difftime(df$RequesterApproved, df$ArtworkComplete, units="days"), 1)
+df$Stage6_RequesterApprovalToCompletion = round(difftime(df$JobComplete, df$RequesterApproved, units="days"), 1)
+df$Stage7_CompletionToShip = round(difftime(df$JobShipped, df$JobComplete, units="days"), 1)
+
+## Obtain time from kickoff til each stage
+df$KickoffToArtistAssigned = round(difftime(df$ArtistAssigned, df$Kickoff, units="days"), 1)
+df$KickoffToBrandMentions = round(difftime(df$ObtainBrandMentions, df$Kickoff, units="days"), 1)
+df$KickoffToCostApproval = round(difftime(df$CostApproved, df$Kickoff, units="days"), 1)
+df$KickoffToArtworkComplete = round(difftime(df$ArtworkComplete, df$Kickoff, units="days"), 1)
+df$KickoffToRequesterApproval = round(difftime(df$RequesterApproved, df$Kickoff, units="days"), 1)
+df$KickoffToArtworkComplete = round(difftime(df$ArtworkComplete, df$Kickoff, units="days"), 1)
+df$KickoffToArtworkComplete = round(difftime(df$ArtworkComplete, df$Kickoff, units="days"), 1)
+
+# ## Write to CSV for Python
+# write.csv(df, 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/intermediate_graphics_data_dump_diver.csv',
+#           row.names=FALSE)
+```
+
+
+```{r tunaround_cost_mentions_jobs_rush_bydesigner}
+df_thisyr = df[df$Year == this_yr, ]
+
+val_cols = c('Turnaround_KickoffToShip', 'POSTER.Price','POSTER.MB.mentions')
+id_cols = c('POSTER.Designer','Month')
+
+head(df_thisyr)
+```
+
+
+
+```{r reprints}
+reprint_cols = c('POSTERJob.ID','POSTER.Designer')
+no_dupes = !duplicated(df[,reprint_cols])
+
+reprints = df[no_dupes, c('POSTERJob.ID','POSTER.Artwork.Creator','POSTER.REPRINT','Year')]
+reprints = reprints[reprints$Year == this_yr, ]
+reprints = aggregate(POSTER.REPRINT ~ POSTER.Artwork.Creator, data=reprints, FUN=sum)
+names(reprints) = c('Artist', paste0('Number of Reprints', as.character(this_yr)))
+
+reprints
+```
+
+
+
+
+<!-- ## Python to process -->
+<!-- ```{python} -->
+<!-- import pandas as pd -->
+
+<!-- path = 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/intermediate_graphics_data_dump_diver.csv' -->
+<!-- df = pd.read_csv(path, header=0) -->
+<!-- ## Use Python to process strings -->
+<!-- df.head() -->
+<!-- ``` -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
