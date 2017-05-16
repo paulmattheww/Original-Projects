@@ -1,6 +1,6 @@
 ---
-title: "Graphics Report"
-author: "Paul Washburn"
+title: "Major Brands Graphics Report"
+author: "Paul Washburn, Operations Analyst"
 date: "May 16, 2017"
 output: 
   pdf_document:
@@ -10,8 +10,9 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
 
 ## Graphics data dump from Diver
 library(rpivotTable)
@@ -116,25 +117,28 @@ df$KickoffToArtworkComplete = round(difftime(df$ArtworkComplete, df$Kickoff, uni
 df$KickoffToArtworkComplete = round(difftime(df$ArtworkComplete, df$Kickoff, units="days"), 1)
 
 # ## Write to CSV for Python
-# write.csv(df, 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/intermediate_graphics_data_dump_diver.csv',
-#           row.names=FALSE)
+write.csv(df, 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/intermediate_graphics_data_dump_diver.csv',
+          row.names=FALSE)
 ```
 
 
 # Measures of success for Graphics Team
+This section was designed to help the Graphics department and management gain insight into the Graphics operation. In contrast, the next major section of this report is geared towards Graphics' impact on Sales and the organization at-large. 
 
 ## Turnaround by Designer
-Figures below include weekends and holidays, and durations are measured in days.
+Figures below include weekends and holidays, and durations are measured in days. Active designers include Rachel, Brittany, and Katie; all others are filtered out of the dataset.
 
 ```{r descriptions}
-guide_df = data.frame(row.names=c('Stage1','Stage2','Stage3','Stage4','Stage5','Stage6','Stage7'),
+guide_df = data.frame(row.names=c('Stage 1','Stage 2','Stage 3','Stage 4','Stage 5','Stage 6','Stage 7','Completion','Turnaround'),
                       Description=c('Job kickoff til artist assignment (days)',
                                     'Artist assignment til brand mentions obtained (days)',
                                     'Mentions obtained til cost approved (days)',
                                     'Cost approved til artwork complete (days)',
                                     'Artwork complete til requester approval (days)',
                                     'Requester approval til job completion (days)',
-                                    'Job completion til ship (days)'))
+                                    'Job completion til ship (days)',
+                                    'Job kickoff til job marked as complete (days)',
+                                    'Job kickoff til job shipment (days)'))
 guide_df
 ```
 
@@ -156,19 +160,19 @@ turn_cols = cbind(df_thisyr$Turnaround_KickoffToShip,
                   df_thisyr$Stage6_RequesterApprovalToCompletion,
                   df_thisyr$Stage7_CompletionToShip)
 turnaround = aggregate(turn_cols ~ df_thisyr$POSTER.Designer, FUN=function(x) round(mean(x, na.rm=T), 1))
-names(turnaround) = c('X','Turnaround','Completion','Stage1','Stage2','Stage3','Stage4','Stage5','Stage6','Stage7')
+names(turnaround) = c('X','Turnaround','Completion','Stage 1','Stage 2',
+                      'Stage 3','Stage 4','Stage 5','Stage 6','Stage 7')
 rownames(turnaround) = turnaround$X
 turnaround$X = NULL
 turnaround
 ```
 
-## Cost, Mentions, & Jobs by Designer
+## Costs/Poster Price by Designer
 
 ```{r costs_bydesigner}
+## melt and isolate data by designer
 val_cols = c('POSTER.Price','POSTER.MB.mentions')
 id_cols = c('POSTER.Designer','Month')
-
-head(df_thisyr[, c(id_cols, val_cols)])
 
 bydesigner_melt = melt(df_thisyr, id_cols, val_cols)
 
@@ -183,11 +187,28 @@ process_df = function(df) {
   df$POSTER.Designer = df$variable = NULL
   return(df)
 }
+```
+
+```{r bydesigner_plots, fig.height=7, fig.width=9}
+library(scales)
+byd_df = bydesigner
+namz = names(byd_df)
+namz = c(unlist(namz[namz %!in% c('variable','POSTER.Designer')]))
+mentions_df_melt = melt(byd_df, c('variable','POSTER.Designer'), namz)
+names(mentions_df_melt) = c('var','POSTER.Designer','Month','value')
+
+ggplot(mentions_df_melt, aes(x=Month, y=value, group=POSTER.Designer)) +
+  geom_line(aes(colour=POSTER.Designer)) +
+  geom_point(alpha=0.6) +
+  facet_wrap(~var, nrow=2, scales='free_y') +
+  theme_minimal() +
+  labs(title='Total Price and Mentions per Month by Designer', x='', y='') +
+  scale_y_continuous(labels=comma)
 
 process_df(price_df)
 ```
 
-## Costs by Designer
+## Brand Mentions by Designer
 Sum of all MB mentions by Designer for the current year.
 
 ```{r mentions_bydesigner}
@@ -197,19 +218,83 @@ process_df(mentions_df)
 
 
 ## Reprints by Designer
-Total number of reprints for the current year, by Designer.
+Total number of reprints for the current year, by Designer. Percent of Total is shown as a percent; in other words, it has been multiplied by 100 (e.g. 1.2 indicates 1.2%, or 0.012) .
 
 ```{r reprints}
 reprint_cols = c('POSTERJob.ID','POSTER.Designer')
 no_dupes = !duplicated(df[,reprint_cols])
 
-reprints = df[no_dupes, c('POSTERJob.ID','POSTER.Artwork.Creator','POSTER.REPRINT','Year')]
+reprints = df[no_dupes, c('POSTERJob.ID','POSTER.Designer','POSTER.REPRINT','Year')]
 reprints = reprints[reprints$Year == this_yr, ]
-reprints = aggregate(POSTER.REPRINT ~ POSTER.Artwork.Creator, data=reprints, FUN=sum)
-names(reprints) = c('Artist', paste0('Number of Reprints - ', as.character(this_yr)))
+reprints = aggregate(POSTER.REPRINT ~ POSTER.Designer, data=reprints, FUN=sum)
 
+len_unique = function(x) length(unique(x))
+tot_jobs = aggregate(POSTERJob.ID ~ POSTER.Designer, data=df_thisyr, FUN=len_unique)
+reprints = merge(reprints, tot_jobs, by='POSTER.Designer', how='all')
+reprints = process_df(reprints)
+
+## Specify column names
+names(reprints) = c('Number of Reprints', 'Total Jobs')
+reprints$`Reprints as % of Total Jobs` = round((reprints$`Number of Reprints` / reprints$`Total Jobs`)*100, 1)
 reprints
 ```
+
+```{r reprint_plot, fig.height=5, fig.width=9}
+reprints_t = data.frame(t(reprints))
+names(reprints_t) = gsub('\\..', ', ', names(reprints_t))
+reprints_t$Name = rownames(reprints_t)
+rownames(reprints_t) = NULL
+reprints_t_melt = melt(reprints_t, 'Name', active_designers)
+
+ggplot(reprints_t_melt, aes(x=variable, y=value, group=Name)) +
+  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
+  facet_wrap(~Name, ncol=3, scales='free_y') +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='', y='')
+
+```
+
+
+## Number of Jobs per Month by Designer
+
+```{r jobspermo_bydesigner}
+jobspermo = aggregate(POSTERJob.ID ~ POSTER.Designer + Month, data=df_thisyr, FUN=len_unique)
+jobspermo = spread(jobspermo, 'Month', 'POSTERJob.ID')
+jobspermo = process_df(jobspermo)
+jobspermo
+```
+
+```{r, fig.height=5, fig.width=9}
+t_jobs = data.frame(t(jobspermo))
+t_jobs$Month = row.names(t_jobs)
+rownames(t_jobs) = NULL
+t_jobs = melt(t_jobs, 'Month', c('Mueller..Rachel', 'Riehlman..Brittany', 'Wilhoit..Katie'))
+t_jobs$variable = gsub('\\..', ', ', t_jobs$variable)
+t_jobs$Month = factor(t_jobs$Month, c('January','February','March','April','May','June',
+                                      'July','August','September','October','November','December'))
+
+ggplot(data=t_jobs, aes(x=Month, y=value, group=variable)) +
+  geom_line(aes(colour=variable)) +
+  geom_point(alpha=.6, size=1.5) +
+  labs(x='Month', y='Number of Jobs', title='Number of Jobs by Designer') +
+  theme_minimal()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
