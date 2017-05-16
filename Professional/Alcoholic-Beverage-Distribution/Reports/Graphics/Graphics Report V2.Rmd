@@ -167,9 +167,9 @@ turnaround$X = NULL
 turnaround
 ```
 
-## Costs/Poster Price by Designer
+## Total Price & Mentions by Designer
 
-```{r costs_bydesigner}
+```{r price_mentions_plot}
 ## melt and isolate data by designer
 val_cols = c('POSTER.Price','POSTER.MB.mentions')
 id_cols = c('POSTER.Designer','Month')
@@ -182,14 +182,6 @@ bydesigner = spread(bydesigner, 'Month', 'value')
 l_dfs = split(bydesigner, bydesigner$variable)
 price_df = l_dfs$POSTER.Price
 
-process_df = function(df) {
-  rownames(df) = df$POSTER.Designer
-  df$POSTER.Designer = df$variable = NULL
-  return(df)
-}
-```
-
-```{r bydesigner_plots, fig.height=7, fig.width=9}
 library(scales)
 byd_df = bydesigner
 namz = names(byd_df)
@@ -205,6 +197,18 @@ ggplot(mentions_df_melt, aes(x=Month, y=value, group=POSTER.Designer)) +
   labs(title='Total Price and Mentions per Month by Designer', x='', y='') +
   scale_y_continuous(labels=comma)
 
+
+process_df = function(df) {
+  rownames(df) = df$POSTER.Designer
+  df$POSTER.Designer = df$variable = NULL
+  return(df)
+}
+```
+
+
+## Cost by Designer
+
+```{r price_bydesigner, fig.height=7, fig.width=9}
 process_df(price_df)
 ```
 
