@@ -121,16 +121,83 @@ df$KickoffToArtworkComplete = round(difftime(df$ArtworkComplete, df$Kickoff, uni
 ```
 
 
-```{r tunaround_cost_mentions_jobs_rush_bydesigner}
-df_thisyr = df[df$Year == this_yr, ]
+# Measures of success for Graphics Team
 
-val_cols = c('Turnaround_KickoffToShip', 'POSTER.Price','POSTER.MB.mentions')
-id_cols = c('POSTER.Designer','Month')
+## Turnaround by Designer
+Figures below include weekends and holidays, and durations are measured in days.
 
-head(df_thisyr)
+```{r descriptions}
+guide_df = data.frame(row.names=c('Stage1','Stage2','Stage3','Stage4','Stage5','Stage6','Stage7'),
+                      Description=c('Job kickoff til artist assignment (days)',
+                                    'Artist assignment til brand mentions obtained (days)',
+                                    'Mentions obtained til cost approved (days)',
+                                    'Cost approved til artwork complete (days)',
+                                    'Artwork complete til requester approval (days)',
+                                    'Requester approval til job completion (days)',
+                                    'Job completion til ship (days)'))
+guide_df
 ```
 
 
+```{r turnaround}
+library(tidyr)
+library(reshape2)
+
+active_designers = c('Mueller, Rachel','Riehlman, Brittany','Wilhoit, Katie')
+df_thisyr = df[(df$Year == this_yr) & (df$POSTER.Designer %in% active_designers), ]
+
+turn_cols = cbind(df_thisyr$Turnaround_KickoffToShip, 
+                  df_thisyr$KickoffToArtworkComplete, 
+                  df_thisyr$Stage1_KickoffToAssignment,
+                  df_thisyr$Stage2_AssignmentToBrandMentions,
+                  df_thisyr$Stage3_BrandMentionsToCostApproval,
+                  df_thisyr$Stage4_CostApprovalToArtworkComplete,
+                  df_thisyr$Stage5_ArtworkCompleteToRequesterApproval,
+                  df_thisyr$Stage6_RequesterApprovalToCompletion,
+                  df_thisyr$Stage7_CompletionToShip)
+turnaround = aggregate(turn_cols ~ df_thisyr$POSTER.Designer, FUN=function(x) round(mean(x, na.rm=T), 1))
+names(turnaround) = c('X','Turnaround','Completion','Stage1','Stage2','Stage3','Stage4','Stage5','Stage6','Stage7')
+rownames(turnaround) = turnaround$X
+turnaround$X = NULL
+turnaround
+```
+
+## Cost, Mentions, & Jobs by Designer
+
+```{r costs_bydesigner}
+val_cols = c('POSTER.Price','POSTER.MB.mentions')
+id_cols = c('POSTER.Designer','Month')
+
+head(df_thisyr[, c(id_cols, val_cols)])
+
+bydesigner_melt = melt(df_thisyr, id_cols, val_cols)
+
+bydesigner = aggregate(value ~ variable + POSTER.Designer + Month, data=bydesigner_melt, FUN=sum)
+bydesigner = spread(bydesigner, 'Month', 'value')
+
+l_dfs = split(bydesigner, bydesigner$variable)
+price_df = l_dfs$POSTER.Price
+
+process_df = function(df) {
+  rownames(df) = df$POSTER.Designer
+  df$POSTER.Designer = df$variable = NULL
+  return(df)
+}
+
+process_df(price_df)
+```
+
+## Costs by Designer
+Sum of all MB mentions by Designer for the current year.
+
+```{r mentions_bydesigner}
+mentions_df = l_dfs$POSTER.MB.mentions
+process_df(mentions_df)
+```
+
+
+## Reprints by Designer
+Total number of reprints for the current year, by Designer.
 
 ```{r reprints}
 reprint_cols = c('POSTERJob.ID','POSTER.Designer')
@@ -139,7 +206,7 @@ no_dupes = !duplicated(df[,reprint_cols])
 reprints = df[no_dupes, c('POSTERJob.ID','POSTER.Artwork.Creator','POSTER.REPRINT','Year')]
 reprints = reprints[reprints$Year == this_yr, ]
 reprints = aggregate(POSTER.REPRINT ~ POSTER.Artwork.Creator, data=reprints, FUN=sum)
-names(reprints) = c('Artist', paste0('Number of Reprints', as.character(this_yr)))
+names(reprints) = c('Artist', paste0('Number of Reprints - ', as.character(this_yr)))
 
 reprints
 ```
