@@ -282,6 +282,11 @@ ggplot(data=t_jobs, aes(x=Month, y=value, group=variable)) +
 ```
 
 
+## Future Metrics
+Currently two metrics that were requested are not available. 
+
+  - On-Time completion of job: The field in PostR is unreliable as of now
+  - Number of "rush" jobs: The "rush" field is not passed from PostR to Diver in the raw model
 
 
 
