@@ -26,6 +26,8 @@ library(plotly)
 library(stringr)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 
+MONTHS = c('January','February','March','April','May','June',
+           'July','August','September','October','November','December')
 this_yr = round(as.numeric(format(Sys.Date(), '%Y')),0)
 last_yr = round(as.numeric(format(Sys.Date(), '%Y')) - 1,0)
 
@@ -128,26 +130,12 @@ This section was designed to help the Graphics department and management gain in
 ## Turnaround by Designer
 Figures below include weekends and holidays (i.e. holidays and weekends are not backed out of the duration calculations), and durations are measured in days. Active designers include Rachel, Brittany, and Katie; all others are filtered out of the dataset.
 
-```{r descriptions}
-guide_df = data.frame(row.names=c('Stage 1','Stage 2','Stage 3','Stage 4','Stage 5','Stage 6','Stage 7','Completion','Turnaround'),
-                      Description=c('Job kickoff til artist assignment (days)',
-                                    'Artist assignment til brand mentions obtained (days)',
-                                    'Mentions obtained til cost approved (days)',
-                                    'Cost approved til artwork complete (days)',
-                                    'Artwork complete til requester approval (days)',
-                                    'Requester approval til job completion (days)',
-                                    'Job completion til ship (days)',
-                                    'Job kickoff til job marked as complete (days)',
-                                    'Job kickoff til job shipment (days)'))
-guide_df
-```
-
 
 ```{r turnaround}
 library(tidyr)
 library(reshape2)
 
-active_designers = c('Mueller, Rachel','Riehlman, Brittany','Wilhoit, Katie')
+active_designers = c('Mueller, Rachel','Riehlman, Brittany','Wilhoit, Katie','Wright, Paige')
 df_thisyr = df[(df$Year == this_yr) & (df$POSTER.Designer %in% active_designers), ]
 
 turn_cols = cbind(df_thisyr$Turnaround_KickoffToShip, 
@@ -165,6 +153,21 @@ names(turnaround) = c('X','Turnaround','Completion','Stage1','Stage2',
 rownames(turnaround) = turnaround$X
 turnaround$X = NULL
 turnaround
+```
+
+
+```{r descriptions}
+guide_df = data.frame(row.names=c('Stage 1','Stage 2','Stage 3','Stage 4','Stage 5','Stage 6','Stage 7','Completion','Turnaround'),
+                      Description=c('Job kickoff til artist assignment (days)',
+                                    'Artist assignment til brand mentions obtained (days)',
+                                    'Mentions obtained til cost approved (days)',
+                                    'Cost approved til artwork complete (days)',
+                                    'Artwork complete til requester approval (days)',
+                                    'Requester approval til job completion (days)',
+                                    'Job completion til ship (days)',
+                                    'Job kickoff til job marked as complete (days)',
+                                    'Job kickoff til job shipment (days)'))
+guide_df
 ```
 
 
@@ -249,10 +252,11 @@ names(price_t) = gsub('\\..', ', ', names(price_t))
 price_t$Name = rownames(price_t)
 rownames(price_t) = NULL
 price_t_melt = melt(price_t, 'Name', active_designers)
+price_t_melt$Name = factor(price_t_melt$Name, levels=MONTHS) 
 
 ggplot(price_t_melt, aes(x=Name, y=value, group=variable)) +
   geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
-  facet_wrap(~variable, ncol=3) +
+  facet_wrap(~variable, ncol=4) +
   theme_minimal() +
   theme(axis.text.x=element_text(angle=90, hjust=1)) +
   labs(x='', y='Dollars', title='Sum of Poster Price per Month by Designer') +
@@ -274,10 +278,11 @@ names(mentions_t) = gsub('\\..', ', ', names(mentions_t))
 mentions_t$Name = rownames(mentions_t)
 rownames(mentions_t) = NULL
 mentions_t_melt = melt(mentions_t, 'Name', active_designers)
+mentions_t_melt$Name = factor(mentions_t_melt$Name, levels=MONTHS) 
 
 ggplot(mentions_t_melt, aes(x=Name, y=value, group=variable)) +
   geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
-  facet_wrap(~variable, ncol=3, scales='free_y') +
+  facet_wrap(~variable, ncol=4) +
   theme_minimal() +
   theme(axis.text.x=element_text(angle=90, hjust=1)) +
   labs(x='', y='Number of Brand Mentions', title='Brand Mentions per Month by Designer')
@@ -316,7 +321,7 @@ reprints_t_melt = melt(reprints_t, 'Name', active_designers)
 
 ggplot(reprints_t_melt, aes(x=variable, y=value, group=Name)) +
   geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
-  facet_wrap(~Name, ncol=3, scales='free_y') +
+  facet_wrap(~Name, ncol=4, scales='free_y') +
   theme_minimal() +
   theme(axis.text.x=element_text(angle=90, hjust=1)) +
   labs(x='', y='')
@@ -337,10 +342,9 @@ jobspermo
 t_jobs = data.frame(t(jobspermo))
 t_jobs$Month = row.names(t_jobs)
 rownames(t_jobs) = NULL
-t_jobs = melt(t_jobs, 'Month', c('Mueller..Rachel', 'Riehlman..Brittany', 'Wilhoit..Katie'))
+t_jobs = melt(t_jobs, 'Month', gsub(', ','..',active_designers))
 t_jobs$variable = gsub('\\..', ', ', t_jobs$variable)
-t_jobs$Month = factor(t_jobs$Month, c('January','February','March','April','May','June',
-                                      'July','August','September','October','November','December'))
+t_jobs$Month = factor(t_jobs$Month, levels=MONTHS)
 
 ggplot(data=t_jobs, aes(x=Month, y=value, group=variable)) +
   geom_line(aes(colour=variable)) +
@@ -353,8 +357,8 @@ ggplot(data=t_jobs, aes(x=Month, y=value, group=variable)) +
 ## Future Metrics for Graphics Department
 Currently two metrics that were requested are not available. 
 
-  - On-Time completion of job: The field in PostR is unreliable as of now. It defaults to 2 weeks, and is not always updated. If some sort of guidelines are issued to this regard
-  - Number of "rush" jobs: The "rush" field is not passed from PostR to Diver in the raw model. When this field is passed to Diver the metric will be added.
+  - On-Time completion of job: The field for Requested Finish Date in POSTer is unreliable as of now for various reasons. It defaults to 2 weeks, and is not always updated. If some sort of guidelines are issued to this regard
+  - Number of "rush" jobs: The "rush" field is not passed from POSTer to Diver in the raw model. When this field is passed to Diver the metric will be added.
 
 
 
