@@ -128,7 +128,7 @@ write.csv(df, 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/intermedia
 This section was designed to help the Graphics department and management gain insight into the Graphics operation. In contrast, the next major section of this report is geared towards Graphics' impact on Sales and the organization at-large. Unless otherwise specified, the data considered is from all jobs submitted this year, and the data is accessed via a large dump from Diver of all fields and all dates available in the system.
 
 ## Turnaround by Designer
-Figures below include weekends and holidays (i.e. holidays and weekends are not backed out of the duration calculations), and durations are measured in days. Active designers include Rachel, Brittany, and Katie; all others are filtered out of the dataset.
+Figures below include weekends and holidays (i.e. holidays and weekends are not backed out of the duration calculations), and durations are measured in days. Active designers include Rachel, Brittany, Katie and Paige; all others are filtered out of the dataset. If this should not be the case please email Paul Washburn to change the filter criteria.
 
 
 ```{r turnaround}
@@ -242,6 +242,8 @@ process_df = function(df) {
 
 ## Cost by Designer
 
+A monthly sum of Poster Price, shown by month.
+
 ```{r price_bydesigner, fig.height=7, fig.width=9}
 process_df(price_df)
 ```
@@ -265,12 +267,31 @@ ggplot(price_t_melt, aes(x=Name, y=value, group=variable)) +
 
 
 ## Brand Mentions by Designer
-Sum of all MB mentions by Designer for the current year.
+Sum of all MB mentions by Designer for the current year, shown by month. 
 
 ```{r mentions_bydesigner}
 mentions_df = l_dfs$POSTER.MB.mentions
 process_df(mentions_df)
 ```
+
+Total number of brand mentions by Designer YTD.
+```{r rowsums}
+ttments = data.frame(t(rowSums(process_df(mentions_df), na.rm=T)))
+rownames(ttments) = 'Tot Brand Mentions YTD'
+names(ttments) = gsub('\\..',', ',names(ttments))
+ttments
+```
+
+Average number of brand mentions per month by Designer YTD.
+
+```{r rowmns}
+avgments = data.frame(t(rowMeans(process_df(mentions_df), na.rm=T)))
+rownames(avgments) = 'Avg Brand Mentions per Month'
+names(avgments) = gsub('\\..',', ',names(avgments))
+avgments
+```
+
+
 
 ```{r mentions_plot, fig.height=5, fig.width=9}
 mentions_t = data.frame(t(process_df(mentions_df)))
@@ -291,7 +312,7 @@ ggplot(mentions_t_melt, aes(x=Name, y=value, group=variable)) +
 
 
 ## Reprints by Designer
-Total number of reprints for the current year, by Designer. Percent of Total is shown as a percent; in other words, it has been multiplied by 100 (e.g. 1.2 indicates 1.2%, or 0.012) .
+Total number of reprints for the current year, by Designer. Percent of Total is shown as a percent; in other words, it has been multiplied by 100 (e.g. 1.2 indicates 1.2%, or 0.012). Reprints are counted at the Job ID level, meaning a job with 10 items marked as reprints will be counted one time. It is possible to add in reprints at the Job Item level if this information is desired.
 
 ```{r reprints}
 reprint_cols = c('POSTERJob.ID','POSTER.Designer')
@@ -331,12 +352,34 @@ ggplot(reprints_t_melt, aes(x=variable, y=value, group=Name)) +
 
 ## Number of Jobs per Month by Designer
 
+Total number of jobs by designer, shown by month.
+
 ```{r jobspermo_bydesigner}
 jobspermo = aggregate(POSTERJob.ID ~ POSTER.Designer + Month, data=df_thisyr, FUN=len_unique)
 jobspermo = spread(jobspermo, 'Month', 'POSTERJob.ID')
 jobspermo = process_df(jobspermo)
 jobspermo
 ```
+
+YTD total number of jobs by designer.
+
+```{r totjobrowsums}
+tottjobs = data.frame(t(rowSums(jobspermo, na.rm=T)))
+rownames(tottjobs) = 'Tot Jobs  YTD'
+names(tottjobs) = gsub('\\..',', ',names(tottjobs)) 
+tottjobs
+```
+
+YTD average number of jobs per month by designer.
+
+```{r meanjobrowmeans}
+avgjobs = data.frame(t(rowMeans(jobspermo, na.rm=T)))
+rownames(avgjobs) = 'Avg Jobs per Month'
+names(avgjobs) = gsub('\\..',', ',names(avgjobs)) 
+avgjobs
+```
+
+
 
 ```{r, fig.height=5, fig.width=9}
 t_jobs = data.frame(t(jobspermo))
@@ -354,10 +397,34 @@ ggplot(data=t_jobs, aes(x=Month, y=value, group=variable)) +
 ```
 
 
+## Pipeline & Carrying Costs by Designer
+
+Summary of current jobs in the pipeline. Only jobs that have a Kickoff date yet do not have a Ship date are considered. 
+
+```{r pipeline}
+not_shipped = (is.na(df_thisyr$JobShipped)==T)
+started = (is.na(df_thisyr$Kickoff)==F)
+
+df_pipeline = df_thisyr[not_shipped & started, ]
+pipeline_summary = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ POSTER.Designer,
+                             data=df_pipeline, FUN=len_unique)
+price_summary = aggregate(cbind(POSTER.Price, POSTER.MB.mentions) ~ POSTER.Designer,
+                             data=df_pipeline, FUN=function(x) round(sum(x, na.rm=T), 0))
+pipeline_summary = merge(pipeline_summary, price_summary, on='POSTER.Designer', how='all')
+
+
+pipeline_summary = process_df(pipeline_summary)
+names(pipeline_summary) = c('Current Jobs', 'Current Items', 'Total Price', 'Total Mentions')
+pipeline_summary
+```
+
+
+
+
 ## Future Metrics for Graphics Department
 Currently two metrics that were requested are not available. 
 
-  - On-Time completion of job: The field for Requested Finish Date in POSTer is unreliable as of now for various reasons. It defaults to 2 weeks, and is not always updated. If some sort of guidelines are issued to this regard
+  - On-Time completion of job: The field for Requested Finish Date in POSTer is unreliable as of now for various reasons. It defaults to 2 weeks, and is not always updated. If some sort of guidelines are issued to this regard then the field will need to be added to the main Dive from which this data is acquired (which is really just a massive dump).
   - Number of "rush" jobs: The "rush" field is not passed from POSTer to Diver in the raw model. When this field is passed to Diver the metric will be added.
 
 
