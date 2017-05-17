@@ -435,6 +435,172 @@ Currently two metrics that were requested are not available.
 
 
 
+# Measures of Success for Major Brands
+
+This section was designed to provide Leadership succinct insights on Graphics impact on the wider organization. The goal is for this section to contain everything that has to do with Graphics, yet is not immediately relevant to managing the graphics team, workflow or personnel. 
+
+
+
+## By Location
+
+### Trailing 3 Months, Month-to-Date
+
+The data shown below includes records for this year and last year where *either the Kickoff date's month or the Invoice Date's month are the same as this month, last month, or the one before that.* For example, today is May 1st then the dataset below would show records for which either the Invoice or Kickoff month is May, April and March (this year and last). 
+
+```{r bylocation_mtd}
+## Get current month
+this_month = as.character(month(Sys.Date(), T, F))
+last_month = as.character(month(month(Sys.Date())-1, T, F))
+beforethat = as.character(month(month(Sys.Date())-2, T, F))
+last_3 = c(this_month, last_month, beforethat)
+
+library(lubridate)
+## Isolate this year and last year data only
+df_thisyr_lastyr = df[(df$Year %in% c(this_yr, last_yr)) & 
+                        (df$POSTER.Designer %in% active_designers), ]
+
+
+## Isolate out last 3 mo from thisyr lastyr data
+kickoff_month = df_thisyr_lastyr$KickoffMonth = as.character(month(df_thisyr_lastyr$Kickoff, T, F))
+invoice_month = df_thisyr_lastyr$InvoiceMonth = as.character(month(df_thisyr_lastyr$Invoice.Date, T, F))
+startmo = kickoff_month %in% last_3 
+endinmo = invoice_month %in% last_3 
+
+trailing_3 = df_thisyr_lastyr[startmo==T | endinmo==T, ]
+  
+head(trailing_3)
+```
+
+
+### YTD Jobs & Percent of Profit
+
+
+
+
+
+## By Account
+
+
+
+
+
+
+## By Supplier
+
+
+
+
+
+
+## By Brand
+
+
+
+
+
+
+## By Requester
+
+
+
+
+
+
+
+# What's Working? What's Not?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Logical Future Improvements
+  - Instead of placing all brand mentions on one line in POSTer, store each mention as a separate line. This will create marginally more work for Graphics, yet will immensely improve the insights we will be able to gain into individual brands & suppliers. We can then use formal tests to see which Graphics products are working and which are not. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
