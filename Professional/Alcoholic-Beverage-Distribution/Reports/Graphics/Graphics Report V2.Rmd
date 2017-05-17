@@ -1,7 +1,7 @@
 ---
-title: "Major Brands Graphics Report"
+title: "<b>Major Brands Graphics Report</b>"
 author: "Paul Washburn, Operations Analyst"
-date: "May 16, 2017"
+date: "May 2017"
 output: 
   pdf_document:
       df_print: "kable" 
@@ -123,10 +123,10 @@ write.csv(df, 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/intermedia
 
 
 # Measures of success for Graphics Team
-This section was designed to help the Graphics department and management gain insight into the Graphics operation. In contrast, the next major section of this report is geared towards Graphics' impact on Sales and the organization at-large. 
+This section was designed to help the Graphics department and management gain insight into the Graphics operation. In contrast, the next major section of this report is geared towards Graphics' impact on Sales and the organization at-large. Unless otherwise specified, the data considered is from all jobs submitted this year, and the data is accessed via a large dump from Diver of all fields and all dates available in the system.
 
 ## Turnaround by Designer
-Figures below include weekends and holidays, and durations are measured in days. Active designers include Rachel, Brittany, and Katie; all others are filtered out of the dataset.
+Figures below include weekends and holidays (i.e. holidays and weekends are not backed out of the duration calculations), and durations are measured in days. Active designers include Rachel, Brittany, and Katie; all others are filtered out of the dataset.
 
 ```{r descriptions}
 guide_df = data.frame(row.names=c('Stage 1','Stage 2','Stage 3','Stage 4','Stage 5','Stage 6','Stage 7','Completion','Turnaround'),
@@ -160,12 +160,43 @@ turn_cols = cbind(df_thisyr$Turnaround_KickoffToShip,
                   df_thisyr$Stage6_RequesterApprovalToCompletion,
                   df_thisyr$Stage7_CompletionToShip)
 turnaround = aggregate(turn_cols ~ df_thisyr$POSTER.Designer, FUN=function(x) round(mean(x, na.rm=T), 1))
-names(turnaround) = c('X','Turnaround','Completion','Stage 1','Stage 2',
-                      'Stage 3','Stage 4','Stage 5','Stage 6','Stage 7')
+names(turnaround) = c('X','Turnaround','Completion','Stage1','Stage2',
+                      'Stage3','Stage4','Stage5','Stage6','Stage7')
 rownames(turnaround) = turnaround$X
 turnaround$X = NULL
 turnaround
 ```
+
+
+```{r turnaround_plot, fig.height=5, fig.width=9}
+turnaround_x = data.frame(t(turnaround))
+turnaround_x$Item = rownames(turnaround_x)
+rownames(turnaround_x) = NULL
+turnaround_x = melt(turnaround_x, 'Item')
+turnaround_x$variable = gsub('\\..', ', ', turnaround_x$variable)
+
+turns_df = turnaround_x[turnaround_x$Item %in% c('Completion','Turnaround'), ]
+stage_df = turnaround_x[turnaround_x$Item %!in% c('Completion','Turnaround'), ]
+stage_df$Item = factor(stage_df$Item, levels=c('Stage1','Stage2','Stage3','Stage4',
+                                               'Stage5','Stage6','Stage7')) 
+
+library(gridExtra)
+
+ggplot(turns_df, aes(x=variable, y=value, group=Item)) +
+  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
+  facet_wrap(~Item, ncol=3, scales='free_y') +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='', y='Days', title='Average Turnaround & Completion (Days) by Designer')
+
+ggplot(stage_df, aes(x=Item, y=value, group=variable)) +
+  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
+  #facet_wrap(~variable, ncol=3, scales='free_y') +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='', y='Days', title='Average Days in Each Stage by Designer')
+```
+
 
 ## Total Price & Mentions by Designer
 
@@ -212,6 +243,23 @@ process_df = function(df) {
 process_df(price_df)
 ```
 
+```{r costs_bydesigner_plot, fig.height=5, fig.width=9}
+price_t = data.frame(t(process_df(price_df)))
+names(price_t) = gsub('\\..', ', ', names(price_t))
+price_t$Name = rownames(price_t)
+rownames(price_t) = NULL
+price_t_melt = melt(price_t, 'Name', active_designers)
+
+ggplot(price_t_melt, aes(x=Name, y=value, group=variable)) +
+  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
+  facet_wrap(~variable, ncol=3) +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='', y='Dollars', title='Sum of Poster Price per Month by Designer') +
+  scale_y_continuous(labels=dollar)
+```
+
+
 ## Brand Mentions by Designer
 Sum of all MB mentions by Designer for the current year.
 
@@ -219,6 +267,22 @@ Sum of all MB mentions by Designer for the current year.
 mentions_df = l_dfs$POSTER.MB.mentions
 process_df(mentions_df)
 ```
+
+```{r mentions_plot, fig.height=5, fig.width=9}
+mentions_t = data.frame(t(process_df(mentions_df)))
+names(mentions_t) = gsub('\\..', ', ', names(mentions_t))
+mentions_t$Name = rownames(mentions_t)
+rownames(mentions_t) = NULL
+mentions_t_melt = melt(mentions_t, 'Name', active_designers)
+
+ggplot(mentions_t_melt, aes(x=Name, y=value, group=variable)) +
+  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
+  facet_wrap(~variable, ncol=3, scales='free_y') +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='', y='Number of Brand Mentions', title='Brand Mentions per Month by Designer')
+```
+
 
 
 ## Reprints by Designer
@@ -286,11 +350,11 @@ ggplot(data=t_jobs, aes(x=Month, y=value, group=variable)) +
 ```
 
 
-## Future Metrics
+## Future Metrics for Graphics Department
 Currently two metrics that were requested are not available. 
 
-  - On-Time completion of job: The field in PostR is unreliable as of now
-  - Number of "rush" jobs: The "rush" field is not passed from PostR to Diver in the raw model
+  - On-Time completion of job: The field in PostR is unreliable as of now. It defaults to 2 weeks, and is not always updated. If some sort of guidelines are issued to this regard
+  - Number of "rush" jobs: The "rush" field is not passed from PostR to Diver in the raw model. When this field is passed to Diver the metric will be added.
 
 
 
