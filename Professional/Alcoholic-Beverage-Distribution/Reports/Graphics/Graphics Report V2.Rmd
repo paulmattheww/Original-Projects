@@ -10,6 +10,9 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+## VITAL -- MAKE SURE ALL CURRENT DESIGNERS ARE PRESENT BELOW
+active_designers = c('Mueller, Rachel','Riehlman, Brittany','Wilhoit, Katie','Wright, Paige')
+
 knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
 knitr::opts_chunk$set(message = FALSE)
@@ -24,12 +27,22 @@ library(ggplot2)
 library(googleVis)
 library(plotly)
 library(stringr)
+library(tidyr)
+library(reshape2)
+library(lubridate)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 
 MONTHS = c('January','February','March','April','May','June',
            'July','August','September','October','November','December')
 this_yr = round(as.numeric(format(Sys.Date(), '%Y')),0)
 last_yr = round(as.numeric(format(Sys.Date(), '%Y')) - 1,0)
+twoyrsago = round(as.numeric(format(Sys.Date(), '%Y')) - 2,0)
+
+thismo_numeric = month(Sys.Date())
+month_long = function(mo) month(mo, T, F)
+ytd_months = unlist(lapply(seq(1, thismo_numeric, by=1), month_long))
+
+pct_chg = function(new, old) round(((new-old)/old)*100, 1)
 
 ## Read in and clean up the data
 df = read.csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/graphics_data_dump_diver.csv', header=TRUE)
@@ -118,9 +131,49 @@ df$KickoffToRequesterApproval = round(difftime(df$RequesterApproved, df$Kickoff,
 df$KickoffToArtworkComplete = round(difftime(df$ArtworkComplete, df$Kickoff, units="days"), 1)
 df$KickoffToArtworkComplete = round(difftime(df$ArtworkComplete, df$Kickoff, units="days"), 1)
 
+df$KickoffMonth = as.character(month(df$Kickoff, T, F))
+df$InvoiceMonth = as.character(month(df$Invoice.Date, T, F))
+
+df$KickoffYear = kick_yr = as.character(year(df$Kickoff))
+df$InvoiceYear = invo_yr = as.character(year(df$Invoice.Date))
+
 # ## Write to CSV for Python
 write.csv(df, 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/intermediate_graphics_data_dump_diver.csv',
           row.names=FALSE)
+
+
+## Get current months
+this_month = as.character(month(Sys.Date(), T, F))
+last_month = as.character(month(month(Sys.Date())-1, T, F))
+beforethat = as.character(month(month(Sys.Date())-2, T, F))
+last_3 = c(this_month, last_month, beforethat)
+
+## Isolate this year and last year data only
+df_thisyr_lastyr = df[(df$KickoffYear %in% c(this_yr, last_yr)) | 
+                        (df$InvoiceYear %in% c(this_yr, last_yr)) & 
+                        (df$POSTER.Designer %in% active_designers), ]
+
+## Isolate YTD for this year and last year
+invoiced_firstmos = (df_thisyr_lastyr$InvoiceMonth %in% ytd_months)
+kickdoff_firstmos = (df_thisyr_lastyr$KickoffMonth %in% ytd_months)
+
+df_ytd_thislast = df_thisyr_lastyr[invoiced_firstmos | kickdoff_firstmos, ]
+
+
+## Isolate out last 3 mo from thisyr lastyr data
+kickoff_month = df_thisyr_lastyr$KickoffMonth = as.character(month(df_thisyr_lastyr$Kickoff, T, F))
+invoice_month = df_thisyr_lastyr$InvoiceMonth = as.character(month(df_thisyr_lastyr$Invoice.Date, T, F))
+
+kickoff_year = df_thisyr_lastyr$KickoffYear = as.character(year(df_thisyr_lastyr$Kickoff))
+invoice_year = df_thisyr_lastyr$InvoiceYear = as.character(year(df_thisyr_lastyr$Invoice.Date))
+
+
+startmo = kickoff_month %in% last_3 
+endinmo = invoice_month %in% last_3 
+
+trailing_3 = df_thisyr_lastyr[startmo==T | endinmo==T, ]
+
+df_thisyr = df[(df$KickoffYear == this_yr) | (df$InvoiceYear == this_yr) & (df$POSTER.Designer %in% active_designers), ]
 ```
 
 
@@ -132,12 +185,6 @@ Figures below include weekends and holidays (i.e. holidays and weekends are not 
 
 
 ```{r turnaround}
-library(tidyr)
-library(reshape2)
-
-active_designers = c('Mueller, Rachel','Riehlman, Brittany','Wilhoit, Katie','Wright, Paige')
-df_thisyr = df[(df$Year == this_yr) & (df$POSTER.Designer %in% active_designers), ]
-
 turn_cols = cbind(df_thisyr$Turnaround_KickoffToShip, 
                   df_thisyr$KickoffToArtworkComplete, 
                   df_thisyr$Stage1_KickoffToAssignment,
@@ -447,29 +494,50 @@ This section was designed to provide Leadership succinct insights on Graphics im
 
 The data shown below includes records for this year and last year where *either the Kickoff date's month or the Invoice Date's month are the same as this month, last month, or the one before that.* For example, today is May 1st then the dataset below would show records for which either the Invoice or Kickoff month is May, April and March (this year and last). 
 
-```{r bylocation_mtd}
-## Get current month
-this_month = as.character(month(Sys.Date(), T, F))
-last_month = as.character(month(month(Sys.Date())-1, T, F))
-beforethat = as.character(month(month(Sys.Date())-2, T, F))
-last_3 = c(this_month, last_month, beforethat)
+Year-to-date Jobs kicked off by Company, shown by year.
 
-library(lubridate)
-## Isolate this year and last year data only
-df_thisyr_lastyr = df[(df$Year %in% c(this_yr, last_yr)) & 
-                        (df$POSTER.Designer %in% active_designers), ]
+```{r bylocation_ytd_kickedoff}
+kickedoff_byhouse = aggregate(POSTERJob.ID ~ KickoffYear + KickoffMonth + Company, data=df_ytd_thislast, FUN=len_unique)
+kickedoff_byhouse = kickedoff_byhouse[kickedoff_byhouse$KickoffYear != twoyrsago & 
+                                        kickedoff_byhouse$KickoffMonth %in% ytd_months, ]
+kickedoff_byhouse = spread(kickedoff_byhouse, 'KickoffYear', 'POSTERJob.ID')
+kickedoff_byhouse$`Percent Change (%)` = pct_chg(kickedoff_byhouse[, as.character(this_yr)], 
+                                                 kickedoff_byhouse[, as.character(last_yr)])
+kickedoff_byhouse$KickoffMonth = factor(kickedoff_byhouse$KickoffMonth, levels=ytd_months)
+kickedoff_byhouse = kickedoff_byhouse[order(kickedoff_byhouse$KickoffMonth), ]
 
+## Split dataframes by company
+make_rownames = function(df, mocol) {
+  rownames(df) = df[, mocol]
+  df[, mocol] = NULL
+  return(df)
+}
+kickedoff_byhouse = split(kickedoff_byhouse, kickedoff_byhouse$Company)
+KC_kickoffs = make_rownames(kickedoff_byhouse$`KANSAS CITY`, 'KickoffMonth')
+STL_kickoffs = make_rownames(kickedoff_byhouse$`ST LOUIS`, 'KickoffMonth')
+MMO_kickoffs = make_rownames(kickedoff_byhouse$`MID MISSOURI`, 'KickoffMonth')
 
-## Isolate out last 3 mo from thisyr lastyr data
-kickoff_month = df_thisyr_lastyr$KickoffMonth = as.character(month(df_thisyr_lastyr$Kickoff, T, F))
-invoice_month = df_thisyr_lastyr$InvoiceMonth = as.character(month(df_thisyr_lastyr$Invoice.Date, T, F))
-startmo = kickoff_month %in% last_3 
-endinmo = invoice_month %in% last_3 
-
-trailing_3 = df_thisyr_lastyr[startmo==T | endinmo==T, ]
-  
-head(trailing_3)
+KC_kickoffs
+STL_kickoffs
+MMO_kickoffs
 ```
+
+
+Month below is defined as the Kickoff month, or the month in which the Job started.
+
+```{r bylocation_bymo}
+kickedoff_byhouse = aggregate(POSTERJob.ID ~ KickoffYear + Company, data=df_ytd_thislast, FUN=len_unique)
+kickedoff_byhouse = kickedoff_byhouse[kickedoff_byhouse$KickoffYear != twoyrsago, ]
+kickedoff_byhouse = spread(kickedoff_byhouse, 'KickoffYear', 'POSTERJob.ID')
+rownames(kickedoff_byhouse) = kickedoff_byhouse$Company
+kickedoff_byhouse$Company = NULL
+
+kickedoff_byhouse$`Percent Change (%)` = pct_chg(kickedoff_byhouse[, as.character(this_yr)], kickedoff_byhouse[, as.character(last_yr)])
+kickedoff_byhouse
+
+aggregate(POSTERJob.ID ~ Year + KickoffMonth + Company, data=trailing_3, FUN=len_unique)
+```
+
 
 
 ### YTD Jobs & Percent of Profit
