@@ -42,7 +42,9 @@ thismo_numeric = month(Sys.Date())
 month_long = function(mo) month(mo, T, F)
 ytd_months = unlist(lapply(seq(1, thismo_numeric, by=1), month_long))
 
-pct_chg = function(new, old) round(((new-old)/old)*100, 1)
+pct_chg = function(new, old) {
+  round(((new-old)/abs(old))*100, 1)
+}
 
 ## Read in and clean up the data
 df = read.csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/graphics_data_dump_diver.csv', header=TRUE)
@@ -136,6 +138,8 @@ df$InvoiceMonth = as.character(month(df$Invoice.Date, T, F))
 
 df$KickoffYear = kick_yr = as.character(year(df$Kickoff))
 df$InvoiceYear = invo_yr = as.character(year(df$Invoice.Date))
+
+df$Profit = round(df$POSTER.Price - df$POSTER.CB.Total, 2)
 
 # ## Write to CSV for Python
 write.csv(df, 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/intermediate_graphics_data_dump_diver.csv',
@@ -476,7 +480,7 @@ Currently two metrics that were requested are not available.
 
 
 
-
+<br><br><br><br><br>
 
 
 
@@ -488,16 +492,32 @@ This section was designed to provide Leadership succinct insights on Graphics im
 
 
 
-## By Location
+## By Company
 
-### Trailing 3 Months, Month-to-Date
+### YTD Number of Jobs by Company
+
+Month below is defined as the Kickoff month, or the month in which the Job started.
+
+```{r bylocation_bymo}
+kickedoff_byhouse = aggregate(POSTERJob.ID ~ KickoffYear + Company, data=df_ytd_thislast, FUN=len_unique)
+kickedoff_byhouse = kickedoff_byhouse[kickedoff_byhouse$KickoffYear != twoyrsago, ]
+kickedoff_byhouse = spread(kickedoff_byhouse, 'KickoffYear', 'POSTERJob.ID')
+rownames(kickedoff_byhouse) = kickedoff_byhouse$Company
+kickedoff_byhouse$Company = NULL
+
+kickedoff_byhouse$`Percent Change (%)` = pct_chg(kickedoff_byhouse[, as.character(this_yr)], kickedoff_byhouse[, as.character(last_yr)])
+kickedoff_byhouse
+```
+
+### YTD Number of Jobs by Month
 
 The data shown below includes records for this year and last year where *either the Kickoff date's month or the Invoice Date's month are the same as this month, last month, or the one before that.* For example, today is May 1st then the dataset below would show records for which either the Invoice or Kickoff month is May, April and March (this year and last). 
 
 Year-to-date Jobs kicked off by Company, shown by year.
 
 ```{r bylocation_ytd_kickedoff}
-kickedoff_byhouse = aggregate(POSTERJob.ID ~ KickoffYear + KickoffMonth + Company, data=df_ytd_thislast, FUN=len_unique)
+kickedoff_byhouse = aggregate(POSTERJob.ID ~ KickoffYear + KickoffMonth + Company, 
+                              data=df_ytd_thislast, FUN=len_unique)
 kickedoff_byhouse = kickedoff_byhouse[kickedoff_byhouse$KickoffYear != twoyrsago & 
                                         kickedoff_byhouse$KickoffMonth %in% ytd_months, ]
 kickedoff_byhouse = spread(kickedoff_byhouse, 'KickoffYear', 'POSTERJob.ID')
@@ -522,38 +542,105 @@ STL_kickoffs
 MMO_kickoffs
 ```
 
+### YTD Graphics Profit by Company
 
-Month below is defined as the Kickoff month, or the month in which the Job started.
+Profit in the months so far this year (i.e. YTD months), year-over-year. Graphics Profit is defined as YTD Poster Price minus YTD Charge Back Price.
 
-```{r bylocation_bymo}
-kickedoff_byhouse = aggregate(POSTERJob.ID ~ KickoffYear + Company, data=df_ytd_thislast, FUN=len_unique)
-kickedoff_byhouse = kickedoff_byhouse[kickedoff_byhouse$KickoffYear != twoyrsago, ]
-kickedoff_byhouse = spread(kickedoff_byhouse, 'KickoffYear', 'POSTERJob.ID')
-rownames(kickedoff_byhouse) = kickedoff_byhouse$Company
-kickedoff_byhouse$Company = NULL
+```{r ytd_pctprofit}
+profit_byhouse = aggregate(Profit ~ KickoffYear + Company, data=df_ytd_thislast, FUN=function(x) round(sum(x, na.rm=T), 2))
+profit_byhouse = profit_byhouse[profit_byhouse$KickoffYear != twoyrsago, ]
+profit_byhouse = spread(profit_byhouse, 'KickoffYear', 'Profit')
+rownames(profit_byhouse) = profit_byhouse$Company
+profit_byhouse$Company = NULL
 
-kickedoff_byhouse$`Percent Change (%)` = pct_chg(kickedoff_byhouse[, as.character(this_yr)], kickedoff_byhouse[, as.character(last_yr)])
-kickedoff_byhouse
-
-aggregate(POSTERJob.ID ~ Year + KickoffMonth + Company, data=trailing_3, FUN=len_unique)
+profit_byhouse$`Percent Change (%)` = pct_chg(profit_byhouse[, as.character(this_yr)], profit_byhouse[, as.character(last_yr)])
+profit_byhouse
 ```
 
 
 
-### YTD Jobs & Percent of Profit
 
 
+## By Customer Account
 
+Top customer accounts *(by number of Graphics Jobs)* YTD, compared to the same period last year.
 
+```{r jobs_byaccount}
+NOT_REAL_CUSTOMERS = c('GENERAL MARKET ALL-STL','GENERAL MARKET ALL-MMS',
+                       'GENERAL MARKET ALL-KC','GENERAL MARKET ALL-MMN','',
+                       'MAJOR BRANDS INTERNAL-STL','GENERAL MARKET ON-PREMISE STL',
+                       'MAJOR BRANDS INTERNAL-KC')
 
-## By Account
+jobs_byaccount = aggregate(POSTERJob.ID ~ KickoffYear + Customer, data=df_ytd_thislast, FUN=len_unique)
+jobs_byaccount = jobs_byaccount[jobs_byaccount$KickoffYear != twoyrsago, ]
+jobs_byaccount = spread(jobs_byaccount, 'KickoffYear', 'POSTERJob.ID')
+jobs_byaccount = jobs_byaccount[jobs_byaccount$Customer %!in% NOT_REAL_CUSTOMERS, ]
+rownames(jobs_byaccount) = jobs_byaccount$Customer
+jobs_byaccount$Customer = NULL
 
+jobs_byaccount$`Percent Change (%)` = pct_chg(jobs_byaccount[, as.character(this_yr)], 
+                                                 jobs_byaccount[, as.character(last_yr)])
+jobs_byaccount = jobs_byaccount[order(jobs_byaccount$`2017`, decreasing=T), ]
+head(jobs_byaccount, 50)
+```
+
+Top customer accounts *(by Graphics Profit)* YTD, compared to the same period last year.
+
+```{r profit_byaccount}
+profit_byaccount = aggregate(Profit ~ KickoffYear + Customer, data=df_ytd_thislast, FUN=function(x) round(sum(x, na.rm=T), 2))
+profit_byaccount = profit_byaccount[profit_byaccount$KickoffYear != twoyrsago, ]
+profit_byaccount = spread(profit_byaccount, 'KickoffYear', 'Profit')
+profit_byaccount = profit_byaccount[profit_byaccount$Customer %!in% NOT_REAL_CUSTOMERS, ]
+rownames(profit_byaccount) = profit_byaccount$Customer
+profit_byaccount$Customer = NULL
+
+profit_byaccount$`Percent Change (%)` = pct_chg(profit_byaccount[, as.character(this_yr)], 
+                                                 profit_byaccount[, as.character(last_yr)])
+profit_byaccount = profit_byaccount[order(profit_byaccount$`2017`, decreasing=T), ]
+head(profit_byaccount, 50)
+```
 
 
 
 
 
 ## By Supplier
+
+Top suppliers *(by number of Graphics Jobs)* YTD, compared to the same period last year.
+
+```{r jobs_bysupplier}
+jobs_bysupplier = aggregate(POSTERJob.ID ~ KickoffYear + Supplier, data=df_ytd_thislast, FUN=len_unique)
+jobs_bysupplier = jobs_bysupplier[jobs_bysupplier$KickoffYear != twoyrsago, ]
+jobs_bysupplier = spread(jobs_bysupplier, 'KickoffYear', 'POSTERJob.ID')
+jobs_bysupplier = jobs_bysupplier[jobs_bysupplier$Supplier != '', ]
+rownames(jobs_bysupplier) = jobs_bysupplier$Supplier
+jobs_bysupplier$Supplier = NULL
+
+jobs_bysupplier$`Percent Change (%)` = pct_chg(jobs_bysupplier[, as.character(this_yr)], 
+                                                 jobs_bysupplier[, as.character(last_yr)])
+# jobs_bysupplier = jobs_bysupplier[jobs_bysupplier$`2017` != 0]
+jobs_bysupplier = jobs_bysupplier[order(jobs_bysupplier$`2017`, decreasing=T), ]
+head(jobs_bysupplier, 35)
+```
+
+Top suppliers *(by Graphics Profit)* YTD, compared to the same period last year.
+
+```{r profit_bysupplier}
+profit_bysupplier = aggregate(Profit ~ KickoffYear + Supplier, data=df_ytd_thislast, FUN=function(x) round(sum(x, na.rm=T), 2))
+profit_bysupplier = profit_bysupplier[profit_bysupplier$KickoffYear != twoyrsago, ]
+profit_bysupplier = spread(profit_bysupplier, 'KickoffYear', 'Profit')
+profit_bysupplier = profit_bysupplier[profit_bysupplier$Supplier != '', ]
+rownames(profit_bysupplier) = profit_bysupplier$Supplier
+profit_bysupplier$Supplier = NULL
+
+profit_bysupplier$`Percent Change (%)` = pct_chg(profit_bysupplier[, as.character(this_yr)], 
+                                                 profit_bysupplier[, as.character(last_yr)])
+# profit_bysupplier = profit_bysupplier[profit_bysupplier$`2017` != 0]
+profit_bysupplier = profit_bysupplier[order(profit_bysupplier$`2017`, decreasing=T), ]
+head(profit_bysupplier, 35)
+```
+
+
 
 
 
