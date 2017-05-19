@@ -538,7 +538,8 @@ ggplot(agg_summary, aes(x=MonthOfRecord, y=POSTERJob.ID, group=factor(YearOfReco
   geom_bar(stat='identity', position='dodge', aes(fill=factor(YearOfRecord)), colour='black') +
   theme_minimal() +
   labs(x='Month of Record', y='Number of Active Graphics Jobs', title='Graphics Pipeline Over Time') +
-  facet_grid(~YearOfRecord)
+  facet_grid(~YearOfRecord) +
+  theme(axis.text.x=element_text(angle=90, hjust=1))
 
 
 ## Do the aggregate level now
@@ -552,7 +553,9 @@ ggplot(inpipe_summary, aes(x=MonthOfRecord, y=POSTERJob.ID, group=POSTER.Designe
   geom_line(aes(colour=POSTER.Designer), size=1.5) +
   geom_point() +
   facet_grid(~YearOfRecord) +
-  theme_minimal()
+  theme_minimal() +
+  labs(x='Month of Record', y='Number of Active Graphics Jobs', title='Pipeline by Designer') +
+  theme(axis.text.x=element_text(angle=90, hjust=1))
 ```
 
 
@@ -917,7 +920,7 @@ bygraphics
 
 
 ## Logical Future Improvements
-  - Instead of placing all brand mentions on one line in POSTer, store each mention as a separate line. This will create marginally more work for Graphics, yet will immensely improve the insights we will be able to gain into individual brands & suppliers. We can then use formal tests to see which Graphics products are working and which are not. 
+  - Instead of placing all brand mentions for other distributors on one line in POSTer, store each mention as a separate line. This will create marginally more work for Graphics, yet will immensely improve the insights we will be able to gain into individual brands, our place in the market, and provide a more detailed view of our market share We can then use formal tests to see which Graphics products are working and which are not. 
 
 
 
