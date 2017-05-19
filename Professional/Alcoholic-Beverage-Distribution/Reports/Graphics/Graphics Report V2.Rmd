@@ -508,9 +508,9 @@ colz = c('DayOfRecord','YearOfRecord','WeekOfRecord','DayOfMonthOfRecord',
 inpipe = df_ytd_thislast[df_ytd_thislast$InPipeline==T , colz] 
 
 pipeline_summary = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ POSTER.Designer,
-                             data=df_pipeline, FUN=len_unique)
+                             data=inpipe, FUN=len_unique)
 price_summary = aggregate(cbind(POSTER.Price, POSTER.MB.mentions) ~ POSTER.Designer,
-                             data=df_pipeline, FUN=function(x) round(sum(x, na.rm=T), 0))
+                             data=inpipe, FUN=function(x) round(sum(x, na.rm=T), 0))
 pipeline_summary = merge(pipeline_summary, price_summary, on='POSTER.Designer', how='all')
 
 
@@ -526,7 +526,7 @@ A Job is considered active in the Graphics pipeline if the Job has been Kicked O
 
 Pipeline is displayed by Designer and at the aggregate level.
 
-```{r bydes_inpipe}
+```{r bydes_inpipe, fig.height=5, fig.width=9}
 ## Designer level
 agg_summary = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ YearOfRecord + MonthOfRecord,
                            data=inpipe,
