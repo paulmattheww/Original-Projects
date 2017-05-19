@@ -524,7 +524,7 @@ pipeline_summary
 
 A Job is considered active in the Graphics pipeline if the Job has been Kicked Off, but has not been Shipped. Pipeline is a notoriously difficult attribute to measure; it is grouped by Month because getting daily measures would require each job that is currently active to be marked (each day) as such. The measure below assumes that a month is a long enough timeframe for every active project to get at least one entry into POSTer, and thus is observable at a monthly frequency.  
 
-Pipeline is displayed by Designer and at the aggregate level.
+Pipeline is displayed by Designer and at the aggregate level. The aggregate level includes old designers, while the table by Designer does not.
 
 ```{r bydes_inpipe, fig.height=5, fig.width=9}
 ## Designer level
@@ -547,6 +547,8 @@ inpipe_summary = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~
                              POSTER.Designer + YearOfRecord + MonthOfRecord,
                            data=inpipe,
                            FUN=len_unique)
+inpipe_summary = inpipe_summary[(inpipe_summary$MonthOfRecord %in% ytd_months) &
+                                  (inpipe_summary$POSTER.Designer %in% active_designers), ]
 
 ## Plot 
 ggplot(inpipe_summary, aes(x=MonthOfRecord, y=POSTERJob.ID, group=POSTER.Designer)) +
