@@ -258,8 +258,13 @@ def roadnet_servicelocation_details(path):
     
 
 
-
-
+###################################################################################################
+###################################################################################################
+###################################################################################################
+###################################################################################################
+###################################################################################################
+##########THIS IS WHERE THE ACTUAL WORK GETS DONE!#################################################
+###################################################################################################
 ###################################################################################################
 ###################################################################################################
 ###################################################################################################
@@ -308,39 +313,39 @@ for rte, df in grp_dfs:
     Operating on Route ID %s    
     ''' %(str(rte)))
     df.Stop = df.Stop.astype(int)
-    df = df.sort_values(['Date','Stop'])
-    print(df)
+    df.sort_values(['Date','Stop'], inplace=True)
+    print(df.head())
     
-    NEXT_STOP = 1
     for i, row in df.iterrows():
         try:
             dist_next.loc[i, 'Date'] = row.Date
             dist_next.loc[i, 'Rte'] = rte
             dist_next.loc[i, 'Stop'] = row.Stop
+            dist_next.loc[i, 'Lon'] = row.Longitude            
+            dist_next.loc[i, 'Lat'] = row.Latitude
             
-            if row.Stop == 1 :
-                mi = haversine(lon1=stl_lon, lat1=stl_lat, 
-                               lon2=row.Longitude, lat2=row.Latitude)
-                NEXT_STOP += 1
-            elif row.Stop < df.Stop.max() :
+            if row.Stop < df.loc[i+1, 'Stop']:
                 mi = haversine(lon1=row.Longitude, lat1=row.Latitude,
-                               lon2=df[df.Stop == NEXT_STOP, 'Longitude'], lat2=df[df.Stop == NEXT_STOP, 'Latitude'])
-                NEXT_STOP += 1
+                               lon2=df.loc[i+1, 'Longitude'], lat2=df.loc[i+1, 'Latitude'])
+                print(row)
             else:
                 mi = haversine(lon1=row.Longitude, lat1=row.Latitude, 
-                               lon2=stl_lon, lat2=stl_lat)
-            dist_next.loc[i, 'AirMiles'] = mi
+                               lon2=stl_lon, lat2=stl_lat) 
+                
+            dist_next.loc[i, 'AirMilesNextStop'] = mi
         except KeyError:
             dist_next.loc[i, 'Date'] = row.Date 
             dist_next.loc[i, 'Rte'] = rte
-            dist_next.loc[i, 'Stop'] = np.nan
-            dist_next.loc[i, 'AirMiles'] = np.nan
+            dist_next.loc[i, 'Stop'] = row.Stop
+            dist_next.loc[i, 'Lon'] = row.Longitude            
+            dist_next.loc[i, 'Lat'] = row.Latitude
+            dist_next.loc[i, 'AirMilesNextStop'] = np.nan
+            pass
             
-            if row.Stop == row.Stop.max():
-                pass
-            else:
-                NEXT_STOP += 1
-         
+MISSING_DISTANCES = dist_next.AirMilesNextStop.isnull()==True
+dist_next.loc[MISSING_DISTANCES, 'AirMilesNextStop'] = [haversine(lon, lat, stl_lon, stl_lat) for lon,lat in zip(dist_next.loc[MISSING_DISTANCES, 'Lon'], dist_next.loc[MISSING_DISTANCES, 'Lat'])]
+#dist_next.loc[dist_next.Stop.isnull().values.any==True, 'Stop'] = [haversine(lon, lat, stl_lon, stl_lat) for lon,lat in zip(dist_next.loc[dist_next.Stop.isnull()==True, 'Lon'], dist_next.loc[dist_next.Stop.isnull()==True, 'Lat'])]
+
 ## check
 haversine(38.369610, -90.381100, 38.369630, -90.381300)
          
@@ -348,10 +353,10 @@ haversine(38.369610, -90.381100, 38.369630, -90.381300)
 dist_next.Stop.fillna(0, inplace=True)
 dist_next.Stop = dist_next.Stop.astype(int)
 dist_next['ix'] = dist_next.Date.astype(str) + ' ' + dist_next.Rte.astype(str) + ' ' + dist_next.Stop.astype(str)
-distance_map = dict(zip(dist_next['ix'], dist_next.AirMiles))
+distance_map = dict(zip(dist_next['ix'], dist_next.AirMilesNextStop))
 
-MASTER_MANIFEST['AirMiles'] = MASTER_MANIFEST.Date.astype(str) + ' ' + MASTER_MANIFEST.RouteId.astype(str) + ' ' + MASTER_MANIFEST.Stop.astype(str)
-MASTER_MANIFEST['AirMiles'] = MASTER_MANIFEST['AirMiles'].map(distance_map)
+MASTER_MANIFEST['AirMilesNextStop'] = MASTER_MANIFEST.Date.astype(str) + ' ' + MASTER_MANIFEST.RouteId.astype(str) + ' ' + MASTER_MANIFEST.Stop.astype(str)
+MASTER_MANIFEST['AirMilesNextStop'] = MASTER_MANIFEST['AirMilesNextStop'].map(distance_map)
 MASTER_MANIFEST.head(25)
 
 dist_next.head(50)
@@ -381,6 +386,49 @@ x = MASTER_MANIFEST.merge(dist_next, left_on=['Date','RouteId','Stop'], right_on
 #####################  #######################  #####################  #######################
 
 # 1 Customers that have two time windows (4 times) are not processed correctly
+
+
+
+
+## works for saving in case fuck up
+#for rte, df in grp_dfs:
+#    print('''
+#    Operating on Route ID %s    
+#    ''' %(str(rte)))
+#    df.Stop = df.Stop.astype(int)
+#    df.sort_values(['Date','Stop'], inplace=True)
+#    print(df.head())
+#    
+#    NEXT_STOP = 2
+#    for i, row in df.iterrows():
+#        try:
+#            dist_next.loc[i, 'Date'] = row.Date
+#            dist_next.loc[i, 'Rte'] = rte
+#            dist_next.loc[i, 'Stop'] = row.Stop
+#            
+#            if i < max(df.index.values) :
+#                mi = haversine(lon1=row.Longitude, lat1=row.Latitude,
+#                               lon2=df.loc[i+1, 'Longitude'], lat2=df.loc[i+1, 'Latitude'])
+#                print(row)
+#                print('\n\n', df[df.Stop == NEXT_STOP])
+#                NEXT_STOP += 1
+#            elif row.Stop > df.loc[i+1, 'Stop']:
+#                mi = haversine(lon1=row.Longitude, lat1=row.Latitude, 
+#                               lon2=stl_lon, lat2=stl_lat)
+#                NEXT_STOP = 1
+#            else:
+#                ## multiply by two to get dist first dist last
+#                mi = haversine(lon1=row.Longitude, lat1=row.Latitude, 
+#                               lon2=stl_lon, lat2=stl_lat) * 2 
+#                NEXT_STOP = 1
+#                
+#            dist_next.loc[i, 'AirMilesNextStop'] = mi
+#        except KeyError:
+#            dist_next.loc[i, 'Date'] = row.Date 
+#            dist_next.loc[i, 'Rte'] = rte
+#            dist_next.loc[i, 'Stop'] = np.nan
+#            dist_next.loc[i, 'AirMilesNextStop'] = np.nan
+#            pass
 
 #####################  #######################  #####################  #######################
 #####################  #######################  #####################  #######################
