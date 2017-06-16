@@ -56,17 +56,6 @@ df$POSTER.REPRINT = df$POSTER.REPRINT == 'Y'
 ## Set rownames
 rownames(df) = c(1:NROW(df))
 
-## Test df
-#df = df[1:1000, ]
-
-## Get string for job status - parse for turnaround
-job_status = as.character(df$POSTER.JOB.STATUS)
-df$POSTER.JOB.STATUS = NULL
-names(job_status) = df$POSTERJob.ID
-job_status = strsplit(job_status, ',')
-
-
-
 ############################## Below for debugging
 ## for debugging job status
 # job_status[sapply(job_status, function(x) length(x) > 9)]
@@ -94,6 +83,15 @@ extract_dates_fromtext = function(job_status, i, j) {
   return(dat)
 }
 
+## Sample data fro fast iteration
+df = tail(df, 1000)
+
+## Get string for job status - parse for turnaround
+job_status = as.character(df$POSTER.JOB.STATUS)
+#df$POSTER.JOB.STATUS = NULL
+names(job_status) = df$POSTERJob.ID
+job_status = strsplit(job_status, ',')
+
 new_df = df
 
 for(i in 1:length(job_status)) {
@@ -108,13 +106,13 @@ for(i in 1:length(job_status)) {
       if(colname %in% names(new_df)) {
         new_df[i, colname] = extract_dates_fromtext(job_status, i, j)
       } else {
-        new_df[, colname] = NA
+        #new_df[, colname] = NA
         new_df[i, colname] = extract_dates_fromtext(job_status, i, j)
       }
     })
     
   }
-  print(head(new_df, 20))
+  print(new_df[new_df$AwaitingBrandMentions != NA, ])
 }  
   # try({
   #   start = regmatches(job_status[[i]][1][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][1][1], perl=T))
