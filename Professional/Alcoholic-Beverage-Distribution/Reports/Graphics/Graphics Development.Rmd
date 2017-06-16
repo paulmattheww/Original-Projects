@@ -80,7 +80,7 @@ extract_dates_fromtext = function(job_status, i, j) {
 }
 
 ## Sample data for fast iteration development
-## df = tail(df, 1000)
+# df = tail(df, 1000)
 
 ## Get string for job status - parse for turnaround
 job_status = as.character(df$POSTER.JOB.STATUS)
@@ -124,7 +124,7 @@ df$Stage1_KickoffToAssignment = round(difftime(df$AwaitingGraphicsAssignment, df
 df$Stage2_AssignmentToBrandMentions = round(difftime(df$AwaitingBrandMentions, df$AwaitingGraphicsAssignment, units="days"), 1)
 df$Stage3_BrandMentionsToCostApproval = round(difftime(df$AwaitingCostApproval, df$AwaitingBrandMentions, units="days"), 1)
 df$Stage4_CostApprovalToArtworkComplete = round(difftime(df$AwaitingArtwork, df$AwaitingCostApproval,units="days"), 1)
-df$Stage4A_RedesignRequestedToRedesignApproval = round(difftime(df$AwaitingRequesterChangeApproval, df$AwaitingArtworkRedesign, units="days"), 1)
+df$Stage4A_RedesignRequestedToResdesignComplete = round(difftime(df$AwaitingArtworkRedesign, df$AwaitingArtwork, units="days"), 1)
 df$Stage5_ArtworkCompleteToRequesterApproval = round(difftime(df$AwaitingRequesterApproval, df$AwaitingArtwork, units="days"), 1)
 df$Stage6_RequesterApprovalToCompletion = round(difftime(df$AssembledandShipped, df$AwaitingRequesterApproval, units="days"), 1)
 df$Stage7_CompletionToShip = round(difftime(df$AssembledandShipped, df$AssembledandShipped, units="days"), 1)
@@ -146,7 +146,6 @@ df$InvoiceYear = invo_yr = as.character(year(df$Invoice.Date))
 ## Get profit as specified by Rachel M.
 df$Profit = round(df$POSTER.Price - df$POSTER.CB.Total, 2)
 
-
 ## Manipulate date to identify carrying costs
 df$JobStarted = is.na(df$Incomplete) == F
 df$JobFinished = is.na(df$AssembledandShipped) == F
@@ -157,12 +156,15 @@ df$InPipeline = df$POSTERJob.ID %in% inppp
 ## Mark redesigns
 df$Redesign = is.na(df$AwaitingArtworkRedesign) == F
 
+## Delete rows that do not have a starting date
+df = df[is.na(df$Incomplete)==F, ]
+
 ## Mark last date in record as date of record
 the_milestones = data.frame(df$Incomplete, df$AwaitingGraphicsAssignment, 
                             df$AwaitingBrandMentions, df$AwaitingCostApproval,
                             df$AwaitingArtwork, df$AwaitingRequesterApproval, df$AssembledandShipped, 
                             df$AwaitingArtworkRedesign, df$AwaitingRequesterChangeApproval)
-df$DayOfRecord = dat = apply(head(the_milestones), 1, function(x) max(x, na.rm=T))
+df$DayOfRecord = dat = apply(the_milestones, 1, function(x) max(x, na.rm=T))
 df$MonthOfRecord = month(dat, T, F)
 df$WeekOfRecord = week(dat)
 df$YearOfRecord = year(dat)
@@ -249,13 +251,12 @@ turn_cols = cbind(df_thisyr$Turnaround_KickoffToShip,
                   df_thisyr$Stage2_AssignmentToBrandMentions,
                   df_thisyr$Stage3_BrandMentionsToCostApproval,
                   df_thisyr$Stage4_CostApprovalToArtworkComplete,
-                  df_thisyr$Stage4A_RedesignRequestedToRedesignApproval,
+                  df_thisyr$Stage4A_RedesignRequestedToResdesignComplete,
                   df_thisyr$Stage5_ArtworkCompleteToRequesterApproval,
-                  df_thisyr$Stage6_RequesterApprovalToCompletion,
-                  df_thisyr$Stage7_CompletionToShip)
-turnaround = aggregate(turn_cols ~ df_thisyr$POSTER.Designer, FUN=function(x) round(mean(x, na.rm=T), 1))
+                  df_thisyr$Stage6_RequesterApprovalToCompletion)
+turnaround = aggregate(turn_cols ~ df_thisyr$POSTER.Designer, FUN=function(x) round(mean(as.numeric(x), na.rm=T), 1))
 names(turnaround) = c('X','Turnaround','Completion','Stage1','Stage2',
-                      'Stage3','Stage4','Stage4A','Stage5','Stage6','Stage7')
+                      'Stage3','Stage4','Stage4A','Stage5','Stage6')
 rownames(turnaround) = turnaround$X
 turnaround$X = NULL
 turnaround
@@ -272,7 +273,7 @@ guide_df = data.frame(row.names=c('Stage 1','Stage 2','Stage 3','Stage 4','Stage
                                     'If Applicable, Redesign til approval (days)',
                                     'Artwork complete til requester approval (days)',
                                     'Requester approval til job completion (days)',
-                                    'Job completion til ship (days)',
+                                    '[NOT SHOWN] Job completion til ship (days)',
                                     'Job Incomplete til job marked as complete (days)',
                                     'Job Incomplete til job shipment (days)'))
 guide_df
@@ -289,7 +290,7 @@ turnaround_x$variable = gsub('\\..', ', ', turnaround_x$variable)
 turns_df = turnaround_x[turnaround_x$Item %in% c('Completion','Turnaround'), ]
 stage_df = turnaround_x[turnaround_x$Item %!in% c('Completion','Turnaround'), ]
 stage_df$Item = factor(stage_df$Item, levels=c('Stage1','Stage2','Stage3','Stage4',
-                                               'Stage5','Stage6','Stage7')) 
+                                               'Stage4A','Stage5','Stage6')) 
 
 library(gridExtra)
 
@@ -515,7 +516,7 @@ colz = c('DayOfRecord','YearOfRecord','WeekOfRecord','DayOfMonthOfRecord',
          'POSTER.Price','POSTER.ITEM.CATEGORY',
          'POSTER.Designer','InPipeline','POSTER.MB.mentions')
 
-inpipe = df_ytd_thislast[df_ytd_thislast$InPipeline==T , colz] 
+inpipe = df_thisyr[df_thisyr$InPipeline==T , colz] 
 
 pipeline_summary = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ POSTER.Designer,
                              data=inpipe, FUN=len_unique)
