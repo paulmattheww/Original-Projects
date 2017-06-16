@@ -76,19 +76,18 @@ extract_stage_name = function(job_status) {
 munge_date = function(dat) format(strptime(dat, '%b %d %Y %I:%M%p'), '%Y-%m-%d %H:%M')  
 
 extract_dates_fromtext = function(job_status, i, j) {
-  dat = regmatches(job_status[[i]][j][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][j][1], perl=T))  
+  dat = regmatches(job_status[[i]][j], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][j], perl=T))  
   dat = gsub("[()]", "", dat)
   dat = gsub("\\s+", " ", dat)
   dat = munge_date(dat)
   return(dat)
 }
 
-## Sample data fro fast iteration
-df = tail(df, 1000)
+## Sample data for fast iteration development
+## df = tail(df, 1000)
 
 ## Get string for job status - parse for turnaround
 job_status = as.character(df$POSTER.JOB.STATUS)
-#df$POSTER.JOB.STATUS = NULL
 names(job_status) = df$POSTERJob.ID
 job_status = strsplit(job_status, ',')
 
@@ -96,109 +95,31 @@ new_df = df
 
 for(i in 1:length(job_status)) {
   ## Job stages vary in both order and number
+  ## There are bn 7 and 12 job stages
   job_stages = extract_stage_name(job_status[i]); print(i)
   job_stages = job_stages[!grepl('4zj', job_stages)]
  
-  for(j in job_stages) {
-    colname = j; print(j)
-    
+  for(j in 1:length(job_stages)) {
+    colname = as.character(job_stages[j])
     try({
       if(colname %in% names(new_df)) {
-        new_df[i, colname] = extract_dates_fromtext(job_status, i, j)
+        DAT = extract_dates_fromtext(job_status, i, j)
+        print(DAT)
+        new_df[i, colname] = DAT
       } else {
-        #new_df[, colname] = NA
-        new_df[i, colname] = extract_dates_fromtext(job_status, i, j)
+        DAT = extract_dates_fromtext(job_status, i, j)
+        print(DAT)
+        new_df[, colname] = NA
+        new_df[i, colname] = DAT
       }
     })
-    
   }
-  print(new_df[new_df$AwaitingBrandMentions != NA, ])
-}  
-  # try({
-  #   start = regmatches(job_status[[i]][1][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][1][1], perl=T))
-  #   assgn = regmatches(job_status[[i]][2][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][2][1], perl=T))
-  #   brand = regmatches(job_status[[i]][3][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][3][1], perl=T))
-  #   costs = regmatches(job_status[[i]][4][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][4][1], perl=T))
-  #   artsy = regmatches(job_status[[i]][5][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][5][1], perl=T))
-  #   appro = regmatches(job_status[[i]][6][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][6][1], perl=T))
-  #   cmplt = regmatches(job_status[[i]][7][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][7][1], perl=T))
-  #   shipp = regmatches(job_status[[i]][8][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][8][1], perl=T))
-  #   
-  #   start = gsub("[()]", "", start)
-  #   assgn = gsub("[()]", "", assgn)
-  #   brand = gsub("[()]", "", brand)
-  #   costs = gsub("[()]", "", costs)
-  #   artsy = gsub("[()]", "", artsy)
-  #   appro = gsub("[()]", "", appro)
-  #   cmplt = gsub("[()]", "", cmplt)
-  #   shipp = gsub("[()]", "", shipp)
-  #   
-  #   start = gsub("\\s+", " ", start)
-  #   assgn = gsub("\\s+", " ", assgn)
-  #   brand = gsub("\\s+", " ", brand)
-  #   costs = gsub("\\s+", " ", costs)
-  #   artsy = gsub("\\s+", " ", artsy)
-  #   appro = gsub("\\s+", " ", appro)
-  #   cmplt = gsub("\\s+", " ", cmplt)
-  #   shipp = gsub("\\s+", " ", shipp)
-  #   
-  #   df[i, 'Kickoff'] = start
-  #   df[i, 'ArtistAssigned'] = assgn
-  #   df[i, 'ObtainBrandMentions'] = brand
-  #   df[i, 'CostApproved'] = costs
-  #   df[i, 'ArtworkComplete'] = artsy
-  #   df[i, 'RequesterApproved']= appro
-  #   df[i, 'JobComplete'] = cmplt
-  #   df[i, 'JobShipped'] = shipp
-  # })
-
-############################## Above for debugging
-
-for(i in 1:length(job_status)){
-  try({
-    start = regmatches(job_status[[i]][1][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][1][1], perl=T))
-    assgn = regmatches(job_status[[i]][2][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][2][1], perl=T))
-    brand = regmatches(job_status[[i]][3][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][3][1], perl=T))
-    costs = regmatches(job_status[[i]][4][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][4][1], perl=T))
-    artsy = regmatches(job_status[[i]][5][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][5][1], perl=T))
-    appro = regmatches(job_status[[i]][6][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][6][1], perl=T))
-    cmplt = regmatches(job_status[[i]][7][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][7][1], perl=T))
-    shipp = regmatches(job_status[[i]][8][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][8][1], perl=T))
-    
-    start = gsub("[()]", "", start)
-    assgn = gsub("[()]", "", assgn)
-    brand = gsub("[()]", "", brand)
-    costs = gsub("[()]", "", costs)
-    artsy = gsub("[()]", "", artsy)
-    appro = gsub("[()]", "", appro)
-    cmplt = gsub("[()]", "", cmplt)
-    shipp = gsub("[()]", "", shipp)
-    
-    start = gsub("\\s+", " ", start)
-    assgn = gsub("\\s+", " ", assgn)
-    brand = gsub("\\s+", " ", brand)
-    costs = gsub("\\s+", " ", costs)
-    artsy = gsub("\\s+", " ", artsy)
-    appro = gsub("\\s+", " ", appro)
-    cmplt = gsub("\\s+", " ", cmplt)
-    shipp = gsub("\\s+", " ", shipp)
-    
-    df[i, 'Kickoff'] = start
-    df[i, 'ArtistAssigned'] = assgn
-    df[i, 'ObtainBrandMentions'] = brand
-    df[i, 'CostApproved'] = costs
-    df[i, 'ArtworkComplete'] = artsy
-    df[i, 'RequesterApproved']= appro
-    df[i, 'JobComplete'] = cmplt
-    df[i, 'JobShipped'] = shipp
-  })
 }
 
-## Format as date for maths
-munge_date = function(dat) format(strptime(dat, '%b %d %Y %I:%M%p'), '%Y-%m-%d %H:%M')  
-dat_cols = c('Kickoff','ArtistAssigned','ObtainBrandMentions','CostApproved',
-             'ArtworkComplete','RequesterApproved','JobComplete','JobShipped')
-df[, dat_cols] = sapply(df[, dat_cols], munge_date)
+## verify no bugs
+## write.csv(new_df,"c:/users/pmwash/desktop/disposable docs/check for graphics.csv")
+##
+
 
 ## Obtain time spent in each category
 df$Turnaround_KickoffToShip = round(difftime(df$JobShipped, df$Kickoff, units="days"), 1)
