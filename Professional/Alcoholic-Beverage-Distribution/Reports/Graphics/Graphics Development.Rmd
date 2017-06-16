@@ -1,0 +1,1109 @@
+---
+title: "<b>Major Brands Graphics Report</b>"
+author: "Paul Washburn, Operations Analyst"
+date: "As of June 5th, 2017"
+output: 
+  pdf_document:
+      df_print: "kable" 
+      fig_width: 10
+      fig_height: 9
+---
+
+```{r setup, include=FALSE}
+## VITAL -- MAKE SURE ALL CURRENT DESIGNERS ARE PRESENT BELOW
+active_designers = c('Mueller, Rachel','Riehlman, Brittany','Wilhoit, Katie','Wright, Paige')
+graphics_posterIDs = c('MUELLER, RACHEL (86907)','RIEHLMAN, BRITTANY (86932)','WILHOIT, KATIE (86923)','WRIGHT, PAIGE (86885)')
+
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+
+## Graphics data dump from Diver
+library(dplyr)
+library(reshape2)
+library(lubridate)
+library(ggplot2)
+library(googleVis)
+library(stringr)
+library(tidyr)
+source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
+
+MONTHS = c('January','February','March','April','May','June',
+           'July','August','September','October','November','December')
+this_yr = round(as.numeric(format(Sys.Date(), '%Y')),0)
+last_yr = round(as.numeric(format(Sys.Date(), '%Y')) - 1,0)
+twoyrsago = round(as.numeric(format(Sys.Date(), '%Y')) - 2,0)
+
+thismo_numeric = month(Sys.Date())
+month_long = function(mo) month(mo, T, F)
+ytd_months = unlist(lapply(seq(1, thismo_numeric, by=1), month_long))
+
+pct_chg = function(new, old) {
+  round(((new-old)/abs(old))*100, 1)
+}
+len_unique = function(x) length(unique(x))
+
+## Read in and clean up the data
+df = read.csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/graphics_data_dump_diver.csv', header=TRUE)
+df$POSTERJob.ID = factor(df$POSTERJob.ID)
+df = df %>% filter(Year %in% c(last_yr, this_yr))
+df$Invoice.Date = dat = strptime(df$Invoice.Date, '%m/%d/%Y')
+df$Week = week(dat)
+df$Month = month(dat, TRUE, FALSE)
+df$ProjectID_LineID = paste0(df$POSTERJob.ID, '_', df$POSTER.Item.ID)
+df$POSTER.REPRINT = df$POSTER.REPRINT == 'Y'
+
+## Set rownames
+rownames(df) = c(1:NROW(df))
+
+## Test df
+#df = df[1:1000, ]
+
+## Get string for job status - parse for turnaround
+job_status = as.character(df$POSTER.JOB.STATUS)
+df$POSTER.JOB.STATUS = NULL
+names(job_status) = df$POSTERJob.ID
+job_status = strsplit(job_status, ',')
+
+
+
+############################## Below for debugging
+## for debugging job status
+# job_status[sapply(job_status, function(x) length(x) > 9)]
+# unique(sapply(job_status, function(x) length(x))) ## shows 7,8,9,10,11,12 separate
+
+extract_stage_name = function(job_status) {
+  drop_dates = function(x) gsub("\\s*\\([^\\)]+\\)","", as.character(x))
+  drop_spaces = function(x) gsub('[[:space:]]','',x)
+  drop_second_element = function(x) strsplit(as.character(x), split="\\(")[1]
+  
+  unlisted_status = sapply(unlist(job_status), drop_dates)
+  unlisted_status = sapply(unlisted_status, drop_spaces)
+  unlisted_status = sapply(unlisted_status, drop_second_element)
+  
+  return(unlisted_status)
+}
+
+munge_date = function(dat) format(strptime(dat, '%b %d %Y %I:%M%p'), '%Y-%m-%d %H:%M')  
+
+extract_dates_fromtext = function(job_status, i, j) {
+  dat = regmatches(job_status[[i]][j][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][j][1], perl=T))  
+  dat = gsub("[()]", "", dat)
+  dat = gsub("\\s+", " ", dat)
+  dat = munge_date(dat)
+  return(dat)
+}
+
+new_df = df
+
+for(i in 1:length(job_status)) {
+  ## Job stages vary in both order and number
+  job_stages = extract_stage_name(job_status[i]); print(i)
+  job_stages = job_stages[!grepl('4zj', job_stages)]
+ 
+  for(j in job_stages) {
+    colname = j; print(j)
+    
+    try({
+      if(colname %in% names(new_df)) {
+        new_df[i, colname] = extract_dates_fromtext(job_status, i, j)
+      } else {
+        new_df[, colname] = NA
+        new_df[i, colname] = extract_dates_fromtext(job_status, i, j)
+      }
+    })
+    
+  }
+  print(head(new_df, 20))
+}  
+  # try({
+  #   start = regmatches(job_status[[i]][1][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][1][1], perl=T))
+  #   assgn = regmatches(job_status[[i]][2][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][2][1], perl=T))
+  #   brand = regmatches(job_status[[i]][3][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][3][1], perl=T))
+  #   costs = regmatches(job_status[[i]][4][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][4][1], perl=T))
+  #   artsy = regmatches(job_status[[i]][5][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][5][1], perl=T))
+  #   appro = regmatches(job_status[[i]][6][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][6][1], perl=T))
+  #   cmplt = regmatches(job_status[[i]][7][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][7][1], perl=T))
+  #   shipp = regmatches(job_status[[i]][8][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][8][1], perl=T))
+  #   
+  #   start = gsub("[()]", "", start)
+  #   assgn = gsub("[()]", "", assgn)
+  #   brand = gsub("[()]", "", brand)
+  #   costs = gsub("[()]", "", costs)
+  #   artsy = gsub("[()]", "", artsy)
+  #   appro = gsub("[()]", "", appro)
+  #   cmplt = gsub("[()]", "", cmplt)
+  #   shipp = gsub("[()]", "", shipp)
+  #   
+  #   start = gsub("\\s+", " ", start)
+  #   assgn = gsub("\\s+", " ", assgn)
+  #   brand = gsub("\\s+", " ", brand)
+  #   costs = gsub("\\s+", " ", costs)
+  #   artsy = gsub("\\s+", " ", artsy)
+  #   appro = gsub("\\s+", " ", appro)
+  #   cmplt = gsub("\\s+", " ", cmplt)
+  #   shipp = gsub("\\s+", " ", shipp)
+  #   
+  #   df[i, 'Kickoff'] = start
+  #   df[i, 'ArtistAssigned'] = assgn
+  #   df[i, 'ObtainBrandMentions'] = brand
+  #   df[i, 'CostApproved'] = costs
+  #   df[i, 'ArtworkComplete'] = artsy
+  #   df[i, 'RequesterApproved']= appro
+  #   df[i, 'JobComplete'] = cmplt
+  #   df[i, 'JobShipped'] = shipp
+  # })
+
+############################## Above for debugging
+
+for(i in 1:length(job_status)){
+  try({
+    start = regmatches(job_status[[i]][1][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][1][1], perl=T))
+    assgn = regmatches(job_status[[i]][2][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][2][1], perl=T))
+    brand = regmatches(job_status[[i]][3][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][3][1], perl=T))
+    costs = regmatches(job_status[[i]][4][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][4][1], perl=T))
+    artsy = regmatches(job_status[[i]][5][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][5][1], perl=T))
+    appro = regmatches(job_status[[i]][6][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][6][1], perl=T))
+    cmplt = regmatches(job_status[[i]][7][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][7][1], perl=T))
+    shipp = regmatches(job_status[[i]][8][1], gregexpr("(?=\\().*?(?<=\\))", job_status[[i]][8][1], perl=T))
+    
+    start = gsub("[()]", "", start)
+    assgn = gsub("[()]", "", assgn)
+    brand = gsub("[()]", "", brand)
+    costs = gsub("[()]", "", costs)
+    artsy = gsub("[()]", "", artsy)
+    appro = gsub("[()]", "", appro)
+    cmplt = gsub("[()]", "", cmplt)
+    shipp = gsub("[()]", "", shipp)
+    
+    start = gsub("\\s+", " ", start)
+    assgn = gsub("\\s+", " ", assgn)
+    brand = gsub("\\s+", " ", brand)
+    costs = gsub("\\s+", " ", costs)
+    artsy = gsub("\\s+", " ", artsy)
+    appro = gsub("\\s+", " ", appro)
+    cmplt = gsub("\\s+", " ", cmplt)
+    shipp = gsub("\\s+", " ", shipp)
+    
+    df[i, 'Kickoff'] = start
+    df[i, 'ArtistAssigned'] = assgn
+    df[i, 'ObtainBrandMentions'] = brand
+    df[i, 'CostApproved'] = costs
+    df[i, 'ArtworkComplete'] = artsy
+    df[i, 'RequesterApproved']= appro
+    df[i, 'JobComplete'] = cmplt
+    df[i, 'JobShipped'] = shipp
+  })
+}
+
+## Format as date for maths
+munge_date = function(dat) format(strptime(dat, '%b %d %Y %I:%M%p'), '%Y-%m-%d %H:%M')  
+dat_cols = c('Kickoff','ArtistAssigned','ObtainBrandMentions','CostApproved',
+             'ArtworkComplete','RequesterApproved','JobComplete','JobShipped')
+df[, dat_cols] = sapply(df[, dat_cols], munge_date)
+
+## Obtain time spent in each category
+df$Turnaround_KickoffToShip = round(difftime(df$JobShipped, df$Kickoff, units="days"), 1)
+df$Stage1_KickoffToAssignment = round(difftime(df$ArtistAssigned, df$Kickoff, units="days"), 1)
+df$Stage2_AssignmentToBrandMentions = round(difftime(df$ObtainBrandMentions, df$ArtistAssigned, units="days"), 1)
+df$Stage3_BrandMentionsToCostApproval = round(difftime(df$CostApproved, df$ObtainBrandMentions, units="days"), 1)
+df$Stage4_CostApprovalToArtworkComplete = round(difftime(df$ArtworkComplete, df$CostApproved,units="days"), 1)
+df$Stage5_ArtworkCompleteToRequesterApproval = round(difftime(df$RequesterApproved, df$ArtworkComplete, units="days"), 1)
+df$Stage6_RequesterApprovalToCompletion = round(difftime(df$JobComplete, df$RequesterApproved, units="days"), 1)
+df$Stage7_CompletionToShip = round(difftime(df$JobShipped, df$JobComplete, units="days"), 1)
+
+## Obtain time from kickoff til each stage
+df$KickoffToArtistAssigned = round(difftime(df$ArtistAssigned, df$Kickoff, units="days"), 1)
+df$KickoffToBrandMentions = round(difftime(df$ObtainBrandMentions, df$Kickoff, units="days"), 1)
+df$KickoffToCostApproval = round(difftime(df$CostApproved, df$Kickoff, units="days"), 1)
+df$KickoffToArtworkComplete = round(difftime(df$ArtworkComplete, df$Kickoff, units="days"), 1)
+df$KickoffToRequesterApproval = round(difftime(df$RequesterApproved, df$Kickoff, units="days"), 1)
+df$KickoffToArtworkComplete = round(difftime(df$ArtworkComplete, df$Kickoff, units="days"), 1)
+df$KickoffToArtworkComplete = round(difftime(df$ArtworkComplete, df$Kickoff, units="days"), 1)
+
+df$KickoffMonth = as.character(month(df$Kickoff, T, F))
+df$InvoiceMonth = as.character(month(df$Invoice.Date, T, F))
+
+df$KickoffYear = kick_yr = as.character(year(df$Kickoff))
+df$InvoiceYear = invo_yr = as.character(year(df$Invoice.Date))
+
+## Get profit
+df$Profit = round(df$POSTER.Price - df$POSTER.CB.Total, 2)
+
+
+## Manipulate date to identify carrying costs
+df$JobStarted = is.na(df$Kickoff) == F
+df$JobFinished = is.na(df$JobShipped) == F
+inppp = aggregate(JobFinished ~ POSTERJob.ID, data=df, FUN=max)
+inppp = unlist(inppp[inppp$JobFinished == 0, 'POSTERJob.ID'])
+df$InPipeline = df$POSTERJob.ID %in% inppp
+
+## Mark last date in record as date of record
+the_milestones = data.frame(df$Kickoff, df$ArtistAssigned, df$ObtainBrandMentions, df$CostApproved,
+                               df$ArtworkComplete, df$RequesterApproved, df$JobComplete, df$JobShipped)
+df$DayOfRecord = dat = apply(the_milestones, 1, function(x) max(x, na.rm=T))
+df$MonthOfRecord = month(dat, T, F)
+df$WeekOfRecord = week(dat)
+df$YearOfRecord = year(dat)
+df$DayOfMonthOfRecord = mday(dat)
+df$WeekdayOfRecord = wday(dat, T, F)
+
+
+# ## Write to CSV for Python
+write.csv(df, 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/intermediate_graphics_data_dump_diver.csv',
+          row.names=FALSE)
+
+
+## Get current months
+this_month = as.character(month(Sys.Date(), T, F))
+last_month = as.character(month(month(Sys.Date())-1, T, F))
+beforethat = as.character(month(month(Sys.Date())-2, T, F))
+last_3 = c(this_month, last_month, beforethat)
+
+## Isolate this year and last year data only
+df_thisyr_lastyr = df[(df$KickoffYear %in% c(this_yr, last_yr)) | 
+                        (df$InvoiceYear %in% c(this_yr, last_yr)) & 
+                        (df$POSTER.Designer %in% active_designers), ]
+
+## Isolate YTD for this year and last year
+invoiced_firstmos = (df_thisyr_lastyr$InvoiceMonth %in% ytd_months)
+kickdoff_firstmos = (df_thisyr_lastyr$KickoffMonth %in% ytd_months)
+
+df_ytd_thislast = df_thisyr_lastyr[invoiced_firstmos | kickdoff_firstmos, ]
+
+
+## Isolate out last 3 mo from thisyr lastyr data
+kickoff_month = df_thisyr_lastyr$KickoffMonth = as.character(month(df_thisyr_lastyr$Kickoff, T, F))
+invoice_month = df_thisyr_lastyr$InvoiceMonth = as.character(month(df_thisyr_lastyr$Invoice.Date, T, F))
+
+kickoff_year = df_thisyr_lastyr$KickoffYear = as.character(year(df_thisyr_lastyr$Kickoff))
+invoice_year = df_thisyr_lastyr$InvoiceYear = as.character(year(df_thisyr_lastyr$Invoice.Date))
+
+
+startmo = kickoff_month %in% last_3 
+endinmo = invoice_month %in% last_3 
+
+trailing_3 = df_thisyr_lastyr[startmo==T | endinmo==T, ]
+
+df_thisyr = df[(df$KickoffYear == this_yr) | (df$InvoiceYear == this_yr) & (df$POSTER.Designer %in% active_designers), ]
+
+
+
+## For below, way below
+byrequester = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ Salesperson, data=df_thisyr, FUN=len_unique)
+bygraphics = byrequester[byrequester$Salesperson %in% graphics_posterIDs, ]
+byrequester = byrequester[byrequester$Salesperson %!in% graphics_posterIDs, ]
+rownames(byrequester) = byrequester$Salesperson
+rownames(bygraphics) = bygraphics$Salesperson
+bygraphics$Salesperson = NULL
+byrequester$Salesperson = NULL
+bygraphics = bygraphics[order(bygraphics$POSTERJob.ID, decreasing=T),]
+byrequester = byrequester[order(byrequester$POSTERJob.ID, decreasing=T),]
+
+names(byrequester) = c('Jobs Requested','Job Items Requested')
+names(bygraphics) = c('Jobs Requests Input for Others','Job Items Input for Others')
+```
+
+
+# Measures of success for Graphics Team
+This section was designed to help the Graphics department and management gain insight into the Graphics operation. In contrast, the next major section of this report is geared towards Graphics' impact on Sales and the organization at-large. Unless otherwise specified, the data considered is from all jobs submitted this year, and the data is accessed via a large dump from Diver of all fields and all dates available in the system.
+
+## Jobs Entered by Graphics Team
+
+Below shows jobs that were entered by the Graphics team on behalf of the sales team. 
+
+```{r requests_inputbygraphics}
+bygraphics
+```
+
+
+## Turnaround by Designer
+Figures below include weekends and holidays (i.e. holidays and weekends are not backed out of the duration calculations), and durations are measured in days. Active designers include Rachel, Brittany, Katie and Paige; all others are filtered out of the dataset. If this should not be the case please email Paul Washburn to change the filter criteria.
+
+
+```{r turnaround}
+turn_cols = cbind(df_thisyr$Turnaround_KickoffToShip, 
+                  df_thisyr$KickoffToArtworkComplete, 
+                  df_thisyr$Stage1_KickoffToAssignment,
+                  df_thisyr$Stage2_AssignmentToBrandMentions,
+                  df_thisyr$Stage3_BrandMentionsToCostApproval,
+                  df_thisyr$Stage4_CostApprovalToArtworkComplete,
+                  df_thisyr$Stage5_ArtworkCompleteToRequesterApproval,
+                  df_thisyr$Stage6_RequesterApprovalToCompletion,
+                  df_thisyr$Stage7_CompletionToShip)
+turnaround = aggregate(turn_cols ~ df_thisyr$POSTER.Designer, FUN=function(x) round(mean(x, na.rm=T), 1))
+names(turnaround) = c('X','Turnaround','Completion','Stage1','Stage2',
+                      'Stage3','Stage4','Stage5','Stage6','Stage7')
+rownames(turnaround) = turnaround$X
+turnaround$X = NULL
+turnaround
+```
+
+
+```{r descriptions}
+guide_df = data.frame(row.names=c('Stage 1','Stage 2','Stage 3','Stage 4','Stage 5','Stage 6','Stage 7','Completion','Turnaround'),
+                      Description=c('Job kickoff til artist assignment (days)',
+                                    'Artist assignment til brand mentions obtained (days)',
+                                    'Mentions obtained til cost approved (days)',
+                                    'Cost approved til artwork complete (days)',
+                                    'Artwork complete til requester approval (days)',
+                                    'Requester approval til job completion (days)',
+                                    'Job completion til ship (days)',
+                                    'Job kickoff til job marked as complete (days)',
+                                    'Job kickoff til job shipment (days)'))
+guide_df
+```
+
+
+```{r turnaround_plot, fig.height=5, fig.width=9}
+turnaround_x = data.frame(t(turnaround))
+turnaround_x$Item = rownames(turnaround_x)
+rownames(turnaround_x) = NULL
+turnaround_x = melt(turnaround_x, 'Item')
+turnaround_x$variable = gsub('\\..', ', ', turnaround_x$variable)
+
+turns_df = turnaround_x[turnaround_x$Item %in% c('Completion','Turnaround'), ]
+stage_df = turnaround_x[turnaround_x$Item %!in% c('Completion','Turnaround'), ]
+stage_df$Item = factor(stage_df$Item, levels=c('Stage1','Stage2','Stage3','Stage4',
+                                               'Stage5','Stage6','Stage7')) 
+
+library(gridExtra)
+
+ggplot(turns_df, aes(x=variable, y=value, group=Item)) +
+  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
+  facet_wrap(~Item, ncol=3, scales='free_y') +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='', y='Days', title='Average Turnaround & Completion (Days) by Designer')
+
+ggplot(stage_df, aes(x=Item, y=value, group=variable)) +
+  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
+  #facet_wrap(~variable, ncol=3, scales='free_y') +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='', y='Days', title='Average Days in Each Stage by Designer')
+```
+
+
+## Total Price & Mentions by Designer
+
+```{r price_mentions_plot}
+## melt and isolate data by designer
+val_cols = c('POSTER.Price','POSTER.MB.mentions')
+id_cols = c('POSTER.Designer','Month')
+
+bydesigner_melt = melt(df_thisyr, id_cols, val_cols)
+
+bydesigner = aggregate(value ~ variable + POSTER.Designer + Month, data=bydesigner_melt, FUN=sum)
+bydesigner = spread(bydesigner, 'Month', 'value')
+
+l_dfs = split(bydesigner, bydesigner$variable)
+price_df = l_dfs$POSTER.Price
+
+library(scales)
+byd_df = bydesigner
+namz = names(byd_df)
+namz = c(unlist(namz[namz %!in% c('variable','POSTER.Designer')]))
+mentions_df_melt = melt(byd_df, c('variable','POSTER.Designer'), namz)
+names(mentions_df_melt) = c('var','POSTER.Designer','Month','value')
+
+ggplot(mentions_df_melt, aes(x=Month, y=value, group=POSTER.Designer)) +
+  geom_line(aes(colour=POSTER.Designer)) +
+  geom_point(alpha=0.6) +
+  facet_wrap(~var, nrow=2, scales='free_y') +
+  theme_minimal() +
+  labs(title='Total Price and Mentions per Month by Designer', x='', y='') +
+  scale_y_continuous(labels=comma)
+
+
+process_df = function(df) {
+  rownames(df) = df$POSTER.Designer
+  df$POSTER.Designer = df$variable = NULL
+  return(df)
+}
+```
+
+
+## Cost by Designer
+
+A monthly sum of Poster Price, shown by month.
+
+```{r price_bydesigner, fig.height=7, fig.width=9}
+process_df(price_df)
+```
+
+```{r costs_bydesigner_plot, fig.height=5, fig.width=9}
+price_t = data.frame(t(process_df(price_df)))
+names(price_t) = gsub('\\..', ', ', names(price_t))
+price_t$Name = rownames(price_t)
+rownames(price_t) = NULL
+price_t_melt = melt(price_t, 'Name', active_designers)
+price_t_melt$Name = factor(price_t_melt$Name, levels=MONTHS) 
+
+ggplot(price_t_melt, aes(x=Name, y=value, group=variable)) +
+  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
+  facet_wrap(~variable, ncol=4) +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='', y='Dollars', title='Sum of Poster Price per Month by Designer') +
+  scale_y_continuous(labels=dollar)
+```
+
+
+## Brand Mentions by Designer
+Sum of all MB mentions by Designer for the current year, shown by month. 
+
+```{r mentions_bydesigner}
+mentions_df = l_dfs$POSTER.MB.mentions
+process_df(mentions_df)
+```
+
+Total number of brand mentions by Designer YTD.
+```{r rowsums}
+ttments = data.frame(t(rowSums(process_df(mentions_df), na.rm=T)))
+rownames(ttments) = 'Tot Brand Mentions YTD'
+names(ttments) = gsub('\\..',', ',names(ttments))
+ttments
+```
+
+Average number of brand mentions per month by Designer YTD.
+
+```{r rowmns}
+avgments = data.frame(t(rowMeans(process_df(mentions_df), na.rm=T)))
+rownames(avgments) = 'Avg Brand Mentions per Month'
+names(avgments) = gsub('\\..',', ',names(avgments))
+avgments
+```
+
+
+
+```{r mentions_plot, fig.height=5, fig.width=9}
+mentions_t = data.frame(t(process_df(mentions_df)))
+names(mentions_t) = gsub('\\..', ', ', names(mentions_t))
+mentions_t$Name = rownames(mentions_t)
+rownames(mentions_t) = NULL
+mentions_t_melt = melt(mentions_t, 'Name', active_designers)
+mentions_t_melt$Name = factor(mentions_t_melt$Name, levels=MONTHS) 
+
+ggplot(mentions_t_melt, aes(x=Name, y=value, group=variable)) +
+  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
+  facet_wrap(~variable, ncol=4) +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='', y='Number of Brand Mentions', title='Brand Mentions per Month by Designer')
+```
+
+
+
+## Reprints by Designer
+Total number of reprints for the current year, by Designer. Percent of Total is shown as a percent; in other words, it has been multiplied by 100 (e.g. 1.2 indicates 1.2%, or 0.012). Reprints are counted at the Job ID level, meaning a job with 10 items marked as reprints will be counted one time. It is possible to add in reprints at the Job Item level if this information is desired.
+
+```{r reprints}
+reprint_cols = c('POSTERJob.ID','POSTER.Designer')
+no_dupes = !duplicated(df[,reprint_cols])
+
+reprints = df[no_dupes, c('POSTERJob.ID','POSTER.Designer','POSTER.REPRINT','Year')]
+reprints = reprints[reprints$Year == this_yr, ]
+reprints = aggregate(POSTER.REPRINT ~ POSTER.Designer, data=reprints, FUN=sum)
+
+tot_jobs = aggregate(POSTERJob.ID ~ POSTER.Designer, data=df_thisyr, FUN=len_unique)
+reprints = merge(reprints, tot_jobs, by='POSTER.Designer', how='all')
+reprints = process_df(reprints)
+
+## Specify column names
+names(reprints) = c('Number of Reprints', 'Total Jobs')
+reprints$`Reprints as % of Total Jobs` = round((reprints$`Number of Reprints` / reprints$`Total Jobs`)*100, 1)
+reprints
+```
+
+```{r reprint_plot, fig.height=5, fig.width=9}
+reprints_t = data.frame(t(reprints))
+names(reprints_t) = gsub('\\..', ', ', names(reprints_t))
+reprints_t$Name = rownames(reprints_t)
+rownames(reprints_t) = NULL
+reprints_t_melt = melt(reprints_t, 'Name', active_designers)
+
+ggplot(reprints_t_melt, aes(x=variable, y=value, group=Name)) +
+  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
+  facet_wrap(~Name, ncol=4, scales='free_y') +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='', y='')
+
+```
+
+
+## Number of Jobs per Month by Designer
+
+Total number of jobs by designer, shown by month.
+
+```{r jobspermo_bydesigner}
+jobspermo = aggregate(POSTERJob.ID ~ POSTER.Designer + Month, data=df_thisyr, FUN=len_unique)
+jobspermo = spread(jobspermo, 'Month', 'POSTERJob.ID')
+jobspermo = process_df(jobspermo)
+jobspermo
+```
+
+YTD total number of jobs by designer.
+
+```{r totjobrowsums}
+tottjobs = data.frame(t(rowSums(jobspermo, na.rm=T)))
+rownames(tottjobs) = 'Tot Jobs  YTD'
+names(tottjobs) = gsub('\\..',', ',names(tottjobs)) 
+tottjobs
+```
+
+YTD average number of jobs per month by designer.
+
+```{r meanjobrowmeans}
+avgjobs = data.frame(t(rowMeans(jobspermo, na.rm=T)))
+rownames(avgjobs) = 'Avg Jobs per Month'
+names(avgjobs) = gsub('\\..',', ',names(avgjobs)) 
+avgjobs
+```
+
+
+
+```{r, fig.height=5, fig.width=9}
+t_jobs = data.frame(t(jobspermo))
+t_jobs$Month = row.names(t_jobs)
+rownames(t_jobs) = NULL
+t_jobs = melt(t_jobs, 'Month', gsub(', ','..',active_designers))
+t_jobs$variable = gsub('\\..', ', ', t_jobs$variable)
+t_jobs$Month = factor(t_jobs$Month, levels=MONTHS)
+
+ggplot(data=t_jobs, aes(x=Month, y=value, group=variable)) +
+  geom_line(aes(colour=variable)) +
+  geom_point(alpha=.6, size=1.5) +
+  labs(x='Month', y='Number of Jobs', title='Number of Jobs by Designer') +
+  theme_minimal()
+```
+
+
+## Pipeline & Carrying Costs by Designer
+
+Summary of current jobs in the pipeline. Only jobs that have a Kickoff date yet do not have a Ship date are considered. 
+
+```{r pipelinex}
+colz = c('DayOfRecord','YearOfRecord','WeekOfRecord','DayOfMonthOfRecord',
+         'DayOfMonthOfRecord','WeekdayOfRecord','MonthOfRecord',
+         'POSTERJob.ID','ProjectID_LineID',
+         'POSTER.Price','POSTER.ITEM.CATEGORY',
+         'POSTER.Designer','InPipeline','POSTER.MB.mentions')
+
+inpipe = df_ytd_thislast[df_ytd_thislast$InPipeline==T , colz] 
+
+pipeline_summary = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ POSTER.Designer,
+                             data=inpipe, FUN=len_unique)
+price_summary = aggregate(cbind(POSTER.Price, POSTER.MB.mentions) ~ POSTER.Designer,
+                             data=inpipe, FUN=function(x) round(sum(x, na.rm=T), 0))
+pipeline_summary = merge(pipeline_summary, price_summary, on='POSTER.Designer', how='all')
+
+
+pipeline_summary = process_df(pipeline_summary)
+names(pipeline_summary) = c('Current Jobs', 'Current Items', 'Total Price', 'Total Mentions')
+pipeline_summary
+```
+
+
+## Pipeline Over Time
+
+A Job is considered active in the Graphics pipeline if the Job has been Kicked Off, but has not been Shipped. Pipeline is a notoriously difficult attribute to measure; it is grouped by Month because getting daily measures would require each job that is currently active to be marked (each day) as such. The measure below assumes that a month is a long enough timeframe for every active project to get at least one entry into POSTer, and thus is observable at a monthly frequency.  
+
+Pipeline is displayed by Designer and at the aggregate level. The aggregate level includes old designers, while the table by Designer does not.
+
+```{r bydes_inpipe, fig.height=5, fig.width=9}
+## Designer level
+agg_summary = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ YearOfRecord + MonthOfRecord,
+                           data=inpipe,
+                           FUN=len_unique)
+agg_summary = agg_summary[agg_summary$MonthOfRecord %in% ytd_months, ]
+
+## Plot 
+ggplot(agg_summary, aes(x=MonthOfRecord, y=POSTERJob.ID, group=factor(YearOfRecord))) +
+  geom_bar(stat='identity', position='dodge', aes(fill=factor(YearOfRecord)), colour='black') +
+  theme_minimal() +
+  labs(x='Month of Record', y='Number of Active Graphics Jobs', title='Graphics Pipeline Over Time') +
+  facet_grid(~YearOfRecord) +
+  theme(axis.text.x=element_text(angle=90, hjust=1))
+
+
+## Do the aggregate level now
+inpipe_summary = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ 
+                             POSTER.Designer + YearOfRecord + MonthOfRecord,
+                           data=inpipe,
+                           FUN=len_unique)
+inpipe_summary = inpipe_summary[(inpipe_summary$MonthOfRecord %in% ytd_months) &
+                                  (inpipe_summary$POSTER.Designer %in% active_designers), ]
+
+## Plot 
+ggplot(inpipe_summary, aes(x=MonthOfRecord, y=POSTERJob.ID, group=POSTER.Designer)) +
+  geom_line(aes(colour=POSTER.Designer), size=1.5) +
+  geom_point() +
+  facet_grid(~YearOfRecord) +
+  theme_minimal() +
+  labs(x='Month of Record', y='Number of Active Graphics Jobs', title='Pipeline by Designer') +
+  theme(axis.text.x=element_text(angle=90, hjust=1))
+```
+
+
+
+
+## Types of Graphics Jobs
+
+To highlight the heterogeneity in the types of jobs Graphics produces, this section considers the following items as "accessories;" all else is considered "print." 
+
+  - Menu Book
+  - Table Top Wrap
+  - TT A-Frame Holder
+  - TT Accrylic Stand
+  - TT Flip Stand
+  - Vivid Board
+  
+The data & figures below considers *projects that have been finished this year* only. Price and turnaround are shown as averages, while Jobs and Job Items are generated using a "count unique" function.
+
+```{r heterogeneity_jobs}
+jobtypes = df_thisyr[ , c('POSTER.ITEM.CATEGORY','POSTER.Price',
+                          'POSTERJob.ID','ProjectID_LineID','Turnaround_KickoffToShip')]
+
+## define accessories for later
+accessories = c('Menu Books','Table Top Wrap','TT A-Frame Holder','TT A-Frame Holder (Holder Only)', 
+                'TT Acrylic Stand','TT Acrylic Stand (Stand Only)','TT Flip Stand','TT Flip Stand (Stand Only)',
+                'Vivid Board - Dry Erase','Vivid Board - Dry Erase','Light Box')
+jobtypes$AccessoryOrPrint = ifelse(jobtypes$POSTER.ITEM.CATEGORY %in% accessories, 'Accessory', 
+                                   'Print')
+jobtypes = jobtypes[is.na(jobtypes$Turnaround_KickoffToShip)==F, ]
+
+## Custom categories from Rachel
+jt3 = aggregate(cbind(Turnaround_KickoffToShip, POSTER.Price) ~ AccessoryOrPrint, 
+                data=jobtypes, FUN=function(x) round(mean(x,na.rm=T), 1))
+jt4 = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ AccessoryOrPrint, 
+                data=jobtypes, FUN=len_unique)
+
+acc_or_pri = merge(jt3, jt4, on='AccessoryOrPrint', how='all')
+rownames(acc_or_pri) = acc_or_pri$AccessoryOrPrint
+acc_or_pri$AccessoryOrPrint = NULL
+names(acc_or_pri) = c('Turnaround','Price','Jobs','Items')
+acc_or_pri = acc_or_pri[order(acc_or_pri$Turnaround, decreasing=T), ]
+
+acc_or_pri
+
+## Get more granular
+jt1 = aggregate(cbind(Turnaround_KickoffToShip, POSTER.Price) ~ POSTER.ITEM.CATEGORY, 
+                data=jobtypes, FUN=function(x) round(mean(x,na.rm=T), 1))
+jt2 = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ POSTER.ITEM.CATEGORY, 
+                data=jobtypes, FUN=len_unique)
+
+job_typ = merge(jt1, jt2, on='POSTER.ITEM.CATEGORY', how='all')
+rownames(job_typ) = job_typ$POSTER.ITEM.CATEGORY
+job_typ$POSTER.ITEM.CATEGORY = NULL
+names(job_typ) = c('Turnaround','Price','Jobs','Items')
+job_typ = job_typ[order(job_typ$Turnaround, decreasing=T), ]
+
+job_typ
+```
+
+
+
+
+## Active Development for Graphics Metrics
+Currently two metrics that were requested are not available. 
+
+  - On-Time completion of job: The field for Requested Finish Date in POSTer is unreliable as of now for various reasons. It defaults to 2 weeks, and is not always updated. If some sort of guidelines are issued to this regard then the field will need to be added to the main Dive from which this data is acquired (which is really just a massive dump).
+  - Number of "rush" jobs: The "rush" field is not passed from POSTer to Diver in the raw model. When this field is passed to Diver the metric will be added.
+  - Derive the carrying cost at all points in the past to establish what the departmental carrying capacity is; helps planning for the future. Show in a time series plot.
+  - Quantify demand; forecast it using time-series methodology (e.g. exponential smoothing).
+  - Add in yearly comparison by designer per Rachel's request.
+
+
+
+<br><br><br><br><br>
+
+
+
+
+
+# Measures of Success for Major Brands
+
+This section was designed to provide Leadership succinct insights on Graphics impact on the wider organization. The goal is for this section to contain everything that has to do with Graphics, yet is not immediately relevant to managing the graphics team, workflow or personnel. 
+
+
+
+## By Company
+
+### YTD Number of Jobs by Company
+
+Month below is defined as the Kickoff month, or the month in which the Job started.
+
+```{r bylocation_bymo, fig.height=5, fig.width=9}
+kickedoff_byhouse = aggregate(POSTERJob.ID ~ KickoffYear + Company, data=df_ytd_thislast, FUN=len_unique)
+kickedoff_byhouse = kickedoff_byhouse[kickedoff_byhouse$KickoffYear != twoyrsago, ]
+kickedoff_byhouse = spread(kickedoff_byhouse, 'KickoffYear', 'POSTERJob.ID')
+rownames(kickedoff_byhouse) = kickedoff_byhouse$Company
+kickedoff_byhouse$Company = NULL
+
+kickedoff_byhouse$`Percent Change (%)` = pct_chg(kickedoff_byhouse[, as.character(this_yr)], 
+                                                 kickedoff_byhouse[, as.character(last_yr)])
+kickedoff_byhouse
+
+kickedoff_byhouse$Loc = rownames(kickedoff_byhouse)
+kickedoff_byhouse = melt(kickedoff_byhouse, 'Loc', c('2016','2017'))
+
+## Plot for quick view
+ggplot(kickedoff_byhouse, aes(x=Loc, y=value, group=variable)) +
+  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='Company', y='Projects Kicked Off, Year-over-Year',title='Projects Kicked Off by House')
+```
+
+### YTD Number of Jobs by Month
+
+The data shown below includes records for this year and last year where *either the Kickoff date's month or the Invoice Date's month are in any of the months so far this year* For example, today is May 1st, then the dataset will contain January through May for both this year and last year. 
+
+Year-to-date Jobs kicked off by month, shown by Company.
+
+```{r bylocation_ytd_kickedoff}
+kickedoff_byhouse_bymo = aggregate(POSTERJob.ID ~ KickoffYear + KickoffMonth + Company, 
+                              data=df_ytd_thislast, FUN=len_unique)
+kickedoff_byhouse_bymo = kickedoff_byhouse_bymo[kickedoff_byhouse_bymo$KickoffYear != twoyrsago & 
+                                        kickedoff_byhouse_bymo$KickoffMonth %in% ytd_months, ]
+kickedoff_byhouse_bymo = spread(kickedoff_byhouse_bymo, 'KickoffYear', 'POSTERJob.ID')
+kickedoff_byhouse_bymo$`Percent Change (%)` = pct_chg(kickedoff_byhouse_bymo[, as.character(this_yr)], 
+                                                 kickedoff_byhouse_bymo[, as.character(last_yr)])
+kickedoff_byhouse_bymo$KickoffMonth = factor(kickedoff_byhouse_bymo$KickoffMonth, levels=ytd_months)
+kickedoff_byhouse_bymo = kickedoff_byhouse_bymo[order(kickedoff_byhouse_bymo$KickoffMonth), ]
+
+## Split dataframes by company
+make_rownames = function(df, mocol) {
+  rownames(df) = df[, mocol]
+  df[, mocol] = NULL
+  return(df)
+}
+kickedoff_byhouse_bymo = split(kickedoff_byhouse_bymo, kickedoff_byhouse_bymo$Company)
+KC_kickoffs = make_rownames(kickedoff_byhouse_bymo$`KANSAS CITY`, 'KickoffMonth')
+STL_kickoffs = make_rownames(kickedoff_byhouse_bymo$`ST LOUIS`, 'KickoffMonth')
+MMO_kickoffs = make_rownames(kickedoff_byhouse_bymo$`MID MISSOURI`, 'KickoffMonth')
+
+KC_kickoffs
+STL_kickoffs
+MMO_kickoffs
+```
+
+### YTD Graphics Profit by Company
+
+Profit in the months so far this year (i.e. YTD months), year-over-year. Graphics Profit is defined as YTD Poster Price minus YTD Charge Back Price.
+
+```{r ytd_pctprofit}
+profit_byhouse = aggregate(Profit ~ KickoffYear + Company, data=df_ytd_thislast, FUN=function(x) round(sum(x, na.rm=T), 2))
+profit_byhouse = profit_byhouse[profit_byhouse$KickoffYear != twoyrsago, ]
+profit_byhouse = spread(profit_byhouse, 'KickoffYear', 'Profit')
+rownames(profit_byhouse) = profit_byhouse$Company
+profit_byhouse$Company = NULL
+
+profit_byhouse$`Percent Change (%)` = pct_chg(profit_byhouse[, as.character(this_yr)], profit_byhouse[, as.character(last_yr)])
+profit_byhouse
+```
+
+
+
+
+
+## By Customer Account
+
+Top customer accounts *(by number of Graphics Jobs)* YTD, compared to the same period last year.
+
+```{r jobs_byaccount}
+NOT_REAL_CUSTOMERS = c('GENERAL MARKET ALL-STL','GENERAL MARKET ALL-MMS',
+                       'GENERAL MARKET ALL-KC','GENERAL MARKET ALL-MMN','',
+                       'MAJOR BRANDS INTERNAL-STL','GENERAL MARKET ON-PREMISE STL',
+                       'MAJOR BRANDS INTERNAL-KC')
+
+jobs_byaccount = aggregate(POSTERJob.ID ~ KickoffYear + Customer, data=df_ytd_thislast, FUN=len_unique)
+jobs_byaccount = jobs_byaccount[jobs_byaccount$KickoffYear != twoyrsago, ]
+jobs_byaccount = spread(jobs_byaccount, 'KickoffYear', 'POSTERJob.ID')
+jobs_byaccount = jobs_byaccount[jobs_byaccount$Customer %!in% NOT_REAL_CUSTOMERS, ]
+rownames(jobs_byaccount) = jobs_byaccount$Customer
+jobs_byaccount$Customer = NULL
+
+jobs_byaccount$`Percent Change (%)` = pct_chg(jobs_byaccount[, as.character(this_yr)], 
+                                                 jobs_byaccount[, as.character(last_yr)])
+jobs_byaccount = jobs_byaccount[order(jobs_byaccount$`2017`, decreasing=T), ]
+head(jobs_byaccount, 50)
+```
+
+Top customer accounts *(by Graphics Profit)* YTD, compared to the same period last year.
+
+```{r profit_byaccount}
+profit_byaccount = aggregate(Profit ~ KickoffYear + Customer, data=df_ytd_thislast, FUN=function(x) round(sum(x, na.rm=T), 2))
+profit_byaccount = profit_byaccount[profit_byaccount$KickoffYear != twoyrsago, ]
+profit_byaccount = spread(profit_byaccount, 'KickoffYear', 'Profit')
+profit_byaccount = profit_byaccount[profit_byaccount$Customer %!in% NOT_REAL_CUSTOMERS, ]
+rownames(profit_byaccount) = profit_byaccount$Customer
+profit_byaccount$Customer = NULL
+
+profit_byaccount$`Percent Change (%)` = pct_chg(profit_byaccount[, as.character(this_yr)], 
+                                                 profit_byaccount[, as.character(last_yr)])
+profit_byaccount = profit_byaccount[order(profit_byaccount$`2017`, decreasing=T), ]
+head(profit_byaccount, 50)
+```
+
+
+
+
+
+## By Supplier
+
+Top suppliers *(by number of Graphics Jobs)* YTD, compared to the same period last year.
+
+```{r jobs_bysupplier}
+jobs_bysupplier = aggregate(POSTERJob.ID ~ KickoffYear + Supplier, data=df_ytd_thislast, FUN=len_unique)
+jobs_bysupplier = jobs_bysupplier[jobs_bysupplier$KickoffYear != twoyrsago, ]
+jobs_bysupplier = spread(jobs_bysupplier, 'KickoffYear', 'POSTERJob.ID')
+jobs_bysupplier = jobs_bysupplier[jobs_bysupplier$Supplier != '', ]
+rownames(jobs_bysupplier) = jobs_bysupplier$Supplier
+jobs_bysupplier$Supplier = NULL
+
+jobs_bysupplier$`Percent Change (%)` = pct_chg(jobs_bysupplier[, as.character(this_yr)], 
+                                                 jobs_bysupplier[, as.character(last_yr)])
+# jobs_bysupplier = jobs_bysupplier[jobs_bysupplier$`2017` != 0]
+jobs_bysupplier = jobs_bysupplier[order(jobs_bysupplier$`2017`, decreasing=T), ]
+head(jobs_bysupplier, 35)
+```
+
+Top suppliers *(by Graphics Profit)* YTD, compared to the same period last year.
+
+```{r profit_bysupplier}
+profit_bysupplier = aggregate(Profit ~ KickoffYear + Supplier, data=df_ytd_thislast, FUN=function(x) round(sum(x, na.rm=T), 2))
+profit_bysupplier = profit_bysupplier[profit_bysupplier$KickoffYear != twoyrsago, ]
+profit_bysupplier = spread(profit_bysupplier, 'KickoffYear', 'Profit')
+profit_bysupplier = profit_bysupplier[profit_bysupplier$Supplier != '', ]
+rownames(profit_bysupplier) = profit_bysupplier$Supplier
+profit_bysupplier$Supplier = NULL
+
+profit_bysupplier$`Percent Change (%)` = pct_chg(profit_bysupplier[, as.character(this_yr)], 
+                                                 profit_bysupplier[, as.character(last_yr)])
+# profit_bysupplier = profit_bysupplier[profit_bysupplier$`2017` != 0]
+profit_bysupplier = profit_bysupplier[order(profit_bysupplier$`2017`, decreasing=T), ]
+head(profit_bysupplier, 35)
+```
+
+
+
+
+
+
+
+
+## By Brand
+
+Below displays the top Brands *(sorted in descending order by Number of Jobs)* for this year only. 
+
+```{r brands_customers}
+brands = df_thisyr[,c('Brand','Supplier','POSTER.CB.Total','POSTER.Price',
+                            'POSTER.ITEM.CATEGORY','POSTERJob.ID','ProjectID_LineID')]
+brands = brands[brands$Brand != '', ]
+b1 = aggregate(cbind(POSTER.CB.Total, POSTER.Price) ~ Supplier + Brand, data=brands, FUN=function(x) round(sum(x, na.rm=T), 0))
+b1$Profit = round(b1$POSTER.Price - b1$POSTER.CB.Total, 0)
+b2 = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ Supplier + Brand, data=brands, FUN=len_unique)
+
+brands = merge(b1, b2, on=c('Supplier','Brand'), how='all')
+rownames(brands) = brands$Brand
+brands$Brand = NULL
+names(brands) = c('Supplier','Chargeback','Price','Profit','Jobs','Job Items')
+brands = brands[order(brands$Jobs, decreasing=T), ]
+brands$Supplier = NULL
+
+head(brands, 50)
+```
+
+
+
+
+
+
+
+<!-- ```{r network_x} -->
+<!-- library(ggnet) -->
+<!-- library(GGally) -->
+<!-- library(network) -->
+<!-- library(sna) -->
+<!-- net = data.frame(Brand=df_ytd_thislast$Brand,  -->
+<!--                  Customer=df_ytd_thislast$Customer, -->
+<!--                  weight=df_ytd_thislast$POSTER.Price) -->
+<!-- net = net[(net$Brand != '') & (net$Customer != '') &(is.na(net$weight)==F), ] -->
+<!-- net = aggregate(weight ~ Brand + Customer, data=net, FUN=function(x) round(sum(x, na.rm=T), 2)) -->
+<!-- net = network(net) -->
+
+<!-- ggnet(net, node.size=3, label=T, edge.size='weight') -->
+<!-- ``` -->
+
+
+
+
+
+
+
+## By Requester
+
+Top Salesperson requesters who input jobs for this year only, sorted by number of jobs. Note that the Graphics department inputs many jobs as proxies for the true requester; these are shown separately. Requests that were entered by the Graphics department on behalf of someone else will show up in the second table below.
+
+```{r byrequester}
+head(byrequester, 35)
+bygraphics
+```
+
+
+
+
+
+
+# What's Working? What's Not?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Logical Future Improvements
+  - Instead of placing all brand mentions for other distributors on one line in POSTer, store each mention as a separate line. This will create marginally more work for Graphics, yet will immensely improve the insights we will be able to gain into individual brands, our place in the market, and provide a more detailed view of our market share We can then use formal tests to see which Graphics products are working and which are not. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ## Python to process -->
+<!-- ```{python} -->
+<!-- import pandas as pd -->
+
+<!-- path = 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/intermediate_graphics_data_dump_diver.csv' -->
+<!-- df = pd.read_csv(path, header=0) -->
+<!-- ## Use Python to process strings -->
+<!-- df.head() -->
+<!-- ``` -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
