@@ -56,11 +56,7 @@ df$POSTER.REPRINT = df$POSTER.REPRINT == 'Y'
 ## Set rownames
 rownames(df) = c(1:NROW(df))
 
-############################## Below for debugging
-## for debugging job status
-# job_status[sapply(job_status, function(x) length(x) > 9)]
-# unique(sapply(job_status, function(x) length(x))) ## shows 7,8,9,10,11,12 separate
-
+## Specify functions 
 extract_stage_name = function(job_status) {
   drop_dates = function(x) gsub("\\s*\\([^\\)]+\\)","", as.character(x))
   drop_spaces = function(x) gsub('[[:space:]]','',x)
@@ -116,51 +112,57 @@ for(i in 1:length(job_status)) {
   }
 }
 
+
+df = new_df
 ## verify no bugs
 ## write.csv(new_df,"c:/users/pmwash/desktop/disposable docs/check for graphics.csv")
-##
 
 
 ## Obtain time spent in each category
-df$Turnaround_KickoffToShip = round(difftime(df$JobShipped, df$Kickoff, units="days"), 1)
-df$Stage1_KickoffToAssignment = round(difftime(df$ArtistAssigned, df$Kickoff, units="days"), 1)
-df$Stage2_AssignmentToBrandMentions = round(difftime(df$ObtainBrandMentions, df$ArtistAssigned, units="days"), 1)
-df$Stage3_BrandMentionsToCostApproval = round(difftime(df$CostApproved, df$ObtainBrandMentions, units="days"), 1)
-df$Stage4_CostApprovalToArtworkComplete = round(difftime(df$ArtworkComplete, df$CostApproved,units="days"), 1)
-df$Stage5_ArtworkCompleteToRequesterApproval = round(difftime(df$RequesterApproved, df$ArtworkComplete, units="days"), 1)
-df$Stage6_RequesterApprovalToCompletion = round(difftime(df$JobComplete, df$RequesterApproved, units="days"), 1)
-df$Stage7_CompletionToShip = round(difftime(df$JobShipped, df$JobComplete, units="days"), 1)
+df$Turnaround_KickoffToShip = round(difftime(df$AssembledandShipped, df$Incomplete, units="days"), 1)
+df$Stage1_KickoffToAssignment = round(difftime(df$AwaitingGraphicsAssignment, df$Incomplete, units="days"), 1)
+df$Stage2_AssignmentToBrandMentions = round(difftime(df$AwaitingBrandMentions, df$AwaitingGraphicsAssignment, units="days"), 1)
+df$Stage3_BrandMentionsToCostApproval = round(difftime(df$AwaitingCostApproval, df$AwaitingBrandMentions, units="days"), 1)
+df$Stage4_CostApprovalToArtworkComplete = round(difftime(df$AwaitingArtwork, df$AwaitingCostApproval,units="days"), 1)
+df$Stage4A_RedesignRequestedToRedesignApproval = round(difftime(df$AwaitingRequesterChangeApproval, df$AwaitingArtworkRedesign, units="days"), 1)
+df$Stage5_ArtworkCompleteToRequesterApproval = round(difftime(df$AwaitingRequesterApproval, df$AwaitingArtwork, units="days"), 1)
+df$Stage6_RequesterApprovalToCompletion = round(difftime(df$AssembledandShipped, df$AwaitingRequesterApproval, units="days"), 1)
+df$Stage7_CompletionToShip = round(difftime(df$AssembledandShipped, df$AssembledandShipped, units="days"), 1)
 
-## Obtain time from kickoff til each stage
-df$KickoffToArtistAssigned = round(difftime(df$ArtistAssigned, df$Kickoff, units="days"), 1)
-df$KickoffToBrandMentions = round(difftime(df$ObtainBrandMentions, df$Kickoff, units="days"), 1)
-df$KickoffToCostApproval = round(difftime(df$CostApproved, df$Kickoff, units="days"), 1)
-df$KickoffToArtworkComplete = round(difftime(df$ArtworkComplete, df$Kickoff, units="days"), 1)
-df$KickoffToRequesterApproval = round(difftime(df$RequesterApproved, df$Kickoff, units="days"), 1)
-df$KickoffToArtworkComplete = round(difftime(df$ArtworkComplete, df$Kickoff, units="days"), 1)
-df$KickoffToArtworkComplete = round(difftime(df$ArtworkComplete, df$Kickoff, units="days"), 1)
+## Obtain time from Incomplete til each stage
+df$KickoffToAwaitingGraphicsAssignment = round(difftime(df$AwaitingGraphicsAssignment, df$Incomplete, units="days"), 1)
+df$KickoffToBrandMentions = round(difftime(df$AwaitingBrandMentions, df$Incomplete, units="days"), 1)
+df$KickoffToCostApproval = round(difftime(df$AwaitingCostApproval, df$Incomplete, units="days"), 1)
+df$KickoffToArtworkComplete = round(difftime(df$AwaitingArtwork, df$Incomplete, units="days"), 1)
+df$KickoffToRequesterApproval = round(difftime(df$AwaitingRequesterApproval, df$Incomplete, units="days"), 1)
+df$KickoffToArtworkComplete = round(difftime(df$AwaitingArtwork, df$Incomplete, units="days"), 1)
 
-df$KickoffMonth = as.character(month(df$Kickoff, T, F))
+## Get month/year when a given job started
+df$KickoffMonth = as.character(month(df$Incomplete, T, F))
 df$InvoiceMonth = as.character(month(df$Invoice.Date, T, F))
-
-df$KickoffYear = kick_yr = as.character(year(df$Kickoff))
+df$KickoffYear = kick_yr = as.character(year(df$Incomplete))
 df$InvoiceYear = invo_yr = as.character(year(df$Invoice.Date))
 
-## Get profit
+## Get profit as specified by Rachel M.
 df$Profit = round(df$POSTER.Price - df$POSTER.CB.Total, 2)
 
 
 ## Manipulate date to identify carrying costs
-df$JobStarted = is.na(df$Kickoff) == F
-df$JobFinished = is.na(df$JobShipped) == F
+df$JobStarted = is.na(df$Incomplete) == F
+df$JobFinished = is.na(df$AssembledandShipped) == F
 inppp = aggregate(JobFinished ~ POSTERJob.ID, data=df, FUN=max)
 inppp = unlist(inppp[inppp$JobFinished == 0, 'POSTERJob.ID'])
 df$InPipeline = df$POSTERJob.ID %in% inppp
 
+## Mark redesigns
+df$Redesign = is.na(df$AwaitingArtworkRedesign) == F
+
 ## Mark last date in record as date of record
-the_milestones = data.frame(df$Kickoff, df$ArtistAssigned, df$ObtainBrandMentions, df$CostApproved,
-                               df$ArtworkComplete, df$RequesterApproved, df$JobComplete, df$JobShipped)
-df$DayOfRecord = dat = apply(the_milestones, 1, function(x) max(x, na.rm=T))
+the_milestones = data.frame(df$Incomplete, df$AwaitingGraphicsAssignment, 
+                            df$AwaitingBrandMentions, df$AwaitingCostApproval,
+                            df$AwaitingArtwork, df$AwaitingRequesterApproval, df$AssembledandShipped, 
+                            df$AwaitingArtworkRedesign, df$AwaitingRequesterChangeApproval)
+df$DayOfRecord = dat = apply(head(the_milestones), 1, function(x) max(x, na.rm=T))
 df$MonthOfRecord = month(dat, T, F)
 df$WeekOfRecord = week(dat)
 df$YearOfRecord = year(dat)
@@ -192,14 +194,14 @@ df_ytd_thislast = df_thisyr_lastyr[invoiced_firstmos | kickdoff_firstmos, ]
 
 
 ## Isolate out last 3 mo from thisyr lastyr data
-kickoff_month = df_thisyr_lastyr$KickoffMonth = as.character(month(df_thisyr_lastyr$Kickoff, T, F))
+Incomplete_month = df_thisyr_lastyr$KickoffMonth = as.character(month(df_thisyr_lastyr$Incomplete, T, F))
 invoice_month = df_thisyr_lastyr$InvoiceMonth = as.character(month(df_thisyr_lastyr$Invoice.Date, T, F))
 
-kickoff_year = df_thisyr_lastyr$KickoffYear = as.character(year(df_thisyr_lastyr$Kickoff))
+Incomplete_year = df_thisyr_lastyr$KickoffYear = as.character(year(df_thisyr_lastyr$Incomplete))
 invoice_year = df_thisyr_lastyr$InvoiceYear = as.character(year(df_thisyr_lastyr$Invoice.Date))
 
 
-startmo = kickoff_month %in% last_3 
+startmo = Incomplete_month %in% last_3 
 endinmo = invoice_month %in% last_3 
 
 trailing_3 = df_thisyr_lastyr[startmo==T | endinmo==T, ]
@@ -247,12 +249,13 @@ turn_cols = cbind(df_thisyr$Turnaround_KickoffToShip,
                   df_thisyr$Stage2_AssignmentToBrandMentions,
                   df_thisyr$Stage3_BrandMentionsToCostApproval,
                   df_thisyr$Stage4_CostApprovalToArtworkComplete,
+                  df_thisyr$Stage4A_RedesignRequestedToRedesignApproval,
                   df_thisyr$Stage5_ArtworkCompleteToRequesterApproval,
                   df_thisyr$Stage6_RequesterApprovalToCompletion,
                   df_thisyr$Stage7_CompletionToShip)
 turnaround = aggregate(turn_cols ~ df_thisyr$POSTER.Designer, FUN=function(x) round(mean(x, na.rm=T), 1))
 names(turnaround) = c('X','Turnaround','Completion','Stage1','Stage2',
-                      'Stage3','Stage4','Stage5','Stage6','Stage7')
+                      'Stage3','Stage4','Stage4A','Stage5','Stage6','Stage7')
 rownames(turnaround) = turnaround$X
 turnaround$X = NULL
 turnaround
@@ -260,16 +263,18 @@ turnaround
 
 
 ```{r descriptions}
-guide_df = data.frame(row.names=c('Stage 1','Stage 2','Stage 3','Stage 4','Stage 5','Stage 6','Stage 7','Completion','Turnaround'),
-                      Description=c('Job kickoff til artist assignment (days)',
+guide_df = data.frame(row.names=c('Stage 1','Stage 2','Stage 3','Stage 4','Stage 4A','Stage 5',
+                                  'Stage 6','Stage 7','Completion','Turnaround'),
+                      Description=c('Job Incomplete til artist assignment (days)',
                                     'Artist assignment til brand mentions obtained (days)',
                                     'Mentions obtained til cost approved (days)',
                                     'Cost approved til artwork complete (days)',
+                                    'If Applicable, Redesign til approval (days)',
                                     'Artwork complete til requester approval (days)',
                                     'Requester approval til job completion (days)',
                                     'Job completion til ship (days)',
-                                    'Job kickoff til job marked as complete (days)',
-                                    'Job kickoff til job shipment (days)'))
+                                    'Job Incomplete til job marked as complete (days)',
+                                    'Job Incomplete til job shipment (days)'))
 guide_df
 ```
 
@@ -501,7 +506,7 @@ ggplot(data=t_jobs, aes(x=Month, y=value, group=variable)) +
 
 ## Pipeline & Carrying Costs by Designer
 
-Summary of current jobs in the pipeline. Only jobs that have a Kickoff date yet do not have a Ship date are considered. 
+Summary of current jobs in the pipeline. Only jobs that have a Incomplete date yet do not have a Ship date are considered. 
 
 ```{r pipelinex}
 colz = c('DayOfRecord','YearOfRecord','WeekOfRecord','DayOfMonthOfRecord',
@@ -652,7 +657,7 @@ This section was designed to provide Leadership succinct insights on Graphics im
 
 ### YTD Number of Jobs by Company
 
-Month below is defined as the Kickoff month, or the month in which the Job started.
+Month below is defined as the Incomplete month, or the month in which the Job started.
 
 ```{r bylocation_bymo, fig.height=5, fig.width=9}
 kickedoff_byhouse = aggregate(POSTERJob.ID ~ KickoffYear + Company, data=df_ytd_thislast, FUN=len_unique)
@@ -678,7 +683,7 @@ ggplot(kickedoff_byhouse, aes(x=Loc, y=value, group=variable)) +
 
 ### YTD Number of Jobs by Month
 
-The data shown below includes records for this year and last year where *either the Kickoff date's month or the Invoice Date's month are in any of the months so far this year* For example, today is May 1st, then the dataset will contain January through May for both this year and last year. 
+The data shown below includes records for this year and last year where *either the Incomplete date's month or the Invoice Date's month are in any of the months so far this year* For example, today is May 1st, then the dataset will contain January through May for both this year and last year. 
 
 Year-to-date Jobs kicked off by month, shown by Company.
 
@@ -700,13 +705,13 @@ make_rownames = function(df, mocol) {
   return(df)
 }
 kickedoff_byhouse_bymo = split(kickedoff_byhouse_bymo, kickedoff_byhouse_bymo$Company)
-KC_kickoffs = make_rownames(kickedoff_byhouse_bymo$`KANSAS CITY`, 'KickoffMonth')
-STL_kickoffs = make_rownames(kickedoff_byhouse_bymo$`ST LOUIS`, 'KickoffMonth')
-MMO_kickoffs = make_rownames(kickedoff_byhouse_bymo$`MID MISSOURI`, 'KickoffMonth')
+KC_Incompletes = make_rownames(kickedoff_byhouse_bymo$`KANSAS CITY`, 'KickoffMonth')
+STL_Incompletes = make_rownames(kickedoff_byhouse_bymo$`ST LOUIS`, 'KickoffMonth')
+MMO_Incompletes = make_rownames(kickedoff_byhouse_bymo$`MID MISSOURI`, 'KickoffMonth')
 
-KC_kickoffs
-STL_kickoffs
-MMO_kickoffs
+KC_Incompletes
+STL_Incompletes
+MMO_Incompletes
 ```
 
 ### YTD Graphics Profit by Company
