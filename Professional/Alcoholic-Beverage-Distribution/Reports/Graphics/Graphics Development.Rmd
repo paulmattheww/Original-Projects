@@ -186,10 +186,10 @@ the_milestones = data.frame(df$Incomplete, df$AwaitingGraphicsAssignment,
                             df$AwaitingArtworkRedesign, df$AwaitingRequesterChangeApproval)
 df$DayOfRecord = dat = apply(the_milestones, 1, function(x) max(x, na.rm=T))
 df$MonthOfRecord = lubridate::month(dat, T, F)
-df$WeekOfRecord = week(dat)
-df$YearOfRecord = year(dat)
-df$DayOfMonthOfRecord = mday(dat)
-df$WeekdayOfRecord = wday(dat, T, F)
+df$WeekOfRecord = lubridate::week(dat)
+df$YearOfRecord = lubridate::year(dat)
+df$DayOfMonthOfRecord = lubridate::mday(dat)
+df$WeekdayOfRecord = lubridate::wday(dat, T, F)
 
 
 # ## Write to CSV for Python
@@ -332,19 +332,19 @@ ggplot(stage_df, aes(x=Item, y=value, group=variable)) +
 
 
 ## YTD Redesigns
-A Job is marked as having experienced a Redesign in the even tthat the "AwaitingArtworkRedesign" text was discovered in the text field in PostER that marks each stage of the Job. It is important to note that there are considerably more Print jobs than there are Accessory jobs. The plot below shows the average turnaround for Print jobs in Blue while showing the same for Accessory jobs in Red.
+
+A Job is marked as having experienced a Redesign in the even tthat the "AwaitingArtworkRedesign" text was discovered in the text field in PostER that marks each stage of the Job. It is important to note that there are considerably more Print jobs than there are Accessory jobs. 
 
 ### Redesigns by Type of Job
 
-
 Accessory vs. Print jobs. 
 
-```{r viz_redesigns_accessoryvprint}
+```{r viz_redesigns_accessoryvprint, fig.height=5, fig.width=9}
 redesign_colz = c('ProjectID_LineID', 'POSTERJob.ID', 'Redesign', 'Turnaround_KickoffToShip', 
                           'POSTER.REPRINT', 'Salesperson', 'POSTER.ITEM.CATEGORY', 'POSTER.Designer')
 redesigns = df_thisyr[, redesign_colz]
 N_JOBZ = len_unique(redesigns$POSTERJob.ID)
-print(paste0('Out of ', N_JOBZ, ' the following (top 10) salespersons had the following percentages of total redesigns:'))
+#print(paste0('Out of ', N_JOBZ, ' the following (top 10) salespersons had the following percentages of total redesigns:'))
 
 accessories = c('Menu Books','Table Top Wrap','TT A-Frame Holder','TT A-Frame Holder (Holder Only)', 
                 'TT Acrylic Stand','TT Acrylic Stand (Stand Only)','TT Flip Stand','TT Flip Stand (Stand Only)',
@@ -374,7 +374,7 @@ ggplot(data=redesigns, aes(x=Redesign, y=Turnaround_KickoffToShip, group=Redesig
 
 Menus vs. non-menus. The blue horizontal line represents the avg. turnaround for Menus, the red line for Non-Menus.
 
-```{r}
+```{r men_non_violin, fig.height=5, fig.width=9}
 turn_menu = mean(redesigns[redesigns$Menu == T, 'Turnaround_KickoffToShip'], na.rm=T)
 turn_nonm = mean(redesigns[redesigns$Menu == F, 'Turnaround_KickoffToShip'], na.rm=T)
 
@@ -393,8 +393,12 @@ ggplot(data=redesigns, aes(x=Redesign, y=Turnaround_KickoffToShip, group=Redesig
 
 
 ### Redesigns by Designer
+
+Percentages, as it is throughout this document, are shown as %. Total jobs is the sum of all jobs across all individuals for this year.
+
 ```{r redesigns_des}
 redesign_unique = redesigns[!duplicated(redesigns$POSTERJob.ID), ]
+#print(paste0('Out of ', N_JOBZ, ' the following (top 10) salespersons had the following percentages of total redesigns:'))
 
 redesigns_bydes = aggregate(Redesign~POSTER.Designer, data=redesign_unique, FUN=sum)
 redesigns_bydes = redesigns_bydes[order(redesigns_bydes$Redesign, decreasing=T), ]
@@ -408,6 +412,9 @@ redesigns_bydes
 
 
 ### Redesigns by Salesperson
+
+Below displays the top 25 salespeople as measured by the number of times they sent jobs back to Graphics for Redesigns.
+
 ```{r redesigns_sls}
 redesigns_bysls = aggregate(Redesign~Salesperson, data=redesign_unique, FUN=sum)
 redesigns_bysls = redesigns_bysls[order(redesigns_bysls$Redesign, decreasing=T), ]
@@ -416,7 +423,7 @@ redesigns_bysls$Percent = round(redesigns_bysls$Redesign / N_JOBZ, 3) * 100
 rownames(redesigns_bysls) = redesigns_bysls$Salesperson
 redesigns_bysls$Salesperson = NULL
 names(redesigns_bysls) = c('Number of Jobs Redesigned', 'Percent (%) of Total Jobs YTD')
-head(redesigns_bysls, 10)
+head(redesigns_bysls, 25)
 ```
 
 
@@ -564,14 +571,13 @@ ggplot(reprints_t_melt, aes(x=variable, y=value, group=Name)) +
   facet_wrap(~Name, ncol=4, scales='free_y') +
   theme_minimal() +
   theme(axis.text.x=element_text(angle=90, hjust=1)) +
-  labs(x='', y='')
-
+  labs(x='', y='', title='Reprint Summary')
 ```
 
 
 ## Number of Jobs per Month by Designer
 
-Total number of jobs by designer, shown by month.
+Total number of jobs by designer, shown by month. Figures below show a job if it was "touched" at all during the timeframe in question.
 
 ```{r jobspermo_bydesigner}
 jobspermo = aggregate(POSTERJob.ID ~ POSTER.Designer + Month, data=df_thisyr, FUN=len_unique)
@@ -644,18 +650,53 @@ pipeline_summary
 
 ## Pipeline Over Time
 
-A Job is considered active in the Graphics pipeline if the Job has been Kicked Off, but has not been Shipped. Pipeline is a notoriously difficult attribute to measure; it is grouped by Month because getting daily measures would require each job that is currently active to be marked (each day) as such. The measure below assumes that a month is a long enough timeframe for every active project to get at least one entry into POSTer, and thus is observable at a monthly frequency.  
+A Job is considered active in the Graphics pipeline if the Job has been Kicked Off, but has not been Shipped. Pipeline is a notoriously difficult attribute to measure; it is grouped by Month because getting daily measures would require each job that is currently active to be marked (each day) as such. The measure below assumes that a month is a long enough timeframe for every active project to get at least one entry into POSTer, and thus is observable at a monthly frequency.
 
 Pipeline is displayed by Designer and at the aggregate level. The aggregate level includes old designers, while the table by Designer does not.
 
 ```{r bydes_inpipe, fig.height=5, fig.width=9}
+inpipe_history = df_thisyr_lastyr[, c('POSTERJob.ID','ProjectID_LineID','Incomplete','AssembledandShipped')]
+
+## Process jobs first
+job_history = inpipe_history[!duplicated(inpipe_history$POSTERJob.ID), ]
+rownames(job_history) = NULL
+
+janlast_decthis = seq.Date(from=as.Date(paste0(last_yr,'-01-01')),
+                           to=as.Date(paste0(this_yr,'-12-31')), by='day')
+date_history_df = data.frame(PipeDate=janlast_decthis, Started=NA, Ended=NA)
+date_history_df = head(date_history_df, 5)
+
+STARTS = as.Date(job_history$Incomplete[1:5])
+ENDS = as.Date(job_history$AssembledandShipped[1:5])
+
+for(i in 1:length(janlast_decthis)){
+  print('Counting the jobs on date: ')
+  print(janlast_decthis[i])
+  for(j in 1:NROW(job_history)){
+    PIPEDATE = as.character(janlast_decthis[i])
+    STARTED = as.numeric(janlast_decthis[i] >= STARTS[j])
+    ENDED = as.numeric(ifelse(is.na(ENDS[j])==TRUE, FALSE, janlast_decthis[i] < ENDS[j]))
+    job_history[j, PIPEDATE] = STARTED - ENDED
+  }
+}
+
+job_history
+
+aggregate()
+
+
+
+
+#### Debugging below using above
+item_history = inpipe_history[!duplicated(inpipe_history$ProjectID_LineID), ]
+
 ## Designer level
 agg_summary = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ YearOfRecord + MonthOfRecord,
                            data=inpipe,
                            FUN=len_unique)
 agg_summary = agg_summary[agg_summary$MonthOfRecord %in% ytd_months, ]
 
-## Plot 
+## Plot
 ggplot(agg_summary, aes(x=MonthOfRecord, y=POSTERJob.ID, group=factor(YearOfRecord))) +
   geom_bar(stat='identity', position='dodge', aes(fill=factor(YearOfRecord)), colour='black') +
   theme_minimal() +
@@ -665,14 +706,14 @@ ggplot(agg_summary, aes(x=MonthOfRecord, y=POSTERJob.ID, group=factor(YearOfReco
 
 
 ## Do the aggregate level now
-inpipe_summary = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ 
+inpipe_summary = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~
                              POSTER.Designer + YearOfRecord + MonthOfRecord,
                            data=inpipe,
                            FUN=len_unique)
 inpipe_summary = inpipe_summary[(inpipe_summary$MonthOfRecord %in% ytd_months) &
                                   (inpipe_summary$POSTER.Designer %in% active_designers), ]
 
-## Plot 
+## Plot
 ggplot(inpipe_summary, aes(x=MonthOfRecord, y=POSTERJob.ID, group=POSTER.Designer)) +
   geom_line(aes(colour=POSTER.Designer), size=1.5) +
   geom_point() +
@@ -777,27 +818,27 @@ menuz_df
 ```
 
 
-```{r menus_v_nonmenus_bymo}
-menutypes = df_thisyr[ , c('POSTER.ITEM.CATEGORY','POSTER.Price','KickoffMonth',
-                          'POSTERJob.ID','ProjectID_LineID','Turnaround_KickoffToShip','Menu')]
+<!-- ```{r menus_v_nonmenus_bymo} IN PROCESS-->
+<!-- menutypes = df_thisyr[ , c('POSTER.ITEM.CATEGORY','POSTER.Price','KickoffMonth', -->
+<!--                           'POSTERJob.ID','ProjectID_LineID','Turnaround_KickoffToShip','Menu')] -->
 
-menutypes = menutypes[is.na(menutypes$Turnaround_KickoffToShip)==F, ]
+<!-- menutypes = menutypes[is.na(menutypes$Turnaround_KickoffToShip)==F, ] -->
 
-## Custom categories from Rachel
-jt5 = aggregate(cbind(Turnaround_KickoffToShip, POSTER.Price) ~ Menu, 
-                data=menutypes, FUN=function(x) round(mean(x,na.rm=T), 1))
-jt6 = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ Menu, 
-                data=menutypes, FUN=len_unique)
+<!-- ## Custom categories from Rachel -->
+<!-- jt5 = aggregate(cbind(Turnaround_KickoffToShip, POSTER.Price) ~ Menu + KickoffMonth,  -->
+<!--                 data=menutypes, FUN=function(x) round(mean(x,na.rm=T), 1)) -->
+<!-- jt6 = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ Menu,  -->
+<!--                 data=menutypes, FUN=len_unique) -->
 
-menuz_df = merge(jt5, jt6, on='Menu', how='all')
-menuz_df$Menu = ifelse(menuz_df$Menu==TRUE, 'Menu Jobs', 'Non-Menu Jobs')
-rownames(menuz_df) = menuz_df$Menu
-menuz_df$Menu = NULL
-names(menuz_df) = c('Turnaround','Price','Jobs','Items')
-menuz_df = menuz_df[order(menuz_df$Turnaround, decreasing=T), ]
+<!-- menuz_df = merge(jt5, jt6, on='Menu', how='all') -->
+<!-- menuz_df$Menu = ifelse(menuz_df$Menu==TRUE, 'Menu Jobs', 'Non-Menu Jobs') -->
+<!-- rownames(menuz_df) = menuz_df$Menu -->
+<!-- menuz_df$Menu = NULL -->
+<!-- names(menuz_df) = c('Turnaround','Price','Jobs','Items') -->
+<!-- menuz_df = menuz_df[order(menuz_df$Turnaround, decreasing=T), ] -->
 
-menuz_df
-```
+<!-- menuz_df -->
+<!-- ``` -->
 
 
 
