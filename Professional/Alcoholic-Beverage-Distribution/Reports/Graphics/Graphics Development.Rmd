@@ -662,25 +662,24 @@ job_history = inpipe_history[!duplicated(inpipe_history$POSTERJob.ID), ]
 rownames(job_history) = NULL
 
 janlast_decthis = seq.Date(from=as.Date(paste0(last_yr,'-01-01')),
-                           to=as.Date(paste0(this_yr,'-12-31')), by='day')
+                           to=as.Date(Sys.Date()), by='day')
 date_history_df = data.frame(PipeDate=janlast_decthis, Started=NA, Ended=NA)
-date_history_df = head(date_history_df, 5)
+date_history_df = head(date_history_df, 500)
 
-STARTS = as.Date(job_history$Incomplete[1:5])
-ENDS = as.Date(job_history$AssembledandShipped[1:5])
+STARTS = as.Date(job_history$Incomplete[1:500])
+ENDS = as.Date(job_history$AssembledandShipped[1:500])
 
-for(i in 1:length(janlast_decthis)){
-  print('Counting the jobs on date: ')
-  print(janlast_decthis[i])
+for(i in 1:length(date_history_df$PipeDate)){
   for(j in 1:NROW(job_history)){
     PIPEDATE = as.character(janlast_decthis[i])
     STARTED = as.numeric(janlast_decthis[i] >= STARTS[j])
-    ENDED = as.numeric(ifelse(is.na(ENDS[j])==TRUE, FALSE, janlast_decthis[i] < ENDS[j]))
+    ENDED = as.numeric(ifelse(is.na(ENDS[j])==TRUE, FALSE, janlast_decthis[i] > ENDS[j]))
     job_history[j, PIPEDATE] = STARTED - ENDED
   }
 }
-
 job_history
+date_history_df = t(job_history[,-c(1:4)])
+plot(rowSums(date_history_df, na.rm=T))
 
 aggregate()
 
