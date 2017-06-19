@@ -660,6 +660,7 @@ inpipe_history = df_thisyr_lastyr[, c('POSTERJob.ID','ProjectID_LineID','Incompl
 ## Process jobs first
 job_history = inpipe_history[!duplicated(inpipe_history$POSTERJob.ID), ]
 rownames(job_history) = NULL
+job_history = job_history %>% arrange(Incomplete, AssembledandShipped) #sort for ix speed
 
 janlast_decthis = seq.Date(from=as.Date(paste0(last_yr,'-01-01')),
                            to=as.Date(Sys.Date()), by='day')
@@ -679,16 +680,22 @@ for(i in 1:length(date_history_df$PipeDate)){
 }
 job_history
 date_history_df = t(job_history[,-c(1:4)])
-plot(rowSums(date_history_df, na.rm=T))
 
-aggregate()
-
+PIPE = rowSums(date_history_df, na.rm=T)
+data.frame(rownames=names(PIPE), Pipeline=PIPE)
+plot(PIPE)
 
 
 
 #### Debugging below using above
 item_history = inpipe_history[!duplicated(inpipe_history$ProjectID_LineID), ]
 
+
+
+
+
+
+#########
 ## Designer level
 agg_summary = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ YearOfRecord + MonthOfRecord,
                            data=inpipe,
