@@ -27,6 +27,7 @@ library(googleVis)
 library(stringr)
 library(tidyr)
 library(scales)
+library(ggthemes)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 
 MONTHS = c('January','February','March','April','May','June',
@@ -678,55 +679,24 @@ for(i in 1:length(date_history_df$PipeDate)){
     job_history[j, PIPEDATE] = STARTED - ENDED
   }
 }
-job_history
+
 date_history_df = t(job_history[,-c(1:4)])
-
 PIPE = rowSums(date_history_df, na.rm=T)
-data.frame(rownames=names(PIPE), Pipeline=PIPE)
-plot(PIPE)
+PIPE = data.frame(Date=names(PIPE), Pipeline=PIPE)
+PIPE$Year = lubridate::year(PIPE$Date)
+# plot(PIPE$Pipeline)
 
-
-
-#### Debugging below using above
-item_history = inpipe_history[!duplicated(inpipe_history$ProjectID_LineID), ]
-
-
-
-
-
-
-#########
-## Designer level
-agg_summary = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ YearOfRecord + MonthOfRecord,
-                           data=inpipe,
-                           FUN=len_unique)
-agg_summary = agg_summary[agg_summary$MonthOfRecord %in% ytd_months, ]
+### AT LATER DATE, DO JOB ITEMS TOO
 
 ## Plot
-ggplot(agg_summary, aes(x=MonthOfRecord, y=POSTERJob.ID, group=factor(YearOfRecord))) +
-  geom_bar(stat='identity', position='dodge', aes(fill=factor(YearOfRecord)), colour='black') +
+ggplot(PIPE, aes(x=as.Date(Date), y=Pipeline, group=Year)) +
+  geom_line(size=1.0, alpha=0.8, aes(colour=factor(Year))) +
+  geom_point(alpha=0.7) +
+  labs(x='Date', y='Number of Active Graphics Jobs', title='Pipeline as Measured by Number of Jobs, Graphics Dept.') +
+  geom_smooth(aes(colour=factor(Year)), size=1.25, se=F) +
+  scale_x_date(date_breaks='4 weeks', date_labels='%b %d, %y') +
   theme_minimal() +
-  labs(x='Month of Record', y='Number of Active Graphics Jobs', title='Graphics Pipeline Over Time') +
-  facet_grid(~YearOfRecord) +
-  theme(axis.text.x=element_text(angle=90, hjust=1))
-
-
-## Do the aggregate level now
-inpipe_summary = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~
-                             POSTER.Designer + YearOfRecord + MonthOfRecord,
-                           data=inpipe,
-                           FUN=len_unique)
-inpipe_summary = inpipe_summary[(inpipe_summary$MonthOfRecord %in% ytd_months) &
-                                  (inpipe_summary$POSTER.Designer %in% active_designers), ]
-
-## Plot
-ggplot(inpipe_summary, aes(x=MonthOfRecord, y=POSTERJob.ID, group=POSTER.Designer)) +
-  geom_line(aes(colour=POSTER.Designer), size=1.5) +
-  geom_point() +
-  facet_grid(~YearOfRecord) +
-  theme_minimal() +
-  labs(x='Month of Record', y='Number of Active Graphics Jobs', title='Pipeline by Designer') +
-  theme(axis.text.x=element_text(angle=90, hjust=1))
+  theme(axis.text.x=element_text(angle=90, hjust=1)) 
 ```
 
 
