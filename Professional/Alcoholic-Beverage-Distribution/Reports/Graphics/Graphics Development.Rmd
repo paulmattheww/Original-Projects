@@ -26,6 +26,7 @@ library(ggplot2)
 library(googleVis)
 library(stringr)
 library(tidyr)
+library(scales)
 source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 
 MONTHS = c('January','February','March','April','May','June',
@@ -34,8 +35,8 @@ this_yr = round(as.numeric(format(Sys.Date(), '%Y')),0)
 last_yr = round(as.numeric(format(Sys.Date(), '%Y')) - 1,0)
 twoyrsago = round(as.numeric(format(Sys.Date(), '%Y')) - 2,0)
 
-thismo_numeric = month(Sys.Date())
-month_long = function(mo) month(mo, T, F)
+thismo_numeric = lubridate::month(Sys.Date())
+month_long = function(mo) lubridate::month(mo, T, F)
 ytd_months = unlist(lapply(seq(1, thismo_numeric, by=1), month_long))
 
 pct_chg = function(new, old) {
@@ -49,7 +50,7 @@ df$POSTERJob.ID = factor(df$POSTERJob.ID)
 df = df %>% filter(Year %in% c(last_yr, this_yr))
 df$Invoice.Date = dat = strptime(df$Invoice.Date, '%m/%d/%Y')
 df$Week = week(dat)
-df$Month = month(dat, TRUE, FALSE)
+df$Month = lubridate::month(dat, TRUE, FALSE)
 df$ProjectID_LineID = paste0(df$POSTERJob.ID, '_', df$POSTER.Item.ID)
 df$POSTER.REPRINT = df$POSTER.REPRINT == 'Y'
 
@@ -99,9 +100,15 @@ for(i in 1:length(job_status)) {
     colname = as.character(job_stages[j])
     try({
       if(colname %in% names(new_df)) {
-        DAT = extract_dates_fromtext(job_status, i, j)
-        print(DAT)
-        new_df[i, colname] = DAT
+        if((j != 1) & ('Incomplete' %in% colname)){
+          DAT = extract_dates_fromtext(job_status, i, j)
+          print(paste0(i, j, DAT, 'CANCELLED JOB'))
+          new_df[i, 'IncompleteStatus'] = DAT
+        } else {
+          DAT = extract_dates_fromtext(job_status, i, j)
+          print(DAT)
+          new_df[i, colname] = DAT  
+        }
       } else {
         DAT = extract_dates_fromtext(job_status, i, j)
         print(DAT)
@@ -114,9 +121,16 @@ for(i in 1:length(job_status)) {
 
 
 df = new_df
+rm(new_df)
 ## verify no bugs
 ## write.csv(new_df,"c:/users/pmwash/desktop/disposable docs/check for graphics.csv")
 
+## Filter out cancelled jobs
+df$JobInLimbo = (is.na(df$IncompleteStatus) == F) & (is.na(df$AssembledandShipped) == T)
+df_inlimbo = df[df$JobInLimbo == T, c('Invoice.Date','POSTER.Designer','POSTERJob.ID',
+                                      'Salesperson','Customer','POSTER.Qty.Ordered',
+                                      'Incomplete','IncompleteStatus','JobInLimbo')]
+df = df[df$JobInLimbo == F, ]
 
 ## Obtain time spent in each category
 df$Turnaround_KickoffToShip = round(difftime(df$AssembledandShipped, df$Incomplete, units="days"), 1)
@@ -138,8 +152,8 @@ df$KickoffToRequesterApproval = round(difftime(df$AwaitingRequesterApproval, df$
 df$KickoffToArtworkComplete = round(difftime(df$AwaitingArtwork, df$Incomplete, units="days"), 1)
 
 ## Get month/year when a given job started
-df$KickoffMonth = as.character(month(df$Incomplete, T, F))
-df$InvoiceMonth = as.character(month(df$Invoice.Date, T, F))
+df$KickoffMonth = as.character(lubridate::month(df$Incomplete, label=T, abbr=F))
+df$InvoiceMonth = as.character(lubridate::month(df$Invoice.Date, label=T, abbr=F))
 df$KickoffYear = kick_yr = as.character(year(df$Incomplete))
 df$InvoiceYear = invo_yr = as.character(year(df$Invoice.Date))
 
@@ -155,6 +169,12 @@ df$InPipeline = df$POSTERJob.ID %in% inppp
 
 ## Mark redesigns
 df$Redesign = is.na(df$AwaitingArtworkRedesign) == F
+accessories = c('Menu Books','Table Top Wrap','TT A-Frame Holder','TT A-Frame Holder (Holder Only)', 
+                'TT Acrylic Stand','TT Acrylic Stand (Stand Only)','TT Flip Stand','TT Flip Stand (Stand Only)',
+                'Vivid Board - Dry Erase','Vivid Board - Dry Erase','Light Box')
+menus = c('Menu Books','Drink List','Folded Drink List','Tri-Fold Drink List','Folded Menu Cards','Menu Card - Small Format (QTY = Total Pages)')
+df$Menu = df$POSTER.ITEM.CATEGORY %in% menus
+df$Accessory = df$POSTER.ITEM.CATEGORY %in% accessories
 
 ## Delete rows that do not have a starting date
 df = df[is.na(df$Incomplete)==F, ]
@@ -165,7 +185,7 @@ the_milestones = data.frame(df$Incomplete, df$AwaitingGraphicsAssignment,
                             df$AwaitingArtwork, df$AwaitingRequesterApproval, df$AssembledandShipped, 
                             df$AwaitingArtworkRedesign, df$AwaitingRequesterChangeApproval)
 df$DayOfRecord = dat = apply(the_milestones, 1, function(x) max(x, na.rm=T))
-df$MonthOfRecord = month(dat, T, F)
+df$MonthOfRecord = lubridate::month(dat, T, F)
 df$WeekOfRecord = week(dat)
 df$YearOfRecord = year(dat)
 df$DayOfMonthOfRecord = mday(dat)
@@ -178,9 +198,9 @@ write.csv(df, 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/intermedia
 
 
 ## Get current months
-this_month = as.character(month(Sys.Date(), T, F))
-last_month = as.character(month(month(Sys.Date())-1, T, F))
-beforethat = as.character(month(month(Sys.Date())-2, T, F))
+this_month = as.character(lubridate::month(Sys.Date(), T, F))
+last_month = as.character(lubridate::month(lubridate::month(Sys.Date())-1, T, F))
+beforethat = as.character(lubridate::month(lubridate::month(Sys.Date())-2, T, F))
 last_3 = c(this_month, last_month, beforethat)
 
 ## Isolate this year and last year data only
@@ -196,8 +216,8 @@ df_ytd_thislast = df_thisyr_lastyr[invoiced_firstmos | kickdoff_firstmos, ]
 
 
 ## Isolate out last 3 mo from thisyr lastyr data
-Incomplete_month = df_thisyr_lastyr$KickoffMonth = as.character(month(df_thisyr_lastyr$Incomplete, T, F))
-invoice_month = df_thisyr_lastyr$InvoiceMonth = as.character(month(df_thisyr_lastyr$Invoice.Date, T, F))
+Incomplete_month = df_thisyr_lastyr$KickoffMonth = as.character(lubridate::month(df_thisyr_lastyr$Incomplete, T, F))
+invoice_month = df_thisyr_lastyr$InvoiceMonth = as.character(lubridate::month(df_thisyr_lastyr$Invoice.Date, T, F))
 
 Incomplete_year = df_thisyr_lastyr$KickoffYear = as.character(year(df_thisyr_lastyr$Incomplete))
 invoice_year = df_thisyr_lastyr$InvoiceYear = as.character(year(df_thisyr_lastyr$Invoice.Date))
@@ -229,6 +249,7 @@ names(bygraphics) = c('Jobs Requests Input for Others','Job Items Input for Othe
 
 
 # Measures of success for Graphics Team
+
 This section was designed to help the Graphics department and management gain insight into the Graphics operation. In contrast, the next major section of this report is geared towards Graphics' impact on Sales and the organization at-large. Unless otherwise specified, the data considered is from all jobs submitted this year, and the data is accessed via a large dump from Diver of all fields and all dates available in the system.
 
 ## Jobs Entered by Graphics Team
@@ -308,6 +329,96 @@ ggplot(stage_df, aes(x=Item, y=value, group=variable)) +
   theme(axis.text.x=element_text(angle=90, hjust=1)) +
   labs(x='', y='Days', title='Average Days in Each Stage by Designer')
 ```
+
+
+## YTD Redesigns
+A Job is marked as having experienced a Redesign in the even tthat the "AwaitingArtworkRedesign" text was discovered in the text field in PostER that marks each stage of the Job. It is important to note that there are considerably more Print jobs than there are Accessory jobs. The plot below shows the average turnaround for Print jobs in Blue while showing the same for Accessory jobs in Red.
+
+### Redesigns by Type of Job
+
+
+Accessory vs. Print jobs. 
+
+```{r viz_redesigns_accessoryvprint}
+redesign_colz = c('ProjectID_LineID', 'POSTERJob.ID', 'Redesign', 'Turnaround_KickoffToShip', 
+                          'POSTER.REPRINT', 'Salesperson', 'POSTER.ITEM.CATEGORY', 'POSTER.Designer')
+redesigns = df_thisyr[, redesign_colz]
+N_JOBZ = len_unique(redesigns$POSTERJob.ID)
+print(paste0('Out of ', N_JOBZ, ' the following (top 10) salespersons had the following percentages of total redesigns:'))
+
+accessories = c('Menu Books','Table Top Wrap','TT A-Frame Holder','TT A-Frame Holder (Holder Only)', 
+                'TT Acrylic Stand','TT Acrylic Stand (Stand Only)','TT Flip Stand','TT Flip Stand (Stand Only)',
+                'Vivid Board - Dry Erase','Vivid Board - Dry Erase','Light Box')
+redesigns$Accessory_or_Print = ifelse(redesigns$POSTER.ITEM.CATEGORY %in% accessories, 'Accessory', 'Print')
+turn_acc = mean(redesigns[redesigns$Accessory_or_Print=='Accessory', 'Turnaround_KickoffToShip'], na.rm=T)
+turn_pri = mean(redesigns[redesigns$Accessory_or_Print=='Print', 'Turnaround_KickoffToShip'], na.rm=T)
+
+menus = c('Menu Books','Drink List','Folded Drink List','Tri-Fold Drink List','Folded Menu Cards','Menu Card - Small Format (QTY = Total Pages)')
+redesigns$Menu = redesigns$POSTER.ITEM.CATEGORY %in% menus
+
+redesigns$JobID_Redesign = paste0(redesigns$POSTERJob.ID, ' ', redesigns$Redesign)
+redesigns$LineID_Redesign = paste0(redesigns$ProjectID_LineID, ' ', redesigns$Redesign)
+
+ggplot(data=redesigns, aes(x=Redesign, y=Turnaround_KickoffToShip, group=Redesign)) +
+  geom_violin(aes(fill=Accessory_or_Print)) +
+  geom_jitter(alpha=0.02) +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='Whether a Job was Redesigned or Not (TRUE = Redesign)', 
+       y='Turnaround in Days', title='Comparing Difference in Turnaround b/n Redesign & Non-Redesign Jobs') +
+  geom_hline(yintercept=turn_acc, colour='red') +
+  geom_hline(yintercept=turn_pri, colour='blue') +
+  scale_y_continuous(labels=comma) +
+  facet_wrap(~Accessory_or_Print)
+```
+
+Menus vs. non-menus. The blue horizontal line represents the avg. turnaround for Menus, the red line for Non-Menus.
+
+```{r}
+turn_menu = mean(redesigns[redesigns$Menu == T, 'Turnaround_KickoffToShip'], na.rm=T)
+turn_nonm = mean(redesigns[redesigns$Menu == F, 'Turnaround_KickoffToShip'], na.rm=T)
+
+ggplot(data=redesigns, aes(x=Redesign, y=Turnaround_KickoffToShip, group=Redesign)) +
+  geom_violin(aes(fill=Menu)) +
+  geom_jitter(alpha=0.02) +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='Whether a Job was Redesigned or Not (TRUE = Redesign)', 
+       y='Turnaround in Days', title='Comparing Difference in Turnaround b/n Menu & Non-Menu Jobs') +
+  geom_hline(yintercept=turn_menu, colour='blue') +
+  geom_hline(yintercept=turn_nonm, colour='red') +
+  scale_y_continuous(labels=comma) +
+  facet_wrap(~Menu)
+```
+
+
+### Redesigns by Designer
+```{r redesigns_des}
+redesign_unique = redesigns[!duplicated(redesigns$POSTERJob.ID), ]
+
+redesigns_bydes = aggregate(Redesign~POSTER.Designer, data=redesign_unique, FUN=sum)
+redesigns_bydes = redesigns_bydes[order(redesigns_bydes$Redesign, decreasing=T), ]
+redesigns_bydes = redesigns_bydes[redesigns_bydes$POSTER.Designer %in% active_designers, ]
+redesigns_bydes$Percent = round(redesigns_bydes$Redesign / N_JOBZ, 3) * 100
+rownames(redesigns_bydes) = redesigns_bydes$POSTER.Designer
+redesigns_bydes$POSTER.Designer = NULL
+names(redesigns_bydes) = c('Number of Jobs Redesigned', 'Percent (%) of Total Jobs YTD')
+redesigns_bydes
+```
+
+
+### Redesigns by Salesperson
+```{r redesigns_sls}
+redesigns_bysls = aggregate(Redesign~Salesperson, data=redesign_unique, FUN=sum)
+redesigns_bysls = redesigns_bysls[order(redesigns_bysls$Redesign, decreasing=T), ]
+redesigns_bysls = redesigns_bysls[redesigns_bysls$Salesperson %!in% graphics_posterIDs, ]
+redesigns_bysls$Percent = round(redesigns_bysls$Redesign / N_JOBZ, 3) * 100
+rownames(redesigns_bysls) = redesigns_bysls$Salesperson
+redesigns_bysls$Salesperson = NULL
+names(redesigns_bysls) = c('Number of Jobs Redesigned', 'Percent (%) of Total Jobs YTD')
+head(redesigns_bysls, 10)
+```
+
 
 
 ## Total Price & Mentions by Designer
@@ -507,7 +618,7 @@ ggplot(data=t_jobs, aes(x=Month, y=value, group=variable)) +
 
 ## Pipeline & Carrying Costs by Designer
 
-Summary of current jobs in the pipeline. Only jobs that have a Incomplete date yet do not have a Ship date are considered. 
+Summary of current jobs in the pipeline. Only jobs that have a Incomplete date yet do not have a Ship date are considered. It is important to note that some jobs are effectively "cancelled" or  "killed" in the sense that they are sent back to "Incomplete" status. This will make the Pipeline look larger than it truly is unless those jobs are removed from the system. Alternatively, a field could be created to mark them as "cancelled".
 
 ```{r pipelinex}
 colz = c('DayOfRecord','YearOfRecord','WeekOfRecord','DayOfMonthOfRecord',
@@ -576,6 +687,8 @@ ggplot(inpipe_summary, aes(x=MonthOfRecord, y=POSTERJob.ID, group=POSTER.Designe
 
 ## Types of Graphics Jobs
 
+### Accessories vs. Prints
+
 To highlight the heterogeneity in the types of jobs Graphics produces, this section considers the following items as "accessories;" all else is considered "print." 
 
   - Menu Book
@@ -627,6 +740,67 @@ job_typ = job_typ[order(job_typ$Turnaround, decreasing=T), ]
 
 job_typ
 ```
+
+### Menus vs. Non-Menus
+
+Menus are assumed to have more work associated with them. A job is considered a Menu if it is a member of the following list:
+
+  - Menu Books
+  - Drink List
+  - Folded Drink List
+  - Tri-Fold Drink List
+  - Folded Menu Cards
+  - Menu Card - Small Format (QTY = Total Pages)
+
+Prices & Turnaround are shown as averages.
+
+```{r menus_v_nonmenus}
+menutypes = df_thisyr[ , c('POSTER.ITEM.CATEGORY','POSTER.Price',
+                          'POSTERJob.ID','ProjectID_LineID','Turnaround_KickoffToShip','Menu')]
+
+menutypes = menutypes[is.na(menutypes$Turnaround_KickoffToShip)==F, ]
+
+## Custom categories from Rachel
+jt5 = aggregate(cbind(Turnaround_KickoffToShip, POSTER.Price) ~ Menu, 
+                data=menutypes, FUN=function(x) round(mean(x,na.rm=T), 1))
+jt6 = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ Menu, 
+                data=menutypes, FUN=len_unique)
+
+menuz_df = merge(jt5, jt6, on='Menu', how='all')
+menuz_df$Menu = ifelse(menuz_df$Menu==TRUE, 'Menu Jobs', 'Non-Menu Jobs')
+rownames(menuz_df) = menuz_df$Menu
+menuz_df$Menu = NULL
+names(menuz_df) = c('Turnaround','Price','Jobs','Items')
+menuz_df = menuz_df[order(menuz_df$Turnaround, decreasing=T), ]
+
+menuz_df
+```
+
+
+```{r menus_v_nonmenus_bymo}
+menutypes = df_thisyr[ , c('POSTER.ITEM.CATEGORY','POSTER.Price','KickoffMonth',
+                          'POSTERJob.ID','ProjectID_LineID','Turnaround_KickoffToShip','Menu')]
+
+menutypes = menutypes[is.na(menutypes$Turnaround_KickoffToShip)==F, ]
+
+## Custom categories from Rachel
+jt5 = aggregate(cbind(Turnaround_KickoffToShip, POSTER.Price) ~ Menu, 
+                data=menutypes, FUN=function(x) round(mean(x,na.rm=T), 1))
+jt6 = aggregate(cbind(POSTERJob.ID, ProjectID_LineID) ~ Menu, 
+                data=menutypes, FUN=len_unique)
+
+menuz_df = merge(jt5, jt6, on='Menu', how='all')
+menuz_df$Menu = ifelse(menuz_df$Menu==TRUE, 'Menu Jobs', 'Non-Menu Jobs')
+rownames(menuz_df) = menuz_df$Menu
+menuz_df$Menu = NULL
+names(menuz_df) = c('Turnaround','Price','Jobs','Items')
+menuz_df = menuz_df[order(menuz_df$Turnaround, decreasing=T), ]
+
+menuz_df
+```
+
+
+
 
 
 
@@ -684,36 +858,46 @@ ggplot(kickedoff_byhouse, aes(x=Loc, y=value, group=variable)) +
 
 ### YTD Number of Jobs by Month
 
-The data shown below includes records for this year and last year where *either the Incomplete date's month or the Invoice Date's month are in any of the months so far this year* For example, today is May 1st, then the dataset will contain January through May for both this year and last year. 
+The data shown below includes records for this year and last year where *either the Incomplete date's month or the Invoice Date's month are in any of the months so far this year* For example, today is May 1st, then the dataset will contain January through May for both this year and last year. Both Jobs and Job Items are shown (along with their YOY percent changes).
 
 Year-to-date Jobs kicked off by month, shown by Company.
 
 ```{r bylocation_ytd_kickedoff}
-kickedoff_byhouse_bymo = aggregate(POSTERJob.ID ~ KickoffYear + KickoffMonth + Company, 
+kickedoff_byhouse_bymo = aggregate(cbind(POSTERJob.ID,ProjectID_LineID) ~ KickoffYear + KickoffMonth + Company, 
                               data=df_ytd_thislast, FUN=len_unique)
 kickedoff_byhouse_bymo = kickedoff_byhouse_bymo[kickedoff_byhouse_bymo$KickoffYear != twoyrsago & 
                                         kickedoff_byhouse_bymo$KickoffMonth %in% ytd_months, ]
-kickedoff_byhouse_bymo = spread(kickedoff_byhouse_bymo, 'KickoffYear', 'POSTERJob.ID')
-kickedoff_byhouse_bymo$`Percent Change (%)` = pct_chg(kickedoff_byhouse_bymo[, as.character(this_yr)], 
-                                                 kickedoff_byhouse_bymo[, as.character(last_yr)])
-kickedoff_byhouse_bymo$KickoffMonth = factor(kickedoff_byhouse_bymo$KickoffMonth, levels=ytd_months)
-kickedoff_byhouse_bymo = kickedoff_byhouse_bymo[order(kickedoff_byhouse_bymo$KickoffMonth), ]
 
-## Split dataframes by company
-make_rownames = function(df, mocol) {
-  rownames(df) = df[, mocol]
-  df[, mocol] = NULL
-  return(df)
-}
-kickedoff_byhouse_bymo = split(kickedoff_byhouse_bymo, kickedoff_byhouse_bymo$Company)
-KC_Incompletes = make_rownames(kickedoff_byhouse_bymo$`KANSAS CITY`, 'KickoffMonth')
-STL_Incompletes = make_rownames(kickedoff_byhouse_bymo$`ST LOUIS`, 'KickoffMonth')
-MMO_Incompletes = make_rownames(kickedoff_byhouse_bymo$`MID MISSOURI`, 'KickoffMonth')
+kickedoff_byhouse_bymo = reshape2::melt(kickedoff_byhouse_bymo, names(kickedoff_byhouse_bymo)[1:3])
+kickedoff_byhouse_bymo = spread(kickedoff_byhouse_bymo, 'variable', 'value')
 
-KC_Incompletes
-STL_Incompletes
-MMO_Incompletes
+kickedoff_byhouse_bymo = reshape(kickedoff_byhouse_bymo, timevar='KickoffYear', idvar=c('Company','KickoffMonth'), direction='wide')
+kickedoff_byhouse_bymo$KickoffMonth = factor(kickedoff_byhouse_bymo$KickoffMonth, 
+                                             levels=c('January','February','March','April','May','June',
+                                                      'July','August','September','October','November','December'))
+kickedoff_byhouse_bymo$Company = factor(kickedoff_byhouse_bymo$Company, levels=c('ST LOUIS','KANSAS CITY','MID MISSOURI'))
+kickedoff_byhouse_bymo = kickedoff_byhouse_bymo %>% arrange(Company, KickoffMonth)
+kickedoff_byhouse_bymo$CompanyMonth = paste0(kickedoff_byhouse_bymo$Company, ' - ', substr(kickedoff_byhouse_bymo$KickoffMonth,1,3))
+rownames(kickedoff_byhouse_bymo) = kickedoff_byhouse_bymo$CompanyMonth
+kickedoff_byhouse_bymo$KickoffMonth = kickedoff_byhouse_bymo$Company = kickedoff_byhouse_bymo$CompanyMonth = NULL
+
+## Set names
+names(kickedoff_byhouse_bymo) = c(paste0('Jobs ',last_yr),
+                                  paste0('Items ', last_yr), 
+                                  paste0('Jobs ',this_yr),
+                                  paste0('Items ', this_yr))
+kickedoff_byhouse_bymo$`Jobs Chg. (%)` = pct_chg(kickedoff_byhouse_bymo[,paste0('Jobs ',this_yr)], 
+                                                      kickedoff_byhouse_bymo[,paste0('Jobs ',last_yr)])
+kickedoff_byhouse_bymo$`Items Chg. (%)` = pct_chg(kickedoff_byhouse_bymo[,paste0('Items ',this_yr)], 
+                                                      kickedoff_byhouse_bymo[,paste0('Items ',last_yr)])
+
+## Rearrange for readability
+kickedoff_byhouse_bymo = kickedoff_byhouse_bymo[, c(paste0('Jobs ',last_yr), paste0('Jobs ',this_yr), 'Jobs Chg. (%)',
+                                                   paste0('Items ', last_yr),paste0('Items ', this_yr), 'Items Chg. (%)')]
+kickedoff_byhouse_bymo
 ```
+
+
 
 ### YTD Graphics Profit by Company
 
