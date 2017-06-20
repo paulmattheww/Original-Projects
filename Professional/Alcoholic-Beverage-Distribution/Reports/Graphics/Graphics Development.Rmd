@@ -221,8 +221,7 @@ beforethat = as.character(lubridate::month(lubridate::month(Sys.Date())-2, T, F)
 last_3 = c(this_month, last_month, beforethat)
 
 ## Isolate this year and last year data only
-df_thisyr_lastyr = df[(df$KickoffYear %in% c(this_yr, last_yr)) | 
-                        (df$InvoiceYear %in% c(this_yr, last_yr)) & 
+df_thisyr_lastyr = df[(df$YearOfRecord %in% c(this_yr, last_yr)) & 
                         (df$POSTER.Designer %in% active_designers), ]
 
 ## Isolate YTD for this year and last year
@@ -230,6 +229,10 @@ invoiced_firstmos = (df_thisyr_lastyr$InvoiceMonth %in% ytd_months)
 kickdoff_firstmos = (df_thisyr_lastyr$KickoffMonth %in% ytd_months)
 
 df_ytd_thislast = df_thisyr_lastyr[invoiced_firstmos | kickdoff_firstmos, ]
+year_of_record = df_ytd_thislast$YearOfRecord
+df_ytd_thislast$DayOfYearOfRecord = doty = lubridate::yday(df_ytd_thislast$DayOfRecord)
+today_doty = lubridate::yday(Sys.Date())
+df_ytd_thislast = df_ytd_thislast[doty <= today_doty, ]
 
 
 ## Isolate out last 3 mo from thisyr lastyr data
@@ -267,12 +270,9 @@ names(bygraphics) = c('Jobs Requests Input for Others','Job Items Input for Othe
 ## Redesigns for later on
 redesign_colz = c('ProjectID_LineID', 'POSTERJob.ID', 'Redesign', 'Turnaround_KickoffToShip', 
                   'POSTER.REPRINT', 'Salesperson', 'POSTER.ITEM.CATEGORY', 'POSTER.Designer',
-                  'Accessory_or_Print', 'Menu')
-redesigns = df_thisyr[, redesign_colz]
+                  'Accessory', 'Menu', 'YearOfRecord')
+redesigns = df_ytd_thislast[, redesign_colz]
 N_JOBZ = len_unique(redesigns$POSTERJob.ID)
-
-turn_acc = mean(redesigns[redesigns$Accessory_or_Print=='Accessory', 'Turnaround_KickoffToShip'], na.rm=T)
-turn_pri = mean(redesigns[redesigns$Accessory_or_Print=='Print', 'Turnaround_KickoffToShip'], na.rm=T)
 
 redesigns$JobID_Redesign = paste0(redesigns$POSTERJob.ID, ' ', redesigns$Redesign)
 redesigns$LineID_Redesign = paste0(redesigns$ProjectID_LineID, ' ', redesigns$Redesign)
@@ -402,22 +402,27 @@ ggplot(reprints_t_melt, aes(x=variable, y=value, group=Name)) +
 
 A Job is marked as having experienced a Redesign in the even tthat the "AwaitingArtworkRedesign" text was discovered in the text field in PostER that marks each stage of the Job. It is important to note that there are considerably more Print jobs than there are Accessory jobs. 
 
+All data for Redesigns is filtered to include only records up until today for both this year and last year.
+
 ### Redesigns for Accessories v. Print Jobs
 
 Accessory vs. Print jobs. 
 
 ```{r viz_redesigns_accessoryvprint, fig.height=5, fig.width=9}
+turn_acc = mean(redesigns[redesigns$Accessory_or_Print=='Accessory', 'Turnaround_KickoffToShip'], na.rm=T)
+turn_pri = mean(redesigns[redesigns$Accessory_or_Print=='Print', 'Turnaround_KickoffToShip'], na.rm=T)
+
 ggplot(data=redesigns, aes(x=Redesign, y=Turnaround_KickoffToShip, group=Redesign)) +
-  geom_violin(aes(fill=Accessory_or_Print)) +
+  geom_boxplot(aes(fill=Accessory)) +
   geom_jitter(alpha=0.02) +
   theme_minimal() +
   theme(axis.text.x=element_text(angle=90, hjust=1)) +
-  labs(x='Whether a Job was Redesigned or Not (TRUE = Redesign)', 
-       y='Turnaround in Days', title='Comparing Difference in Turnaround b/n Redesign & Non-Redesign Jobs') +
+  labs(x='TRUE if Job Redesigned', 
+       y='Turnaround in Days', title='Accessory v. Print: Comparing Difference in Turnaround b/n Redesign & Non-Redesign Jobs') +
   geom_hline(yintercept=turn_acc, colour='red') +
   geom_hline(yintercept=turn_pri, colour='blue') +
   scale_y_continuous(labels=comma) +
-  facet_wrap(~Accessory_or_Print)
+  facet_grid(Accessory~YearOfRecord)
 ```
 
 ### Redesigns for Menu v. Non-Menu Jobs
@@ -429,34 +434,32 @@ turn_menu = mean(redesigns[redesigns$Menu == T, 'Turnaround_KickoffToShip'], na.
 turn_nonm = mean(redesigns[redesigns$Menu == F, 'Turnaround_KickoffToShip'], na.rm=T)
 
 ggplot(data=redesigns, aes(x=Redesign, y=Turnaround_KickoffToShip, group=Redesign)) +
-  geom_violin(aes(fill=Menu)) +
+  geom_boxplot(aes(fill=Menu)) +
   geom_jitter(alpha=0.02) +
   theme_minimal() +
   theme(axis.text.x=element_text(angle=90, hjust=1)) +
-  labs(x='Whether a Job was Redesigned or Not (TRUE = Redesign)', 
-       y='Turnaround in Days', title='Comparing Difference in Turnaround b/n Menu & Non-Menu Jobs') +
+  labs(x='TRUE if Job Redesigned', 
+       y='Turnaround in Days', title='Menus v. Non-Menus: Comparing Difference in Turnaround b/n Menu & Non-Menu Jobs') +
   geom_hline(yintercept=turn_menu, colour='blue') +
   geom_hline(yintercept=turn_nonm, colour='red') +
   scale_y_continuous(labels=comma) +
-  facet_wrap(~Menu)
+  facet_grid(Menu~YearOfRecord)
 ```
 
 
 ### Redesigns by Designer
 
-Percentages, as it is throughout this document, are shown as %. Total jobs is the sum of all jobs across all individuals for this year.
+Percentages, as it is throughout this document, are shown as %. To re-iterate, data for Redesigns shows information through today (i.e. June 20th's day of the year is 171) for both this year and last.
 
 ```{r redesigns_des}
 redesign_unique = redesigns[!duplicated(redesigns$POSTERJob.ID), ]
 
-redesigns_bydes = aggregate(Redesign~POSTER.Designer, data=redesign_unique, FUN=sum)
-redesigns_bydes = redesigns_bydes[order(redesigns_bydes$Redesign, decreasing=T), ]
+redesigns_bydes = aggregate(Redesign~POSTER.Designer+YearOfRecord, data=redesign_unique, FUN=sum)
 redesigns_bydes = redesigns_bydes[redesigns_bydes$POSTER.Designer %in% active_designers, ]
-redesigns_bydes$Percent = round(redesigns_bydes$Redesign / N_JOBZ, 3) * 100
+redesigns_bydes = spread(redesigns_bydes, 'YearOfRecord', 'Redesign')
+redesigns_bydes$`Percent (%) Change` = pct_chg(new=redesigns_bydes$`2017`, old=redesigns_bydes$`2016`)
 rownames(redesigns_bydes) = redesigns_bydes$POSTER.Designer
 redesigns_bydes$POSTER.Designer = NULL
-names(redesigns_bydes) = c('Number of Jobs Redesigned', 'Percent (%) of Total Jobs YTD')
-redesigns_bydes
 ```
 
 
@@ -465,42 +468,40 @@ redesigns_bydes
 Below displays the top 10 salespeople as measured by the number of times they sent jobs back to Graphics for Redesigns.
 
 ```{r redesigns_sls}
-redesigns_bysls = aggregate(Redesign~Salesperson, data=redesign_unique, FUN=sum)
-redesigns_bysls = redesigns_bysls[order(redesigns_bysls$Redesign, decreasing=T), ]
-redesigns_bysls = redesigns_bysls[redesigns_bysls$Salesperson %!in% graphics_posterIDs, ]
-redesigns_bysls$Percent = round(redesigns_bysls$Redesign / N_JOBZ, 3) * 100
+redesigns_bysls_s = aggregate(Redesign~Salesperson+YearOfRecord, data=redesign_unique, FUN=sum)
+redesigns_bysls = spread(redesigns_bysls_s, 'YearOfRecord', 'Redesign')
+redesigns_bysls$`Percent (%) Change` = pct_chg(redesigns_bysls$`2017`, redesigns_bysls$`2016`)
 rownames(redesigns_bysls) = redesigns_bysls$Salesperson
 redesigns_bysls$Salesperson = NULL
-names(redesigns_bysls) = c('Number of Jobs Redesigned', 'Percent Redesigned (%) of Total Jobs YTD')
+redesigns_bysls = redesigns_bysls[order(redesigns_bysls$`2017`, decreasing=T), ]
+
 head(redesigns_bysls, 10)
 ```
 
 Adjusting for Salesperson's utilization rate of the Graphics team's resources. Both axes are shown as logs of the value to show the names more clearly. Individuals well above the line are committing re-designs more often than is normal for their given level of Graphics utilization.
 
 ```{r sls_plot_reds, fig.height=5, fig.width=9}
-ttl_sls = aggregate(POSTERJob.ID~Salesperson, data=redesign_unique, FUN=len_unique)
+ttl_sls = aggregate(POSTERJob.ID~Salesperson+YearOfRecord, data=redesign_unique, FUN=len_unique)
+ttl_sls = merge(ttl_sls, redesigns_bysls_s, on=c('Salesperson','YearOfRecord'), how='outer')
 ttl_sls = ttl_sls[order(ttl_sls$POSTERJob.ID, decreasing=T), ]
 ttl_sls = ttl_sls[ttl_sls$Salesperson %!in% graphics_posterIDs, ]
-ttl_sls$Percent = round(ttl_sls$POSTERJob.ID / N_JOBZ, 3) * 100
 
-names(ttl_sls) = c('Salesperson','Number of Jobs YTD', 'Percent (%) of Total Jobs YTD')
+names(ttl_sls) = c('Salesperson','Year','Jobs','Redesigns')
 redesigns_bysls$Salesperson = rownames(redesigns_bysls)
 rownames(redesigns_bysls) = NULL
 
-ttl_sls = merge(ttl_sls, redesigns_bysls, how='outer', on='Salesperson')
-ttl_sls = ttl_sls[order(ttl_sls$`Number of Jobs YTD`, decreasing=T), ]
-
-ggplot(ttl_sls, aes(x=`Number of Jobs YTD`, y=`Number of Jobs Redesigned`)) +
+ggplot(ttl_sls, aes(x=Jobs, y=Redesigns, group=Year)) +
   geom_point() + 
   geom_text(position='jitter', 
-             aes(x=`Number of Jobs YTD`, y=`Number of Jobs Redesigned`, 
-                label=Salesperson, size=scale(`Number of Jobs Redesigned`)),
-            colour='blue', alpha=.6) +
-  geom_smooth(se=F, method='lm') +
+             aes(x=Jobs, y=Redesigns, 
+                label=Salesperson, size=scale((Redesigns))),
+            colour='blue', alpha=.9, check_overlap=T) +
+  geom_smooth(se=F, method='lm', aes(group=Year, colour=factor(Year))) +
   theme_minimal() +
   theme(legend.position='none') +
   scale_x_log10() + scale_y_log10() +
-  labs(title='YTD Redesigns as a function of Number of Jobs Submitted', x='Log Jobs', y='Log Redesigns') 
+  labs(title='Year-over-Year, Jan 1-Today:  Redesigns as a function of Number of Jobs Submitted', x='Log Jobs', y='Log Redesigns') +
+  facet_wrap(~Year, ncol=2)
 ```
 
 
