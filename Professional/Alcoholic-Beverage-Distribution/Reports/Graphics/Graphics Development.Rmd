@@ -138,12 +138,9 @@ inc_colz = inc_colz[grepl('IncompleteStatus', inc_colz)]
 incomplete_counts = !is.na(df[,inc_colz])
 df$IncompleteStatusCount = rowSums(incomplete_counts, na.rm=T)
 
-## Filter out cancelled jobs
-df$JobInLimbo = (is.na(df$IncompleteStatus1) == F) & (is.na(df$AssembledandShipped) == T)
-df_inlimbo = df[(df$JobInLimbo == T)&(df$YearOfRecord == this_yr), c('Invoice.Date','POSTER.Designer','POSTERJob.ID',
-                                      'Salesperson','Customer','POSTER.Qty.Ordered','YearOfRecord',
-                                      'Incomplete','IncompleteStatus1','IncompleteStatusCount')]
-df = df[df$JobInLimbo == F, ]
+## Mark limbo jobs
+df$JobInLimbo = (df$IncompleteStatusCount > 0) & (is.na(df$AssembledandShipped) == T)
+df = df[df$JobInLimbo == F, ] 
 
 ## Obtain time spent in each category
 df$Turnaround_KickoffToShip = round(difftime(df$AssembledandShipped, df$Incomplete, units="days"), 1)
@@ -203,6 +200,13 @@ df$WeekOfRecord = lubridate::week(dat)
 df$YearOfRecord = lubridate::year(dat)
 df$DayOfMonthOfRecord = lubridate::mday(dat)
 df$WeekdayOfRecord = lubridate::wday(dat, T, F)
+
+## Filter out cancelled jobs
+LIMBOCOLZ = c('Invoice.Date','POSTER.Designer','POSTERJob.ID',
+              'Salesperson','Customer','POSTER.Qty.Ordered','YearOfRecord',
+              'Incomplete','IncompleteStatus1','IncompleteStatusCount')
+df_inlimbo = df[(df$JobInLimbo == T)&(df$YearOfRecord == this_yr), LIMBOCOLZ]
+
 
 
 # ## Write to CSV for Python
