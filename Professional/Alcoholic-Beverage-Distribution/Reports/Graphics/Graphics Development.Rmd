@@ -276,6 +276,35 @@ N_JOBZ = len_unique(redesigns$POSTERJob.ID)
 
 redesigns$JobID_Redesign = paste0(redesigns$POSTERJob.ID, ' ', redesigns$Redesign)
 redesigns$LineID_Redesign = paste0(redesigns$ProjectID_LineID, ' ', redesigns$Redesign)
+
+
+## Turnaround later on
+turn_cols = cbind(df_thisyr$Turnaround_KickoffToShip, 
+                  df_thisyr$KickoffToArtworkComplete, 
+                  df_thisyr$Stage1_KickoffToAssignment,
+                  df_thisyr$Stage2_AssignmentToBrandMentions,
+                  df_thisyr$Stage3_BrandMentionsToCostApproval,
+                  df_thisyr$Stage4_CostApprovalToArtworkComplete,
+                  df_thisyr$Stage4A_RedesignRequestedToResdesignComplete,
+                  df_thisyr$Stage5_ArtworkCompleteToRequesterApproval,
+                  df_thisyr$Stage6_RequesterApprovalToCompletion)
+turnaround = aggregate(turn_cols ~ df_thisyr$POSTER.Designer, FUN=function(x) round(mean(as.numeric(x), na.rm=T), 1))
+names(turnaround) = c('X','Turnaround','Completion','Stage1','Stage2',
+                      'Stage3','Stage4','Stage4A','Stage5','Stage6')
+rownames(turnaround) = turnaround$X
+turnaround$X = NULL
+guide_df = data.frame(row.names=c('Stage 1','Stage 2','Stage 3','Stage 4','Stage 4A','Stage 5',
+                                  'Stage 6','Stage 7','Completion','Turnaround'),
+                      Description=c('Job Incomplete til artist assignment (days)',
+                                    'Artist assignment til brand mentions obtained (days)',
+                                    'Mentions obtained til cost approved (days)',
+                                    'Cost approved til artwork complete (days)',
+                                    'If Applicable, Redesign til approval (days)',
+                                    'Artwork complete til requester approval (days)',
+                                    'Requester approval til job completion (days)',
+                                    '[NOT SHOWN] Job completion til ship (days)',
+                                    'Job Incomplete til job marked as complete (days)',
+                                    'Job Incomplete til job shipment (days)'))
 ```
 
 
@@ -297,37 +326,11 @@ Figures below include weekends and holidays (i.e. holidays and weekends are not 
 
 
 ```{r turnaround}
-turn_cols = cbind(df_thisyr$Turnaround_KickoffToShip, 
-                  df_thisyr$KickoffToArtworkComplete, 
-                  df_thisyr$Stage1_KickoffToAssignment,
-                  df_thisyr$Stage2_AssignmentToBrandMentions,
-                  df_thisyr$Stage3_BrandMentionsToCostApproval,
-                  df_thisyr$Stage4_CostApprovalToArtworkComplete,
-                  df_thisyr$Stage4A_RedesignRequestedToResdesignComplete,
-                  df_thisyr$Stage5_ArtworkCompleteToRequesterApproval,
-                  df_thisyr$Stage6_RequesterApprovalToCompletion)
-turnaround = aggregate(turn_cols ~ df_thisyr$POSTER.Designer, FUN=function(x) round(mean(as.numeric(x), na.rm=T), 1))
-names(turnaround) = c('X','Turnaround','Completion','Stage1','Stage2',
-                      'Stage3','Stage4','Stage4A','Stage5','Stage6')
-rownames(turnaround) = turnaround$X
-turnaround$X = NULL
 turnaround
 ```
 
 
 ```{r descriptions}
-guide_df = data.frame(row.names=c('Stage 1','Stage 2','Stage 3','Stage 4','Stage 4A','Stage 5',
-                                  'Stage 6','Stage 7','Completion','Turnaround'),
-                      Description=c('Job Incomplete til artist assignment (days)',
-                                    'Artist assignment til brand mentions obtained (days)',
-                                    'Mentions obtained til cost approved (days)',
-                                    'Cost approved til artwork complete (days)',
-                                    'If Applicable, Redesign til approval (days)',
-                                    'Artwork complete til requester approval (days)',
-                                    'Requester approval til job completion (days)',
-                                    '[NOT SHOWN] Job completion til ship (days)',
-                                    'Job Incomplete til job marked as complete (days)',
-                                    'Job Incomplete til job shipment (days)'))
 guide_df
 ```
 
@@ -344,7 +347,6 @@ stage_df = turnaround_x[turnaround_x$Item %!in% c('Completion','Turnaround'), ]
 stage_df$Item = factor(stage_df$Item, levels=c('Stage1','Stage2','Stage3','Stage4',
                                                'Stage4A','Stage5','Stage6')) 
 
-library(gridExtra)
 
 ggplot(turns_df, aes(x=variable, y=value, group=Item)) +
   geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
@@ -764,8 +766,12 @@ inpipe_history = df_thisyr_lastyr[, PIPECOLZ]
 inpipe_history = data.frame(
   inpipe_history %>% 
     group_by(POSTERJob.ID) %>%
-    mutate(AssembledandShipped=max(AssembledandShipped, na.rm=T) %>% ## sort for "unique" function to grab the first one
-    arrange(AssembledandShipped, Incomplete)) )
+    mutate(AssembledandShipped=max(AssembledandShipped, na.rm=T)) 
+  )
+inpipe_history = data.frame(
+  inpipe_history %>% ## sort for "unique" function to grab the first one
+    arrange(AssembledandShipped, Incomplete)
+  ) 
 
 ## Process jobs first
 DUPE_JOBS = !duplicated(inpipe_history$POSTERJob.ID)
