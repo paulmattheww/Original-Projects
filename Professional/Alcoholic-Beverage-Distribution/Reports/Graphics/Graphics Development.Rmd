@@ -132,16 +132,17 @@ df = new_df
 ## write.csv(new_df,"c:/users/pmwash/desktop/disposable docs/check for graphics.csv")
 rm(new_df)
 
-## Check the worst ones
-# x = df[!is.na(df$IncompleteStatus4), ]
-# head(x)
+## Count up Number of Incomplete Status Send-Backs
+inc_colz = names(df)
+inc_colz = inc_colz[grepl('IncompleteStatus', inc_colz)]
+incomplete_counts = !is.na(df[,inc_colz])
+df$IncompleteStatusCount = rowSums(incomplete_counts, na.rm=T)
 
 ## Filter out cancelled jobs
 df$JobInLimbo = (is.na(df$IncompleteStatus1) == F) & (is.na(df$AssembledandShipped) == T)
 df_inlimbo = df[df$JobInLimbo == T, c('Invoice.Date','POSTER.Designer','POSTERJob.ID',
                                       'Salesperson','Customer','POSTER.Qty.Ordered',
-                                      'Incomplete','IncompleteStatus1','IncompleteStatus2','IncompleteStatus3',
-                                      'JobInLimbo','IncompleteStatus4')]
+                                      'Incomplete','IncompleteStatus1','IncompleteStatusCount')]
 df = df[df$JobInLimbo == F, ]
 
 ## Obtain time spent in each category
@@ -203,11 +204,6 @@ df$YearOfRecord = lubridate::year(dat)
 df$DayOfMonthOfRecord = lubridate::mday(dat)
 df$WeekdayOfRecord = lubridate::wday(dat, T, F)
 
-## Count up Number of Incomplete Status Send-Backs
-inc_colz = names(df)
-inc_colz = inc_colz[grepl('IncompleteStatus', inc_colz)]
-incomplete_counts = !is.na(df[,inc_colz])
-df$IncompleteStatusCount = rowSums(incomplete_counts, na.rm=T)
 
 # ## Write to CSV for Python
 write.csv(df, 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/intermediate_graphics_data_dump_diver.csv',
@@ -266,20 +262,13 @@ names(bygraphics) = c('Jobs Requests Input for Others','Job Items Input for Othe
 
 ## Redesigns for later on
 redesign_colz = c('ProjectID_LineID', 'POSTERJob.ID', 'Redesign', 'Turnaround_KickoffToShip', 
-                          'POSTER.REPRINT', 'Salesperson', 'POSTER.ITEM.CATEGORY', 'POSTER.Designer')
+                  'POSTER.REPRINT', 'Salesperson', 'POSTER.ITEM.CATEGORY', 'POSTER.Designer',
+                  'Accessory_or_Print', 'Menu')
 redesigns = df_thisyr[, redesign_colz]
 N_JOBZ = len_unique(redesigns$POSTERJob.ID)
-#print(paste0('Out of ', N_JOBZ, ' the following (top 10) salespersons had the following percentages of total redesigns:'))
 
-accessories = c('Menu Books','Table Top Wrap','TT A-Frame Holder','TT A-Frame Holder (Holder Only)', 
-                'TT Acrylic Stand','TT Acrylic Stand (Stand Only)','TT Flip Stand','TT Flip Stand (Stand Only)',
-                'Vivid Board - Dry Erase','Vivid Board - Dry Erase','Light Box')
-redesigns$Accessory_or_Print = ifelse(redesigns$POSTER.ITEM.CATEGORY %in% accessories, 'Accessory', 'Print')
 turn_acc = mean(redesigns[redesigns$Accessory_or_Print=='Accessory', 'Turnaround_KickoffToShip'], na.rm=T)
 turn_pri = mean(redesigns[redesigns$Accessory_or_Print=='Print', 'Turnaround_KickoffToShip'], na.rm=T)
-
-menus = c('Menu Books','Drink List','Folded Drink List','Tri-Fold Drink List','Folded Menu Cards','Menu Card - Small Format (QTY = Total Pages)')
-redesigns$Menu = redesigns$POSTER.ITEM.CATEGORY %in% menus
 
 redesigns$JobID_Redesign = paste0(redesigns$POSTERJob.ID, ' ', redesigns$Redesign)
 redesigns$LineID_Redesign = paste0(redesigns$ProjectID_LineID, ' ', redesigns$Redesign)
@@ -417,7 +406,6 @@ Percentages, as it is throughout this document, are shown as %. Total jobs is th
 
 ```{r redesigns_des}
 redesign_unique = redesigns[!duplicated(redesigns$POSTERJob.ID), ]
-#print(paste0('Out of ', N_JOBZ, ' the following (top 10) salespersons had the following percentages of total redesigns:'))
 
 redesigns_bydes = aggregate(Redesign~POSTER.Designer, data=redesign_unique, FUN=sum)
 redesigns_bydes = redesigns_bydes[order(redesigns_bydes$Redesign, decreasing=T), ]
@@ -443,6 +431,14 @@ rownames(redesigns_bysls) = redesigns_bysls$Salesperson
 redesigns_bysls$Salesperson = NULL
 names(redesigns_bysls) = c('Number of Jobs Redesigned', 'Percent (%) of Total Jobs YTD')
 head(redesigns_bysls, 25)
+```
+
+
+## Projects Abandoned
+
+A project
+```{r limbo_abandoned}
+head(df)
 ```
 
 
