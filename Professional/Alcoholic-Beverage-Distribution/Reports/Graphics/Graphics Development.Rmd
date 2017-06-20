@@ -670,9 +670,10 @@ inpipe_history = df_thisyr_lastyr[, PIPECOLZ]
 inpipe_history = inpipe_history %>% ## sort for "unique" function to grab the first one
   arrange(AssembledandShipped, Incomplete)
 
-inpipe_history = inpipe_history %>% 
-  group_by(POSTERJob.ID) %>%
-  mutate(MaxShip=max(as.numeric(AssembledandShipped), na.rm=T))
+inpipe_history = data.frame(
+  inpipe_history %>% 
+    group_by(POSTERJob.ID) %>%
+    mutate(AssembledandShipped=max(AssembledandShipped, na.rm=T)) )
 
 ## Process jobs first
 DUPE_JOBS = (!duplicated(inpipe_history$POSTERJob.ID))
