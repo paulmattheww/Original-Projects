@@ -784,12 +784,12 @@ rownames(job_history) = NULL
 janlast_decthis = seq.Date(from=as.Date(paste0(last_yr,'-01-01')),
                            to=as.Date(Sys.Date()), by='day')
 
-NTEST = 1000 # set to length or get rid of for live
+#NTEST = 1000 # set to length or get rid of for live
 
-STARTS = as.Date(job_history$Incomplete[1:NTEST])  ##[1:500]
-ENDS = as.Date(job_history$AssembledandShipped[1:NTEST]) ##[1:500] 
+STARTS = as.Date(job_history$Incomplete)  ##[1:NTEST]
+ENDS = as.Date(job_history$AssembledandShipped) ##[1:NTEST] 
 
-for(i in 1:length(janlast_decthis[1:NTEST])){
+for(i in 1:length(janlast_decthis)){ #[1:NTEST]
   for(j in 1:NROW(job_history)){
     try({
     PIPEDATE = as.character(janlast_decthis[i])
