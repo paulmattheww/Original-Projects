@@ -139,7 +139,7 @@ incomplete_counts = !is.na(df[,inc_colz])
 df$IncompleteStatusCount = rowSums(incomplete_counts, na.rm=T)
 
 ## Mark limbo jobs
-df$JobInLimbo = (df$IncompleteStatusCount > 0) & (is.na(df$AssembledandShipped) == T)
+df$JobInLimbo = (df$IncompleteStatusCount > 0) & (is.na(df$AssembledandShipped))
 df = df[df$JobInLimbo == F, ] 
 
 ## Obtain time spent in each category
@@ -205,7 +205,7 @@ df$WeekdayOfRecord = lubridate::wday(dat, T, F)
 LIMBOCOLZ = c('Invoice.Date','POSTER.Designer','POSTERJob.ID',
               'Salesperson','Customer','POSTER.Qty.Ordered','YearOfRecord',
               'Incomplete','IncompleteStatus1','IncompleteStatusCount')
-df_inlimbo = df[(df$JobInLimbo == T)&(df$YearOfRecord == this_yr), LIMBOCOLZ]
+df_inlimbo = df[(df$JobInLimbo == T), LIMBOCOLZ]
 
 
 
@@ -363,6 +363,7 @@ ggplot(stage_df, aes(x=Item, y=value, group=variable)) +
 
 
 ## Reprints by Designer
+
 Total number of reprints for the current year, by Designer. Percent of Total is shown as a percent; in other words, it has been multiplied by 100 (e.g. 1.2 indicates 1.2%, or 0.012). Reprints are counted at the Job ID level, meaning a job with 10 items marked as reprints will be counted one time. It is possible to add in reprints at the Job Item level if this information is desired.
 
 ```{r reprints}
@@ -465,7 +466,7 @@ redesigns_bydes$POSTER.Designer = NULL
 
 ### Redesigns by Salesperson
 
-Below displays the top 10 salespeople as measured by the number of times they sent jobs back to Graphics for Redesigns.
+Below displays the top 15 salespeople as measured by the number of times they sent jobs back to Graphics for Redesigns.
 
 ```{r redesigns_sls}
 redesigns_bysls_s = aggregate(Redesign~Salesperson+YearOfRecord, data=redesign_unique, FUN=sum)
@@ -475,7 +476,7 @@ rownames(redesigns_bysls) = redesigns_bysls$Salesperson
 redesigns_bysls$Salesperson = NULL
 redesigns_bysls = redesigns_bysls[order(redesigns_bysls$`2017`, decreasing=T), ]
 
-head(redesigns_bysls, 10)
+head(redesigns_bysls, 15)
 ```
 
 Adjusting for Salesperson's utilization rate of the Graphics team's resources. Both axes are shown as logs of the value to show the names more clearly. Individuals well above the line are committing re-designs more often than is normal for their given level of Graphics utilization.
@@ -508,28 +509,55 @@ ggplot(ttl_sls, aes(x=Jobs, y=Redesigns, group=Year)) +
 
 ## On-Hold & Abandoned Jobs
 
-A job is considered on-hold if it has been sent back to "Incomplete" status at least once, and the project has not been "Assembled & Shipped".
+A job is considered on-hold if it has been sent back to "Incomplete" status at least once, and the project has not been "Assembled & Shipped". 
 
-### YTD Jobs Abandoned By Salesperson
 
-All jobs that are currently in "Incomplete" status and do not have a date for "Assembled & Shipped" are considered to be Abandoned. This does not include projects that have just started.
+### Jobs Placed On-Hold Multiple Times
 
-```{r limbo_abandoned_sls}
-df_inlimbo = df_inlimbo[order(df_inlimbo$IncompleteStatusCount, decreasing=T), ]
-df_inlimbo = df_inlimbo[!duplicated(df_inlimbo$POSTERJob.ID), ]
+Below shows jobs that were placed on hold more than once, as shown in the "Incomplete" column. The Job ID is shown next to the salesperson's name.
 
-abandon_sls = aggregate(cbind(IncompleteStatusCount,POSTER.Qty.Ordered) ~ Salesperson, data=df_inlimbo, FUN=sum)
-abandon_sls = abandon_sls[order(abandon_sls$IncompleteStatusCount, decreasing=T), ]
-rownames(abandon_sls) = abandon_sls$Salesperson
-abandon_sls$Salesperson = NULL
-names(abandon_sls) = c(paste0('Jobs Abandoned ', as.character(this_yr)), 
-                      paste0('Qty Ordered Abandoned ', as.character(this_yr)))
-head(abandon_sls, 10)
+```{r multiple_onholds}
+onholdcolz = c('YearOfRecord','POSTERJob.ID','Salesperson','Customer','POSTER.ITEM.CATEGORY',
+               'POSTER.Qty.Ordered','IncompleteStatusCount')
+onhold = df_thisyr_lastyr[df_thisyr_lastyr$IncompleteStatusCount > 1, onholdcolz]
+onhold = onhold[order(onhold$IncompleteStatusCount, decreasing = T), ]
+onhold = onhold[!duplicated(onhold$POSTERJob.ID), ]
+YR = onhold$YearOfRecord
+SLS = onhold$Salesperson
+JID = onhold$POSTERJob.ID
+rownames(onhold) = onhold$POSTERJob.ID = onhold$YearOfRecord = onhold$Salesperson = NULL
+rownames(onhold) = paste0(SLS, '-', JID)
+names(onhold) = c('Customer','Category','Qty Ordered','Incomplete')
+onhold$Category = substrLeft(onhold$Category, 15)
+split(onhold, YR)
 ```
 
-### YTD Jobs Placed On-Hold By Salesperson
 
-Below shows jobs that were placed in "Incomplete" status after starting one or more times, but were eventually finished.
+<!-- ### YTD Jobs Abandoned By Salesperson -->
+
+<!-- All jobs that are currently in "Incomplete" status and do not have a date for "Assembled & Shipped" are considered to be Abandoned. This does not include projects that have just started. -->
+
+<!-- ```{r limbo_abandoned_sls} -->
+<!-- df_inlimbo = df_inlimbo[order(df_inlimbo$IncompleteStatusCount, decreasing=T), ] -->
+<!-- df_inlimbo_x = df_inlimbo[!duplicated(df_inlimbo$POSTERJob.ID), ] -->
+
+<!-- abandon_sls = aggregate(cbind(IncompleteStatusCount,POSTER.Qty.Ordered) ~ Salesperson, data=df_inlimbo_x, FUN=sum) -->
+<!-- abandon_sls = abandon_sls[order(abandon_sls$IncompleteStatusCount, decreasing=T), ] -->
+<!-- rownames(abandon_sls) = abandon_sls$Salesperson -->
+<!-- abandon_sls$Salesperson = NULL -->
+<!-- names(abandon_sls) = c(paste0('Jobs Abandoned ', as.character(this_yr)),  -->
+<!--                       paste0('Qty Ordered Abandoned ', as.character(this_yr))) -->
+<!-- if(NROW(abandon_sls) == 0){ -->
+<!--   print('No abandoned jobs')   -->
+<!-- } else { -->
+<!--   head(abandon_sls, 10) -->
+<!-- } -->
+
+<!-- ``` -->
+
+### Jobs Placed On-Hold By Salesperson, This Year v. Last Year (YTD)
+
+Below shows jobs that were placed in "Incomplete" status one or more times, but were eventually finished.
 
 ```{r limbo_sls}
 limbo_colz = c('Salesperson','Company','Year','Customer','IncompleteStatusCount','POSTERJob.ID',
@@ -652,43 +680,6 @@ ggplot(mentions_t_melt, aes(x=Name, y=value, group=variable)) +
 
 
 
-<!-- ## Reprints by Designer -->
-<!-- Total number of reprints for the current year, by Designer. Percent of Total is shown as a percent; in other words, it has been multiplied by 100 (e.g. 1.2 indicates 1.2%, or 0.012). Reprints are counted at the Job ID level, meaning a job with 10 items marked as reprints will be counted one time. It is possible to add in reprints at the Job Item level if this information is desired. -->
-
-<!-- ```{r reprints} -->
-<!-- reprint_cols = c('POSTERJob.ID','POSTER.Designer') -->
-<!-- no_dupes = !duplicated(df[,reprint_cols]) -->
-
-<!-- reprints = df[no_dupes, c('POSTERJob.ID','POSTER.Designer','POSTER.REPRINT','Year')] -->
-<!-- reprints = reprints[reprints$Year == this_yr, ] -->
-<!-- reprints = aggregate(POSTER.REPRINT ~ POSTER.Designer, data=reprints, FUN=sum) -->
-
-<!-- tot_jobs = aggregate(POSTERJob.ID ~ POSTER.Designer, data=df_thisyr, FUN=len_unique) -->
-<!-- reprints = merge(reprints, tot_jobs, by='POSTER.Designer', how='all') -->
-<!-- reprints = process_df(reprints) -->
-
-<!-- ## Specify column names -->
-<!-- names(reprints) = c('Number of Reprints', 'Total Jobs') -->
-<!-- reprints$`Reprints as % of Total Jobs` = round((reprints$`Number of Reprints` / reprints$`Total Jobs`)*100, 1) -->
-<!-- reprints -->
-<!-- ``` -->
-
-<!-- ```{r reprint_plot, fig.height=5, fig.width=9} -->
-<!-- reprints_t = data.frame(t(reprints)) -->
-<!-- names(reprints_t) = gsub('\\..', ', ', names(reprints_t)) -->
-<!-- reprints_t$Name = rownames(reprints_t) -->
-<!-- rownames(reprints_t) = NULL -->
-<!-- reprints_t_melt = melt(reprints_t, 'Name', active_designers) -->
-
-<!-- ggplot(reprints_t_melt, aes(x=variable, y=value, group=Name)) + -->
-<!--   geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') + -->
-<!--   facet_wrap(~Name, ncol=4, scales='free_y') + -->
-<!--   theme_minimal() + -->
-<!--   theme(axis.text.x=element_text(angle=90, hjust=1)) + -->
-<!--   labs(x='', y='', title='Reprint Summary') -->
-<!-- ``` -->
-
-
 ## Number of Jobs per Month by Designer
 
 Total number of jobs by designer, shown by month. Figures below show a job if it was "touched" at all during the timeframe in question.
@@ -769,16 +760,15 @@ A Job is considered active in the Graphics pipeline if the Job has been Kicked O
 ```{r bydes_inpipe, fig.height=5, fig.width=9}
 PIPECOLZ = c('POSTERJob.ID','ProjectID_LineID','Incomplete','AssembledandShipped')
 inpipe_history = df_thisyr_lastyr[, PIPECOLZ]
-inpipe_history = inpipe_history %>% ## sort for "unique" function to grab the first one
-  arrange(AssembledandShipped, Incomplete)
 
 inpipe_history = data.frame(
   inpipe_history %>% 
     group_by(POSTERJob.ID) %>%
-    mutate(AssembledandShipped=max(AssembledandShipped, na.rm=T)) )
+    mutate(AssembledandShipped=max(AssembledandShipped, na.rm=T) %>% ## sort for "unique" function to grab the first one
+    arrange(AssembledandShipped, Incomplete)) )
 
 ## Process jobs first
-DUPE_JOBS = (!duplicated(inpipe_history$POSTERJob.ID))
+DUPE_JOBS = !duplicated(inpipe_history$POSTERJob.ID)
 
 job_history = inpipe_history[DUPE_JOBS, ]
 rownames(job_history) = NULL
@@ -788,10 +778,12 @@ rownames(job_history) = NULL
 janlast_decthis = seq.Date(from=as.Date(paste0(last_yr,'-01-01')),
                            to=as.Date(Sys.Date()), by='day')
 
-STARTS = as.Date(job_history$Incomplete[1:500])  ##[1:500]
-ENDS = as.Date(job_history$AssembledandShipped[1:500]) ##[1:500] 
+NTEST = 1000 # set to length or get rid of for live
 
-for(i in 1:length(janlast_decthis[1:500])){
+STARTS = as.Date(job_history$Incomplete[1:NTEST])  ##[1:500]
+ENDS = as.Date(job_history$AssembledandShipped[1:NTEST]) ##[1:500] 
+
+for(i in 1:length(janlast_decthis[1:NTEST])){
   for(j in 1:NROW(job_history)){
     PIPEDATE = as.character(janlast_decthis[i])
     STARTED = as.numeric(janlast_decthis[i] >= STARTS[j])
