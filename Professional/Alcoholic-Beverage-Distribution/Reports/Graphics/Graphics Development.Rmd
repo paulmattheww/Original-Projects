@@ -471,7 +471,7 @@ names(redesigns_bysls) = c('Number of Jobs Redesigned', 'Percent Redesigned (%) 
 head(redesigns_bysls, 10)
 ```
 
-Adjusting for Salesperson's utilization rate of the Graphics team's resources.
+Adjusting for Salesperson's utilization rate of the Graphics team's resources. Both axes are shown as logs of the value to show the names more clearly. Individuals well above the line are committing re-designs more often than is normal for their given level of Graphics utilization.
 
 ```{r sls_plot_reds, fig.height=5, fig.width=9}
 ttl_sls = aggregate(POSTERJob.ID~Salesperson, data=redesign_unique, FUN=len_unique)
@@ -491,7 +491,7 @@ ggplot(ttl_sls, aes(x=`Number of Jobs YTD`, y=`Number of Jobs Redesigned`)) +
   geom_text(position='jitter', 
              aes(x=`Number of Jobs YTD`, y=`Number of Jobs Redesigned`, 
                 label=Salesperson, size=scale(`Number of Jobs Redesigned`)),
-            colour='blue') +
+            colour='blue', alpha=.6) +
   geom_smooth(se=F, method='lm') +
   theme_minimal() +
   theme(legend.position='none') +
@@ -524,7 +524,7 @@ head(abandon_sls, 10)
 
 ### YTD Jobs Placed On-Hold By Salesperson
 
-Below shows jobs that were placed in "Incomplete" status after starting, but were eventually finished.
+Below shows jobs that were placed in "Incomplete" status after starting one or more times, but were eventually finished.
 
 ```{r limbo_sls}
 limbo_colz = c('Salesperson','Company','Year','Customer','IncompleteStatusCount','POSTERJob.ID',
