@@ -140,8 +140,8 @@ df$IncompleteStatusCount = rowSums(incomplete_counts, na.rm=T)
 
 ## Filter out cancelled jobs
 df$JobInLimbo = (is.na(df$IncompleteStatus1) == F) & (is.na(df$AssembledandShipped) == T)
-df_inlimbo = df[df$JobInLimbo == T, c('Invoice.Date','POSTER.Designer','POSTERJob.ID',
-                                      'Salesperson','Customer','POSTER.Qty.Ordered',
+df_inlimbo = df[(df$JobInLimbo == T)&(df$YearOfRecord == this_yr), c('Invoice.Date','POSTER.Designer','POSTERJob.ID',
+                                      'Salesperson','Customer','POSTER.Qty.Ordered','YearOfRecord',
                                       'Incomplete','IncompleteStatus1','IncompleteStatusCount')]
 df = df[df$JobInLimbo == F, ]
 
@@ -358,11 +358,47 @@ ggplot(stage_df, aes(x=Item, y=value, group=variable)) +
 ```
 
 
-## YTD Redesigns
+## Reprints by Designer
+Total number of reprints for the current year, by Designer. Percent of Total is shown as a percent; in other words, it has been multiplied by 100 (e.g. 1.2 indicates 1.2%, or 0.012). Reprints are counted at the Job ID level, meaning a job with 10 items marked as reprints will be counted one time. It is possible to add in reprints at the Job Item level if this information is desired.
+
+```{r reprints}
+reprint_cols = c('POSTERJob.ID','POSTER.Designer')
+no_dupes = !duplicated(df[,reprint_cols])
+
+reprints = df[no_dupes, c('POSTERJob.ID','POSTER.Designer','POSTER.REPRINT','Year')]
+reprints = reprints[reprints$Year == this_yr, ]
+reprints = aggregate(POSTER.REPRINT ~ POSTER.Designer, data=reprints, FUN=sum)
+
+tot_jobs = aggregate(POSTERJob.ID ~ POSTER.Designer, data=df_thisyr, FUN=len_unique)
+reprints = merge(reprints, tot_jobs, by='POSTER.Designer', how='all')
+reprints = process_df(reprints)
+
+## Specify column names
+names(reprints) = c('Number of Reprints', 'Total Jobs')
+reprints$`Reprints as % of Total Jobs` = round((reprints$`Number of Reprints` / reprints$`Total Jobs`)*100, 1)
+reprints
+```
+
+```{r reprint_plot, fig.height=5, fig.width=9}
+reprints_t = data.frame(t(reprints))
+names(reprints_t) = gsub('\\..', ', ', names(reprints_t))
+reprints_t$Name = rownames(reprints_t)
+rownames(reprints_t) = NULL
+reprints_t_melt = melt(reprints_t, 'Name', active_designers)
+
+ggplot(reprints_t_melt, aes(x=variable, y=value, group=Name)) +
+  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
+  facet_wrap(~Name, ncol=4, scales='free_y') +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='', y='', title='Reprint Summary')
+```
+
+## Redesigns
 
 A Job is marked as having experienced a Redesign in the even tthat the "AwaitingArtworkRedesign" text was discovered in the text field in PostER that marks each stage of the Job. It is important to note that there are considerably more Print jobs than there are Accessory jobs. 
 
-### Redesigns by Type of Job
+### Redesigns for Accessories v. Print Jobs
 
 Accessory vs. Print jobs. 
 
@@ -379,6 +415,8 @@ ggplot(data=redesigns, aes(x=Redesign, y=Turnaround_KickoffToShip, group=Redesig
   scale_y_continuous(labels=comma) +
   facet_wrap(~Accessory_or_Print)
 ```
+
+### Redesigns for Menu v. Non-Menu Jobs
 
 Menus vs. non-menus. The blue horizontal line represents the avg. turnaround for Menus, the red line for Non-Menus.
 
@@ -420,7 +458,7 @@ redesigns_bydes
 
 ### Redesigns by Salesperson
 
-Below displays the top 25 salespeople as measured by the number of times they sent jobs back to Graphics for Redesigns.
+Below displays the top 10 salespeople as measured by the number of times they sent jobs back to Graphics for Redesigns.
 
 ```{r redesigns_sls}
 redesigns_bysls = aggregate(Redesign~Salesperson, data=redesign_unique, FUN=sum)
@@ -429,16 +467,79 @@ redesigns_bysls = redesigns_bysls[redesigns_bysls$Salesperson %!in% graphics_pos
 redesigns_bysls$Percent = round(redesigns_bysls$Redesign / N_JOBZ, 3) * 100
 rownames(redesigns_bysls) = redesigns_bysls$Salesperson
 redesigns_bysls$Salesperson = NULL
-names(redesigns_bysls) = c('Number of Jobs Redesigned', 'Percent (%) of Total Jobs YTD')
-head(redesigns_bysls, 25)
+names(redesigns_bysls) = c('Number of Jobs Redesigned', 'Percent Redesigned (%) of Total Jobs YTD')
+head(redesigns_bysls, 10)
+```
+
+Adjusting for Salesperson's utilization rate of the Graphics team's resources.
+
+```{r sls_plot_reds, fig.height=5, fig.width=9}
+ttl_sls = aggregate(POSTERJob.ID~Salesperson, data=redesign_unique, FUN=len_unique)
+ttl_sls = ttl_sls[order(ttl_sls$POSTERJob.ID, decreasing=T), ]
+ttl_sls = ttl_sls[ttl_sls$Salesperson %!in% graphics_posterIDs, ]
+ttl_sls$Percent = round(ttl_sls$POSTERJob.ID / N_JOBZ, 3) * 100
+
+names(ttl_sls) = c('Salesperson','Number of Jobs YTD', 'Percent (%) of Total Jobs YTD')
+redesigns_bysls$Salesperson = rownames(redesigns_bysls)
+rownames(redesigns_bysls) = NULL
+
+ttl_sls = merge(ttl_sls, redesigns_bysls, how='outer', on='Salesperson')
+ttl_sls = ttl_sls[order(ttl_sls$`Number of Jobs YTD`, decreasing=T), ]
+
+ggplot(ttl_sls, aes(x=`Number of Jobs YTD`, y=`Number of Jobs Redesigned`)) +
+  geom_point() + 
+  geom_text(position='jitter', 
+             aes(x=`Number of Jobs YTD`, y=`Number of Jobs Redesigned`, 
+                label=Salesperson, size=scale(`Number of Jobs Redesigned`)),
+            colour='blue') +
+  geom_smooth(se=F, method='lm') +
+  theme_minimal() +
+  theme(legend.position='none') +
+  scale_x_log10() + scale_y_log10() +
+  labs(title='YTD Redesigns as a function of Number of Jobs Submitted', x='Log Jobs', y='Log Redesigns') 
 ```
 
 
-## Projects Abandoned
 
-A project
-```{r limbo_abandoned}
-head(df)
+## On-Hold & Abandoned Jobs
+
+A job is considered on-hold if it has been sent back to "Incomplete" status at least once, and the project has not been "Assembled & Shipped".
+
+### YTD Jobs Abandoned By Salesperson
+
+All jobs that are currently in "Incomplete" status and do not have a date for "Assembled & Shipped" are considered to be Abandoned. This does not include projects that have just started.
+
+```{r limbo_abandoned_sls}
+df_inlimbo = df_inlimbo[order(df_inlimbo$IncompleteStatusCount, decreasing=T), ]
+df_inlimbo = df_inlimbo[!duplicated(df_inlimbo$POSTERJob.ID), ]
+
+abandon_sls = aggregate(cbind(IncompleteStatusCount,POSTER.Qty.Ordered) ~ Salesperson, data=df_inlimbo, FUN=sum)
+abandon_sls = abandon_sls[order(abandon_sls$IncompleteStatusCount, decreasing=T), ]
+rownames(abandon_sls) = abandon_sls$Salesperson
+abandon_sls$Salesperson = NULL
+names(abandon_sls) = c(paste0('Jobs Abandoned ', as.character(this_yr)), 
+                      paste0('Qty Ordered Abandoned ', as.character(this_yr)))
+head(abandon_sls, 10)
+```
+
+### YTD Jobs Placed On-Hold By Salesperson
+
+Below shows jobs that were placed in "Incomplete" status after starting, but were eventually finished.
+
+```{r limbo_sls}
+limbo_colz = c('Salesperson','Company','Year','Customer','IncompleteStatusCount','POSTERJob.ID',
+               'Incomplete','AssembledandShipped','IncompleteStatus1','POSTER.Qty.Ordered')
+limbo_sls_thisyr = df_thisyr[order(df_thisyr$IncompleteStatusCount, decreasing=T), limbo_colz]
+limbo_sls_thisyr = limbo_sls_thisyr[limbo_sls_thisyr$IncompleteStatusCount > 0, ]
+limbo_sls_thisyr = limbo_sls_thisyr[!duplicated(limbo_sls_thisyr$POSTERJob.ID), ]
+
+limbo_slss = aggregate(cbind(IncompleteStatusCount,POSTER.Qty.Ordered) ~ Salesperson, data=limbo_sls_thisyr, FUN=sum)
+limbo_slss = limbo_slss[order(limbo_slss$IncompleteStatusCount, decreasing=T), ]
+rownames(limbo_slss) = limbo_slss$Salesperson
+limbo_slss$Salesperson = NULL
+names(limbo_slss) = c(paste0('Jobs In/Out of Limbo ', as.character(this_yr)), 
+                      paste0('Qty Ordered In/Out of Limbo ', as.character(this_yr)))
+head(limbo_slss, 10)
 ```
 
 
@@ -546,41 +647,41 @@ ggplot(mentions_t_melt, aes(x=Name, y=value, group=variable)) +
 
 
 
-## Reprints by Designer
-Total number of reprints for the current year, by Designer. Percent of Total is shown as a percent; in other words, it has been multiplied by 100 (e.g. 1.2 indicates 1.2%, or 0.012). Reprints are counted at the Job ID level, meaning a job with 10 items marked as reprints will be counted one time. It is possible to add in reprints at the Job Item level if this information is desired.
+<!-- ## Reprints by Designer -->
+<!-- Total number of reprints for the current year, by Designer. Percent of Total is shown as a percent; in other words, it has been multiplied by 100 (e.g. 1.2 indicates 1.2%, or 0.012). Reprints are counted at the Job ID level, meaning a job with 10 items marked as reprints will be counted one time. It is possible to add in reprints at the Job Item level if this information is desired. -->
 
-```{r reprints}
-reprint_cols = c('POSTERJob.ID','POSTER.Designer')
-no_dupes = !duplicated(df[,reprint_cols])
+<!-- ```{r reprints} -->
+<!-- reprint_cols = c('POSTERJob.ID','POSTER.Designer') -->
+<!-- no_dupes = !duplicated(df[,reprint_cols]) -->
 
-reprints = df[no_dupes, c('POSTERJob.ID','POSTER.Designer','POSTER.REPRINT','Year')]
-reprints = reprints[reprints$Year == this_yr, ]
-reprints = aggregate(POSTER.REPRINT ~ POSTER.Designer, data=reprints, FUN=sum)
+<!-- reprints = df[no_dupes, c('POSTERJob.ID','POSTER.Designer','POSTER.REPRINT','Year')] -->
+<!-- reprints = reprints[reprints$Year == this_yr, ] -->
+<!-- reprints = aggregate(POSTER.REPRINT ~ POSTER.Designer, data=reprints, FUN=sum) -->
 
-tot_jobs = aggregate(POSTERJob.ID ~ POSTER.Designer, data=df_thisyr, FUN=len_unique)
-reprints = merge(reprints, tot_jobs, by='POSTER.Designer', how='all')
-reprints = process_df(reprints)
+<!-- tot_jobs = aggregate(POSTERJob.ID ~ POSTER.Designer, data=df_thisyr, FUN=len_unique) -->
+<!-- reprints = merge(reprints, tot_jobs, by='POSTER.Designer', how='all') -->
+<!-- reprints = process_df(reprints) -->
 
-## Specify column names
-names(reprints) = c('Number of Reprints', 'Total Jobs')
-reprints$`Reprints as % of Total Jobs` = round((reprints$`Number of Reprints` / reprints$`Total Jobs`)*100, 1)
-reprints
-```
+<!-- ## Specify column names -->
+<!-- names(reprints) = c('Number of Reprints', 'Total Jobs') -->
+<!-- reprints$`Reprints as % of Total Jobs` = round((reprints$`Number of Reprints` / reprints$`Total Jobs`)*100, 1) -->
+<!-- reprints -->
+<!-- ``` -->
 
-```{r reprint_plot, fig.height=5, fig.width=9}
-reprints_t = data.frame(t(reprints))
-names(reprints_t) = gsub('\\..', ', ', names(reprints_t))
-reprints_t$Name = rownames(reprints_t)
-rownames(reprints_t) = NULL
-reprints_t_melt = melt(reprints_t, 'Name', active_designers)
+<!-- ```{r reprint_plot, fig.height=5, fig.width=9} -->
+<!-- reprints_t = data.frame(t(reprints)) -->
+<!-- names(reprints_t) = gsub('\\..', ', ', names(reprints_t)) -->
+<!-- reprints_t$Name = rownames(reprints_t) -->
+<!-- rownames(reprints_t) = NULL -->
+<!-- reprints_t_melt = melt(reprints_t, 'Name', active_designers) -->
 
-ggplot(reprints_t_melt, aes(x=variable, y=value, group=Name)) +
-  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
-  facet_wrap(~Name, ncol=4, scales='free_y') +
-  theme_minimal() +
-  theme(axis.text.x=element_text(angle=90, hjust=1)) +
-  labs(x='', y='', title='Reprint Summary')
-```
+<!-- ggplot(reprints_t_melt, aes(x=variable, y=value, group=Name)) + -->
+<!--   geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') + -->
+<!--   facet_wrap(~Name, ncol=4, scales='free_y') + -->
+<!--   theme_minimal() + -->
+<!--   theme(axis.text.x=element_text(angle=90, hjust=1)) + -->
+<!--   labs(x='', y='', title='Reprint Summary') -->
+<!-- ``` -->
 
 
 ## Number of Jobs per Month by Designer
