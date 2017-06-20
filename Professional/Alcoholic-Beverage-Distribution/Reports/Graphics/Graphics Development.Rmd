@@ -44,6 +44,11 @@ pct_chg = function(new, old) {
   round(((new-old)/abs(old))*100, 1)
 }
 len_unique = function(x) length(unique(x))
+process_df = function(df) {
+  rownames(df) = df$POSTER.Designer
+  df$POSTER.Designer = df$variable = NULL
+  return(df)
+}
 
 ## Read in and clean up the data
 df = read.csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/graphics_data_dump_diver.csv', header=TRUE)
@@ -97,14 +102,16 @@ for(i in 1:length(job_status)) {
   job_stages = extract_stage_name(job_status[i]); print(i)
   job_stages = job_stages[!grepl('4zj', job_stages)]
  
+  INCOMPLETE_COUNT = 1
   for(j in 1:length(job_stages)) {
     colname = as.character(job_stages[j])
     try({
       if(colname %in% names(new_df)) {
         if((j != 1) & ('Incomplete' %in% colname)){
           DAT = extract_dates_fromtext(job_status, i, j)
-          print(paste0(i, j, DAT, 'CANCELLED JOB'))
-          new_df[i, 'IncompleteStatus'] = DAT
+          print(paste0(i, j, DAT, '--- INCOMPLETE STATUS ---'))
+          new_df[i, paste0('IncompleteStatus',as.character(INCOMPLETE_COUNT))] = DAT
+          INCOMPLETE_COUNT = INCOMPLETE_COUNT+1
         } else {
           DAT = extract_dates_fromtext(job_status, i, j)
           print(DAT)
@@ -122,15 +129,19 @@ for(i in 1:length(job_status)) {
 
 
 df = new_df
-rm(new_df)
-## verify no bugs
 ## write.csv(new_df,"c:/users/pmwash/desktop/disposable docs/check for graphics.csv")
+rm(new_df)
+
+## Check the worst ones
+# x = df[!is.na(df$IncompleteStatus4), ]
+# head(x)
 
 ## Filter out cancelled jobs
-df$JobInLimbo = (is.na(df$IncompleteStatus) == F) & (is.na(df$AssembledandShipped) == T)
+df$JobInLimbo = (is.na(df$IncompleteStatus1) == F) & (is.na(df$AssembledandShipped) == T)
 df_inlimbo = df[df$JobInLimbo == T, c('Invoice.Date','POSTER.Designer','POSTERJob.ID',
                                       'Salesperson','Customer','POSTER.Qty.Ordered',
-                                      'Incomplete','IncompleteStatus','JobInLimbo')]
+                                      'Incomplete','IncompleteStatus1','IncompleteStatus2','IncompleteStatus3',
+                                      'JobInLimbo','IncompleteStatus4')]
 df = df[df$JobInLimbo == F, ]
 
 ## Obtain time spent in each category
@@ -192,6 +203,11 @@ df$YearOfRecord = lubridate::year(dat)
 df$DayOfMonthOfRecord = lubridate::mday(dat)
 df$WeekdayOfRecord = lubridate::wday(dat, T, F)
 
+## Count up Number of Incomplete Status Send-Backs
+inc_colz = names(df)
+inc_colz = inc_colz[grepl('IncompleteStatus', inc_colz)]
+incomplete_counts = !is.na(df[,inc_colz])
+df$IncompleteStatusCount = rowSums(incomplete_counts, na.rm=T)
 
 # ## Write to CSV for Python
 write.csv(df, 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/intermediate_graphics_data_dump_diver.csv',
@@ -246,6 +262,27 @@ byrequester = byrequester[order(byrequester$POSTERJob.ID, decreasing=T),]
 
 names(byrequester) = c('Jobs Requested','Job Items Requested')
 names(bygraphics) = c('Jobs Requests Input for Others','Job Items Input for Others')
+
+
+## Redesigns for later on
+redesign_colz = c('ProjectID_LineID', 'POSTERJob.ID', 'Redesign', 'Turnaround_KickoffToShip', 
+                          'POSTER.REPRINT', 'Salesperson', 'POSTER.ITEM.CATEGORY', 'POSTER.Designer')
+redesigns = df_thisyr[, redesign_colz]
+N_JOBZ = len_unique(redesigns$POSTERJob.ID)
+#print(paste0('Out of ', N_JOBZ, ' the following (top 10) salespersons had the following percentages of total redesigns:'))
+
+accessories = c('Menu Books','Table Top Wrap','TT A-Frame Holder','TT A-Frame Holder (Holder Only)', 
+                'TT Acrylic Stand','TT Acrylic Stand (Stand Only)','TT Flip Stand','TT Flip Stand (Stand Only)',
+                'Vivid Board - Dry Erase','Vivid Board - Dry Erase','Light Box')
+redesigns$Accessory_or_Print = ifelse(redesigns$POSTER.ITEM.CATEGORY %in% accessories, 'Accessory', 'Print')
+turn_acc = mean(redesigns[redesigns$Accessory_or_Print=='Accessory', 'Turnaround_KickoffToShip'], na.rm=T)
+turn_pri = mean(redesigns[redesigns$Accessory_or_Print=='Print', 'Turnaround_KickoffToShip'], na.rm=T)
+
+menus = c('Menu Books','Drink List','Folded Drink List','Tri-Fold Drink List','Folded Menu Cards','Menu Card - Small Format (QTY = Total Pages)')
+redesigns$Menu = redesigns$POSTER.ITEM.CATEGORY %in% menus
+
+redesigns$JobID_Redesign = paste0(redesigns$POSTERJob.ID, ' ', redesigns$Redesign)
+redesigns$LineID_Redesign = paste0(redesigns$ProjectID_LineID, ' ', redesigns$Redesign)
 ```
 
 
@@ -341,25 +378,6 @@ A Job is marked as having experienced a Redesign in the even tthat the "Awaiting
 Accessory vs. Print jobs. 
 
 ```{r viz_redesigns_accessoryvprint, fig.height=5, fig.width=9}
-redesign_colz = c('ProjectID_LineID', 'POSTERJob.ID', 'Redesign', 'Turnaround_KickoffToShip', 
-                          'POSTER.REPRINT', 'Salesperson', 'POSTER.ITEM.CATEGORY', 'POSTER.Designer')
-redesigns = df_thisyr[, redesign_colz]
-N_JOBZ = len_unique(redesigns$POSTERJob.ID)
-#print(paste0('Out of ', N_JOBZ, ' the following (top 10) salespersons had the following percentages of total redesigns:'))
-
-accessories = c('Menu Books','Table Top Wrap','TT A-Frame Holder','TT A-Frame Holder (Holder Only)', 
-                'TT Acrylic Stand','TT Acrylic Stand (Stand Only)','TT Flip Stand','TT Flip Stand (Stand Only)',
-                'Vivid Board - Dry Erase','Vivid Board - Dry Erase','Light Box')
-redesigns$Accessory_or_Print = ifelse(redesigns$POSTER.ITEM.CATEGORY %in% accessories, 'Accessory', 'Print')
-turn_acc = mean(redesigns[redesigns$Accessory_or_Print=='Accessory', 'Turnaround_KickoffToShip'], na.rm=T)
-turn_pri = mean(redesigns[redesigns$Accessory_or_Print=='Print', 'Turnaround_KickoffToShip'], na.rm=T)
-
-menus = c('Menu Books','Drink List','Folded Drink List','Tri-Fold Drink List','Folded Menu Cards','Menu Card - Small Format (QTY = Total Pages)')
-redesigns$Menu = redesigns$POSTER.ITEM.CATEGORY %in% menus
-
-redesigns$JobID_Redesign = paste0(redesigns$POSTERJob.ID, ' ', redesigns$Redesign)
-redesigns$LineID_Redesign = paste0(redesigns$ProjectID_LineID, ' ', redesigns$Redesign)
-
 ggplot(data=redesigns, aes(x=Redesign, y=Turnaround_KickoffToShip, group=Redesign)) +
   geom_violin(aes(fill=Accessory_or_Print)) +
   geom_jitter(alpha=0.02) +
@@ -458,13 +476,6 @@ ggplot(mentions_df_melt, aes(x=Month, y=value, group=POSTER.Designer)) +
   theme_minimal() +
   labs(title='Total Price and Mentions per Month by Designer', x='', y='') +
   scale_y_continuous(labels=comma)
-
-
-process_df = function(df) {
-  rownames(df) = df$POSTER.Designer
-  df$POSTER.Designer = df$variable = NULL
-  return(df)
-}
 ```
 
 
@@ -654,22 +665,30 @@ pipeline_summary
 A Job is considered active in the Graphics pipeline if the Job has been Kicked Off, but has not been Shipped. This fact excludes jobs from two years ago from the dataset, despite whether or not the job was active at year's end. This means that January of two years ago's pipeline will be underestimated. After January of two years ago, however, the pipeline will reflect the true state of the pipe at that point.
 
 ```{r bydes_inpipe, fig.height=5, fig.width=9}
-inpipe_history = df_thisyr_lastyr[, c('POSTERJob.ID','ProjectID_LineID','Incomplete','AssembledandShipped')]
+PIPECOLZ = c('POSTERJob.ID','ProjectID_LineID','Incomplete','AssembledandShipped')
+inpipe_history = df_thisyr_lastyr[, PIPECOLZ]
+inpipe_history = inpipe_history %>% ## sort for "unique" function to grab the first one
+  arrange(AssembledandShipped, Incomplete)
+
+inpipe_history = inpipe_history %>% 
+  group_by(POSTERJob.ID) %>%
+  mutate(MaxShip=max(as.numeric(AssembledandShipped), na.rm=T))
 
 ## Process jobs first
-job_history = inpipe_history[!duplicated(inpipe_history$POSTERJob.ID), ]
+DUPE_JOBS = (!duplicated(inpipe_history$POSTERJob.ID))
+
+job_history = inpipe_history[DUPE_JOBS, ]
 rownames(job_history) = NULL
-job_history = job_history %>% arrange(Incomplete, AssembledandShipped) #sort for ix speed
+
+## head(tail(inpipe_history, 500), 50)
 
 janlast_decthis = seq.Date(from=as.Date(paste0(last_yr,'-01-01')),
                            to=as.Date(Sys.Date()), by='day')
-date_history_df = data.frame(PipeDate=janlast_decthis, Started=NA, Ended=NA)
-date_history_df = date_history_df ## head(date_history_df, 500)
 
-STARTS = as.Date(job_history$Incomplete)  ##[1:500]
-ENDS = as.Date(job_history$AssembledandShipped) ##[1:500] 
+STARTS = as.Date(job_history$Incomplete[1:500])  ##[1:500]
+ENDS = as.Date(job_history$AssembledandShipped[1:500]) ##[1:500] 
 
-for(i in 1:length(date_history_df$PipeDate)){
+for(i in 1:length(janlast_decthis[1:500])){
   for(j in 1:NROW(job_history)){
     PIPEDATE = as.character(janlast_decthis[i])
     STARTED = as.numeric(janlast_decthis[i] >= STARTS[j])
