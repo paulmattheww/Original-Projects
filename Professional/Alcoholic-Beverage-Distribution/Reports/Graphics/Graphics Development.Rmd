@@ -785,10 +785,12 @@ ENDS = as.Date(job_history$AssembledandShipped[1:NTEST]) ##[1:500]
 
 for(i in 1:length(janlast_decthis[1:NTEST])){
   for(j in 1:NROW(job_history)){
+    try({
     PIPEDATE = as.character(janlast_decthis[i])
     STARTED = as.numeric(janlast_decthis[i] >= STARTS[j])
     ENDED = as.numeric(ifelse(is.na(ENDS[j])==TRUE, FALSE, janlast_decthis[i] > ENDS[j]))
-    job_history[j, PIPEDATE] = STARTED - ENDED
+    job_history[j, PIPEDATE] = as.numeric((STARTED==1) & (ENDED=0))
+    })
   }
 }
 
