@@ -760,7 +760,11 @@ pipeline_summary
 
 ## Pipeline Over Time
 
+At present, only jobs that have been shipped are shown in the data below. Data for the current pipeline is above.
+
 A Job is considered active in the Graphics pipeline if the Job has been Kicked Off, but has not been Shipped. This fact excludes jobs from two years ago from the dataset, despite whether or not the job was active at year's end. This means that January of two years ago's pipeline will be underestimated. After January of two years ago, however, the pipeline will reflect the true state of the pipe at that point.
+
+There exist Jobs that were started long ago (i.e. last year or the year before) that still do not have a finish date; these were filtered out. 
 
 ```{r bydes_inpipe, fig.height=5, fig.width=9}
 PIPECOLZ = c('POSTERJob.ID','ProjectID_LineID','Incomplete','AssembledandShipped')
@@ -781,7 +785,8 @@ DUPE_JOBS = !duplicated(inpipe_history$POSTERJob.ID)
 job_history = inpipe_history[DUPE_JOBS, ]
 job_history = job_history[!is.na(job_history$Incomplete), ]
 
-last2yrs = (lubridate::year(job_history$Incomplete) %in% c(last_yr,twoyrsago))
+#############CHANGE IF NEED BE, ALL 3 YEARS IS CONSERVATIVE
+last2yrs = (lubridate::year(job_history$Incomplete) %in% c(this_yr,last_yr,twoyrsago))###
 stillnotdone = (is.na(job_history$AssembledandShipped))
 begunlongago_butnotfinished = last2yrs & stillnotdone
 job_history = job_history[!begunlongago_butnotfinished, ]
