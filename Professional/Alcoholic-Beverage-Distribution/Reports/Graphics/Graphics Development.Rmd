@@ -404,7 +404,7 @@ ggplot(reprints_t_melt, aes(x=variable, y=value, group=Name)) +
 
 ## Redesigns
 
-A Job is marked as having experienced a Redesign in the even tthat the "AwaitingArtworkRedesign" text was discovered in the text field in PostER that marks each stage of the Job. It is important to note that there are considerably more Print jobs than there are Accessory jobs. 
+A Job is marked as having experienced a Redesign in the event that the "AwaitingArtworkRedesign" text was discovered in the text field in POSTer that marks each stage of the Job. It is important to note that there are considerably more Print jobs than there are Accessory jobs. 
 
 All data for Redesigns is filtered to include only records up until today for both this year and last year.
 
@@ -533,7 +533,7 @@ rownames(onhold) = paste0(SLS, '-', JID)
 names(onhold) = c('Customer','Category','Qty Ordered','Incomplete')
 onhold$Category = substrLeft(onhold$Category, 15)
 
-onhold
+onhold[,c(1:2)]
 #split(onhold, YR)[1]
 ```
 
@@ -760,11 +760,9 @@ pipeline_summary
 
 ## Pipeline Over Time
 
-At present, only jobs that have been shipped are shown in the data below. Data for the current pipeline is above.
+Jobs that were had a starting date but no ship date that were not jobs from this year are filtered out of the dataset below. These same types of jobs for this year are not filtered out, and are assumed to be active jobs. This may be an inaccurate assumption since there are a number of jobs that were kicked off in January of this year yet have not been finished. However, there is nothing in the data to suggest they are not still active.
 
-A Job is considered active in the Graphics pipeline if the Job has been Kicked Off, but has not been Shipped. This fact excludes jobs from two years ago from the dataset, despite whether or not the job was active at year's end. This means that January of two years ago's pipeline will be underestimated. After January of two years ago, however, the pipeline will reflect the true state of the pipe at that point.
-
-There exist Jobs that were started long ago (i.e. last year or the year before) that still do not have a finish date; these were filtered out. 
+A Job is considered active in the Graphics pipeline if the Job has been Kicked Off, but has not been Shipped.
 
 ```{r bydes_inpipe, fig.height=5, fig.width=9}
 PIPECOLZ = c('POSTERJob.ID','ProjectID_LineID','Incomplete','AssembledandShipped')
@@ -785,8 +783,8 @@ DUPE_JOBS = !duplicated(inpipe_history$POSTERJob.ID)
 job_history = inpipe_history[DUPE_JOBS, ]
 job_history = job_history[!is.na(job_history$Incomplete), ]
 
-#############CHANGE IF NEED BE, ALL 3 YEARS IS CONSERVATIVE
-last2yrs = (lubridate::year(job_history$Incomplete) %in% c(this_yr,last_yr,twoyrsago))###
+#############CHANGE IF NEED BE, ALL 3 YEARS IS CONSERVATIVE this_yr 
+last2yrs = (lubridate::year(job_history$Incomplete) %in% c(last_yr,twoyrsago))###this_yr
 stillnotdone = (is.na(job_history$AssembledandShipped))
 begunlongago_butnotfinished = last2yrs & stillnotdone
 job_history = job_history[!begunlongago_butnotfinished, ]
@@ -1002,11 +1000,11 @@ ggplot(kickedoff_byhouse, aes(x=Loc, y=value, group=variable)) +
   labs(x='Company', y='Projects Kicked Off, Year-over-Year',title='Projects Kicked Off by House')
 ```
 
-### Number of Jobs & Job Items,Year-over-Year by Month
+### Number of Jobs & Job Items, Year-over-Year by Month
 
-The data shown below includes records for this year and last year where *either the Incomplete date's month or the Invoice Date's month are in any of the months so far this year* For example, today is May 1st, then the dataset will contain January through May for both this year and last year. Both Jobs and Job Items are shown (along with their YOY percent changes).
+The data shown below includes records for this year and last year *throught today*. For example, today is June 20th, then the dataset will contain January through the 171st day of both this year and last year. Both Jobs and Job Items are shown (along with their YOY percent changes). 
 
-Year-to-date Jobs kicked off by month, shown by Company.
+It should be noted that jobs that were kicked off yet abandoned are no longer included in the figures below.
 
 ```{r bylocation_ytd_kickedoff}
 kickedoff_byhouse_bymo = aggregate(cbind(POSTERJob.ID,ProjectID_LineID) ~ KickoffYear + KickoffMonth + Company, 
