@@ -20,6 +20,7 @@ knitr::opts_chunk$set(message = FALSE)
 
 ## Graphics data dump from Diver
 library(dplyr)
+library(zoo)
 library(reshape2)
 library(lubridate)
 library(ggplot2)
@@ -411,7 +412,7 @@ All data for Redesigns is filtered to include only records up until today for bo
 
 Accessory vs. Print jobs. 
 
-```{r viz_redesigns_accessoryvprint, fig.height=5, fig.width=9}
+```{r viz_redesigns_accessoryvprint, fig.height=10, fig.width=9}
 turn_acc = mean(redesigns[redesigns$Accessory_or_Print=='Accessory', 'Turnaround_KickoffToShip'], na.rm=T)
 turn_pri = mean(redesigns[redesigns$Accessory_or_Print=='Print', 'Turnaround_KickoffToShip'], na.rm=T)
 
@@ -432,7 +433,7 @@ ggplot(data=redesigns, aes(x=Redesign, y=Turnaround_KickoffToShip, group=Redesig
 
 Menus vs. non-menus. The blue horizontal line represents the avg. turnaround for Menus, the red line for Non-Menus.
 
-```{r men_non_violin, fig.height=5, fig.width=9}
+```{r men_non_violin, fig.height=10, fig.width=9}
 turn_menu = mean(redesigns[redesigns$Menu == T, 'Turnaround_KickoffToShip'], na.rm=T)
 turn_nonm = mean(redesigns[redesigns$Menu == F, 'Turnaround_KickoffToShip'], na.rm=T)
 
@@ -481,7 +482,7 @@ redesigns_bysls = redesigns_bysls[order(redesigns_bysls$`2017`, decreasing=T), ]
 head(redesigns_bysls, 15)
 ```
 
-Adjusting for Salesperson's utilization rate of the Graphics team's resources. Both axes are shown as logs of the value to show the names more clearly. Individuals well above the line are committing re-designs more often than is normal for their given level of Graphics utilization.
+Adjusting for Salesperson's utilization rate of the Graphics team's resources. Both axes are shown as logs of the value to show the names more clearly. Individuals well above the line are committing re-designs more often than is normal for their given level of Graphics utilization. Note that there are many salespeople that are not shown because they had no Redesigns at all, yet still did many Jobs. This indicates it is possible to do a lot of jobs without having many Redesigns.
 
 ```{r sls_plot_reds, fig.height=5, fig.width=9}
 ttl_sls = aggregate(POSTERJob.ID~Salesperson+YearOfRecord, data=redesign_unique, FUN=len_unique)
@@ -531,7 +532,9 @@ rownames(onhold) = onhold$POSTERJob.ID = onhold$YearOfRecord = onhold$Salesperso
 rownames(onhold) = paste0(SLS, '-', JID)
 names(onhold) = c('Customer','Category','Qty Ordered','Incomplete')
 onhold$Category = substrLeft(onhold$Category, 15)
-split(onhold, YR)
+
+onhold
+#split(onhold, YR)[1]
 ```
 
 
@@ -761,13 +764,17 @@ A Job is considered active in the Graphics pipeline if the Job has been Kicked O
 
 ```{r bydes_inpipe, fig.height=5, fig.width=9}
 PIPECOLZ = c('POSTERJob.ID','ProjectID_LineID','Incomplete','AssembledandShipped')
-inpipe_history = df_thisyr_lastyr[, PIPECOLZ]
+inpipe_history = df_thisyr_lastyr[order(df_thisyr_lastyr$POSTERJob.ID), PIPECOLZ]
 
 inpipe_history = data.frame(
   inpipe_history %>% 
     group_by(POSTERJob.ID) %>%
-    mutate(AssembledandShipped=max(AssembledandShipped, na.rm=T)) 
+    mutate(AssembledandShipped=max(AssembledandShipped, na.rm=T))##na.locf(AssembledandShipped, na.rm=F))#max(AssembledandShipped, na.rm=T)) 
   )
+
+## Check
+## inpipe_history[is.na(inpipe_history$AssembledandShipped) ,]
+
 inpipe_history = data.frame(
   inpipe_history %>% ## sort for "unique" function to grab the first one
     arrange(AssembledandShipped, Incomplete)
@@ -781,22 +788,19 @@ rownames(job_history) = NULL
 
 ## head(tail(inpipe_history, 500), 50)
 
-janlast_decthis = seq.Date(from=as.Date(paste0(last_yr,'-01-01')),
+janlast_decthis = seq.Date(from=as.Date(paste0(last_yr,'-01-01')), #this_yr
                            to=as.Date(Sys.Date()), by='day')
+STARTS = as.Date(job_history$Incomplete)  
+ENDS = as.Date(job_history$AssembledandShipped) 
 
-#NTEST = 1000 # set to length or get rid of for live
-
-STARTS = as.Date(job_history$Incomplete)  ##[1:NTEST]
-ENDS = as.Date(job_history$AssembledandShipped) ##[1:NTEST] 
-
-for(i in 1:length(janlast_decthis)){ #[1:NTEST]
+for(i in 1:length(janlast_decthis)){
   for(j in 1:NROW(job_history)){
-    try({
     PIPEDATE = as.character(janlast_decthis[i])
-    STARTED = as.numeric(janlast_decthis[i] >= STARTS[j])
-    ENDED = as.numeric(ifelse(is.na(ENDS[j])==TRUE, FALSE, janlast_decthis[i] > ENDS[j]))
-    job_history[j, PIPEDATE] = as.numeric((STARTED==1) & (ENDED=0))
-    })
+    STARTED = as.Date(janlast_decthis[i]) >= as.Date(STARTS[j])
+    ENDED = ifelse(is.na(ENDS[j])==TRUE, FALSE, as.Date(janlast_decthis[i]) > as.Date(ENDS[j]))
+    job_history[j, PIPEDATE] = as.numeric((STARTED==1) & (ENDED==0))
+    
+    #print(as.Date(STARTS[j]), STARTED, as.Date(ENDS[j]), ENDED)
   }
 }
 
@@ -993,7 +997,7 @@ ggplot(kickedoff_byhouse, aes(x=Loc, y=value, group=variable)) +
   labs(x='Company', y='Projects Kicked Off, Year-over-Year',title='Projects Kicked Off by House')
 ```
 
-### YTD Number of Jobs by Month
+### Number of Jobs & Job Items,Year-over-Year by Month
 
 The data shown below includes records for this year and last year where *either the Incomplete date's month or the Invoice Date's month are in any of the months so far this year* For example, today is May 1st, then the dataset will contain January through May for both this year and last year. Both Jobs and Job Items are shown (along with their YOY percent changes).
 
