@@ -771,10 +771,6 @@ inpipe_history = data.frame(
     group_by(POSTERJob.ID) %>%
     mutate(AssembledandShipped=max(AssembledandShipped, na.rm=T))##na.locf(AssembledandShipped, na.rm=F))#max(AssembledandShipped, na.rm=T)) 
   )
-
-## Check
-## inpipe_history[is.na(inpipe_history$AssembledandShipped) ,]
-
 inpipe_history = data.frame(
   inpipe_history %>% ## sort for "unique" function to grab the first one
     arrange(AssembledandShipped, Incomplete)
@@ -786,8 +782,8 @@ DUPE_JOBS = !duplicated(inpipe_history$POSTERJob.ID)
 job_history = inpipe_history[DUPE_JOBS, ]
 rownames(job_history) = NULL
 
-## head(tail(inpipe_history, 500), 50)
-
+## Loop through our data, then the vbector of dates since last year
+## To quantify jobs started but not finished
 janlast_decthis = seq.Date(from=as.Date(paste0(last_yr,'-01-01')), #this_yr
                            to=as.Date(Sys.Date()), by='day')
 STARTS = as.Date(job_history$Incomplete)  
@@ -799,8 +795,6 @@ for(i in 1:length(janlast_decthis)){
     STARTED = as.Date(janlast_decthis[i]) >= as.Date(STARTS[j])
     ENDED = ifelse(is.na(ENDS[j])==TRUE, FALSE, as.Date(janlast_decthis[i]) > as.Date(ENDS[j]))
     job_history[j, PIPEDATE] = as.numeric((STARTED==1) & (ENDED==0))
-    
-    #print(as.Date(STARTS[j]), STARTED, as.Date(ENDS[j]), ENDED)
   }
 }
 
@@ -808,11 +802,9 @@ date_history_df = t(job_history[,-c(1:4)])
 PIPE = rowSums(date_history_df, na.rm=T)
 PIPE = data.frame(Date=names(PIPE), Pipeline=PIPE)
 PIPE$Year = lubridate::year(PIPE$Date)
-# plot(PIPE$Pipeline)
-
 ### AT LATER DATE, DO JOB ITEMS TOO
 
-## Plot
+## Plot pipeline over time
 ggplot(PIPE, aes(x=as.Date(Date), y=Pipeline, group=Year)) +
   geom_line(size=1.0, alpha=0.8, aes(colour=factor(Year))) +
   geom_point(alpha=0.7) +
