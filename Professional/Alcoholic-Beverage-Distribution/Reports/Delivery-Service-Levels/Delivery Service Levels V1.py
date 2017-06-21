@@ -374,11 +374,13 @@ RTE_START_TIMES.rename(columns={'BeginWindow1':'RouteStartTime'}, inplace=True)
 
 
 FIRSTSTOP_LATLON = MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop == '1', ['Date','RouteId','Latitude','Longitude']]
-FIRSTSTOP_LATLON = FIRSTSTOP_LATLON.rename(columns={'Latitude':'Lat_Stop1','Longitude':'Lon_Stop1'}, inplace=True)
+FIRSTSTOP_LATLON.rename(columns={'Latitude':'Lat_Stop1','Longitude':'Lon_Stop1'}, inplace=True)
 
 MASTER_MANIFEST = MASTER_MANIFEST.merge(RTE_START_TIMES, on=['Date','RouteId'], how='left')
 MASTER_MANIFEST = MASTER_MANIFEST.merge(FIRSTSTOP_LATLON, on=['Date','RouteId'], how='left')
 
+
+## Calculate time to next stop i+1 from i
 to_minz = lambda x: timedelta(minutes=x)
 MASTER_MANIFEST['MinutesNextStop'] = np.multiply(MASTER_MANIFEST.AirMilesNextStop, min_per_mile)
 MASTER_MANIFEST['MinutesNextStop'].fillna(0, inplace=True)
@@ -387,13 +389,50 @@ MASTER_MANIFEST['MinutesNextStop'] = MASTER_MANIFEST['MinutesNextStop'].apply(to
 
 ## Get heuristic of cases per minute by route
 ## Then use it by route  -- doesnt exist before this point so think it through bro
-def duration_at_stop(cases, baseline_minutes=8, min_per_case=):
+
+curr_minpercase = 1/6
+
+print('''
+----------------
+
+CONVERTING BOTTLES TO CASES USING 
+    Bottles per Case  =  %i
+    
+ASSUMING MINUTES PER CASE DELIVERED
+    Minutes per Case  =  %i
+
+----------------
+'''%(12,curr_minpercase))
+
+
+## Calculate time at each stop
+def duration_at_stop(cases, btls, baseline_minutes=8, min_per_case=curr_minpercase):
     '''Calculates time at a stop'''
-    duration_estimate = baseline_minutes + cases*min_per_case
+    CS = np.float64(cases) + (np.float64(btls)/12)
+    duration_estimate = baseline_minutes + CS*min_per_case
+    duration_estimate = to_minz(duration_estimate)
     return duration_estimate
+MASTER_MANIFEST['MinutesServiceStop'] = [duration_at_stop(cs,btl) for cs,btl in zip(MASTER_MANIFEST.Cases, MASTER_MANIFEST.Bottles)]
+
+## Calculate distance from warehouse for first stops only
+FIRSTSTOPS = zip(MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'Lon_Stop1'], MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'Lat_Stop1'])
+MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'DistanceFromWarehouse_Stop1'] = [haversine(stop1_lon, stop1_lat, stl_lon, stl_lat) for stop1_lon, stop1_lat in FIRSTSTOPS]
+MASTER_MANIFEST['MinutesToFirstStop'] = np.multiply(MASTER_MANIFEST.DistanceFromWarehouse_Stop1, min_per_mile)
 
 
-MASTER_MANIFEST.head(10)
+MASTER_MANIFEST['MinutesTotal'] = MASTER_MANIFEST[['MinutesServiceStop','MinutesNextStop','MinutesToFirstStop']].sum(axis=1)
+MASTER_MANIFEST['MinutesTotalNumeric'] = round(MASTER_MANIFEST['MinutesTotal'].dt.total_seconds() / 60,1)
+MASTER_MANIFEST['MinutesCumulativeRoute'] = pd.Series(MASTER_MANIFEST.groupby(['Date','RouteId'])['MinutesTotalNumeric'].cumsum())
+MASTER_MANIFEST['HoursCumulativeRoute'] = round(np.divide(MASTER_MANIFEST['MinutesCumulativeRoute'],60),2)
+
+
+
+## Check
+## MASTER_MANIFEST.groupby(['Date','RouteId'])['HoursCumulativeRoute'].max()
+
+MASTER_MANIFEST.head(30)
+
+
 
 
 MASTER_MANIFEST.to_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/Roadnet Driver Manifest - Processed and Enriched.csv', index=False)
