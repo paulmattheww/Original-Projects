@@ -1,7 +1,7 @@
 ---
-title: "<b>Major Brands Graphics Report</b>"
-author: "Paul Washburn, Operations Analyst"
-date: "As of June 5th, 2017"
+title: "<b>MB Graphics Report</b>"
+author: "Paul M. Washburn"
+date: "Through Wednesday June 21, 2017"
 output: 
   pdf_document:
       df_print: "kable" 
@@ -776,10 +776,15 @@ inpipe_history = data.frame(
     arrange(AssembledandShipped, Incomplete)
   ) 
 
-## Process jobs first
+## Filter & process data for jobs
 DUPE_JOBS = !duplicated(inpipe_history$POSTERJob.ID)
-
 job_history = inpipe_history[DUPE_JOBS, ]
+job_history = job_history[!is.na(job_history$Incomplete), ]
+
+last2yrs = (lubridate::year(job_history$Incomplete) %in% c(last_yr,twoyrsago))
+stillnotdone = (is.na(job_history$AssembledandShipped))
+begunlongago_butnotfinished = last2yrs & stillnotdone
+job_history = job_history[!begunlongago_butnotfinished, ]
 rownames(job_history) = NULL
 
 ## Loop through our data, then the vbector of dates since last year
@@ -788,6 +793,9 @@ janlast_decthis = seq.Date(from=as.Date(paste0(last_yr,'-01-01')), #this_yr
                            to=as.Date(Sys.Date()), by='day')
 STARTS = as.Date(job_history$Incomplete)  
 ENDS = as.Date(job_history$AssembledandShipped) 
+
+# head(tail(job_history,200),50)## looks like stragglers are not dropped from dataset
+# df[df$POSTERJob.ID==124706, ]## check older projects for why
 
 for(i in 1:length(janlast_decthis)){
   for(j in 1:NROW(job_history)){
