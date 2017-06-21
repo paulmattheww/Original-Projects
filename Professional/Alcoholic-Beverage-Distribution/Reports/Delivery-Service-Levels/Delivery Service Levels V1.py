@@ -371,7 +371,13 @@ ASSUMING %i MPH AVERAGE SPEED
 ## dead -> pd.DataFrame(MASTER_MANIFEST.groupby(['Date','RouteId'])['BeginWindow1'].min().apply(pd.to_datetime)).reset_index(drop=False)
 RTE_START_TIMES = MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop == '1', ['Date','RouteId','BeginWindow1']]
 RTE_START_TIMES.rename(columns={'BeginWindow1':'RouteStartTime'}, inplace=True)
+
+
+FIRSTSTOP_LATLON = MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop == '1', ['Date','RouteId','Latitude','Longitude']]
+FIRSTSTOP_LATLON = FIRSTSTOP_LATLON.rename(columns={'Latitude':'Lat_Stop1','Longitude':'Lon_Stop1'}, inplace=True)
+
 MASTER_MANIFEST = MASTER_MANIFEST.merge(RTE_START_TIMES, on=['Date','RouteId'], how='left')
+MASTER_MANIFEST = MASTER_MANIFEST.merge(FIRSTSTOP_LATLON, on=['Date','RouteId'], how='left')
 
 to_minz = lambda x: timedelta(minutes=x)
 MASTER_MANIFEST['MinutesNextStop'] = np.multiply(MASTER_MANIFEST.AirMilesNextStop, min_per_mile)
