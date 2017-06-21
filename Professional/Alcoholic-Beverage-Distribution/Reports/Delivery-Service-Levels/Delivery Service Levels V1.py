@@ -377,9 +377,11 @@ MASTER_MANIFEST['MinutesNextStop'].fillna(0, inplace=True)
 MASTER_MANIFEST['MinutesNextStop'] = MASTER_MANIFEST['MinutesNextStop'].apply(to_minz)
 
 
-def duration_at_stop(cases, baseline_minutes):
+## Get heuristic of cases per minute by route
+## Then use it by route  -- doesnt exist before this point so think it through bro
+def duration_at_stop(cases, baseline_minutes=8):
     '''Calculates time at a stop'''
-    
+    duration_estimate = baseline_minutes + cases*
 
 
 
