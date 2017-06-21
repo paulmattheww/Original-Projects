@@ -356,7 +356,7 @@ distance_map = dict(zip(dist_next['ix'], dist_next.AirMilesNextStop))
 MASTER_MANIFEST['AirMilesNextStop'] = MASTER_MANIFEST.Date.astype(str) + ' ' + MASTER_MANIFEST.RouteId.astype(str) + ' ' + MASTER_MANIFEST.Stop.astype(str)
 MASTER_MANIFEST['AirMilesNextStop'] = MASTER_MANIFEST['AirMilesNextStop'].map(distance_map)
 
-miles_per_hr = 30
+miles_per_hr = 35
 hrs_per_mile = 1/miles_per_hr
 min_per_mile = hrs_per_mile*60
 
@@ -371,7 +371,6 @@ ASSUMING %i MPH AVERAGE SPEED
 ## dead -> pd.DataFrame(MASTER_MANIFEST.groupby(['Date','RouteId'])['BeginWindow1'].min().apply(pd.to_datetime)).reset_index(drop=False)
 RTE_START_TIMES = MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop == '1', ['Date','RouteId','BeginWindow1']]
 RTE_START_TIMES.rename(columns={'BeginWindow1':'RouteStartTime'}, inplace=True)
-
 
 FIRSTSTOP_LATLON = MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop == '1', ['Date','RouteId','Latitude','Longitude']]
 FIRSTSTOP_LATLON.rename(columns={'Latitude':'Lat_Stop1','Longitude':'Lon_Stop1'}, inplace=True)
@@ -399,7 +398,7 @@ CONVERTING BOTTLES TO CASES USING
     Bottles per Case  =  %i
     
 ASSUMING MINUTES PER CASE DELIVERED
-    Minutes per Case  =  %i
+    Minutes per Case  =  %.2f
 
 ----------------
 '''%(12,curr_minpercase))
@@ -417,30 +416,57 @@ MASTER_MANIFEST['MinutesServiceStop'] = [duration_at_stop(cs,btl) for cs,btl in 
 ## Calculate distance from warehouse for first stops only
 FIRSTSTOPS = zip(MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'Lon_Stop1'], MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'Lat_Stop1'])
 MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'DistanceFromWarehouse_Stop1'] = [haversine(stop1_lon, stop1_lat, stl_lon, stl_lat) for stop1_lon, stop1_lat in FIRSTSTOPS]
-MASTER_MANIFEST['MinutesToFirstStop'] = np.multiply(MASTER_MANIFEST.DistanceFromWarehouse_Stop1, min_per_mile)
-
+MASTER_MANIFEST['MinutesToFirstStop'] = np.multiply(MASTER_MANIFEST.DistanceFromWarehouse_Stop1, 1.25) #1.25 = min per mile or 48MPH
+MASTER_MANIFEST['MinutesToFirstStop'].fillna(0, inplace=True)
+MASTER_MANIFEST['MinutesToFirstStop'] = MASTER_MANIFEST['MinutesToFirstStop'].apply(to_minz)
 
 MASTER_MANIFEST['MinutesTotal'] = MASTER_MANIFEST[['MinutesServiceStop','MinutesNextStop','MinutesToFirstStop']].sum(axis=1)
 MASTER_MANIFEST['MinutesTotalNumeric'] = round(MASTER_MANIFEST['MinutesTotal'].dt.total_seconds() / 60,1)
 MASTER_MANIFEST['MinutesCumulativeRoute'] = pd.Series(MASTER_MANIFEST.groupby(['Date','RouteId'])['MinutesTotalNumeric'].cumsum())
 MASTER_MANIFEST['HoursCumulativeRoute'] = round(np.divide(MASTER_MANIFEST['MinutesCumulativeRoute'],60),2)
 
+## Mark if service window was met or not
+MASTER_MANIFEST.MinutesToFirstStop.fillna(method='ffill', inplace=True)
+MASTER_MANIFEST.RouteStartTime = np.subtract(MASTER_MANIFEST.RouteStartTime, MASTER_MANIFEST.MinutesToFirstStop)
+MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop!='1', 'RouteStartTime'] = pd.NaT
+MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop!='1', 'MinutesToFirstStop'] = to_minz(0)
+
+## Get estimated arrival time
+MASTER_MANIFEST['ExpectedArrival'] = [start+firststop for start,firststop in zip(MASTER_MANIFEST.RouteStartTime, MASTER_MANIFEST.MinutesToFirstStop) ]
 
 
 ## Check
 ## MASTER_MANIFEST.groupby(['Date','RouteId'])['HoursCumulativeRoute'].max()
 
-MASTER_MANIFEST.head(30)
+MASTER_MANIFEST.head()
 
 
+def get_route_starts(MASTER_MANIFEST):
+    rte_starttimes = MASTER_MANIFEST[['Date','RouteId','Customer','ServiceWindows','RouteStartTime','MinutesToFirstStop']].drop_duplicates(subset=['Date','RouteId'])
+    rte_starttimes.RouteStartTime = rte_starttimes.RouteStartTime.dt.strftime('%H:%M %p')
+    rte_starttimes.set_index(['Date','RouteId'], inplace=True, drop=True)
+    rte_starttimes.MinutesToFirstStop = round(rte_starttimes.MinutesToFirstStop.dt.total_seconds()/60,1)
+    return(rte_starttimes)
+
+rte_starttimes = get_route_starts(MASTER_MANIFEST)
+
+
+
+
+
+
+
+## Write stuff to files for other people
+import time
+today_date = str(time.strftime('%A %B %d-%Y'))
+
+# Route start times for drivers etc
+rte_starttimes.to_html("N:/Operations Intelligence/Merchandising/Chain Reports/Driver Start Times" + today_date + " Saint Louis Chain Report.html")
 
 
 MASTER_MANIFEST.to_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/Roadnet Driver Manifest - Processed and Enriched.csv', index=False)
 
 
-
-import time
-today_date = str(time.strftime('%A %B %d-%Y'))
 MASTER_MANIFEST.to_html("N:/Operations Intelligence/Merchandising/Chain Reports/" + today_date + " Saint Louis Chain Report.html")
 MASTER_MANIFEST.to_excel("N:/Operations Intelligence/Merchandising/Chain Reports/" + today_date + " Saint Louis Chain Report.xlsx", sheet_name='Routes')
 
