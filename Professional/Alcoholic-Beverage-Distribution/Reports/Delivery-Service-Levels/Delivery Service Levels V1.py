@@ -9,6 +9,8 @@ import numpy as np
 import glob
 from datetime import datetime as dt
 import re
+from datetime import timedelta
+
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 50)
@@ -366,23 +368,23 @@ ASSUMING %i MPH AVERAGE SPEED
 ----------------
 '''%miles_per_hr)
 
-RTE_START_TIMES = pd.DataFrame(MASTER_MANIFEST.groupby(['Date','RouteId'])['BeginWindow1'].min().apply(pd.to_datetime)).reset_index(drop=False)
+## dead -> pd.DataFrame(MASTER_MANIFEST.groupby(['Date','RouteId'])['BeginWindow1'].min().apply(pd.to_datetime)).reset_index(drop=False)
+RTE_START_TIMES = MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop == '1', ['Date','RouteId','BeginWindow1']]
 RTE_START_TIMES.rename(columns={'BeginWindow1':'RouteStartTime'}, inplace=True)
 MASTER_MANIFEST = MASTER_MANIFEST.merge(RTE_START_TIMES, on=['Date','RouteId'], how='left')
 
-from datetime import timedelta
 to_minz = lambda x: timedelta(minutes=x)
 MASTER_MANIFEST['MinutesNextStop'] = np.multiply(MASTER_MANIFEST.AirMilesNextStop, min_per_mile)
 MASTER_MANIFEST['MinutesNextStop'].fillna(0, inplace=True)
-MASTER_MANIFEST['MinutesNextStop'] = MASTER_MANIFEST['MinutesNextStop'].apply(to_minz)
+MASTER_MANIFEST['MinutesNextStop'] = MASTER_MANIFEST['MinutesNextStop'].apply(to_minz) + to_minz(2) #2 min to startup/shutoff
 
 
 ## Get heuristic of cases per minute by route
 ## Then use it by route  -- doesnt exist before this point so think it through bro
-def duration_at_stop(cases, baseline_minutes=8):
+def duration_at_stop(cases, baseline_minutes=8, min_per_case=):
     '''Calculates time at a stop'''
-    duration_estimate = baseline_minutes + cases*
-
+    duration_estimate = baseline_minutes + cases*min_per_case
+    return duration_estimate
 
 
 MASTER_MANIFEST.head(10)
