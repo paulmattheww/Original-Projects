@@ -369,7 +369,21 @@ ASSUMING %i MPH AVERAGE SPEED
 RTE_START_TIMES = pd.DataFrame(MASTER_MANIFEST.groupby(['Date','RouteId'])['BeginWindow1'].min().apply(pd.to_datetime)).reset_index(drop=False)
 RTE_START_TIMES.rename(columns={'BeginWindow1':'RouteStartTime'}, inplace=True)
 MASTER_MANIFEST = MASTER_MANIFEST.merge(RTE_START_TIMES, on=['Date','RouteId'], how='left')
-MASTER_MANIFEST.head(25)
+
+from datetime import timedelta
+to_minz = lambda x: timedelta(minutes=x)
+MASTER_MANIFEST['MinutesNextStop'] = np.multiply(MASTER_MANIFEST.AirMilesNextStop, min_per_mile)
+MASTER_MANIFEST['MinutesNextStop'].fillna(0, inplace=True)
+MASTER_MANIFEST['MinutesNextStop'] = MASTER_MANIFEST['MinutesNextStop'].apply(to_minz)
+
+
+def duration_at_stop(cases, baseline_minutes):
+    '''Calculates time at a stop'''
+    
+
+
+
+MASTER_MANIFEST.head(10)
 
 
 MASTER_MANIFEST.to_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/Roadnet Driver Manifest - Processed and Enriched.csv', index=False)
