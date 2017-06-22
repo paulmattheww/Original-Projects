@@ -383,6 +383,7 @@ MASTER_MANIFEST = MASTER_MANIFEST.merge(FIRSTSTOP_LATLON, on=['Date','RouteId'],
 
 ## Calculate time to next stop i+1 from i
 to_minz = lambda x: timedelta(minutes=x)
+to_hrz = lambda x: timedelta(hours=x)
 MASTER_MANIFEST['MinutesNextStop'] = np.multiply(MASTER_MANIFEST.AirMilesNextStop, min_per_mile)
 MASTER_MANIFEST['MinutesNextStop'].fillna(0, inplace=True)
 MASTER_MANIFEST['MinutesNextStop'] = MASTER_MANIFEST['MinutesNextStop'].apply(to_minz) + to_minz(2) #2 min to startup/shutoff
@@ -438,29 +439,47 @@ MASTER_MANIFEST['HoursCumulativeRoute'] = round(np.divide(MASTER_MANIFEST['Minut
 
 ## Mark if service window was met or not
 MASTER_MANIFEST.MinutesToFirstStop.fillna(method='ffill', inplace=True)
-MASTER_MANIFEST.RouteStartTime = np.subtract(MASTER_MANIFEST.RouteStartTime, MASTER_MANIFEST.MinutesToFirstStop)
-MASTER_MANIFEST.RouteStartTime = [TIME if TIME.hour >= 4 else TIME.replace(hour=4,minute=0) for TIME in MASTER_MANIFEST.RouteStartTime]
+MASTER_MANIFEST.RouteStartTime = UNADJUSTED_START = np.subtract(MASTER_MANIFEST.RouteStartTime, MASTER_MANIFEST.MinutesToFirstStop)
+MASTER_MANIFEST.RouteStartTime = [TIME if TIME.hour >= 4 else TIME.replace(hour=4,minute=0) for TIME in UNADJUSTED_START]
 
+#min([TIME if TIME.hour >= 4 else TIME.replace(hour=4,minute=0) for TIME in UNADJUSTED_START])
 
 MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop!='1', 'RouteStartTime'] = pd.NaT
 MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop!='1', 'MinutesToFirstStop'] = to_minz(0)
 
 ## Get estimated arrival time
-MASTER_MANIFEST['ExpectedArrival'] = [ start+firststop for start,firststop in zip(MASTER_MANIFEST.RouteStartTime, MASTER_MANIFEST.MinutesToFirstStop) ]
+START_FIRSTSTOP = zip(MASTER_MANIFEST.RouteStartTime, MASTER_MANIFEST.MinutesToFirstStop)
+MASTER_MANIFEST['ExpectedArrival'] = [start+firststop for start,firststop in START_FIRSTSTOP]
 
 i = int(0)
 while i < int(MASTER_MANIFEST.shape[0]-1):
-    if MASTER_MANIFEST.loc[i, 'Stop'].astype(str) == '1':
-        MASTER_MANIFEST.loc[i, 'ExpectedArrival'] = MASTER_MANIFEST.loc[i, 'BeginWindow1']
+    if MASTER_MANIFEST.loc[i+1, 'Stop'] == '1':
+        MASTER_MANIFEST.loc[i+1, 'ExpectedArrival'] = MASTER_MANIFEST.loc[i+1, 'BeginWindow1']
         i += 1
     else:
-        MASTER_MANIFEST.loc[i+1, 'ExpectedArrival'] = x = MASTER_MANIFEST.loc[i, 'ExpectedArrival'] + MASTER_MANIFEST.loc[i, 'MinutesTotal']
-        print(x)
+        MASTER_MANIFEST.loc[i+1, 'ExpectedArrival'] = MASTER_MANIFEST.loc[i, 'ExpectedArrival'] + MASTER_MANIFEST.loc[i, 'MinutesTotal']
         i += 1
 
+## Get empty distance (going back to warehouse)
+print('Changing Stop to Integer from String')
+MASTER_MANIFEST.Stop = MASTER_MANIFEST.Stop.astype(np.int64)
+LAST = MASTER_MANIFEST.Stop > MASTER_MANIFEST.Stop.shift()
+NEXT = MASTER_MANIFEST.Stop > MASTER_MANIFEST.Stop.shift(-1)
+MASTER_MANIFEST['LastStop'] = ISLAST = LAST & NEXT
+last_lon, last_lat = MASTER_MANIFEST.loc[ISLAST, 'Longitude'], MASTER_MANIFEST.loc[ISLAST, 'Latitude']
+MASTER_MANIFEST.loc[ISLAST, 'DistanceToWarehouse_LastStop'] = [haversine(LON,LAT,stl_lon,stl_lat) for LON,LAT in zip(last_lon, last_lat)]
+MASTER_MANIFEST['MinutesReturnToWarehouse'] = np.multiply(MASTER_MANIFEST.DistanceToWarehouse_LastStop, get_minutes_permile(mph=40)) 
+MASTER_MANIFEST['MinutesReturnToWarehouse'].fillna(0, inplace=True)
+MASTER_MANIFEST['MinutesReturnToWarehouse'] = MASTER_MANIFEST['MinutesReturnToWarehouse'].apply(to_minz)
+
+## Get expected arrival back to whse
+last_stops = MASTER_MANIFEST.loc[ISLAST, ['MinutesTotal','MinutesReturnToWarehouse','ExpectedArrival','MinutesTotal']]#.sum(axis=1)
+MASTER_MANIFEST.loc[ISLAST, 'MinutesTotal'] = last_stops[['MinutesTotal','MinutesReturnToWarehouse']].sum(axis=1)
+FINAL_STOP = zip(MASTER_MANIFEST.loc[ISLAST, 'ExpectedArrival'], MASTER_MANIFEST.loc[ISLAST, 'MinutesTotal'])
+MASTER_MANIFEST.loc[ISLAST, 'ExpectedFinishTime'] = [laststop_arrival+total_min for laststop_arrival,total_min in FINAL_STOP]
 
 
-MASTER_MANIFEST.head(25)
+MASTER_MANIFEST.head(22)
 
 
 
@@ -473,11 +492,6 @@ def get_route_starts(MASTER_MANIFEST):
     return(rte_starttimes)
 
 rte_starttimes = get_route_starts(MASTER_MANIFEST)
-
-
-
-
-
 
 
 ## Write stuff to files for other people
