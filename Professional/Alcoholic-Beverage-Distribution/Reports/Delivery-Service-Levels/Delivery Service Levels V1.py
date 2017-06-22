@@ -416,10 +416,19 @@ MASTER_MANIFEST['MinutesServiceStop'] = [duration_at_stop(cs,btl) for cs,btl in 
 ## Calculate distance from warehouse for first stops only
 FIRSTSTOPS = zip(MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'Lon_Stop1'], MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'Lat_Stop1'])
 MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'DistanceFromWarehouse_Stop1'] = [haversine(stop1_lon, stop1_lat, stl_lon, stl_lat) for stop1_lon, stop1_lat in FIRSTSTOPS]
-MASTER_MANIFEST['MinutesToFirstStop'] = np.multiply(MASTER_MANIFEST.DistanceFromWarehouse_Stop1, 1.25) #1.25 = min per mile or 48MPH
-MASTER_MANIFEST['MinutesToFirstStop'].fillna(0, inplace=True)
-MASTER_MANIFEST['MinutesToFirstStop'] = MASTER_MANIFEST['MinutesToFirstStop'].apply(to_minz)
 
+def get_minutes_permile(mph):
+    hpm = 1/mph
+    mpm = hpm*60
+    return mpm
+
+PREROUTE_TIME = 5
+
+MASTER_MANIFEST['MinutesToFirstStop'] = np.multiply(MASTER_MANIFEST.DistanceFromWarehouse_Stop1, get_minutes_permile(mph=40)) 
+MASTER_MANIFEST['MinutesToFirstStop'].fillna(0, inplace=True)
+MASTER_MANIFEST['MinutesToFirstStop'] = MASTER_MANIFEST['MinutesToFirstStop'].apply(to_minz) + to_minz(PREROUTE_TIME)
+
+## Add up by rows using all times relevant
 MASTER_MANIFEST['MinutesTotal'] = MASTER_MANIFEST[['MinutesServiceStop','MinutesNextStop','MinutesToFirstStop']].sum(axis=1)
 MASTER_MANIFEST['MinutesTotalNumeric'] = round(MASTER_MANIFEST['MinutesTotal'].dt.total_seconds() / 60,1)
 MASTER_MANIFEST['MinutesCumulativeRoute'] = pd.Series(MASTER_MANIFEST.groupby(['Date','RouteId'])['MinutesTotalNumeric'].cumsum())
@@ -432,15 +441,27 @@ MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop!='1', 'RouteStartTime'] = pd.NaT
 MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop!='1', 'MinutesToFirstStop'] = to_minz(0)
 
 ## Get estimated arrival time
-MASTER_MANIFEST['ExpectedArrival'] = [start+firststop for start,firststop in zip(MASTER_MANIFEST.RouteStartTime, MASTER_MANIFEST.MinutesToFirstStop) ]
+MASTER_MANIFEST['ExpectedArrival'] = [ start+firststop for start,firststop in zip(MASTER_MANIFEST.RouteStartTime, MASTER_MANIFEST.MinutesToFirstStop) ]
+
+i = 0
+while i < MASTER_MANIFEST.shape[0]:
+    MASTER_MANIFEST.loc[i+1, 'ExpectedArrival'] = x = MASTER_MANIFEST.loc[i, 'RouteStartTime'] + MASTER_MANIFEST.loc[i, 'MinutesTotal']
+    print(x)
+    i += 1
+#        MASTER_MANIFEST.loc[i+1, 'ExpectedArrival']
+
+for i, row in MASTER_MANIFEST.iterrows():
+    print(row['MinutesTotal'])
+
+MASTER_MANIFEST.ExpectedArrival.shift() + MASTER_MANIFEST.MinutesTotal
 
 
-## Check
-## MASTER_MANIFEST.groupby(['Date','RouteId'])['HoursCumulativeRoute'].max()
 
 MASTER_MANIFEST.head()
 
 
+
+## Get Route start times for next day
 def get_route_starts(MASTER_MANIFEST):
     rte_starttimes = MASTER_MANIFEST[['Date','RouteId','Customer','ServiceWindows','RouteStartTime','MinutesToFirstStop']].drop_duplicates(subset=['Date','RouteId'])
     rte_starttimes.RouteStartTime = rte_starttimes.RouteStartTime.dt.strftime('%H:%M %p')
