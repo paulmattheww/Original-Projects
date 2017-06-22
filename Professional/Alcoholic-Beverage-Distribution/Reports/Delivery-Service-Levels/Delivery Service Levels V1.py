@@ -450,9 +450,9 @@ MASTER_MANIFEST['ExpectedArrival'] = [ start+firststop for start,firststop in zi
 
 i = int(0)
 while i < int(MASTER_MANIFEST.shape[0]-1):
-    if MASTER_MANIFEST.loc[i, 'Stop'] == 1:
+    if MASTER_MANIFEST.loc[i, 'Stop'].astype(str) == '1':
+        MASTER_MANIFEST.loc[i, 'ExpectedArrival'] = MASTER_MANIFEST.loc[i, 'BeginWindow1']
         i += 1
-        pass
     else:
         MASTER_MANIFEST.loc[i+1, 'ExpectedArrival'] = x = MASTER_MANIFEST.loc[i, 'ExpectedArrival'] + MASTER_MANIFEST.loc[i, 'MinutesTotal']
         print(x)
@@ -460,7 +460,7 @@ while i < int(MASTER_MANIFEST.shape[0]-1):
 
 
 
-MASTER_MANIFEST.head(10)
+MASTER_MANIFEST.head(25)
 
 
 
