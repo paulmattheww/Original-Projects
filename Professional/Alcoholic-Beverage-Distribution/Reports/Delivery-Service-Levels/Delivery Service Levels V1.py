@@ -451,6 +451,7 @@ MASTER_MANIFEST['ExpectedArrival'] = [ start+firststop for start,firststop in zi
 i = int(0)
 while i < int(MASTER_MANIFEST.shape[0]-1):
     if MASTER_MANIFEST.loc[i, 'Stop'] == 1:
+        i += 1
         pass
     else:
         MASTER_MANIFEST.loc[i+1, 'ExpectedArrival'] = x = MASTER_MANIFEST.loc[i, 'ExpectedArrival'] + MASTER_MANIFEST.loc[i, 'MinutesTotal']
