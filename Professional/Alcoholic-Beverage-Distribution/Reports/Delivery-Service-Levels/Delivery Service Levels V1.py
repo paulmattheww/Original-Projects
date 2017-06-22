@@ -467,6 +467,10 @@ LAST = MASTER_MANIFEST.Stop > MASTER_MANIFEST.Stop.shift()
 NEXT = MASTER_MANIFEST.Stop > MASTER_MANIFEST.Stop.shift(-1)
 MASTER_MANIFEST['LastStop'] = ISLAST = LAST & NEXT
 last_lon, last_lat = MASTER_MANIFEST.loc[ISLAST, 'Longitude'], MASTER_MANIFEST.loc[ISLAST, 'Latitude']
+
+PLACEHOLDER = MASTER_MANIFEST.copy()
+#MASTER_MANIFEST = PLACEHOLDER.copy()
+
 MASTER_MANIFEST.loc[ISLAST, 'DistanceToWarehouse_LastStop'] = [haversine(LON,LAT,stl_lon,stl_lat) for LON,LAT in zip(last_lon, last_lat)]
 MASTER_MANIFEST['MinutesReturnToWarehouse'] = np.multiply(MASTER_MANIFEST.DistanceToWarehouse_LastStop, get_minutes_permile(mph=40)) 
 MASTER_MANIFEST['MinutesReturnToWarehouse'].fillna(0, inplace=True)
@@ -474,6 +478,8 @@ MASTER_MANIFEST['MinutesReturnToWarehouse'] = MASTER_MANIFEST['MinutesReturnToWa
 
 ## Get expected arrival back to whse
 last_stops = MASTER_MANIFEST.loc[ISLAST, ['MinutesTotal','MinutesReturnToWarehouse','ExpectedArrival','MinutesTotal']]#.sum(axis=1)
+last_stops.MinutesReturnToWarehouse.fillna(to_minz(0), inplace=True)
+last_stops.ExpectedArrival.fillna(last_stops.ExpectedArrival.shift(-1)+to_minz(20), inplace=True)
 MASTER_MANIFEST.loc[ISLAST, 'MinutesTotal'] = last_stops[['MinutesTotal','MinutesReturnToWarehouse']].sum(axis=1)
 FINAL_STOP = zip(MASTER_MANIFEST.loc[ISLAST, 'ExpectedArrival'], MASTER_MANIFEST.loc[ISLAST, 'MinutesTotal'])
 MASTER_MANIFEST.loc[ISLAST, 'ExpectedFinishTime'] = [laststop_arrival+total_min for laststop_arrival,total_min in FINAL_STOP]
