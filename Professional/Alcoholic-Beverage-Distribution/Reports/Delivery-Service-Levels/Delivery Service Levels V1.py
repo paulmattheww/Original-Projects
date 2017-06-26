@@ -188,17 +188,15 @@ def format_datetimes(mfst, rte_date):
     mfst['ix'] = np.arange(0, len(mfst))
     
     ## Impute same windows if NaT
-    i = 0
     start2 = []
     end2 = []
-    while i < len(mfst):
-        SECONDWINDOW = mfst.loc[mfst['ix']==i, 'BeginWindow2']
-        if SECONDWINDOW == pd.NaT:
-            start2.append(mfst.loc[mfst['ix']==i, 'BeginWindow1'])
-            end2.append(mfst.loc[mfst['ix']==i, 'EndWindow1'])
+    for i, row in mfst.iterrows():
+        if row['BeginWindow2'] == pd.NaT:
+            start2.append(row['BeginWindow1'])
+            end2.append(row['EndWindow1'])
         else:
             pass
-        i += 1
+
     mfst.loc[mfst.BeginWindow2==pd.NaT, 'BeginWindow2'] = start2
     mfst.loc[mfst.BeginWindow2==pd.NaT, 'EndWindow2'] = end2
     
