@@ -519,6 +519,47 @@ def get_splits(MASTER_MANIFEST):
 
 MASTER_MANIFEST = get_splits(MASTER_MANIFEST)
 
+
+
+def made_time_windows(MASTER_MANIFEST):
+    MM = MASTER_MANIFEST.copy()
+    
+    made_either_window = made_window1 = made_window2 = []    
+    for i, ARRIVE in enumerate(MASTER_MANIFEST.ExpectedArrival):
+        madeit1 = (ARRIVE >= MM.loc[i, 'BeginWindow1']) & (ARRIVE <= MM.loc[i, 'EndWindow1'])
+        made_window1.append(madeit1)
+        try:
+            madeit2 = (ARRIVE >= MM.loc[i, 'BeginWindow2']) & (ARRIVE <= MM.loc[i, 'EndWindow2'])
+            made_window2.append(madeit2)
+        except ValueError:
+            madeit2 = False
+            made_window2.append(madeit2)
+        
+        made_either_window.append(madeit1 | madeit2)
+    return made_either_window
+
+        
+made_time_windows(MASTER_MANIFEST)
+
+MASTER_MANIFEST.head()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Get Route start times for next day
 def get_route_starts(MASTER_MANIFEST):
     colz_for_display = ['Date','RouteId','Customer','ServiceWindows','RouteStartTime','MinutesToFirstStop','TotalSplits','Stops','ExpectedFinishTime']
