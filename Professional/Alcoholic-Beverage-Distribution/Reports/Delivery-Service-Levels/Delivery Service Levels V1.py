@@ -467,6 +467,12 @@ while i < int(MASTER_MANIFEST.shape[0]-1):
         MASTER_MANIFEST.loc[i+1, 'ExpectedArrival'] = MASTER_MANIFEST.loc[i, 'ExpectedArrival'] + MASTER_MANIFEST.loc[i, 'MinutesTotal']
         i += 1
 
+## Tidy up data
+zero_out_microseconds = lambda dtobject: dtobject.replace(microsecond=0, second=0)
+MASTER_MANIFEST.ExpectedArrival = MASTER_MANIFEST.ExpectedArrival.apply(zero_out_microseconds)
+MASTER_MANIFEST.RouteStartTime = MASTER_MANIFEST.RouteStartTime.apply(zero_out_microseconds)
+MASTER_MANIFEST.ExpectedFinishTime = MASTER_MANIFEST.ExpectedFinishTime.apply(zero_out_microseconds)
+
 ## Get empty distance (going back to warehouse)
 print('Changing Stop to Integer from String')
 MASTER_MANIFEST.Stop = MASTER_MANIFEST.Stop.astype(np.int64)
@@ -519,12 +525,24 @@ def get_splits(MASTER_MANIFEST):
 
 MASTER_MANIFEST = get_splits(MASTER_MANIFEST)
 
+def get_time(MASTER_MANIFEST):
+    MM = MASTER_MANIFEST.copy()
+    SERVICE_T = pd.DataFrame(MM.groupby(['Date','RouteId'])['MinutesServiceStop'].sum()).reset_index(drop=False)
+    SERVICE_T['x'] = [str(a) + str(b) for a,b in zip(SERVICE_T.Date, SERVICE_T.RouteId)]
+    SERVICE_T.rename(columns={'MinutesServiceStop':'TotalServiceTime'}, inplace=True)
+    SERVICE_T = dict(zip(SERVICE_T.x, SERVICE_T.TotalServiceTime))
+    MM['TotalServiceTime'] = [str(a) + str(b) for a,b in zip(MM.Date, MM.RouteId)]
+    MM['TotalServiceTime'] = MM['TotalServiceTime'].map(SERVICE_T)
+    return MM
 
+MASTER_MANIFEST = get_time(MASTER_MANIFEST)
 
 def made_time_windows(MASTER_MANIFEST):
     MM = MASTER_MANIFEST.copy()
     
-    made_either_window = made_window1 = made_window2 = []    
+    made_either_window = []
+    made_window1 = []
+    made_window2 = []    
     for i, ARRIVE in enumerate(MM.ExpectedArrival):
         madeit1 = (ARRIVE >= MM.loc[i, 'BeginWindow1']) & (ARRIVE <= MM.loc[i, 'EndWindow1'])
         made_window1.append(madeit1)
@@ -534,15 +552,22 @@ def made_time_windows(MASTER_MANIFEST):
         except ValueError:
             made_window2.append(False)
         
-        made_either_window.append(bool(max(madeit1, madeit2)))
+        made_either_window.append(madeit1 | madeit2)
     return pd.Series(made_either_window)
 
         
 MASTER_MANIFEST['OnTime'] = made_time_windows(MASTER_MANIFEST)
+###
+def percent_of_route(MASTER_MANIFEST):
+    MM = MASTER_MANIFEST.copy()
+    MM['Pct_Splits'] = np.divide(MM.Splits, MM.TotalSplits)
+    MM['Pct_ServiceTime'] = np.divide(MM.RouteStartT, )
 
-MASTER_MANIFEST[['Date','RouteId','Customer','BeginWindow1','EndWindow1','ExpectedArrival','OnTime']].head(20)
+#MASTER_MANIFEST[['Date','RouteId','Customer','BeginWindow1','EndWindow1','BeginWindow2','EndWindow2','ExpectedArrival','OnTime']].head(50)
+MASTER_MANIFEST.head(30)
 
 
+MASTER_MANIFEST[MASTER_MANIFEST]
 
 
 
