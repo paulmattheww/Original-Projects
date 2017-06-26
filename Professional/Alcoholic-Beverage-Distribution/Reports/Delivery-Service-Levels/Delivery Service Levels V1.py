@@ -11,255 +11,276 @@ from datetime import datetime as dt
 import re
 from datetime import timedelta, time
 import os
-os.chdir('C:\\Users\\pmwash\\Desktop\\Re-Engineered Reports\\Delivery Service Level\\')
-from Delivery import *
+#os.chdir('C:\\Users\\pmwash\\Desktop\\Re-Engineered Reports\\Delivery Service Level\\')
+#from Delivery import *
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 50)
 pd.set_option('display.width', 100)
-#
-#def get_date_warehouse(file):
-#    print(file)
-#    mfst = pd.read_csv(file, usecols=np.arange(0,25), names=["C"+str(i) for i in np.arange(1,26)])
-#    
-#    ## Exctract date from first column
-#    rte_date = re.search(r'[0-9]{8}', str(file))
-#    rte_date = dt.strptime(rte_date.group(), '%m%d%Y').date()
-#    print(rte_date)
-#    
-#    mfst['Date'] = rte_date
-#    if re.search("STL", file).group(0) == 'STL':
-#        mfst['Warehouse'] = 'STL'
-#    elif re.search("KC", file).group(0) == 'KC':
-#        mfst['Warehouse'] = 'KC'
-#    elif re.search("COL", file).group(0) == 'COL':
-#        mfst['Warehouse'] = 'COL'
-#    else:
-#        mfst['Warehouse'] = 'SPFD'
-#        
-#    return mfst, rte_date
-#
-#
-#def get_routeIDs(mfst):
-#    ## Extract RTE IDs
-#    raw_rtes = todays_rtes = mfst.loc[mfst.C1.astype(str).str.contains('Route Id: '), 'C1']
-#    raw_rtes = pd.DataFrame({'RouteId':raw_rtes}).reset_index(drop=False)
-#    
-#    ## String manipulations
-#    todays_rtes = [rte.replace('Route Id: ','') for rte in todays_rtes]
-#    todays_rtes = raw_rtes.RouteId = [rte.replace(' ', '') for rte in todays_rtes]
-#    todays_rtes = pd.unique(todays_rtes)
-#    
-#    print('Raw route values : \n', raw_rtes.head(10))
-#    print('Processed route values: \n', todays_rtes)
-#    return raw_rtes, todays_rtes
-#
-#
-#
-#def get_index_of_routes(mfst, raw_rtes):
-#    ## Get start and end of route ID by using index from above
-#    minmax = pd.DataFrame(raw_rtes.groupby('RouteId')['index'].agg({'RouteId':{'min':np.min, 'max':np.max}}))
-#    minmax.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in minmax.columns]
-#    
-#    df_temp = pd.DataFrame()
-#    for i, mm_row in minmax.iterrows():
-#        rte_id = str(mm_row.name)
-#        min_ix = int(mm_row[0])
-#        max_ix = int(mm_row[1])
-#        new_rows = {min_ix: rte_id, max_ix: rte_id}
-#        df = pd.DataFrame.from_dict(new_rows, orient='index')
-#        df.rename(columns={0:'RouteId'}, inplace=True)
-#        df_temp = df_temp.append(df)
-#        
-#    new_ix = pd.Index(np.arange(np.min(df_temp.index.values), np.max(df_temp.index.values)))
-#    df_temp = df_temp.reindex(new_ix)
-#    df_temp.RouteId.fillna(method='ffill', inplace=True)
-#    print(df_temp.head(), '\n\n', df_temp.tail())
-#    
-#    mfst = mfst.join(df_temp)
-#    mfst.RouteId.fillna(method='ffill', inplace=True)
-#    
-#    expected_rtes = pd.unique(mfst['RouteId'])
-#    print(expected_rtes)
-#    
-#    return mfst, expected_rtes
-#
-#
-#def get_customer_features(mfst):
-#    ## Extract Customers -- maintain index
-#    raw_cust = mfst.loc[~mfst.C5.astype(str).str.contains(':'), 'C5']
-#    raw_cust = pd.DataFrame({'Customer':raw_cust}).reset_index(drop=False)
-#    
-#    ## String manipulations -- drop index for values
-#    customers = mfst.loc[~mfst.C5.astype(str).str.contains(':'), 'C5']
-#    customers = [c for c in customers if 'Service Windows' not in str(c) and 'na' not in str(c) 
-#                 and 'Location Name' not in str(c) and 'Odometer Out:' not in str(c)]
-#    customers = pd.unique(customers)
-#    
-#    ## Get start and end of route ID by using index from above
-#    minmax = pd.DataFrame(raw_cust.groupby('Customer')['index'].agg({'Customer':{'min':np.min, 'max':np.max}}))
-#    minmax.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in minmax.columns]
-#    
-#    print(minmax.head())
-#    def make_windows(winz):
-#        if ',' not in str(winz):
-#            try:
-#                w1 = str(winz).split('-')[0]
-#                w2 = str(winz).split('-')[1]
-#                w3 = np.nan
-#                w4 = np.nan
-#            except IndexError:
-#                w1 = w2 = w3 = w4 = np.nan
-#        else:
-#            try:
-#                w1 = str(winz).split('-')[0]
-#                w2 = str(winz).split('-')[1]
-#                new_winz = str(winz).split(',') 
-#                new_winz = new_winz[1]
-#                w3 = str(winz).split('-')[0]
-#                w4 = str(winz).split('-')[1]
-#            except IndexError:
-#                w1 = w2 = w3 = w4 = np.nan
-#                
-#        return w1, w2, w3, w4
-#    
-#    new_df = pd.DataFrame()
-#    for i, mm_row in minmax.iterrows():
-#        cust_name = mm_row.name
-#        IX = mm_row[1]
-#        winz = mfst.loc[IX+4, 'C5']
-#        
-#        w1, w2, w3, w4 = make_windows(winz)   
-#        new_row = {IX: {'Customer':cust_name, 'CustomerId': mfst.loc[IX, 'C3'],
-#                       'Stop': mfst.loc[IX, 'C2'], 'Cases': mfst.loc[IX, 'C22'],
-#                       'Bottles':  mfst.loc[IX, 'C25'], 'ServiceWindows': mfst.loc[IX+4, 'C5'],
-#                       'BeginWindow1':w1, 'EndWindow1':w2, 'BeginWindow2':w3, 'EndWindow2':w4
-#                       }}
-#        df = pd.DataFrame.from_dict(new_row, orient='index')
-#        new_df = new_df.append(df)
-#    
-#    print(new_df.head())
-#    
-#    mfst = mfst.join(new_df)
-#    
-#    ## Fill forward
-#    mfst[['Customer']].fillna(method='ffill', inplace=True)
-#    
-#    cols_for_output = ['Warehouse','Date','RouteId','Customer','CustomerId','Stop','Cases','Bottles',
-#                       'ServiceWindows','BeginWindow1','EndWindow1','BeginWindow2','EndWindow2']
-#    print(mfst[cols_for_output].head())
-#    
-#    ## Filter out some nonsense
-#    ISNAN = mfst['Stop'].isnull()
-#    mfst = mfst.loc[ISNAN == False, cols_for_output]
-#    BADVALS = ['Location Name']
-#    mfst = mfst[~mfst.Customer.isin(BADVALS)]
-#    
-#    ## Set new index w/o dropping
-#    mfst.set_index(keys=['Date','Warehouse','RouteId','CustomerId'], inplace=True, drop=False)
-#    
-#    return mfst
-#
-#def make_datetime(rte_date, dat):
-#    try:
-#        DAT = dt.strptime(str(str(rte_date) + ' ' + str(dat)), '%Y-%m-%d %H:%M')
-#    except ValueError:
-#        DAT = pd.NaT
-#    return DAT
-#
-#
-#def customer_hours_available(hrs_raw):
-#    try:
-#        HRS = np.float64(hrs_raw.split(':')[0].split('days ')[1])
-#    except IndexError:
-#        HRS = 0
-#    except ValueError:
-#        HRS = 0
-#    return HRS
-#
-#def format_datetimes(mfst, rte_date):
-#    ## Format as Datetime for operations
-#    mfst.BeginWindow1 = [make_datetime(rte_date, d) for d in mfst.BeginWindow1]
-#    mfst.EndWindow1 = [make_datetime(rte_date, d) for d in mfst.EndWindow1]
-#    mfst.BeginWindow2 = [make_datetime(rte_date, d) for d in mfst.BeginWindow1]
-#    mfst.EndWindow2 = [make_datetime(rte_date, d) for d in mfst.EndWindow1]
-#    
-#    ## Get N hours available in AM and PM
-#    mfst['HoursAvailableWin1'] = mfst.EndWindow1 - mfst.BeginWindow1
-#    mfst['HoursAvailableWin2'] = mfst.EndWindow2 - mfst.BeginWindow2
-#    
-#    ## Make duration into a floating point & add up total hours available
-#    mfst['HoursAvailableWin1'] = [customer_hours_available(hrs_raw) for hrs_raw in mfst['HoursAvailableWin1'].astype(str).tolist()] 
-#    mfst['HoursAvailableWin2'] = [customer_hours_available(hrs_raw) for hrs_raw in mfst['HoursAvailableWin2'].astype(str).tolist()] 
-#    mfst['TotalHoursAvailable'] = mfst['HoursAvailableWin1'] + mfst['HoursAvailableWin2']
-#    
-#    return mfst
-#
-#
-#
-#def process_driver_manifest(file):
-#    '''
-#    Combines all functions above
-#    to process Roadnet driver manifest
-#    '''
-#    mfst, rte_date = get_date_warehouse(file)
-#    raw_rtes, todays_rtes = get_routeIDs(mfst)
-#    mfst, expected_rtes = get_index_of_routes(mfst, raw_rtes)
-#    mfst = get_customer_features(mfst)
-#    mfst = format_datetimes(mfst, rte_date)
-#    
-#    ## Check missing routes
-#    missing_rtes = sum([item not in expected_rtes for item in pd.unique(mfst.RouteId).tolist()])
-#    print('Expecting the following routes: \n')
-#    print(expected_rtes, '\n')
-#    print('There are %i missing routes after processing the data' %missing_rtes)
-#    
-#    return mfst
-#
-#
-#
-#
-### Get distance from DC to first stop, each stop to next stop, last stop to DC
-### Start with STL, then do KC, COL, SPFD
-#def haversine(lon1, lat1, lon2, lat2):
-#    """
-#    Calculate the great circle distance between two points 
-#    on the earth (specified in decimal degrees)
-#    """
-#    from math import radians, cos, sin, asin, sqrt
-#    # convert decimal degrees to radians 
-#    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-#    
-#    # haversine formula 
-#    dlon = lon2 - lon1 
-#    dlat = lat2 - lat1 
-#    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-#    c = 2 * asin(sqrt(a)) 
-#    r = 3956 # Radius of earth in MILES. Use 6371 for KM
-#    return round(c * r, 4)
-#    
-#
-#def roadnet_servicelocation_details(path):
-#    '''
-#    Reads data from Roadnet for latlon/priority, etc.
-#    To be used by combining with manifest data.
-#    '''
-#    colz = ['ID','Coordinate','Service Window Importance','Priority','Priority']    
-#    df = pd.read_csv(path, header=0, usecols=colz)  
-#    
-#    ## Process coordinates as string to derive values for geospatial
-#    df.Coordinate = [s.replace('(','') for s in df.Coordinate.astype(str)]
-#    df.Coordinate = [s.replace(')','') for s in df.Coordinate.astype(str)]
-#    df.Coordinate = [s.replace(' ','') for s in df.Coordinate.astype(str)]
-#    
-#    df['Latitude'] = [s.split(',')[0] for s in df.Coordinate.astype(str)]
-#    df['Longitude'] = [s.split(',')[1] if len(s.split(','))==2 else 0 for s in df.Coordinate.astype(str)]
-#    df.drop(labels='Coordinate', axis=1, inplace=True)
-#    
-#    df['ID'] = df.ID.astype(str)
-#    
-#    return df
-#    
+
+def get_date_warehouse(file):
+    print(file)
+    mfst = pd.read_csv(file, usecols=np.arange(0,25), names=["C"+str(i) for i in np.arange(1,26)])
+    
+    ## Exctract date from first column
+    rte_date = re.search(r'[0-9]{8}', str(file))
+    rte_date = dt.strptime(rte_date.group(), '%m%d%Y').date()
+    print(rte_date)
+    
+    mfst['Date'] = rte_date
+    if re.search("STL", file).group(0) == 'STL':
+        mfst['Warehouse'] = 'STL'
+    elif re.search("KC", file).group(0) == 'KC':
+        mfst['Warehouse'] = 'KC'
+    elif re.search("COL", file).group(0) == 'COL':
+        mfst['Warehouse'] = 'COL'
+    else:
+        mfst['Warehouse'] = 'SPFD'
+        
+    return mfst, rte_date
+
+
+def get_routeIDs(mfst):
+    ## Extract RTE IDs
+    raw_rtes = todays_rtes = mfst.loc[mfst.C1.astype(str).str.contains('Route Id: '), 'C1']
+    raw_rtes = pd.DataFrame({'RouteId':raw_rtes}).reset_index(drop=False)
+    
+    ## String manipulations
+    todays_rtes = [rte.replace('Route Id: ','') for rte in todays_rtes]
+    todays_rtes = raw_rtes.RouteId = [rte.replace(' ', '') for rte in todays_rtes]
+    todays_rtes = pd.unique(todays_rtes)
+    
+    print('Raw route values : \n', raw_rtes.head(10))
+    print('Processed route values: \n', todays_rtes)
+    return raw_rtes, todays_rtes
+
+
+
+def get_index_of_routes(mfst, raw_rtes):
+    ## Get start and end of route ID by using index from above
+    minmax = pd.DataFrame(raw_rtes.groupby('RouteId')['index'].agg({'RouteId':{'min':np.min, 'max':np.max}}))
+    minmax.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in minmax.columns]
+    
+    df_temp = pd.DataFrame()
+    for i, mm_row in minmax.iterrows():
+        rte_id = str(mm_row.name)
+        min_ix = int(mm_row[0])
+        max_ix = int(mm_row[1])
+        new_rows = {min_ix: rte_id, max_ix: rte_id}
+        df = pd.DataFrame.from_dict(new_rows, orient='index')
+        df.rename(columns={0:'RouteId'}, inplace=True)
+        df_temp = df_temp.append(df)
+        
+    new_ix = pd.Index(np.arange(np.min(df_temp.index.values), np.max(df_temp.index.values)))
+    df_temp = df_temp.reindex(new_ix)
+    df_temp.RouteId.fillna(method='ffill', inplace=True)
+    print(df_temp.head(), '\n\n', df_temp.tail())
+    
+    mfst = mfst.join(df_temp)
+    mfst.RouteId.fillna(method='ffill', inplace=True)
+    
+    expected_rtes = pd.unique(mfst['RouteId'])
+    print(expected_rtes)
+    
+    return mfst, expected_rtes
+
+
+def get_customer_features(mfst):
+    ## Extract Customers -- maintain index
+    raw_cust = mfst.loc[~mfst.C5.astype(str).str.contains(':'), 'C5']
+    raw_cust = pd.DataFrame({'Customer':raw_cust}).reset_index(drop=False)
+    
+    ## String manipulations -- drop index for values
+    customers = mfst.loc[~mfst.C5.astype(str).str.contains(':'), 'C5']
+    customers = [c for c in customers if 'Service Windows' not in str(c) and 'na' not in str(c) 
+                 and 'Location Name' not in str(c) and 'Odometer Out:' not in str(c)]
+    customers = pd.unique(customers)
+    
+    ## Get start and end of route ID by using index from above
+    minmax = pd.DataFrame(raw_cust.groupby('Customer')['index'].agg({'Customer':{'min':np.min, 'max':np.max}}))
+    minmax.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in minmax.columns]
+    
+    print(minmax.head())
+    def make_windows(winz):
+        if ',' not in str(winz):
+            try:
+                w1 = str(winz).split('-')[0]
+                w2 = str(winz).split('-')[1]
+                w3 = np.nan
+                w4 = np.nan
+            except IndexError:
+                w1 = w2 = w3 = w4 = np.nan
+        else:
+            try:
+                w1 = str(winz).split('-')[0]
+                w2 = str(winz).split('-')[1]
+                new_winz = str(winz).split(',') 
+                new_winz = new_winz[1]
+                w3 = str(winz).split('-')[0]
+                w4 = str(winz).split('-')[1]
+            except IndexError:
+                w1 = w2 = w3 = w4 = np.nan
+                
+        return w1, w2, w3, w4
+    
+    new_df = pd.DataFrame()
+    for i, mm_row in minmax.iterrows():
+        cust_name = mm_row.name
+        IX = mm_row[1]
+        winz = mfst.loc[IX+4, 'C5']
+        
+        w1, w2, w3, w4 = make_windows(winz)   
+        new_row = {IX: {'Customer':cust_name, 'CustomerId': mfst.loc[IX, 'C3'],
+                       'Stop': mfst.loc[IX, 'C2'], 'Cases': mfst.loc[IX, 'C22'],
+                       'Bottles':  mfst.loc[IX, 'C25'], 'ServiceWindows': mfst.loc[IX+4, 'C5'],
+                       'BeginWindow1':w1, 'EndWindow1':w2, 'BeginWindow2':w3, 'EndWindow2':w4
+                       }}
+        df = pd.DataFrame.from_dict(new_row, orient='index')
+        new_df = new_df.append(df)
+    
+    print(new_df.head())
+    
+    mfst = mfst.join(new_df)
+    
+    ## Fill forward
+    mfst[['Customer']].fillna(method='ffill', inplace=True)
+    
+    cols_for_output = ['Warehouse','Date','RouteId','Customer','CustomerId','Stop','Cases','Bottles',
+                       'ServiceWindows','BeginWindow1','EndWindow1','BeginWindow2','EndWindow2']
+    print(mfst[cols_for_output].head())
+    
+    ## Filter out some nonsense
+    ISNAN = mfst['Stop'].isnull()
+    mfst = mfst.loc[ISNAN == False, cols_for_output]
+    BADVALS = ['Location Name']
+    mfst = mfst[~mfst.Customer.isin(BADVALS)]
+    
+    ## Set new index w/o dropping
+    mfst.set_index(keys=['Date','Warehouse','RouteId','CustomerId'], inplace=True, drop=False)
+    
+    return mfst
+
+def make_datetime(rte_date, dat):
+    try:
+        DAT = dt.strptime(str(str(rte_date) + ' ' + str(dat)), '%Y-%m-%d %H:%M')
+    except ValueError:
+        DAT = pd.NaT
+    return DAT
+
+
+def customer_hours_available(hrs_raw):
+    try:
+        HRS = np.float64(hrs_raw.split(':')[0].split('days ')[1])
+    except IndexError:
+        HRS = 0
+    except ValueError:
+        HRS = 0
+    return HRS
+
+to_minz = lambda x: timedelta(minutes=x)
+
+def format_datetimes(mfst, rte_date):
+    ## Format as Datetime for operations
+    mfst.BeginWindow1 = [make_datetime(rte_date, d) for d in mfst.BeginWindow1]
+    mfst.EndWindow1 = [make_datetime(rte_date, d) for d in mfst.EndWindow1]
+    mfst.BeginWindow2 = [make_datetime(rte_date, d) for d in mfst.BeginWindow1]
+    mfst.EndWindow2 = [make_datetime(rte_date, d) for d in mfst.EndWindow1]
+    mfst['ix'] = np.arange(0, len(mfst))
+    
+    ## Impute same windows if NaT
+    i = 0
+    start2 = []
+    end2 = []
+    while i < len(mfst):
+        SECONDWINDOW = mfst.loc[mfst['ix']==i, 'BeginWindow2']
+        if SECONDWINDOW == pd.NaT:
+            start2.append(mfst.loc[mfst['ix']==i, 'BeginWindow1'])
+            end2.append(mfst.loc[mfst['ix']==i, 'EndWindow1'])
+        else:
+            pass
+        i += 1
+    mfst.loc[mfst.BeginWindow2==pd.NaT, 'BeginWindow2'] = start2
+    mfst.loc[mfst.BeginWindow2==pd.NaT, 'EndWindow2'] = end2
+    
+    ## Get N hours available in AM and PM
+    mfst['HoursAvailableWin1'] = mfst.EndWindow1 - mfst.BeginWindow1
+    mfst['HoursAvailableWin2'] = mfst.EndWindow2 - mfst.BeginWindow2
+    mfst['HoursAvailableWin2'] = mfst['HoursAvailableWin2'].fillna(to_minz(0))
+    
+    ## Make duration into a floating point & add up total hours available
+    mfst['HoursAvailableWin1'] = [customer_hours_available(hrs_raw) for hrs_raw in mfst['HoursAvailableWin1'].astype(str).tolist()] 
+    mfst['HoursAvailableWin2'] = [customer_hours_available(hrs_raw) for hrs_raw in mfst['HoursAvailableWin2'].astype(str).tolist()] 
+    mfst['TotalHoursAvailable'] = mfst['HoursAvailableWin1'] + mfst['HoursAvailableWin2']
+    
+    return mfst
+
+### Check
+#MASTER_MANIFEST[MASTER_MANIFEST.EndWindow2.astype(str)!=pd.NaT].head(22)
+
+
+
+def process_driver_manifest(file):
+    '''
+    Combines all functions above
+    to process Roadnet driver manifest
+    '''
+    mfst, rte_date = get_date_warehouse(file)
+    raw_rtes, todays_rtes = get_routeIDs(mfst)
+    mfst, expected_rtes = get_index_of_routes(mfst, raw_rtes)
+    mfst = get_customer_features(mfst)
+    mfst = format_datetimes(mfst, rte_date)
+    
+    ## Check missing routes
+    missing_rtes = sum([item not in expected_rtes for item in pd.unique(mfst.RouteId).tolist()])
+    print('Expecting the following routes: \n')
+    print(expected_rtes, '\n')
+    print('There are %i missing routes after processing the data' %missing_rtes)
+    
+    return mfst
+
+
+
+
+## Get distance from DC to first stop, each stop to next stop, last stop to DC
+## Start with STL, then do KC, COL, SPFD
+def haversine(lon1, lat1, lon2, lat2):
+    """
+    Calculate the great circle distance between two points 
+    on the earth (specified in decimal degrees)
+    """
+    from math import radians, cos, sin, asin, sqrt
+    # convert decimal degrees to radians 
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+    
+    # haversine formula 
+    dlon = lon2 - lon1 
+    dlat = lat2 - lat1 
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a)) 
+    r = 3956 # Radius of earth in MILES. Use 6371 for KM
+    return round(c * r, 4)
+    
+
+def roadnet_servicelocation_details(path):
+    '''
+    Reads data from Roadnet for latlon/priority, etc.
+    To be used by combining with manifest data.
+    '''
+    colz = ['ID','Coordinate','Service Window Importance','Priority','Priority']    
+    df = pd.read_csv(path, header=0, usecols=colz)  
+    
+    ## Process coordinates as string to derive values for geospatial
+    df.Coordinate = [s.replace('(','') for s in df.Coordinate.astype(str)]
+    df.Coordinate = [s.replace(')','') for s in df.Coordinate.astype(str)]
+    df.Coordinate = [s.replace(' ','') for s in df.Coordinate.astype(str)]
+    
+    df['Latitude'] = [s.split(',')[0] for s in df.Coordinate.astype(str)]
+    df['Longitude'] = [s.split(',')[1] if len(s.split(','))==2 else 0 for s in df.Coordinate.astype(str)]
+    df.drop(labels='Coordinate', axis=1, inplace=True)
+    
+    df['ID'] = df.ID.astype(str)
+    
+    return df
 
 
 ###################################################################################################
@@ -467,11 +488,6 @@ while i < int(MASTER_MANIFEST.shape[0]-1):
         MASTER_MANIFEST.loc[i+1, 'ExpectedArrival'] = MASTER_MANIFEST.loc[i, 'ExpectedArrival'] + MASTER_MANIFEST.loc[i, 'MinutesTotal']
         i += 1
 
-## Tidy up data
-zero_out_microseconds = lambda dtobject: dtobject.replace(microsecond=0, second=0)
-MASTER_MANIFEST.ExpectedArrival = MASTER_MANIFEST.ExpectedArrival.apply(zero_out_microseconds)
-MASTER_MANIFEST.RouteStartTime = MASTER_MANIFEST.RouteStartTime.apply(zero_out_microseconds)
-MASTER_MANIFEST.ExpectedFinishTime = MASTER_MANIFEST.ExpectedFinishTime.apply(zero_out_microseconds)
 
 ## Get empty distance (going back to warehouse)
 print('Changing Stop to Integer from String')
@@ -501,6 +517,12 @@ FINAL_STOP = zip(MASTER_MANIFEST['ExpectedArrival'], MASTER_MANIFEST['MinutesTot
 MASTER_MANIFEST['ExpectedFinishTime'] = [laststop_arrival+total_min for laststop_arrival,total_min in FINAL_STOP]
 MASTER_MANIFEST.loc[ISLAST==False, 'ExpectedFinishTime'] = pd.NaT
 MASTER_MANIFEST.ExpectedFinishTime = MASTER_MANIFEST.groupby(['Date','RouteId']).ExpectedFinishTime.fillna(method='bfill')
+
+## Tidy up data
+zero_out_microseconds = lambda dtobject: dtobject.replace(microsecond=0, second=0)
+MASTER_MANIFEST.ExpectedArrival = MASTER_MANIFEST.ExpectedArrival.apply(zero_out_microseconds)
+MASTER_MANIFEST.RouteStartTime = MASTER_MANIFEST.RouteStartTime.apply(zero_out_microseconds)
+MASTER_MANIFEST.ExpectedFinishTime = MASTER_MANIFEST.ExpectedFinishTime.apply(zero_out_microseconds)
 
 ## Number of stops on route
 def get_stops(MASTER_MANIFEST):
@@ -533,10 +555,19 @@ def get_time(MASTER_MANIFEST):
     SERVICE_T = dict(zip(SERVICE_T.x, SERVICE_T.TotalServiceTime))
     MM['TotalServiceTime'] = [str(a) + str(b) for a,b in zip(MM.Date, MM.RouteId)]
     MM['TotalServiceTime'] = MM['TotalServiceTime'].map(SERVICE_T)
+    
+    TRAVEL_T = pd.DataFrame(MM.groupby(['Date','RouteId'])['MinutesNextStop'].sum()).reset_index(drop=False)
+    TRAVEL_T['x'] = [str(a) + str(b) for a,b in zip(TRAVEL_T.Date, TRAVEL_T.RouteId)]
+    TRAVEL_T.rename(columns={'MinutesNextStop':'TotalTravelTime'}, inplace=True)
+    TRAVEL_T = dict(zip(TRAVEL_T.x, TRAVEL_T.TotalTravelTime))
+    MM['TotalTravelTime'] = [str(a) + str(b) for a,b in zip(MM.Date, MM.RouteId)]
+    MM['TotalTravelTime'] = MM['TotalTravelTime'].map(TRAVEL_T)
     return MM
 
 MASTER_MANIFEST = get_time(MASTER_MANIFEST)
 
+
+## Mark if a given stop was made on time
 def made_time_windows(MASTER_MANIFEST):
     MM = MASTER_MANIFEST.copy()
     
@@ -557,29 +588,52 @@ def made_time_windows(MASTER_MANIFEST):
 
         
 MASTER_MANIFEST['OnTime'] = made_time_windows(MASTER_MANIFEST)
-###
+
+
+## Derive percent each stop takes of total route by various measures
 def percent_of_route(MASTER_MANIFEST):
     MM = MASTER_MANIFEST.copy()
     MM['Pct_Splits'] = np.divide(MM.Splits, MM.TotalSplits)
-    MM['Pct_ServiceTime'] = np.divide(MM.RouteStartT, )
+    MM['Pct_Service'] = np.divide(MM.MinutesServiceStop, MM.TotalServiceTime)
+    MM['Pct_Stops'] = np.divide(1, MM.Stops.fillna(method='ffill'))
+    return MM
 
-#MASTER_MANIFEST[['Date','RouteId','Customer','BeginWindow1','EndWindow1','BeginWindow2','EndWindow2','ExpectedArrival','OnTime']].head(50)
-MASTER_MANIFEST.head(30)
-
-
-MASTER_MANIFEST[MASTER_MANIFEST]
-
+MASTER_MANIFEST = percent_of_route(MASTER_MANIFEST)
+MASTER_MANIFEST['OnTime_Weighted'] = np.multiply(MASTER_MANIFEST['OnTime'].astype(np.int64), MASTER_MANIFEST['Pct_Splits'])
 
 
+## Break out city name from route ID
+first_element = lambda x: str(x).split('-')[0]
+
+MASTER_MANIFEST['RouteIdentifier'] = MASTER_MANIFEST.RouteId.apply(first_element)
+
+
+def get_service_levels(MASTER_MANIFEST):
+    ontime_weighted = pd.DataFrame(MASTER_MANIFEST.groupby(['Date','RouteId']).OnTime_Weighted.sum())
+    ontime_raw = pd.DataFrame(np.divide(MASTER_MANIFEST.groupby(['Date','RouteId']).OnTime.sum(), MASTER_MANIFEST.groupby(['Date','RouteId']).OnTime.count()))
+    ontime_summary = ontime_weighted.join(ontime_raw)
+    ontime_summary.reset_index(drop=False, inplace=True)
+    ontime_summary.rename(columns={'OnTime_Weighted':'OnTime_Weighted_RteDate', 'OnTime':'OnTime_RteDate'}, inplace=True)
+    
+    MASTER_MANIFEST = MASTER_MANIFEST.merge(ontime_summary, on=['Date','RouteId'])
+    return MASTER_MANIFEST
+
+MASTER_MANIFEST = get_service_levels(MASTER_MANIFEST)
+MASTER_MANIFEST.head()
+
+
+
+MASTER_MANIFEST.groupby(['RouteIdentifier','RouteId','Date'])[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
+MASTER_MANIFEST[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
+#MASTER_MANIFEST.groupby('DayofWeek')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
 
 
 
 
-
-
-
-
-
+investigate_colz = ['Date','Customer','Stop','Splits','ServiceWindows','Service Window Importance','RouteStartTime','OnTime','Pct_Splits','ExpectedArrival','MinutesServiceStop','MinutesNextStop']
+M_Cook_R = MASTER_MANIFEST.loc[MASTER_MANIFEST.RouteIdentifier=='R00030', investigate_colz]
+M_Cook_R.head(40)
+M_Cook_R.to_html('N:/Operations Intelligence/Routing/Individual Route Investigations/Mike Cook - Thursdays May 2017.html', index=False)
 
 
 
@@ -608,27 +662,11 @@ today_date = str(time.strftime('%A %B %d-%Y'))
 rte_starttimes.to_html("N:/Operations Intelligence/Merchandising/Chain Reports/Driver Start Times" + today_date + " Saint Louis Chain Report.html")
 
 
-MASTER_MANIFEST.to_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/Roadnet Driver Manifest - Processed and Enriched.csv', index=False)
-
-
-MASTER_MANIFEST.to_html("N:/Operations Intelligence/Merchandising/Chain Reports/" + today_date + " Saint Louis Chain Report.html")
-MASTER_MANIFEST.to_excel("N:/Operations Intelligence/Merchandising/Chain Reports/" + today_date + " Saint Louis Chain Report.xlsx", sheet_name='Routes')
-
-
-
-###################################################################################################
-###################################################################################################
-###################################################################################################
-###################################################################################################
-
-
-
-
-
-
-
-
-
+#MASTER_MANIFEST.to_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/Roadnet Driver Manifest - Processed and Enriched.csv', index=False)
+#
+#
+#MASTER_MANIFEST.to_html("N:/Operations Intelligence/Merchandising/Chain Reports/" + today_date + " Saint Louis Chain Report.html")
+#MASTER_MANIFEST.to_excel("N:/Operations Intelligence/Merchandising/Chain Reports/" + today_date + " Saint Louis Chain Report.xlsx", sheet_name='Routes')
 
 
 #####################  #######################  #####################  #######################
@@ -701,27 +739,27 @@ MASTER_MANIFEST.to_excel("N:/Operations Intelligence/Merchandising/Chain Reports
 
 
 
-## Merge accounts with driver manifest
-MASTER_MANIFEST.CustomerId = MASTER_MANIFEST.CustomerId.astype(int)
-MASTER_MANIFEST = MASTER_MANIFEST.merge(merch_accts, how='left', left_on='CustomerId', right_on='Store ID')
-#MASTER_MANIFEST['Store ID'] = MASTER_MANIFEST['Store ID'].isnull() == False
-MASTER_MANIFEST.rename(columns={'Store ID':'Merchandised Account'}, inplace=True)
-MASTER_MANIFEST.head(10)
-
-
-
-#MERCH_MANIFEST = MASTER_MANIFEST[MASTER_MANIFEST['Merchandised Account'] == True]
-MERCH_MANIFEST.reset_index(drop=False, inplace=True)
-keep_cols = ['RouteId','CustomerId','Customer','Stop','Cases','Bottles','ServiceWindows','TotalHoursAvailable']
-MERCH_MANIFEST = MERCH_MANIFEST[keep_cols]
-MERCH_MANIFEST.set_index(keys=['RouteId','CustomerId'], drop=True, inplace=True)
-MERCH_MANIFEST.head(20)
-
-
-import time
-today_date = str(time.strftime('%A %B %d-%Y'))
-MERCH_MANIFEST.to_html("N:/Operations Intelligence/Merchandising/Chain Reports/" + today_date + " Saint Louis Chain Report.html")
-MERCH_MANIFEST.to_excel("N:/Operations Intelligence/Merchandising/Chain Reports/" + today_date + " Saint Louis Chain Report.xlsx", sheet_name='Routes')
+### Merge accounts with driver manifest
+#MASTER_MANIFEST.CustomerId = MASTER_MANIFEST.CustomerId.astype(int)
+#MASTER_MANIFEST = MASTER_MANIFEST.merge(merch_accts, how='left', left_on='CustomerId', right_on='Store ID')
+##MASTER_MANIFEST['Store ID'] = MASTER_MANIFEST['Store ID'].isnull() == False
+#MASTER_MANIFEST.rename(columns={'Store ID':'Merchandised Account'}, inplace=True)
+#MASTER_MANIFEST.head(10)
+#
+#
+#
+##MERCH_MANIFEST = MASTER_MANIFEST[MASTER_MANIFEST['Merchandised Account'] == True]
+#MERCH_MANIFEST.reset_index(drop=False, inplace=True)
+#keep_cols = ['RouteId','CustomerId','Customer','Stop','Cases','Bottles','ServiceWindows','TotalHoursAvailable']
+#MERCH_MANIFEST = MERCH_MANIFEST[keep_cols]
+#MERCH_MANIFEST.set_index(keys=['RouteId','CustomerId'], drop=True, inplace=True)
+#MERCH_MANIFEST.head(20)
+#
+#
+#import time
+#today_date = str(time.strftime('%A %B %d-%Y'))
+#MERCH_MANIFEST.to_html("N:/Operations Intelligence/Merchandising/Chain Reports/" + today_date + " Saint Louis Chain Report.html")
+#MERCH_MANIFEST.to_excel("N:/Operations Intelligence/Merchandising/Chain Reports/" + today_date + " Saint Louis Chain Report.xlsx", sheet_name='Routes')
 
 
 
