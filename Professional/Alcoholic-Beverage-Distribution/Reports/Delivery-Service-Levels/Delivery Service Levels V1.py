@@ -525,23 +525,22 @@ def made_time_windows(MASTER_MANIFEST):
     MM = MASTER_MANIFEST.copy()
     
     made_either_window = made_window1 = made_window2 = []    
-    for i, ARRIVE in enumerate(MASTER_MANIFEST.ExpectedArrival):
+    for i, ARRIVE in enumerate(MM.ExpectedArrival):
         madeit1 = (ARRIVE >= MM.loc[i, 'BeginWindow1']) & (ARRIVE <= MM.loc[i, 'EndWindow1'])
         made_window1.append(madeit1)
         try:
             madeit2 = (ARRIVE >= MM.loc[i, 'BeginWindow2']) & (ARRIVE <= MM.loc[i, 'EndWindow2'])
             made_window2.append(madeit2)
         except ValueError:
-            madeit2 = False
-            made_window2.append(madeit2)
+            made_window2.append(False)
         
-        made_either_window.append(madeit1 | madeit2)
-    return made_either_window
+        made_either_window.append(bool(max(madeit1, madeit2)))
+    return pd.Series(made_either_window)
 
         
-made_time_windows(MASTER_MANIFEST)
+MASTER_MANIFEST['OnTime'] = made_time_windows(MASTER_MANIFEST)
 
-MASTER_MANIFEST.head()
+MASTER_MANIFEST[['Date','RouteId','Customer','BeginWindow1','EndWindow1','ExpectedArrival','OnTime']].head(20)
 
 
 
