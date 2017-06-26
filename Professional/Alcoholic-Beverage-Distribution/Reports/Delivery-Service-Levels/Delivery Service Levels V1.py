@@ -395,7 +395,7 @@ MASTER_MANIFEST['MinutesNextStop'] = MASTER_MANIFEST['MinutesNextStop'].apply(to
 curr_minpercase = 1/6
 
 print('''
-----------------
+--------------------------------
 
 CONVERTING BOTTLES TO CASES USING 
     Bottles per Case  =  %i
@@ -403,18 +403,19 @@ CONVERTING BOTTLES TO CASES USING
 ASSUMING MINUTES PER CASE DELIVERED
     Minutes per Case  =  %.2f
 
-----------------
+--------------------------------
 '''%(12,curr_minpercase))
 
 
 ## Calculate time at each stop
 def duration_at_stop(cases, btls, baseline_minutes=8, min_per_case=curr_minpercase):
     '''Calculates time at a stop'''
-    CS = np.float64(cases) + (np.float64(btls)/12)
-    duration_estimate = baseline_minutes + CS*min_per_case
+    fulls = np.float64(cases) + (np.float64(btls)/12)
+    duration_estimate = baseline_minutes + fulls*min_per_case
     duration_estimate = to_minz(duration_estimate)
     return duration_estimate
 MASTER_MANIFEST['MinutesServiceStop'] = [duration_at_stop(cs,btl) for cs,btl in zip(MASTER_MANIFEST.Cases, MASTER_MANIFEST.Bottles)]
+MASTER_MANIFEST['Splits'] = MASTER_MANIFEST.Cases.astype(np.float64) + MASTER_MANIFEST.Bottles.astype(np.float64)/12
 
 ## Calculate distance from warehouse for first stops only
 FIRSTSTOPS = zip(MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'Lon_Stop1'], MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'Lat_Stop1'])
@@ -426,6 +427,12 @@ def get_minutes_permile(mph):
     return mpm
 
 PREROUTE_TIME = 5
+
+print('''
+------------------------------------------------
+Adding %i minutes of pre-route time to first stop.
+------------------------------------------------
+''' %PREROUTE_TIME)
 
 MASTER_MANIFEST['MinutesToFirstStop'] = np.multiply(MASTER_MANIFEST.DistanceFromWarehouse_Stop1, get_minutes_permile(mph=40)) 
 MASTER_MANIFEST['MinutesToFirstStop'].fillna(0, inplace=True)
@@ -469,36 +476,63 @@ MASTER_MANIFEST['LastStop'] = ISLAST = LAST & NEXT
 last_lon, last_lat = MASTER_MANIFEST.loc[ISLAST, 'Longitude'], MASTER_MANIFEST.loc[ISLAST, 'Latitude']
 
 PLACEHOLDER = MASTER_MANIFEST.copy()
+print('Break Point -- Come back to line 472 to restore without running whole program.')
 #MASTER_MANIFEST = PLACEHOLDER.copy()
 
 MASTER_MANIFEST.loc[ISLAST, 'DistanceToWarehouse_LastStop'] = [haversine(LON,LAT,stl_lon,stl_lat) for LON,LAT in zip(last_lon, last_lat)]
-MASTER_MANIFEST['MinutesReturnToWarehouse'] = np.multiply(MASTER_MANIFEST.DistanceToWarehouse_LastStop, get_minutes_permile(mph=40)) 
+MASTER_MANIFEST.loc[ISLAST, 'MinutesReturnToWarehouse'] = np.multiply(MASTER_MANIFEST.loc[ISLAST, 'DistanceToWarehouse_LastStop'], get_minutes_permile(mph=40)) 
 MASTER_MANIFEST['MinutesReturnToWarehouse'].fillna(0, inplace=True)
 MASTER_MANIFEST['MinutesReturnToWarehouse'] = MASTER_MANIFEST['MinutesReturnToWarehouse'].apply(to_minz)
 
 ## Get expected arrival back to whse
-last_stops = MASTER_MANIFEST.loc[ISLAST, ['MinutesTotal','MinutesReturnToWarehouse','ExpectedArrival','MinutesTotal']]#.sum(axis=1)
+last_stops = MASTER_MANIFEST.loc[ISLAST, ['MinutesTotal','MinutesReturnToWarehouse','ExpectedArrival']]#.sum(axis=1)
 last_stops.MinutesReturnToWarehouse.fillna(to_minz(0), inplace=True)
 last_stops.ExpectedArrival.fillna(last_stops.ExpectedArrival.shift(-1)+to_minz(20), inplace=True)
-MASTER_MANIFEST.loc[ISLAST, 'MinutesTotal'] = last_stops[['MinutesTotal','MinutesReturnToWarehouse']].sum(axis=1)
-FINAL_STOP = zip(MASTER_MANIFEST.loc[ISLAST, 'ExpectedArrival'], MASTER_MANIFEST.loc[ISLAST, 'MinutesTotal'])
-MASTER_MANIFEST.loc[ISLAST, 'ExpectedFinishTime'] = [laststop_arrival+total_min for laststop_arrival,total_min in FINAL_STOP]
+last_stops.MinutesTotal = MASTER_MANIFEST.loc[ISLAST, 'MinutesTotal'] = last_stops[['MinutesTotal','MinutesReturnToWarehouse']].sum(axis=1)
 
+## Empty travel time
+FINAL_STOP = zip(MASTER_MANIFEST['ExpectedArrival'], MASTER_MANIFEST['MinutesTotal'])
+MASTER_MANIFEST['ExpectedFinishTime'] = [laststop_arrival+total_min for laststop_arrival,total_min in FINAL_STOP]
+MASTER_MANIFEST.loc[ISLAST==False, 'ExpectedFinishTime'] = pd.NaT
+MASTER_MANIFEST.ExpectedFinishTime = MASTER_MANIFEST.groupby(['Date','RouteId']).ExpectedFinishTime.fillna(method='bfill')
 
-MASTER_MANIFEST.head(22)
+## Number of stops on route
+def get_stops(MASTER_MANIFEST):
+    NSTOPS = pd.DataFrame(MASTER_MANIFEST.groupby(['Date','RouteId'])['Stop'].max()).reset_index(drop=False)
+    NSTOPS['x'] = [str(a) + str(b) for a,b in zip(NSTOPS.Date, NSTOPS.RouteId)]
+    NSTOPS.rename(columns={'Stop':'Stops'}, inplace=True)
+    NSTOPS = dict(zip(NSTOPS.x, NSTOPS.Stops))
+    MASTER_MANIFEST['Stops'] = [str(a) + str(b) for a,b in zip(MASTER_MANIFEST.Date, MASTER_MANIFEST.RouteId)]
+    MASTER_MANIFEST['Stops'] = MASTER_MANIFEST['Stops'].map(NSTOPS)
+    return MASTER_MANIFEST
 
+MASTER_MANIFEST = get_stops(MASTER_MANIFEST)
 
+def get_splits(MASTER_MANIFEST):
+    NSPLITS = pd.DataFrame(MASTER_MANIFEST.groupby(['Date','RouteId'])['Splits'].sum()).reset_index(drop=False)
+    NSPLITS['x'] = [str(a) + str(b) for a,b in zip(NSPLITS.Date, NSPLITS.RouteId)]
+    NSPLITS.rename(columns={'Splits':'TotalSplits'}, inplace=True)
+    NSPLITS = dict(zip(NSPLITS.x, NSPLITS.TotalSplits))
+    MASTER_MANIFEST['TotalSplits'] = [str(a) + str(b) for a,b in zip(MASTER_MANIFEST.Date, MASTER_MANIFEST.RouteId)]
+    MASTER_MANIFEST['TotalSplits'] = MASTER_MANIFEST['TotalSplits'].map(NSPLITS)
+    return MASTER_MANIFEST
+
+MASTER_MANIFEST = get_splits(MASTER_MANIFEST)
 
 ## Get Route start times for next day
 def get_route_starts(MASTER_MANIFEST):
-    rte_starttimes = MASTER_MANIFEST[['Date','RouteId','Customer','ServiceWindows','RouteStartTime','MinutesToFirstStop']].drop_duplicates(subset=['Date','RouteId'])
+    colz_for_display = ['Date','RouteId','Customer','ServiceWindows','RouteStartTime','MinutesToFirstStop','TotalSplits','Stops','ExpectedFinishTime']
+    rte_starttimes = MASTER_MANIFEST[colz_for_display].drop_duplicates(subset=['Date','RouteId'])
     rte_starttimes.RouteStartTime = rte_starttimes.RouteStartTime.dt.strftime('%H:%M %p')
+    rte_starttimes.ExpectedFinishTime = rte_starttimes.ExpectedFinishTime.dt.strftime('%I:%M %p')    
     rte_starttimes.set_index(['Date','RouteId'], inplace=True, drop=True)
     rte_starttimes.MinutesToFirstStop = round(rte_starttimes.MinutesToFirstStop.dt.total_seconds()/60,1)
-    return(rte_starttimes)
+    rte_starttimes.drop('MinutesToFirstStop', axis=1, inplace=True)
+    rte_starttimes['ExpectedHours'] = [pd.to_datetime(end) - pd.to_datetime(start) for end,start in zip(rte_starttimes.ExpectedFinishTime, rte_starttimes.RouteStartTime)]
+    return rte_starttimes
 
 rte_starttimes = get_route_starts(MASTER_MANIFEST)
-
+rte_starttimes.head(20)
 
 ## Write stuff to files for other people
 import time
