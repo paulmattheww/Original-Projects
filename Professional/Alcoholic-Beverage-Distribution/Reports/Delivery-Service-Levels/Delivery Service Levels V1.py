@@ -528,6 +528,7 @@ def get_route_starts(MASTER_MANIFEST):
     rte_starttimes.set_index(['Date','RouteId'], inplace=True, drop=True)
     rte_starttimes.MinutesToFirstStop = round(rte_starttimes.MinutesToFirstStop.dt.total_seconds()/60,1)
     rte_starttimes.drop('MinutesToFirstStop', axis=1, inplace=True)
+    rte_starttimes.TotalSplits = rte_starttimes.TotalSplits.apply(lambda x: round(x, 2))
     rte_starttimes['ExpectedHours'] = [pd.to_datetime(end) - pd.to_datetime(start) for end,start in zip(rte_starttimes.ExpectedFinishTime, rte_starttimes.RouteStartTime)]
     return rte_starttimes
 
