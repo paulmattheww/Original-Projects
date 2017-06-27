@@ -18,8 +18,18 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 50)
 pd.set_option('display.width', 100)
 
+
+print('Reading in files from N:\\Operations Intelligence\\Operations Research\\Merchandising vs Operations\\')
+path = 'N:\\Operations Intelligence\\Operations Research\\Merchandising vs Operations\\*.csv'
+files = glob.glob(path)
+
+MASTER_MANIFEST = pd.DataFrame()
+
+
 def get_date_warehouse(file):
-    print(file)
+    print('''
+    Extracting Date from file:    %s
+    '''%file)
     mfst = pd.read_csv(file, usecols=np.arange(0,25), names=["C"+str(i) for i in np.arange(1,26)])
     
     ## Exctract date from first column
@@ -84,6 +94,31 @@ def get_index_of_routes(mfst, raw_rtes):
     
     return mfst, expected_rtes
 
+def make_windows(winz):
+    if ',' not in str(winz):
+        try:
+            w1 = str(winz).split('-')[0]
+            w2 = str(winz).split('-')[1]
+            w3 = ''
+            w4 = ''
+        except IndexError:
+            w1 = w2 = w3 = w4 = ''
+    else:
+        try:
+            win1 = str(winz).split(', ')[0]
+            w1 = str(win1).split('-')[0]
+            w2 = str(win1).split('-')[1]
+            
+            win2 = str(winz).split(', ')[1]
+            w3 = str(win2).split('-')[0]
+            w4 = str(win2).split('-')[1]
+        except IndexError:
+            w1 = w2 = w3 = w4 = ''
+            
+    return w1, w2, w3, w4
+
+## Test
+#[make_windows(win) for win in MASTER_MANIFEST.ServiceWindows.astype(str)]
 
 def get_customer_features(mfst):
     ## Extract Customers -- maintain index
@@ -99,29 +134,6 @@ def get_customer_features(mfst):
     ## Get start and end of route ID by using index from above
     minmax = pd.DataFrame(raw_cust.groupby('Customer')['index'].agg({'Customer':{'min':np.min, 'max':np.max}}))
     minmax.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in minmax.columns]
-    
-    print(minmax.head())
-    def make_windows(winz):
-        if ',' not in str(winz):
-            try:
-                w1 = str(winz).split('-')[0]
-                w2 = str(winz).split('-')[1]
-                w3 = np.nan
-                w4 = np.nan
-            except IndexError:
-                w1 = w2 = w3 = w4 = np.nan
-        else:
-            try:
-                w1 = str(winz).split('-')[0]
-                w2 = str(winz).split('-')[1]
-                new_winz = str(winz).split(',') 
-                new_winz = new_winz[1]
-                w3 = str(winz).split('-')[0]
-                w4 = str(winz).split('-')[1]
-            except IndexError:
-                w1 = w2 = w3 = w4 = np.nan
-                
-        return w1, w2, w3, w4
     
     new_df = pd.DataFrame()
     for i, mm_row in minmax.iterrows():
@@ -167,10 +179,15 @@ def make_datetime(rte_date, dat):
         DAT = pd.NaT
     return DAT
 
+## Test
+#mfst, rte_date = get_date_warehouse(file)
+#x = [make_windows(win) for win in MASTER_MANIFEST.ServiceWindows.astype(str)]
+#y = [make_datetime(rte_date, d) for d in x[150]] #; x[50:150] # to ID which have two windows
 
 def customer_hours_available(hrs_raw):
+    hrs_raw = str(hrs_raw)
     try:
-        HRS = np.float64(hrs_raw.split(':')[0].split('days ')[1])
+        HRS = np.float64(hrs_raw.split(':')[0]) #.split('days ')[1]
     except IndexError:
         HRS = 0
     except ValueError:
@@ -179,13 +196,20 @@ def customer_hours_available(hrs_raw):
 
 to_minz = lambda x: timedelta(minutes=x)
 
+
+## Testing
+#z = y[3]-y[2]
+#zhrs = str(z).split(':')[0].split('days ')
+#[customer_hours_available(hrs_raw) for hrs_raw in z] 
+##[customer_hours_available(hrs) for hrs in y]
+#y
+
 def format_datetimes(mfst, rte_date):
     ## Format as Datetime for operations
     mfst.BeginWindow1 = [make_datetime(rte_date, d) for d in mfst.BeginWindow1]
     mfst.EndWindow1 = [make_datetime(rte_date, d) for d in mfst.EndWindow1]
-    mfst.BeginWindow2 = [make_datetime(rte_date, d) for d in mfst.BeginWindow1]
-    mfst.EndWindow2 = [make_datetime(rte_date, d) for d in mfst.EndWindow1]
-    mfst['ix'] = np.arange(0, len(mfst))
+    mfst.BeginWindow2 = [make_datetime(rte_date, d) for d in mfst.BeginWindow2]
+    mfst.EndWindow2 = [make_datetime(rte_date, d) for d in mfst.EndWindow2]
     
     ## Impute same windows if NaT
     start2 = []
@@ -202,20 +226,20 @@ def format_datetimes(mfst, rte_date):
     
     ## Get N hours available in AM and PM
     mfst['HoursAvailableWin1'] = mfst.EndWindow1 - mfst.BeginWindow1
-    mfst['HoursAvailableWin2'] = mfst.EndWindow2 - mfst.BeginWindow2
+    mfst['HoursAvailableWin2'] = [end-begin for end,begin in zip(mfst.EndWindow2, mfst.BeginWindow2) if end != pd.NaT]
     mfst['HoursAvailableWin2'] = mfst['HoursAvailableWin2'].fillna(to_minz(0))
     
     ## Make duration into a floating point & add up total hours available
-    mfst['HoursAvailableWin1'] = [customer_hours_available(hrs_raw) for hrs_raw in mfst['HoursAvailableWin1'].astype(str).tolist()] 
-    mfst['HoursAvailableWin2'] = [customer_hours_available(hrs_raw) for hrs_raw in mfst['HoursAvailableWin2'].astype(str).tolist()] 
+    #mfst['HoursAvailableWin1'] = [customer_hours_available(hrs_raw) for hrs_raw in mfst['HoursAvailableWin1'].astype(str).tolist()] 
+    #mfst['HoursAvailableWin2'] = [customer_hours_available(hrs_raw) for hrs_raw in mfst['HoursAvailableWin2'].astype(str).tolist()] 
     mfst['TotalHoursAvailable'] = mfst['HoursAvailableWin1'] + mfst['HoursAvailableWin2']
     
     return mfst
 
 ### Check
-#MASTER_MANIFEST[MASTER_MANIFEST.EndWindow2.astype(str)!=pd.NaT].head(22)
-
-
+#MASTER_MANIFEST[MASTER_MANIFEST.EndWindow2!=pd.NaT].head(22)
+#MASTER_MANIFEST[MASTER_MANIFEST.ServiceWindows.astype(str).apply(len)>11].head(50)
+#MASTER_MANIFEST.head(50)
 
 def process_driver_manifest(file):
     '''
@@ -236,6 +260,18 @@ def process_driver_manifest(file):
     
     return mfst
 
+
+
+## Call the master function on all files to get clean data
+for file in files:
+    df = process_driver_manifest(file)
+    MASTER_MANIFEST = MASTER_MANIFEST.append(df) 
+
+MASTER_MANIFEST.reset_index(drop=True, inplace=True)
+MASTER_MANIFEST.CustomerId = MASTER_MANIFEST.CustomerId.astype(str)
+
+## Check if processed times correctly
+MASTER_MANIFEST[MASTER_MANIFEST.ServiceWindows.astype(str).apply(len)>11].head(20)
 
 
 
@@ -295,20 +331,20 @@ def roadnet_servicelocation_details(path):
 
 ## Use all above functions to process manifests
 ## Execute for all manifests in folder
-path = 'N:\\Operations Intelligence\\Operations Research\\Merchandising vs Operations\\*.csv'
-files = glob.glob(path)
-
-MASTER_MANIFEST = pd.DataFrame()
-
-## Call the master function on all files to get clean data
-for file in files:
-    df = process_driver_manifest(file)
-    MASTER_MANIFEST = MASTER_MANIFEST.append(df) 
-
-MASTER_MANIFEST.reset_index(drop=True, inplace=True)
-
-## Final tidying of data
-MASTER_MANIFEST.CustomerId = MASTER_MANIFEST.CustomerId.astype(str)
+#path = 'N:\\Operations Intelligence\\Operations Research\\Merchandising vs Operations\\*.csv'
+#files = glob.glob(path)
+#
+#MASTER_MANIFEST = pd.DataFrame()
+#
+### Call the master function on all files to get clean data
+#for file in files:
+#    df = process_driver_manifest(file)
+#    MASTER_MANIFEST = MASTER_MANIFEST.append(df) 
+#
+#MASTER_MANIFEST.reset_index(drop=True, inplace=True)
+#
+### Final tidying of data
+#MASTER_MANIFEST.CustomerId = MASTER_MANIFEST.CustomerId.astype(str)
 
 
 ## Merge with customer data
@@ -628,11 +664,11 @@ MASTER_MANIFEST[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
 
 
 
-investigate_colz = ['Date','Customer','Stop','Splits','ServiceWindows','Service Window Importance','RouteStartTime','OnTime','Pct_Splits','ExpectedArrival','MinutesServiceStop','MinutesNextStop']
+investigate_colz = ['Date','Customer','Stop','Splits','ServiceWindows','TotalHoursAvailable','RouteStartTime','OnTime','Pct_Splits','ExpectedArrival','MinutesServiceStop','MinutesNextStop']
 M_Cook_R = MASTER_MANIFEST.loc[MASTER_MANIFEST.RouteIdentifier=='R00030', investigate_colz]
 M_Cook_R.head(40)
 M_Cook_R.to_html('N:/Operations Intelligence/Routing/Individual Route Investigations/Mike Cook - Thursdays May 2017.html', index=False)
-
+M_Cook_R.head(20)
 
 
 
