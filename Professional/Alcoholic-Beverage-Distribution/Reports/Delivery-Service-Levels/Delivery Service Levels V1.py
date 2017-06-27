@@ -15,7 +15,7 @@ import os
 #from Delivery import *
 
 pd.set_option('display.max_rows', 500)
-pd.set_option('display.max_columns', 50)
+pd.set_option('display.max_columns', 100)
 pd.set_option('display.width', 100)
 
 
@@ -669,7 +669,7 @@ def generate_calendar(year):
 if dt.now().month == 1:
     last_mon = 12
 else:
-    last_mon = dt.now().month - 1
+    last_mon = dt.now().month
 report_month = dt.now().replace(month=last_mon).strftime('%B')
 if dt.now().month == 1:
     report_year = dt.now().year - 1
@@ -678,25 +678,96 @@ else:
 
 CALENDAR = generate_calendar(year=report_year)
 MASTER_MANIFEST.Date = MASTER_MANIFEST.Date.apply(pd.to_datetime)
+print('Merging in calendar with dates and holidays, etc.')
 MASTER_MANIFEST = MASTER_MANIFEST.merge(CALENDAR, on='Date', how='left')
+
+
+mpg = 6.6
+cost_per_gallon = 2.171
+
+print('''
+Deriving cost per stop for:
+    - Labor
+    - Vehicle
+
+Assuming MPG .............................. %.2f
+Assuming $/gallon .............................. %.2f
+
+Data acquired from US DOE.
+
+******************************************************
+NOTE THAT FIXED COSTS, OR THE COST OF TRUCK LEASES,
+WERE NOT INCLUDED IN THIS COST EQUATION
+******************************************************
+''' %(mpg, cost_per_gallon) )
+
+
+def laborcost_bystop(cases, costperstop=0.70, paypercase=0.2288):
+    stop_cost = costperstop + paypercase * cases
+    return stop_cost
+    
+def travelcost_bystop(miles_nextstop, mpg=mpg, cpg=cost_per_gallon):
+    cost_per_mile = (1/mpg)*cost_per_gallon
+    travel_cost_nextstop = miles_nextstop*cost_per_mile
+    return travel_cost_nextstop
+
+MASTER_MANIFEST['Stop_TotalDistance'] = MASTER_MANIFEST[['AirMilesNextStop','DistanceFromWarehouse_Stop1','DistanceToWarehouse_LastStop']].sum(axis=1)
+MASTER_MANIFEST['CostStop_Labor'] = MASTER_MANIFEST.Splits.apply(laborcost_bystop)
+MASTER_MANIFEST['CostStop_Travel'] = MASTER_MANIFEST.Stop_TotalDistance.apply(travelcost_bystop)
+MASTER_MANIFEST['CostStop_Total'] = MASTER_MANIFEST[['CostStop_Labor','CostStop_Travel']].sum(axis=1)
+
+print('''
+Deriving total cost of the route. 
+
+Note that fixed costs are NOT included as they are not relevant 
+to decisions in the short-term (they are leases already signed).
+''')
+
+def get_route_totalcost(MASTER_MANIFEST):
+    MM = MASTER_MANIFEST.copy()
+    TOT_COST = pd.DataFrame(MM.groupby(['Date','RouteId'])['CostStop_Total'].sum()).reset_index(drop=False)
+    TOT_COST['x'] = [str(a) + str(b) for a,b in zip(TOT_COST.Date, TOT_COST.RouteId)]
+    TOT_COST.rename(columns={'CostStop_Total':'TotalCostRoute'}, inplace=True)
+    TOT_COST = dict(zip(TOT_COST.x, TOT_COST.TotalCostRoute))
+    MM['TotalCostRoute'] = [str(a) + str(b) for a,b in zip(MM.Date, MM.RouteId)]
+    MM['TotalCostRoute'] = MM['TotalCostRoute'].map(TOT_COST)
+    return MM
+
+MASTER_MANIFEST = get_route_totalcost(MASTER_MANIFEST)
+
+MASTER_MANIFEST.head(22)
+
+
+
+
+
+
+MASTER_MANIFEST.groupby(['RouteIdentifier'])[['TotalCostRoute']].mean()
+MASTER_MANIFEST.groupby(['RouteIdentifier','RouteId','Date'])[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
+MASTER_MANIFEST[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
+MASTER_MANIFEST.groupby('Weekday')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean().plot()
+MASTER_MANIFEST.groupby('WeekNumber')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean().plot()
+MASTER_MANIFEST.groupby('ShipWeek')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean().plot()
+
+
+
+
 
 
 MASTER_MANIFEST.head()
 
 
 
-MASTER_MANIFEST.groupby(['RouteIdentifier','RouteId','Date'])[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
-MASTER_MANIFEST[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
-MASTER_MANIFEST.groupby('Weekday')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean().plot()
-MASTER_MANIFEST.groupby('Week')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean().plot()
 
 
 
-
+## Check MIke COok on Thursdays
 investigate_colz = ['Date','Customer','Stop','Splits','ServiceWindows','TotalHoursAvailable','RouteStartTime','OnTime','Pct_Splits','ExpectedArrival','MinutesServiceStop','MinutesNextStop']
-M_Cook_R = MASTER_MANIFEST.loc[MASTER_MANIFEST.RouteIdentifier=='R00030', investigate_colz]
+M_Cook_R = MASTER_MANIFEST.loc[MASTER_MANIFEST.RouteIdentifier=='W00030', investigate_colz]
 M_Cook_R.head(40)
-M_Cook_R.to_html('N:/Operations Intelligence/Routing/Individual Route Investigations/Mike Cook - Thursdays May 2017.html', index=False)
+#M_Cook_R.to_html('N:/Operations Intelligence/Routing/Individual Route Investigations/Mike Cook - Thursdays May 2017.html', index=False)
+M_Cook_R.to_html('N:/Operations Intelligence/Routing/Individual Route Investigations/Mike Cook - Wednesdays May 2017.html', index=False)
+
 M_Cook_R.head(20)
 
 
@@ -725,7 +796,8 @@ today_date = str(time.strftime('%A %B %d-%Y'))
 rte_starttimes.to_html("N:/Operations Intelligence/Merchandising/Chain Reports/Driver Start Times" + today_date + " Saint Louis Chain Report.html")
 
 
-#MASTER_MANIFEST.to_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/Roadnet Driver Manifest - Processed and Enriched.csv', index=False)
+## Backups
+MASTER_MANIFEST.to_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Delivery Service Level/Roadnet Driver Manifest - Processed and Enriched.csv', index=False)
 #
 #
 #MASTER_MANIFEST.to_html("N:/Operations Intelligence/Merchandising/Chain Reports/" + today_date + " Saint Louis Chain Report.html")
