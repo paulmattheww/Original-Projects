@@ -233,6 +233,7 @@ def format_datetimes(mfst, rte_date):
     #mfst['HoursAvailableWin1'] = [customer_hours_available(hrs_raw) for hrs_raw in mfst['HoursAvailableWin1'].astype(str).tolist()] 
     #mfst['HoursAvailableWin2'] = [customer_hours_available(hrs_raw) for hrs_raw in mfst['HoursAvailableWin2'].astype(str).tolist()] 
     mfst['TotalHoursAvailable'] = mfst['HoursAvailableWin1'] + mfst['HoursAvailableWin2']
+    #mfst['TotalHoursAvailableNumeric'] = [int(str(ttl).split(':')[0]) + round(int(str(ttl).split(':')[1])/60,2) for ttl in MASTER_MANIFEST['TotalHoursAvailable']]    
     
     return mfst
 
@@ -318,33 +319,9 @@ def roadnet_servicelocation_details(path):
 
 
 ###################################################################################################
-###################################################################################################
-###################################################################################################
-###################################################################################################
-###################################################################################################
 ##########THIS IS WHERE THE ACTUAL WORK GETS DONE!#################################################
 ###################################################################################################
-###################################################################################################
-###################################################################################################
-###################################################################################################
-###################################################################################################
 
-## Use all above functions to process manifests
-## Execute for all manifests in folder
-#path = 'N:\\Operations Intelligence\\Operations Research\\Merchandising vs Operations\\*.csv'
-#files = glob.glob(path)
-#
-#MASTER_MANIFEST = pd.DataFrame()
-#
-### Call the master function on all files to get clean data
-#for file in files:
-#    df = process_driver_manifest(file)
-#    MASTER_MANIFEST = MASTER_MANIFEST.append(df) 
-#
-#MASTER_MANIFEST.reset_index(drop=True, inplace=True)
-#
-### Final tidying of data
-#MASTER_MANIFEST.CustomerId = MASTER_MANIFEST.CustomerId.astype(str)
 
 
 ## Merge with customer data
@@ -653,13 +630,63 @@ def get_service_levels(MASTER_MANIFEST):
     return MASTER_MANIFEST
 
 MASTER_MANIFEST = get_service_levels(MASTER_MANIFEST)
+
+
+
+def generate_calendar(year):
+    from pandas.tseries.offsets import YearEnd
+    from pandas.tseries.holiday import USFederalHolidayCalendar
+    
+    start_date = pd.to_datetime('1/1/'+str(year))
+    end_date = start_date + YearEnd()
+    DAT = pd.date_range(str(start_date), str(end_date), freq='D')
+    WK = [d.strftime('%U') for d in DAT]
+    MO = [d.strftime('%B') for d in DAT]
+    holidays = USFederalHolidayCalendar().holidays(start=start_date, end=end_date)
+
+    DAYZ = pd.DataFrame({'Date':DAT, 'WeekNumber':WK, 'Month':MO})
+    
+    DAYZ['Year'] = [format(d, '%Y') for d in DAT]
+    DAYZ['Weekday'] = [format(d, '%A') for d in DAT]
+    DAYZ['DOTM'] = [format(d, '%d') for d in DAT]
+    DAYZ['IsWeekday'] = DAYZ.Weekday.isin(['Monday','Tuesday','Wednesday','Thursday','Friday'])
+    DAYZ['IsProductionDay'] = DAYZ.Weekday.isin(['Tuesday','Wednesday','Thursday','Friday'])
+    last_biz_day = [str(format(dat, '%Y-%m-%d')) for dat in pd.date_range(start_date, end_date, freq='BM')]
+    DAYZ['LastSellingDayOfMonth'] = [dat in last_biz_day for dat in DAYZ['Date'].astype(str)]
+
+    DAYZ.loc[DAYZ.WeekNumber.isin(['00','01','02','03','04','05','06','07','08','09','50','51','52','53']), 'Season'] = 'Winter'
+    DAYZ.loc[DAYZ.WeekNumber.isin(['10','11','12','13','14','15','16','17','18','19','20','21','22']), 'Season'] = 'Spring'
+    DAYZ.loc[DAYZ.WeekNumber.isin(['23','24','25','26','27','28','29','30','31','32','33','34','35']), 'Season'] = 'Summer'
+    DAYZ.loc[DAYZ.WeekNumber.isin(['36','37','38','39','40','41','42','43','44','45','46','47','48','49']), 'Season'] = 'Autumn'
+    DAYZ['Holiday'] = DAYZ.Date.isin(holidays)
+    DAYZ['HolidayWeek'] = DAYZ['Holiday'].rolling(window=7,center=True,min_periods=1).sum()
+    DAYZ['ShipWeek'] = ['A' if int(wk) % 2 == 0 else 'B' for wk in WK]
+
+    DAYZ.reset_index(drop=True, inplace=True)
+    
+    return DAYZ
+
+if dt.now().month == 1:
+    last_mon = 12
+else:
+    last_mon = dt.now().month - 1
+report_month = dt.now().replace(month=last_mon).strftime('%B')
+if dt.now().month == 1:
+    report_year = dt.now().year - 1
+else:
+    report_year = dt.now().year
+
+CALENDAR = generate_calendar(year=report_year)
+MASTER_MANIFEST = MASTER_MANIFEST.merge(CALENDAR, on='Date', how='left')
+
+
 MASTER_MANIFEST.head()
 
 
 
 MASTER_MANIFEST.groupby(['RouteIdentifier','RouteId','Date'])[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
 MASTER_MANIFEST[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
-#MASTER_MANIFEST.groupby('DayofWeek')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
+MASTER_MANIFEST.groupby('Weekday')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean().plot()
 
 
 
