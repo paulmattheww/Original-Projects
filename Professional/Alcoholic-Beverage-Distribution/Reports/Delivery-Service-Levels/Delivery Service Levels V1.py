@@ -677,6 +677,7 @@ else:
     report_year = dt.now().year
 
 CALENDAR = generate_calendar(year=report_year)
+MASTER_MANIFEST.Date = MASTER_MANIFEST.Date.apply(pd.to_datetime)
 MASTER_MANIFEST = MASTER_MANIFEST.merge(CALENDAR, on='Date', how='outer')
 
 
