@@ -424,7 +424,7 @@ MASTER_MANIFEST['MinutesNextStop'] = MASTER_MANIFEST['MinutesNextStop'].apply(to
 ## Get heuristic of cases per minute by route
 ## Then use it by route  -- doesnt exist before this point so think it through bro
 
-curr_minpercase = 1/6
+curr_minpercase = 1/3
 
 print('''
 --------------------------------
@@ -677,7 +677,7 @@ else:
     report_year = dt.now().year
 
 CALENDAR = generate_calendar(year=report_year)
-MASTER_MANIFEST = MASTER_MANIFEST.merge(CALENDAR, on='Date', how='left')
+MASTER_MANIFEST = MASTER_MANIFEST.merge(CALENDAR, on='Date', how='outer')
 
 
 MASTER_MANIFEST.head()
