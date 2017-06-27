@@ -230,10 +230,8 @@ def format_datetimes(mfst, rte_date):
     mfst['HoursAvailableWin2'] = mfst['HoursAvailableWin2'].fillna(to_minz(0))
     
     ## Make duration into a floating point & add up total hours available
-    #mfst['HoursAvailableWin1'] = [customer_hours_available(hrs_raw) for hrs_raw in mfst['HoursAvailableWin1'].astype(str).tolist()] 
-    #mfst['HoursAvailableWin2'] = [customer_hours_available(hrs_raw) for hrs_raw in mfst['HoursAvailableWin2'].astype(str).tolist()] 
     mfst['TotalHoursAvailable'] = mfst['HoursAvailableWin1'] + mfst['HoursAvailableWin2']
-    #mfst['TotalHoursAvailableNumeric'] = [int(str(ttl).split(':')[0]) + round(int(str(ttl).split(':')[1])/60,2) for ttl in MASTER_MANIFEST['TotalHoursAvailable']]    
+    mfst['TotalHoursAvailable_Numeric'] = round(mfst.TotalHoursAvailable.dt.total_seconds() / 60 /60, 1)
     
     return mfst
 
@@ -735,21 +733,30 @@ def get_route_totalcost(MASTER_MANIFEST):
 
 MASTER_MANIFEST = get_route_totalcost(MASTER_MANIFEST)
 
-MASTER_MANIFEST.head(22)
+
+
+
+## Write to csv for R report
+print('Data being written to CSV for pick-back-up with R report in RMarkdown')
+MASTER_MANIFEST.to_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Delivery Service Level/Roadnet Driver Manifest - Processed and Enriched.csv', index=False)
 
 
 
 
 
 
-MASTER_MANIFEST.groupby(['RouteIdentifier'])[['TotalCostRoute']].mean()
-MASTER_MANIFEST.groupby(['RouteIdentifier','RouteId','Date'])[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
-MASTER_MANIFEST[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
-MASTER_MANIFEST.groupby('Weekday')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean().plot()
-MASTER_MANIFEST.groupby('WeekNumber')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean().plot()
-MASTER_MANIFEST.groupby('ShipWeek')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean().plot()
 
 
+
+
+
+
+#MASTER_MANIFEST.groupby(['RouteIdentifier'])[['TotalCostRoute']].mean()
+#MASTER_MANIFEST.groupby(['RouteIdentifier','RouteId','Date'])[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
+#MASTER_MANIFEST[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
+#MASTER_MANIFEST.groupby('Weekday')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean().plot()
+#MASTER_MANIFEST.groupby('WeekNumber')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean().plot()
+#MASTER_MANIFEST.groupby('ShipWeek')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean().plot()
 
 
 
@@ -761,14 +768,14 @@ MASTER_MANIFEST.head()
 
 
 
-## Check MIke COok on Thursdays
-investigate_colz = ['Date','Customer','Stop','Splits','ServiceWindows','TotalHoursAvailable','RouteStartTime','OnTime','Pct_Splits','ExpectedArrival','MinutesServiceStop','MinutesNextStop']
-M_Cook_R = MASTER_MANIFEST.loc[MASTER_MANIFEST.RouteIdentifier=='W00030', investigate_colz]
-M_Cook_R.head(40)
-#M_Cook_R.to_html('N:/Operations Intelligence/Routing/Individual Route Investigations/Mike Cook - Thursdays May 2017.html', index=False)
-M_Cook_R.to_html('N:/Operations Intelligence/Routing/Individual Route Investigations/Mike Cook - Wednesdays May 2017.html', index=False)
-
-M_Cook_R.head(20)
+### Check MIke COok on Thursdays
+#investigate_colz = ['Date','Customer','Stop','Splits','ServiceWindows','TotalHoursAvailable','RouteStartTime','OnTime','Pct_Splits','ExpectedArrival','MinutesServiceStop','MinutesNextStop']
+#M_Cook_R = MASTER_MANIFEST.loc[MASTER_MANIFEST.RouteIdentifier=='W00030', investigate_colz]
+#M_Cook_R.head(40)
+##M_Cook_R.to_html('N:/Operations Intelligence/Routing/Individual Route Investigations/Mike Cook - Thursdays May 2017.html', index=False)
+#M_Cook_R.to_html('N:/Operations Intelligence/Routing/Individual Route Investigations/Mike Cook - Wednesdays May 2017.html', index=False)
+#
+#M_Cook_R.head(20)
 
 
 
@@ -796,8 +803,6 @@ today_date = str(time.strftime('%A %B %d-%Y'))
 rte_starttimes.to_html("N:/Operations Intelligence/Merchandising/Chain Reports/Driver Start Times" + today_date + " Saint Louis Chain Report.html")
 
 
-## Backups
-MASTER_MANIFEST.to_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Delivery Service Level/Roadnet Driver Manifest - Processed and Enriched.csv', index=False)
 #
 #
 #MASTER_MANIFEST.to_html("N:/Operations Intelligence/Merchandising/Chain Reports/" + today_date + " Saint Louis Chain Report.html")
