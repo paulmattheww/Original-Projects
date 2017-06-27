@@ -678,7 +678,7 @@ else:
 
 CALENDAR = generate_calendar(year=report_year)
 MASTER_MANIFEST.Date = MASTER_MANIFEST.Date.apply(pd.to_datetime)
-MASTER_MANIFEST = MASTER_MANIFEST.merge(CALENDAR, on='Date', how='outer')
+MASTER_MANIFEST = MASTER_MANIFEST.merge(CALENDAR, on='Date', how='left')
 
 
 MASTER_MANIFEST.head()
@@ -688,6 +688,7 @@ MASTER_MANIFEST.head()
 MASTER_MANIFEST.groupby(['RouteIdentifier','RouteId','Date'])[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
 MASTER_MANIFEST[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean()
 MASTER_MANIFEST.groupby('Weekday')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean().plot()
+MASTER_MANIFEST.groupby('Week')[['OnTime_Weighted_RteDate','OnTime_RteDate']].mean().plot()
 
 
 
