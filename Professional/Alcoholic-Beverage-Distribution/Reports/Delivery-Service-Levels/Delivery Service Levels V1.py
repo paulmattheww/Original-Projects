@@ -733,7 +733,8 @@ def get_route_totalcost(MASTER_MANIFEST):
 
 MASTER_MANIFEST = get_route_totalcost(MASTER_MANIFEST)
 
-
+MASTER_MANIFEST['RouteIdentifierWeekdayAgnostic'] = MASTER_MANIFEST.RouteIdentifier.apply(lambda x: str(x).split('00')[1])
+MASTER_MANIFEST['CrossdockRoute'] = MASTER_MANIFEST['RouteIdentifierWeekdayAgnostic'].apply(lambda x: str(x).startswith('4'))
 
 
 ## Write to csv for R report
@@ -742,7 +743,7 @@ MASTER_MANIFEST.to_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Delivery S
 
 
 
-
+MASTER_MANIFEST.head()
 
 
 
