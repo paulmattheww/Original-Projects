@@ -1,0 +1,95 @@
+---
+title: "Delivery Service Level"
+author: "Paul M. Washburn"
+date: "June 27, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+library(reshape2)
+library(tidyr)
+library(googleVis)
+library(chron)
+
+HT = function(x, N=10){
+  print(head(x, N))
+  print(tail(x, N))
+}
+
+path = 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Delivery Service Level/Roadnet Driver Manifest - Processed and Enriched.csv'
+df = read.csv(path, header=TRUE)
+
+keepcols = c('Warehouse','Date','RouteId','Customer','CustomerId','Priority','Stop','Splits','Cases','Bottles',
+             'ServiceWindows','TotalHoursAvailable_Numeric','MinutesTotalNumeric','MinutesCumulativeRoute','ExpectedArrival',
+             'HoursCumulativeRoute','LastStop','RouteStartTime','ExpectedFinishTime','Stops','TotalSplits','CrossdockRoute',
+             'Pct_Splits','OnTime_Weighted','OnTime','RouteIdentifier','RouteIdentifierWeekdayAgnostic','Month','WeekNumber','Year','Weekday',
+             'DOTM','IsWeekday','IsProductionDay','LastSellingDayOfMonth','Holiday','HolidayWeek','ShipWeek',
+             'TotalCostRoute','OnTime_RteDate','OnTime_Weighted_RteDate','BeginWindow1','EndWindow1','BeginWindow2','EndWindow2')
+df = df[,keepcols]
+#df = df[df$Stop>0, ]; HT(df)
+
+
+format_dates = function(x) {
+  as.POSIXct(strptime(as.character(x), '%Y-%m-%d %H:%M:%S'))
+}
+df$BeginWindow1 = format_dates(df$BeginWindow1)
+df$EndWindow1 = format_dates(df$EndWindow1)
+df$BeginWindow2 = format_dates(df$BeginWindow2)
+df$EndWindow2 = format_dates(df$EndWindow2); head(df)
+
+HT(df)
+
+DCs = df[df$CrossdockRoute=='False', ]
+
+
+
+customers = DCs#[as.Date(DCs$Date)==as.Date('2017-05-31'), ]
+customers = customers[(!duplicated(customers$CustomerId)) & (!is.na(customers$BeginWindow1)), ]
+
+chr = function(x) as.character(x)
+customers$CustStopArrive = paste0(chr(customers$Customer), '  Stop #:  ', chr(customers$Stop), '  Exp. Arrival:  ', chr(customers$ExpectedArrival))
+
+
+WINCOLZ = c('BeginWindow1','EndWindow1','BeginWindow2','EndWindow2')
+replace_window_date = function(WINZ) gsub('[0-9]{4}-[0-9]{2}-[0-9]{2}', Sys.Date(), WINZ)
+customers[,WINCOLZ] = replace_window_date(customers[,WINCOLZ])
+
+HT(customers)
+
+route30 = customers[(customers$RouteIdentifier=='W00030'), ]
+route30$Stop = as.character(route30$Stop)
+options = list(timeline="{groupByRowLabel:true, colorByRowLabel:true}",
+               backgroundColor='#ffd', 
+               height=1000, width=1100)
+TIMELINE_PLOT = gvisTimeline(data=customers,
+                        rowlabel = 'RouteId',
+                        barlabel = 'CustStopArrive',
+                        start = 'BeginWindow1',
+                        end = 'EndWindow1',
+                        options=options)
+plot(TIMELINE_PLOT)
+
+HT(customers, 32)
+
+customers$EndWindow1
+
+
+
+
+Crossdocks = df[df$CrossdockRoute=='True', ]
+
+dc_stops = function(DCs){
+  DC_stops = aggregate(Stop ~ Weekday+RouteIdentifierWeekdayAgnostic, data=DCs, FUN=max)
+  spread(DC_stops, 'Weekday', 'Stop')
+}
+
+
+head(DCs, 2)
+
+
+
+
+
+```
+
