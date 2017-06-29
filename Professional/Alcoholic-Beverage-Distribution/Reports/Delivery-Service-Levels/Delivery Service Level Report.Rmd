@@ -27,48 +27,76 @@ keepcols = c('Warehouse','Date','RouteId','Customer','CustomerId','Priority','St
              'DOTM','IsWeekday','IsProductionDay','LastSellingDayOfMonth','Holiday','HolidayWeek','ShipWeek',
              'TotalCostRoute','OnTime_RteDate','OnTime_Weighted_RteDate','BeginWindow1','EndWindow1','BeginWindow2','EndWindow2')
 df = df[,keepcols]
+df$Date = as.Date(df$Date)
 #df = df[df$Stop>0, ]; HT(df)
 
 
 format_dates = function(x) {
   as.POSIXct(strptime(as.character(x), '%Y-%m-%d %H:%M:%S'))
 }
-df$BeginWindow1 = format_dates(df$BeginWindow1)
-df$EndWindow1 = format_dates(df$EndWindow1)
-df$BeginWindow2 = format_dates(df$BeginWindow2)
-df$EndWindow2 = format_dates(df$EndWindow2); head(df)
+fix_dates = function(df) {
+  df$BeginWindow1 = format_dates(df$BeginWindow1)
+  df$EndWindow1 = format_dates(df$EndWindow1)
+  df$BeginWindow2 = format_dates(df$BeginWindow2)
+  df$EndWindow2 = format_dates(df$EndWindow2)
+  return(df)
+}
 
-HT(df)
+df = fix_dates(df); HT(df, 3)
 
 DCs = df[df$CrossdockRoute=='False', ]
 
+customers = DCs#[DCs$Date==as.Date('2017-05-31'), ]
 
+HASSTARTWINDOW = (!is.na(customers$BeginWindow1))
+customers = customers[HASSTARTWINDOW, ]
 
-customers = DCs#[as.Date(DCs$Date)==as.Date('2017-05-31'), ]
-customers = customers[(!duplicated(customers$CustomerId)) & (!is.na(customers$BeginWindow1)), ]
-
-chr = function(x) as.character(x)
-customers$CustStopArrive = paste0(chr(customers$Customer), '  Stop #:  ', chr(customers$Stop), '  Exp. Arrival:  ', chr(customers$ExpectedArrival))
-
+CUSCOLZ = c('Date','Customer','RouteId','RouteIdentifier','RouteIdentifierWeekdayAgnostic',
+            'Priority','CustomerId','BeginWindow1','EndWindow1','BeginWindow2','EndWindow2',
+            'ExpectedArrival','OnTime','Stop')
+customers = customers[,CUSCOLZ]
 
 WINCOLZ = c('BeginWindow1','EndWindow1','BeginWindow2','EndWindow2')
-replace_window_date = function(WINZ) gsub('[0-9]{4}-[0-9]{2}-[0-9]{2}', Sys.Date(), WINZ)
-customers[,WINCOLZ] = replace_window_date(customers[,WINCOLZ])
+replace_window_date = function(WINZ) format_dates(gsub('[0-9]{4}-[0-9]{2}-[0-9]{2}', Sys.Date(), WINZ))
+customers[,WINCOLZ] = lapply(customers[,WINCOLZ], replace_window_date)
 
-HT(customers)
+#customers = fix_dates(customers)
 
-route30 = customers[(customers$RouteIdentifier=='W00030'), ]
-route30$Stop = as.character(route30$Stop)
+x = melt(customers, c('RouteIdentifier','Customer','Stop','Date','ExpectedArrival'), c('BeginWindow1','BeginWindow2'))
+y = melt(customers, c('RouteIdentifier','Customer','Stop','Date','ExpectedArrival'), c('EndWindow1','EndWindow2'))
+y[,c('RouteIdentifier','Customer','Stop','Date','ExpectedArrival')] = NULL
+z = cbind(x,y); head(z,3)
+names(z) = c('RouteIdentifier','Customer','Stop','Date','ExpectedArrival','X1','Start','X2','End')
+z$StopArrival = paste0(as.character(z$Stop), z$ExpectedArrival)
+z$DateRouteIdentifierCustomer = paste0(as.character(z$Date), ' ', z$RouteIdentifier, ' ', z$Customer)
+#z$Start = format_dates(z$Start)
+#z$End = format_dates(z$End)
+z = z[(!is.na(z$Start)) & (!is.na(z$End)), ]
+
+HT(z, 10)
+
+
 options = list(timeline="{groupByRowLabel:true, colorByRowLabel:true}",
                backgroundColor='#ffd', 
-               height=1000, width=1100)
-TIMELINE_PLOT = gvisTimeline(data=customers,
-                        rowlabel = 'RouteId',
-                        barlabel = 'CustStopArrive',
-                        start = 'BeginWindow1',
-                        end = 'EndWindow1',
+               height=900, width=1300)
+TIMELINE_PLOT = gvisTimeline(data=z,
+                        rowlabel = 'DateRouteIdentifierCustomer',
+                        barlabel = 'StopArrival',
+                        start = 'Start',
+                        end = 'End',
                         options=options)
 plot(TIMELINE_PLOT)
+
+
+
+
+
+
+route30 = customers[(customers$RouteIdentifier=='W00030'), ]
+head(route30,3)
+route30$Stop = as.character(route30$Stop)
+
+
 
 HT(customers, 32)
 
