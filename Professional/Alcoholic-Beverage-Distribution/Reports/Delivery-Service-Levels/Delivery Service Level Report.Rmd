@@ -67,8 +67,8 @@ y = melt(customers, c('RouteIdentifier','Customer','Stop','Date','ExpectedArriva
 y[,c('RouteIdentifier','Customer','Stop','Date','ExpectedArrival')] = NULL
 z = cbind(x,y); head(z,3)
 names(z) = c('RouteIdentifier','Customer','Stop','Date','ExpectedArrival','X1','Start','X2','End')
-z$StopArrival = paste0(as.character(z$Stop), z$ExpectedArrival)
-z$DateRouteIdentifierCustomer = paste0(as.character(z$Date), ' ', z$RouteIdentifier, ' ', z$Customer)
+z$StopArrivalCustomer = paste0(as.character(z$Stop), ' ', z$ExpectedArrival, ' ', z$Customer)
+z$DateRouteIdentifier = paste0(as.character(z$Date), ' ', z$RouteIdentifier)
 #z$Start = format_dates(z$Start)
 #z$End = format_dates(z$End)
 z = z[(!is.na(z$Start)) & (!is.na(z$End)), ]
@@ -77,11 +77,11 @@ HT(z, 10)
 
 
 options = list(timeline="{groupByRowLabel:true, colorByRowLabel:true}",
-               backgroundColor='#ffd', 
+               backgroundColor='#DAFCE1', 
                height=900, width=1300)
 TIMELINE_PLOT = gvisTimeline(data=z,
-                        rowlabel = 'DateRouteIdentifierCustomer',
-                        barlabel = 'StopArrival',
+                        rowlabel = 'DateRouteIdentifier',
+                        barlabel = 'StopArrivalCustomer',
                         start = 'Start',
                         end = 'End',
                         options=options)
