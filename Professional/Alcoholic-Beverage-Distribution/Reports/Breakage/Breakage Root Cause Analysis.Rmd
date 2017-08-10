@@ -1,0 +1,302 @@
+---
+title: "<b>Breakage - Root Cause Investigation</b>"
+author: "Paul M. Washburn"
+date: "YTD, 2016 & 2017"
+#output: html_document
+output: 
+  pdf_document:
+      df_print: "kable" 
+      fig_width: 9
+      fig_height: 8
+---
+
+```{r setup, include=FALSE, fig.height=9, fig.width=9}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+library(ggplot2)
+library(scales)
+library(plotly)
+
+path = 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Breakage/'
+df = read.csv(paste0(path,'Clean Breakage Data.csv'), header=TRUE)
+cal_df = read.csv(paste0(path,'Calendar 2016-2017.csv'))
+cal_df = cal_df[, c('Date','WeekNumber','Weekday','IsWeekday','IsProductionDay',
+                    'LastSellingDayOfMonth','Season','HolidayWeek','Holiday','ShipWeek')]
+df = merge(df, cal_df, on='Date', how='inner')
+
+pw_supprod = read.csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_supprod.csv', header=T)
+
+names(pw_supprod) = c('ProductId','X','SupplierId','Supplier')
+pw_supprod$X = NULL
+
+df = merge(df, pw_supprod, on='ProductId', how='inner')
+df = df[df$ReasonCode != 'Sales Breakage & Unsaleables', ]
+
+breakageByProduct = function(df) {
+  byProduct = aggregate(cbind(df$Breakage.Dollars, df$Breakage.Cases) ~ df$ProductId + df$Product + 
+                          df$SupplierId + df$Supplier, FUN=function(x) sum(x, na.rm=T))
+  names(byProduct) = c('ProductId','Product','SupplierId','Supplier',
+                       'BreakageDollars','BreakageCases')
+  dfSales = df[(!duplicated(df$ProductId)) & (df$Sales.Dollars > 0), c('ProductId','Sales.Dollars')]
+  byProduct = merge(byProduct, dfSales, by='ProductId', how='inner')
+  colnames(byProduct)[ncol(byProduct)] = 'SalesDollars'
+  byProduct$BreakagePctSales = round(byProduct$BreakageDollars / byProduct$SalesDollars, 5)
+  ## Filter out low volume SKUs
+  byProduct = byProduct[byProduct$SalesDollars >= quantile(byProduct$SalesDollars, .25), ]
+  byProduct = byProduct[byProduct$BreakageDollars >= quantile(byProduct$BreakageDollars, .25), ]
+  byProduct$ProductSupplier = paste0(byProduct$Product, '\n  -  ', byProduct$Supplier, '\n')
+  byProduct$SalesVsBreakage = paste0('  -  Sales = ',as.character(round(byProduct$SalesDollars, 0)),
+                                     '\n  -  Breakage = ', as.character(round(byProduct$BreakageDollars, 0)),
+                                     '\n  -  Percent of Sales = ', as.character(round(byProduct$BreakageDollars / byProduct$SalesDollars, 4)*100), '%')
+  byProduct$ProductSummary = paste0(byProduct$ProductSupplier, byProduct$SalesVsBreakage)
+  return(byProduct)
+}
+
+"%!in%" <- function(x,table) match(x,table, nomatch = 0) == 0
+
+byProduct = breakageByProduct(df)
+
+extractSignificantSuppliers = function(byProduct){
+  sumLinmod = summary(lm(BreakageDollars ~ SalesDollars + Supplier, data=byProduct))$coefficients
+  dfCoefficients = data.frame(tScore=sumLinmod[sumLinmod[, 'Pr(>|t|)'] <= .05,'Pr(>|t|)'])
+  significantCategories = rownames(dfCoefficients)
+  significantCategories = significantCategories[significantCategories %!in% 'SalesDollars']
+  significantCategories = gsub('Supplier','',significantCategories)
+  return(significantCategories)
+}
+
+
+extractSignificantProducts = function(byProduct){
+  sumLinmod = summary(lm(BreakageDollars ~ SalesDollars + Product, data=byProduct))$coefficients
+  dfCoefficients = data.frame(tScore=sumLinmod[sumLinmod[, 'Pr(>|t|)'] <= .05,'Pr(>|t|)'])
+  significantCategories = rownames(dfCoefficients)
+  significantCategories = significantCategories[significantCategories %!in% 'SalesDollars']
+  significantCategories = gsub('Product','',significantCategories)
+  return(significantCategories)
+}
+
+engineerFeatures = function(byProduct, df){
+  byProduct$ExtremeBreakageSupplier = byProduct$Supplier %in% extractSignificantSuppliers(byProduct)
+  byProduct$ExtremeBreakageProduct = byProduct$Product %in% extractSignificantProducts(byProduct)
+  byProduct$ExtremeBreakageProductOrSupplier = idNonHigh = byProduct$ExtremeBreakageProduct | byProduct$ExtremeBreakageSupplier 
+  byProduct[idNonHigh==T, 'ExtremeBreakageProductOrSupplier'] = ifelse(byProduct[idNonHigh==T, 'BreakageDollars'] >= quantile(byProduct$BreakageDollars, .75), T, F)
+  byProduct$SalesScaled = scale(log(byProduct$SalesDollars))
+  byProduct$BreakageScaled = scale(log(byProduct$BreakageDollars))
+  byProduct$BreakageCasesScaled = scale(log(byProduct$BreakageCases))
+  productAttributes = df[(!duplicated(df$ProductId)), c('ProductId','ProductClass','Size','ProductType')]
+  byProduct = merge(byProduct, productAttributes, on='ProductId', how='inner')
+  return(byProduct)
+}
+
+byProduct = engineerFeatures(byProduct, df)
+
+
+logNormalScale = function(x) scale(log(x))
+
+summarizeReasonCodes = function(df, byProduct){
+  byReason = aggregate(Breakage.Dollars ~ ReasonCode + ProductId, data=df, FUN=function(x) sum(x, na.rm=T))
+  colnames(byReason)[colnames(byReason)=='Breakage.Dollars'] = 'BreakageDollars'
+  byReason = tidyr::spread(byReason, ReasonCode, BreakageDollars)
+  colnames(byReason) = gsub(' ', '', colnames(byReason))
+  colnames(byReason) = gsub('-', '', colnames(byReason))
+  byReason = zoo::na.fill(byReason, 0)
+  byProduct = merge(byProduct, byReason, on='ProductId', how='inner')
+  logCols = c('CrossDockBreakage','DriverBreakage','SupplierBreakage','WarehouseBreakage')
+  for(col in logCols){
+    noLogZero = byProduct[,col]>0
+    newCol = paste0('Scaled',col)
+    byProduct[noLogZero, newCol] = logNormalScale(byProduct[noLogZero, col])
+    byProduct[, newCol] = zoo::na.fill(byProduct[, newCol], NA)
+    byProduct[byProduct[,newCol]<-3, newCol] = NA
+  }
+  return(byProduct)
+}
+
+byProduct = summarizeReasonCodes(df, byProduct)
+
+extractSignificantWarehouseProducts = function(byProduct){
+  sumLinmod = summary(lm(ScaledWarehouseBreakage ~ SalesScaled + Product, data=byProduct))$coefficients
+  dfCoefficients = data.frame(tScore=sumLinmod[sumLinmod[, 'Pr(>|t|)'] <= .10,'Pr(>|t|)'])
+  significantCategories = rownames(dfCoefficients)
+  significantCategories = significantCategories[significantCategories %!in% 'SalesScaled']
+  significantCategories = gsub('Product','',significantCategories)
+  return(significantCategories)
+}
+
+byProduct$WarehouseHighBreakageItem = extrWhseBrk = byProduct$Product %in% extractSignificantWarehouseProducts(byProduct)
+byProduct$WarehouseHighBreakageItem = ifelse(extrWhseBrk & byProduct$ScaledWarehouseBreakage < 0.5, FALSE, extrWhseBrk)
+
+extractSignificantDriverProducts = function(byProduct){
+  sumLinmod = summary(lm(ScaledDriverBreakage ~ SalesScaled + Product, data=byProduct))$coefficients
+  dfCoefficients = data.frame(tScore=sumLinmod[sumLinmod[, 'Pr(>|t|)'] <= .10,'Pr(>|t|)'])
+  significantCategories = rownames(dfCoefficients)
+  significantCategories = significantCategories[significantCategories %!in% 'SalesScaled']
+  significantCategories = gsub('Product','',significantCategories)
+  return(significantCategories)
+}
+
+byProduct$DriverHighBreakageItem = extrDrvBrk = byProduct$Product %in% extractSignificantDriverProducts(byProduct)
+byProduct$DriverHighBreakageItem = ifelse(extrDrvBrk & byProduct$ScaledDriverBreakage < 0, FALSE, extrDrvBrk)
+
+byWarehouse = function(df, byProduct){
+  byWhse = aggregate(Breakage.Dollars ~ Warehouse + Product, data=df, FUN=function(x) sum(x, na.rm=TRUE))
+  colnames(byWhse)[colnames(byWhse)=='Breakage.Dollars'] = 'BreakageDollars'
+  byWhse = tidyr::spread(byWhse, Warehouse, BreakageDollars)
+  colnames(byWhse) = gsub(' ', '', colnames(byWhse))
+  byProduct = merge(byProduct, byWhse, on='ProductId', how='inner')
+  logCols = c('KansasCity','SaintLouis')
+  byProduct[, logCols] = zoo::na.fill(byProduct[, logCols], 0)
+  for(col in logCols){
+    noLogZero = byProduct[,col]>0
+    newCol = paste0('Scaled',col)
+    byProduct[noLogZero, newCol] = logNormalScale(byProduct[noLogZero, col])
+    byProduct[, newCol] = zoo::na.fill(byProduct[, newCol], NA)
+    byProduct[byProduct[,newCol]<-3, newCol] = NA
+  }
+  return(byProduct)
+}
+
+byProduct = byWarehouse(df, byProduct)
+
+univariateLinearModel = function(linModel, X){
+  intercept = linModel$coefficients[1]
+  coef1 = linModel$coefficients[2]
+  yPredict = intercept + X*coef1
+  return(yPredict)
+}
+
+## ID products that are in both houses
+missingKc = is.na(byProduct$ScaledKansasCity)
+missingStl = is.na(byProduct$ScaledSaintLouis)
+productInOneNotOther = missingKc | missingStl
+
+## STL Breakage predicting KC Breakage
+linModel = lm(ScaledKansasCity ~ ScaledSaintLouis, data=byProduct)
+byProduct[!productInOneNotOther, 'GivenSTLPredictedKC'] = univariateLinearModel(linModel, byProduct[!productInOneNotOther, 'ScaledSaintLouis'])
+byProduct[!productInOneNotOther, 'ErrorWarehousePredictionStlPredictKc'] = (byProduct[!productInOneNotOther, 'GivenSTLPredictedKC']+5) - (byProduct[!productInOneNotOther, 'ScaledKansasCity']+5)
+byProduct[!productInOneNotOther, 'SquaredErrorWarehousePredictionStlPredictKc'] = byProduct[!productInOneNotOther, 'ErrorWarehousePredictionStlPredictKc']^2
+byProduct[!productInOneNotOther, 'RootSquaredErrorWarehousePredictionStlPredictKc'] = sqrt(byProduct[!productInOneNotOther, 'SquaredErrorWarehousePredictionStlPredictKc'])
+
+## KC Breakage predicting STL Breakage
+linModel = lm(ScaledSaintLouis ~ ScaledKansasCity, data=byProduct)
+byProduct[!productInOneNotOther, 'GivenKCPredictedSTL'] = univariateLinearModel(linModel, byProduct[!productInOneNotOther, 'ScaledKansasCity'])
+byProduct[!productInOneNotOther, 'ErrorWarehousePredictionKcPredictStl'] = (byProduct[!productInOneNotOther, 'GivenKCPredictedSTL']+5) - (byProduct[!productInOneNotOther, 'ScaledSaintLouis']+5)
+byProduct[!productInOneNotOther, 'SquaredErrorWarehousePredictionKcPredictStl'] = byProduct[!productInOneNotOther, 'ErrorWarehousePredictionKcPredictStl']^2
+byProduct[!productInOneNotOther, 'RootSquaredErrorWarehousePredictionKcPredictStl'] = sqrt(byProduct[!productInOneNotOther, 'SquaredErrorWarehousePredictionKcPredictStl'])
+
+## Mark High Breakage bn Houses
+cutoff = 1.0
+highBreakComparedToKc = byProduct[!productInOneNotOther, 'ErrorWarehousePredictionStlPredictKc'] >= cutoff
+lowBreakComparedToKc = byProduct[!productInOneNotOther, 'ErrorWarehousePredictionStlPredictKc'] <= -cutoff
+
+highBreakComparedToStl = byProduct[!productInOneNotOther, 'ErrorWarehousePredictionKcPredictStl'] >= cutoff
+lowBreakComparedToStl = byProduct[!productInOneNotOther, 'ErrorWarehousePredictionKcPredictStl'] <= -cutoff
+
+byProduct[!productInOneNotOther, 'ExtremeStlBreakageItem'] = extremeStl = highBreakComparedToKc | lowBreakComparedToKc
+byProduct[!productInOneNotOther, 'ExtremeKcBreakageItem'] = extremeKc = highBreakComparedToStl | lowBreakComparedToStl
+byProduct[!productInOneNotOther, 'DisproportionateBreakageBnHouses'] = extremeStl | extremeKc
+byProduct$STLvsKCBreakage = paste0(byProduct$ExtremeKcBreakageItem, ' - ', byProduct$ExtremeStlBreakageItem)
+
+
+
+#avgError = mean(byProduct$ErrorWarehousePredictionStlPredictKc, na.rm=T)
+#sdError = sd(byProduct$ErrorWarehousePredictionStlPredictKc, na.rm=T)
+
+
+plt3 = ggplot(data=byProduct, 
+             aes(x=ScaledSaintLouis, y=ScaledKansasCity, label=ProductSummary)) +
+  geom_point(aes(colour=DisproportionateBreakageBnHouses), 
+             alpha=0.4) +
+  theme_minimal() +
+  theme(legend.position='none') +
+  geom_line(data=byProduct, aes(y=ScaledKansasCity, x=GivenKCPredictedSTL),
+            colour='black') +
+  geom_line(data=byProduct, aes(x=ScaledSaintLouis, y=GivenSTLPredictedKC),
+            colour='black') +
+  labs(title='Breakage Between Warehouses', 
+       y='$ Kansas City Breakage (scaled log-normal)', 
+       x='$ Saint Louis Breakage (scaled log-normal)') +
+  scale_x_continuous(limits=c(-3,3)) +
+  scale_y_continuous(limits=c(-3,3))
+ggplotly(plt3, width=9, height=9)
+plt3
+
+head(byProduct)
+```
+
+# Warehouse Breakage
+
+Below displays the relationship between sales volume and warehouse breakage.
+
+Using a custom algorithm that iterates over our products using a series of simple linear regression tests, products are identified as "High Warehouse Breakage" when they are statistically higher than products with similar sales. This is a simple, yet explanatory model (R-Squared ~)
+
+The alpha used is 10% significance, which is somewhat more liberal than 5%. This means we'll have a few false positives as a cost while having more true positives as a benefit.
+
+You'll note the variables lie between -3 and 3. This is for computational purposes only, and the scaling is not important for drawing conclusions. Scaling is a necessary step in machine learning to adjust for differences in orders of magnitude and underlying statistical distribution, and serves to maximize the effectiveness of a given algorithm. For those interested, both breakage and sales follow a log-normal distribution w.r.t. products, and were scaled accordingly.
+
+This plot does not take into account differences in warehouse breakage between Kansas City & Saint Louis.
+
+Each point represents a product. Hover your mouse over the points on the plot to see more information about the product in question.
+
+
+```{r warehouseBreakagePlot}
+plt1 = ggplot(data=byProduct[byProduct$ScaledWarehouseBreakage >= -3, ], 
+             aes(x=SalesScaled, y=ScaledWarehouseBreakage, label=ProductSummary)) +
+  geom_point(aes(colour=WarehouseHighBreakageItem, size=WarehouseBreakage), 
+             alpha=0.4) +
+  theme_minimal() +
+  theme(legend.position='none') +
+  geom_smooth(method='lm', se=F, aes(group=WarehouseHighBreakageItem), 
+              colour='black', size=.5) +
+  labs(title='Warehouse Breakage vs. Sales', 
+       x='$ Sales (scaled log-normal)', 
+       y='$ Warehouse Breakage (scaled log-normal)')
+#ggplotly(plt1, width=9, height=9)
+plt1
+```
+
+# Driver Breakage
+
+The same principles stated above about Warehouse Breakage hold true for driver breakage. 
+
+```{r driverBreakagePlot}
+plt2 = ggplot(data=byProduct, 
+             aes(x=SalesScaled, y=ScaledDriverBreakage, label=ProductSummary)) +
+  geom_point(aes(colour=DriverHighBreakageItem, size=DriverBreakage), 
+             alpha=0.4) +
+  theme_minimal() +
+  theme(legend.position='none') +
+  geom_smooth(method='lm', se=F, aes(group=DriverHighBreakageItem), 
+              colour='black', size=.5) +
+  labs(title='Driver Breakage vs. Sales', 
+       x='$ Sales (scaled log-normal)', 
+       y='$ Driver Breakage (scaled log-normal)')
+#ggplotly(plt2, width=9, height=9)
+plt2
+# linModel = lm(ScaledWarehouseBreakage ~ SalesScaled + WarehouseHighBreakageItem, data=byProduct)
+# summary(linModel)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
