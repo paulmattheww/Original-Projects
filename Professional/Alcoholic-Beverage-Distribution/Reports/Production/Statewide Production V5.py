@@ -20,8 +20,8 @@ pd.set_option('display.width', 200)
 
 
 
-this_year_files = 'N:/Daily Report/2016/DEC/*.xls*'
-last_year_files = 'N:/Daily Report/2015/DEC/*.xls*'
+this_year_files = 'N:/Daily Report/2017/JUL/*.xls*'
+last_year_files = 'N:/Daily Report/2016/JULY/*.xls*'
 
 def copy_stl_daily_reports_local(this_year_files, last_year_files):
     '''Copies (not moves) files from N drive to local drive'''
@@ -40,10 +40,10 @@ def copy_stl_daily_reports_local(this_year_files, last_year_files):
         if 'Template' not in file:
             print('Copying %s \nto %s' % (file, temp_location_last_year))
             shutil.copy(file, temp_location_last_year)
-    print('Finished copying KC Daily Reports -- Ready for report.')
+    print('Finished copying STL Daily Reports -- Ready for report.')
     
 
-copy_kc_daily_reports_local(this_year_files, last_year_files)
+copy_stl_daily_reports_local(this_year_files, last_year_files)
 
 
 
@@ -561,8 +561,8 @@ def prepare_summary_output(Summary_Tab_Combined):
     output_summary.set_index(keys='index', drop=True, inplace=True)
     output_summary.index.names = ['']
     
-    abs_diff = np.subtract(output_summary['2016'], output_summary['2015'])
-    output_summary['Percent Change'] = np.divide(abs_diff, output_summary['2015'])
+    abs_diff = np.subtract(output_summary['2017'], output_summary['2016'])
+    output_summary['Percent Change'] = np.divide(abs_diff, output_summary['2016'])
     
     return output_summary
 
@@ -691,9 +691,6 @@ write_stl_production_to_excel(Monthly_Summary, Summary_Tab_Combined, Returns_Tab
 
 
 
-print('''
-Begin Kansas City Production Report
-''')
 '''
 Production Report KC
 Re-Engineered November 2016
@@ -716,8 +713,8 @@ pd.set_option('display.width', 200)
 
 
 
-this_year_files = 'M:/Share/Daily Report KC/2016/December 2016/*.xls*'
-last_year_files = 'M:/Share/Daily Report KC/2015/Dec 2015/*.xls*'
+this_year_files = 'M:/Share/Daily Report KC/2016/June 2016/*.xls*'
+last_year_files = 'M:/Share/Daily Report KC/2015/June 2015/*.xls*'
 
 def copy_kc_daily_reports_local(this_year_files, last_year_files):
     '''Copies (not moves) files from M drive to local drive'''
@@ -1236,9 +1233,10 @@ def prepare_summary_output(Summary_Tab_Combined):
     output_summary.sort_values('index', ascending=True, inplace=True)
     output_summary.set_index(keys='index', drop=True, inplace=True)
     output_summary.index.names = ['']
+    print(output_summary.head())
     
-    abs_diff = np.subtract(output_summary['2016'], output_summary['2015'])
-    output_summary['Percent Change'] = np.divide(abs_diff, output_summary['2015'])
+    abs_diff = np.subtract(output_summary['2017'], output_summary['2016'])
+    output_summary['Percent Change'] = np.divide(abs_diff, output_summary['2016'])
     
     return output_summary
 
