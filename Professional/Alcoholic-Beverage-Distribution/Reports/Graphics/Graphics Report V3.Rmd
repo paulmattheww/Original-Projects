@@ -229,8 +229,8 @@ df$InvoiceYear = invo_yr = as.character(year(df$Invoice.Date))
 df$Profit = round(df$POSTER.Price - df$POSTER.CB.Total, 2)
 
 ## Manipulate date to identify carrying costs
-df$JobStarted = strtd = is.na(df$Incomplete) == F
-df$JobFinished = finsd = is.na(df$AssembledandShipped) == F
+df$JobStarted = strtd = !is.na(df$Incomplete)
+df$JobFinished = finsd = !is.na(df$AssembledandShipped)
 inPipeline = aggregate(JobFinished ~ POSTERJob.ID, data=df, FUN=max)
 inPipeline = unlist(inPipeline[inPipeline$JobFinished == 0, 'POSTERJob.ID'])
 df$InPipeline = df$POSTERJob.ID %in% inPipeline
@@ -252,7 +252,7 @@ getPipeline = function(df){
 pipeX = getPipeline(df)
 
 ## Mark redesigns
-df$Redesign = is.na(df$AwaitingArtworkRedesign) == F
+df$Redesign = df$RedesignCounts >= 1
 accessories = c('Menu Books','Table Top Wrap','TT A-Frame Holder','TT A-Frame Holder (Holder Only)', 
                 'TT Acrylic Stand','TT Acrylic Stand (Stand Only)','TT Flip Stand','TT Flip Stand (Stand Only)',
                 'Vivid Board - Dry Erase','Vivid Board - Dry Erase','Light Box')
@@ -260,10 +260,11 @@ menus = c('Menu Books','Drink List','Folded Drink List','Tri-Fold Drink List','F
 df$Menu = df$POSTER.ITEM.CATEGORY %in% menus
 df$Accessory = df$POSTER.ITEM.CATEGORY %in% accessories
 
-## Delete rows that do not have a starting date
-df = df[is.na(df$Incomplete)==F, ]
-
 ## Mark last date in record as date of record
+getCommonColumns = function(df, string) names(df)[grepl(string, names(df))]
+brandMentionsColumns = getCommonColumns(df,'BrandMentions')
+df$AllBrandMentionsInput = apply(df[, brandMentionsColumns], 1, function(x) as.POSIXct(max(x, na.rm=T)))
+
 the_milestones = data.frame(df$Incomplete, df$AwaitingGraphicsAssignment, 
                             df$AwaitingBrandMentions, df$AwaitingCostApproval,
                             df$AwaitingArtwork, df$AwaitingRequesterApproval, df$AssembledandShipped, 
