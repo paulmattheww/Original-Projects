@@ -1,6 +1,5 @@
 '''
 Off Day and Additional Deliveries
-Re-engineered September/October 2016
 '''
 
 from pandas import Series, DataFrame, read_csv
@@ -11,15 +10,17 @@ import itertools
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 100)
-pd.set_option('display.width', 100)
+pd.set_option('display.width', 10000)
+
+len_unique = lambda x: len(pd.unique(x))
+
+pw_offday = read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Off Day Deliveries/pw_offday.csv', header=0)
+weeklookup = read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Off Day Deliveries/pw_offday_weeklookup.csv', header=0)
+pw_slp2 = read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_slp2.csv', header=0)
 
 
-pw_offday = read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Off Day Deliveries/pw_offday.csv')
-weeklookup = read_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Off Day Deliveries/pw_offday_weeklookup.csv')#change htese paths
 
-
-
-def clean_pw_offday(pw_offday, weeklookup):
+def clean_pw_offday(pw_offday, weeklookup, pw_slp2):
     '''
     Clean pw_offday query without filtering out non-off-days
     invoice-level => day level => customer level
@@ -41,10 +42,16 @@ def clean_pw_offday(pw_offday, weeklookup):
         return sum(int(x) for x in digit if x.isdigit())
         
     print('Mapping Columns.')
-    deliveries.columns = ['Date', 'Division', 'Invoice', 'CustomerId', 'Call', 'Priority', 
-               'Warehouse', 'Cases', 'Dollars', 'Ship', 'Salesperson', 
-               'ShipWeekPlan', 'Merchandising', 'OnPremise', 
-               'CustomerSetup', 'CustomerType', 'Customer']
+    deliveries.rename(columns={'#MIVDT':'Date', '#MDIV#':'Division', '#MIVND':'Invoice', 
+                       '#MCUS#':'CustomerId', '#MCALL':'Call', '#MPRIO':'Priority', 
+                       '#MCMP':'Warehouse', 'CASES':'Cases', '#MEXT$':'Dollars', 
+                       'CSHP':'Ship', '#MSLSP':'SalespersonId', 
+                       'CADMBR':'ShipWeekPlan', 'CUDSCC':'Merchandising', 'CONPRM':'OnPremise', 
+                       'CSTDTE':'CustomerSetup', '#MCUSY':'CustomerType', 'CCUSTN':'Customer'}, inplace=True)
+    pw_slp2.rename(columns={'S2NUM#':'SalespersonId', 'S2NAME':'Salesperson', 'S2DIVR':'SalespersonDirector'}, 
+                   inplace=True)
+                   
+    deliveries = deliveries.merge(pw_slp2, on='SalespersonId', how='left')
     
     print('Mapping Customer types.')
     typ_map = {'A':'Bar/Tavern','C':'Country Club','E':'Transportation/Airline','G':'Gambling',\
@@ -148,7 +155,6 @@ def clean_pw_offday(pw_offday, weeklookup):
     print('\n')    
     
     print('Aggregating by Day.')
-    len_unique = lambda x: len(pd.unique(x))
     agg_funcs_day = {'OffDayDeliveries' : {'Count':max}, 
                  'Date' : {'Count':len_unique},
                  'Cases' : {'Sum':sum, 'Avg':np.mean},
@@ -287,18 +293,69 @@ def clean_pw_offday(pw_offday, weeklookup):
     print('Finished creating summaries at high level, overall, and aggregating by customer and by day.')
     print('*'*100)    
 
-    return high_level_summary, overall_summary, _agg_bycust, _agg_byday
+    return high_level_summary, overall_summary, _agg_bycust, _agg_byday, deliveries
 
 
-high_level_summary, summary, by_customer, by_day = clean_pw_offday(pw_offday, weeklookup)
+high_level_summary, summary, by_customer, by_day, raw_data = clean_pw_offday(pw_offday, weeklookup, pw_slp2)
+
+
+def getPercentages(summary):
+    summaryPercentages = pd.DataFrame(summary).reset_index(drop=False)
+    aggFuncs = {'Deliveries':np.sum, 'OffDayDeliveries':np.sum, 'AdditionalDeliveries':np.sum}
+    summaryPercentages = summaryPercentages.groupby('Warehouse').agg(aggFuncs)
+    summaryPercentages['PercentNonOffday'] = 1 - np.divide(summaryPercentages.OffDayDeliveries, summaryPercentages.Deliveries)
+    summaryPercentages['PercentNonAdditionalDay'] = 1 -  np.divide(summaryPercentages.AdditionalDeliveries, summaryPercentages.Deliveries)
+    return summaryPercentages
+    
+summaryPercentages = getPercentages(summary)
 
 print('Summary of data so far: \n\n\n')
-print(high_level_summary)
+print(summaryPercentages, '\n')
+print(high_level_summary, '\n')
+print(summary)
 print('\n\n\n')
 
 
 
 
+def salespersonSummary(raw_data):
+    aggFuncs = {'Invoice':len_unique, 'Dollars':np.sum, 
+                'OffDayDeliveries':np.max}
+    grpCols = ['Warehouse','Date','Weekday','DeliveryDays','OffWeek','SalespersonId','Salesperson','CustomerId','Customer']
+    slspplOffdayByDate = pd.DataFrame(raw_data.groupby(grpCols).agg(aggFuncs)).reset_index(drop=False)
+    slspplOffdayByDate['Deliveries'] = 1
+    
+    aggFuncs = {'OffDayDeliveries':{'TotalDelivered':np.sum},
+                'Deliveries':{'TotalDelivered':len},
+                'Dollars':{'AvgPerDelivery':np.mean, 'TotalDelivered':np.sum},
+                'Invoice':{'AvgPerDelivery':np.mean, 'TotalDelivered':np.sum}}
+    grpCols = ['Warehouse','SalespersonId','Salesperson']
+    slspplOffday = pd.DataFrame(slspplOffdayByDate.groupby(grpCols).agg(aggFuncs)).reset_index(drop=False)
+    slspplOffday.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in slspplOffday.columns]
+    slspplOffday['Deliveries|PercentOffday'] = np.divide(slspplOffday['OffDayDeliveries|TotalDelivered'], slspplOffday['Deliveries|TotalDelivered'])
+    
+    aggFuncs = {'Dollars':{'AvgPerOffdayDelivery':np.mean, 'TotalOffdayDelivered':np.sum},
+                'Invoice':{'AvgPerOffdayDelivery':np.mean, 'TotalOffdayDelivered':np.sum}}
+    slspplOffdayOnly = pd.DataFrame(slspplOffdayByDate[slspplOffdayByDate.OffDayDeliveries==1].groupby('SalespersonId').agg(aggFuncs)).reset_index(drop=False)
+    slspplOffdayOnly.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in slspplOffdayOnly.columns]
+    
+    slspplSummary = slspplOffday.merge(slspplOffdayOnly, on='SalespersonId', how='outer')
+    slspplSummary['Dollars|PercentOffday'] = np.divide(slspplSummary['Dollars|TotalOffdayDelivered'], slspplSummary['Dollars|TotalDelivered'])
+    slspplSummary['Invoice|PercentOffday'] = np.divide(slspplSummary['Invoice|TotalOffdayDelivered'], slspplSummary['Invoice|TotalDelivered'])
+    
+    orderedCols = ['Warehouse','SalespersonId','Salesperson',
+                   'OffDayDeliveries|TotalDelivered','Deliveries|TotalDelivered',
+                   'Deliveries|PercentOffday','Dollars|PercentOffday','Invoice|PercentOffday',
+                   'Dollars|AvgPerDelivery','Dollars|TotalDelivered',
+                   'Invoice|TotalDelivered','Invoice|AvgPerDelivery','Dollars|TotalDelivered']
+    slspplSummary = slspplSummary[orderedCols]
+    slspplSummary.sort_values('Deliveries|PercentOffday', ascending=False, inplace=True)
+    slspplSummary.reset_index(drop=True, inplace=True)
+
+    return slspplSummary
+
+slspplSummary = salespersonSummary(raw_data)
+print(slspplSummary.head(25))
 
 
 def identify_focus_areas(by_customer):
@@ -344,7 +401,8 @@ need_delivery_days, switch_delivery_days, add_delivery_days = identify_focus_are
 
 
 
-def write_offday_report_to_excel(high_level_summary, summary, by_customer, by_day, need_delivery_days, switch_delivery_days, add_delivery_days, month='YOU FORGOT TO SPECIFY THE MONTH'):
+def write_offday_report_to_excel(summaryPercentages, high_level_summary, summary, slspplSummary, by_customer, by_day, need_delivery_days, 
+                                 switch_delivery_days, add_delivery_days, month='YOU FORGOT TO SPECIFY THE MONTH'):
     '''
     Write report to Excel with formatting
     '''
@@ -356,8 +414,12 @@ def write_offday_report_to_excel(high_level_summary, summary, by_customer, by_da
     workbook = file_out.book
     
     print('\n\n\nWriting summary to file.')
-    summary.to_excel(file_out, sheet_name='Summary', index=True, startrow=8)
-    high_level_summary.to_excel(file_out, sheet_name='Summary', index=True, startcol=1)    
+    summaryPercentages.to_excel(file_out, sheet_name='Summary', index=True, startrow=1, startcol=1)
+    high_level_summary.to_excel(file_out, sheet_name='Summary', index=True, startrow=7, startcol=1)    
+    summary.to_excel(file_out, sheet_name='Summary', index=True, startrow=15)
+    
+    print('Writing salesperson summary to file.')
+    slspplSummary.to_excel(file_out, sheet_name='Salesperson Summary', index=False)
     
     print('Writing customers who need delivery days assigned to file.')
     need_delivery_days.to_excel(file_out, sheet_name='No Delivery Days Assigned', index=False)
@@ -384,7 +446,7 @@ def write_offday_report_to_excel(high_level_summary, summary, by_customer, by_da
     summary_tab = file_out.sheets['Summary']
     summary_tab.set_column('A:A',25)
     summary_tab.set_column('B:B',25)
-    summary_tab.set_column('C:C',14)
+    summary_tab.set_column('C:C',15.6)
     summary_tab.set_column('D:D',10)
     summary_tab.set_column('E:E',23)
     summary_tab.set_column('F:F',10, format_thousands)
@@ -393,6 +455,16 @@ def write_offday_report_to_excel(high_level_summary, summary, by_customer, by_da
     summary_tab.set_column('I:I',12, format_float)
     summary_tab.set_column('J:J',22.5, format_float)
     summary_tab.set_column('K:K',13, format_dollars)
+    
+    print('Formatting the Salesperson Summary tab for visual purposes.')
+    salespersonTab = file_out.sheets['Salesperson Summary']
+    salespersonTab.set_column('A:A',25)
+    salespersonTab.set_column('B:B',20)
+    salespersonTab.set_column('C:C',28)
+    salespersonTab.set_column('D:D',35)
+    salespersonTab.set_column('E:E',35)
+    salespersonTab.set_column('F:H',35, format_percent)    
+    salespersonTab.set_column('I:M',35, format_thousands)    
     
     print('Formatting the Customer tab for visual purposes.')
     customer_tab = file_out.sheets['By Customer']
@@ -485,9 +557,10 @@ if dt.now().month == 1:
     report_year = dt.now().year - 1
 else:
     report_year = dt.now().year
-report_month_year = str(report_month) + ' ' + str(report_year)
+report_month_year = 'TEST' #str(report_month) + ' ' + str(report_year)
 
-write_offday_report_to_excel(high_level_summary, summary, by_customer, by_day, need_delivery_days, switch_delivery_days, add_delivery_days, month=report_month_year)
+write_offday_report_to_excel(summaryPercentages, high_level_summary, summary, slspplSummary, by_customer, by_day, 
+                             need_delivery_days, switch_delivery_days, add_delivery_days, month=report_month_year)
 
 
 
