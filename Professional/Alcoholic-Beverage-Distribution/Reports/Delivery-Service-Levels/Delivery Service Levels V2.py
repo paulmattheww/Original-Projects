@@ -17,8 +17,9 @@ pd.set_option('display.width', 200)
 
 
 #WHSE = 'KC'
-WHSE = input('Choose Warehouse\n\Enter 1 for KC, 2 for STL, 3 for COL, 5 for SPFD: ')
-WHSE = map(WHSE, {1:'KC',2:'STL',3:'COL',5:'SPFD'})
+WHSE = input('Choose Warehouse\n\Enter KC, STL, COL or SPFD: ')
+
+
 print('''
 Setting warehouse to %s
 '''%WHSE)
@@ -26,7 +27,7 @@ Setting warehouse to %s
 
 #path = 'N:\\Operations Intelligence\\Operations Research\\Merchandising vs Operations\\*.csv'
 #path = 'E:\\Driver Manifests\\'+str(WHSE)+'\\*.csv'
-path = 'N:\\Operations Intelligence\\Routing\\Exports\\Roadnet Driver Manifest\\*.csv'
+path = 'N:\\Operations Intelligence\\Routing\\Exports\\Roadnet Driver Manifest\\'+str(WHSE)+'\\*.csv'
 
 print('Specifying files in path:  %s' %path)
 files = glob.glob(path)
@@ -437,6 +438,12 @@ def duration_at_stop(cases, btls, baseline_minutes=8, min_per_case=curr_minperca
     return duration_estimate
 
 
+def get_minutes_permile(mph):
+    hpm = 1/mph
+    mpm = hpm*60
+    return mpm
+
+
 def processStopTimes(MASTER_MANIFEST):
     MASTER_MANIFEST['MinutesServiceStop'] = [duration_at_stop(cs,btl) for cs,btl in zip(MASTER_MANIFEST.Cases, MASTER_MANIFEST.Bottles)]
     MASTER_MANIFEST['Splits'] = MASTER_MANIFEST.Cases.astype(np.float64) + MASTER_MANIFEST.Bottles.astype(np.float64)/12
@@ -444,11 +451,6 @@ def processStopTimes(MASTER_MANIFEST):
     ## Calculate distance from warehouse for first stops only
     FIRSTSTOPS = zip(MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'Lon_Stop1'], MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'Lat_Stop1'])
     MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'DistanceFromWarehouse_Stop1'] = [haversine(stop1_lon, stop1_lat, warehouseLongitude, warehouseLatitude) for stop1_lon, stop1_lat in FIRSTSTOPS]
-    
-    def get_minutes_permile(mph):
-        hpm = 1/mph
-        mpm = hpm*60
-        return mpm
     
     PREROUTE_TIME = 5
     
