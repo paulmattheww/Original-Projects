@@ -16,7 +16,9 @@ pd.set_option('display.max_columns', 100)
 pd.set_option('display.width', 200)
 
 
-WHSE = 'KC'
+#WHSE = 'KC'
+WHSE = input('Choose Warehouse\n\Enter 1 for KC, 2 for STL, 3 for COL, 5 for SPFD: ')
+WHSE = map(WHSE, {1:'KC',2:'STL',3:'COL',5:'SPFD'})
 print('''
 Setting warehouse to %s
 '''%WHSE)
@@ -818,11 +820,11 @@ rte_starttimes = get_route_starts(MASTER_MANIFEST)
 rte_starttimes.head(20)
 
 print('Writing driver start times to file for distribution')
-## Write stuff to files for other people
 import time
+chainReportColumns = ['RouteId','Customer','Stop','Splits','TotalSplits','TotalTravelTime','TotalServiceTime','ServiceWindows']
 today_date = str(time.strftime('%A %B %d-%Y'))
 rte_starttimes.to_html("N:/Operations Intelligence/Merchandising/Chain Reports/Driver Start Times " + today_date + ' ' + WHSE + ".html")
-MASTER_MANIFEST.to_html("N:/Operations Intelligence/Merchandising/Chain Reports/Chain Report" + today_date + ' ' + WHSE + ' ' +  ".html")
+MASTER_MANIFEST[chainReportColumns].to_html("N:/Operations Intelligence/Merchandising/Chain Reports/Chain Report" + today_date + ' ' + WHSE + ' ' +  ".html")
 
 
 print('GET MERCHANDISED ACCOUNTS, MERGE IN THEN FILTER OUT OTHERS, CREATE NEW CHAIN REPORT')
