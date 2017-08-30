@@ -32,7 +32,7 @@ path = 'N:\\Operations Intelligence\\Routing\\Exports\\Roadnet Driver Manifest\\
 print('Specifying files in path:  %s' %path)
 files = glob.glob(path)
 
-def get_date_warehouse(file, warehouse):
+def getDateWarehouse(file, warehouse):
     print('''
     Extracting Date from file:    %s
     '''%file)
@@ -49,7 +49,7 @@ def get_date_warehouse(file, warehouse):
     return mfst, rte_date
 
 
-def get_routeIDs(mfst):
+def getRouteIds(mfst):
     ## Extract RTE IDs
     raw_rtes = todays_rtes = mfst.loc[mfst.C1.astype(str).str.contains('Route Id: '), 'C1']
     raw_rtes = pd.DataFrame({'RouteId':raw_rtes}).reset_index(drop=False)
@@ -63,7 +63,7 @@ def get_routeIDs(mfst):
 
 
 
-def get_index_of_routes(mfst, raw_rtes):
+def getIndexOfRoutes(mfst, raw_rtes):
     ## Get start and end of route ID by using index from above
     minmax = pd.DataFrame(raw_rtes.groupby('RouteId')['index'].agg({'RouteId':{'min':np.min, 'max':np.max}}))
     minmax.columns = ['%s%s' % (a, '|%s' % b if b else '') for a, b in minmax.columns]
@@ -90,7 +90,7 @@ def get_index_of_routes(mfst, raw_rtes):
     
     return mfst, expected_rtes
 
-def make_windows(winz):
+def makeTimeWindows(winz):
     if ',' not in str(winz):
         try:
             w1 = str(winz).split('-')[0]
@@ -114,7 +114,7 @@ def make_windows(winz):
     return w1, w2, w3, w4
 
 
-def get_customer_features(mfst):
+def extractCustomerFeatures(mfst):
     ## Extract Customers -- maintain index
     raw_cust = mfst.loc[~mfst.C5.astype(str).str.contains(':'), 'C5']
     raw_cust = pd.DataFrame({'Customer':raw_cust}).reset_index(drop=False)
@@ -135,7 +135,7 @@ def get_customer_features(mfst):
         IX = mm_row[1]
         winz = mfst.loc[IX+4, 'C5']
         
-        w1, w2, w3, w4 = make_windows(winz)   
+        w1, w2, w3, w4 = makeTimeWindows(winz)   
         new_row = {IX: {'Customer':cust_name, 'CustomerId': mfst.loc[IX, 'C3'],
                        'Stop': mfst.loc[IX, 'C2'], 'Cases': mfst.loc[IX, 'C22'],
                        'Bottles':  mfst.loc[IX, 'C25'], 'ServiceWindows': mfst.loc[IX+4, 'C5'],
@@ -143,8 +143,6 @@ def get_customer_features(mfst):
                        }}
         df = pd.DataFrame.from_dict(new_row, orient='index')
         new_df = new_df.append(df)
-    
-    print(new_df.head())
     
     mfst = mfst.join(new_df)
     
@@ -170,7 +168,7 @@ def get_customer_features(mfst):
     
     return mfst
 
-def make_datetime(rte_date, dat):
+def makeDateTime(rte_date, dat):
     try:
         DAT = dt.strptime(str(str(rte_date) + ' ' + str(dat)), '%Y-%m-%d %H:%M')
     except ValueError:
@@ -179,7 +177,7 @@ def make_datetime(rte_date, dat):
 
 
 
-def customer_hours_available(hrs_raw):
+def deriveAvailableHours(hrs_raw):
     hrs_raw = str(hrs_raw)
     try:
         HRS = np.float64(hrs_raw.split(':')[0]) #.split('days ')[1]
@@ -190,15 +188,15 @@ def customer_hours_available(hrs_raw):
     return HRS
 
 
-to_minz = lambda x: timedelta(minutes=x)
+toMinutes = lambda x: timedelta(minutes=x)
 
 
-def format_datetimes(mfst, rte_date):
+def formatDateTimes(mfst, rte_date):
     ## Format as Datetime for operations
-    mfst.BeginWindow1 = [make_datetime(rte_date, d) for d in mfst.BeginWindow1]
-    mfst.EndWindow1 = [make_datetime(rte_date, d) for d in mfst.EndWindow1]
-    mfst.BeginWindow2 = [make_datetime(rte_date, d) for d in mfst.BeginWindow2]
-    mfst.EndWindow2 = [make_datetime(rte_date, d) for d in mfst.EndWindow2]
+    mfst.BeginWindow1 = [makeDateTime(rte_date, d) for d in mfst.BeginWindow1]
+    mfst.EndWindow1 = [makeDateTime(rte_date, d) for d in mfst.EndWindow1]
+    mfst.BeginWindow2 = [makeDateTime(rte_date, d) for d in mfst.BeginWindow2]
+    mfst.EndWindow2 = [makeDateTime(rte_date, d) for d in mfst.EndWindow2]
     
     ## Impute same windows if NaT
     start2 = []
@@ -216,7 +214,7 @@ def format_datetimes(mfst, rte_date):
     ## Get N hours available in AM and PM
     mfst['HoursAvailableWin1'] = mfst.EndWindow1 - mfst.BeginWindow1
     mfst['HoursAvailableWin2'] = [end-begin for end,begin in zip(mfst.EndWindow2, mfst.BeginWindow2) if end != pd.NaT]
-    mfst['HoursAvailableWin2'] = mfst['HoursAvailableWin2'].fillna(to_minz(0))
+    mfst['HoursAvailableWin2'] = mfst['HoursAvailableWin2'].fillna(toMinutes(0))
     
     ## Make duration into a floating point & add up total hours available
     mfst['TotalHoursAvailable'] = mfst['HoursAvailableWin1'] + mfst['HoursAvailableWin2']
@@ -225,16 +223,16 @@ def format_datetimes(mfst, rte_date):
     return mfst
 
 
-def process_driver_manifest(file, WHSE=WHSE):
+def processDriverManifest(file, WHSE=WHSE):
     '''
     Combines all functions above
     to process Roadnet driver manifest
     '''
-    mfst, rte_date = get_date_warehouse(file, warehouse=WHSE)
-    raw_rtes, todays_rtes = get_routeIDs(mfst)
-    mfst, expected_rtes = get_index_of_routes(mfst, raw_rtes)
-    mfst = get_customer_features(mfst)
-    mfst = format_datetimes(mfst, rte_date)
+    mfst, rte_date = getDateWarehouse(file, warehouse=WHSE)
+    raw_rtes, todays_rtes = getRouteIds(mfst)
+    mfst, expected_rtes = getIndexOfRoutes(mfst, raw_rtes)
+    mfst = extractCustomerFeatures(mfst)
+    mfst = formatDateTimes(mfst, rte_date)
     
     ## Check missing routes
     missing_rtes = sum([item not in expected_rtes for item in pd.unique(mfst.RouteId).tolist()])
@@ -246,19 +244,19 @@ def process_driver_manifest(file, WHSE=WHSE):
 
 
 ## Empty dataframe
-MASTER_MANIFEST = pd.DataFrame()
+masterManifest = pd.DataFrame()
 
 ## Call the master function on all files to get clean data
 for file in files:
-    df = process_driver_manifest(file)
-    MASTER_MANIFEST = MASTER_MANIFEST.append(df) 
+    df = processDriverManifest(file)
+    masterManifest = masterManifest.append(df) 
 
-MASTER_MANIFEST.reset_index(drop=True, inplace=True)
-MASTER_MANIFEST.CustomerId = MASTER_MANIFEST.CustomerId.astype(str)
+masterManifest.reset_index(drop=True, inplace=True)
+masterManifest.CustomerId = masterManifest.CustomerId.astype(str)
 
 ## Check if processed times correctly
 print('Manifest records:')
-print(MASTER_MANIFEST.head())
+print(masterManifest.head())
 print('-'*75)
 
 
@@ -308,12 +306,12 @@ def roadnet_servicelocation_details(customerPath):
 ## Merge with customer data
 customerPath = 'N:\\Operations Intelligence\\Routing\\Exports\\Roadnet Customer Locations\\Service Locations from Roadnet '+str(WHSE)+'.csv'  
 cust_data = roadnet_servicelocation_details(customerPath)
-MASTER_MANIFEST = MASTER_MANIFEST.merge(cust_data, how='left', left_on='CustomerId', right_on='ID')
+masterManifest = masterManifest.merge(cust_data, how='left', left_on='CustomerId', right_on='ID')
 
 
 ## Ensure latlon are floats
-MASTER_MANIFEST.Latitude = MASTER_MANIFEST.Latitude.astype(np.float64)
-MASTER_MANIFEST.Longitude = MASTER_MANIFEST.Longitude.astype(np.float64)
+masterManifest.Latitude = masterManifest.Latitude.astype(np.float64)
+masterManifest.Longitude = masterManifest.Longitude.astype(np.float64)
 
 if WHSE=='STL':
     warehouseLatitude = 38.614632 
@@ -332,7 +330,7 @@ else:
 ## Split apply combine to get the distance to next stop
 ## handle exceptions for first and last stops
 print('Calculating distance to next stop for each stop in all routes')
-grp_dfs = MASTER_MANIFEST.groupby('RouteId')
+grp_dfs = masterManifest.groupby('RouteId')
 
 dist_next = pd.DataFrame()
 
@@ -379,8 +377,8 @@ dist_next.Stop = dist_next.Stop.astype(int)
 dist_next['ix'] = dist_next.Date.astype(str) + ' ' + dist_next.Rte.astype(str) + ' ' + dist_next.Stop.astype(str)
 distance_map = dict(zip(dist_next['ix'], dist_next.AirMilesNextStop))
 
-MASTER_MANIFEST['AirMilesNextStop'] = MASTER_MANIFEST.Date.astype(str) + ' ' + MASTER_MANIFEST.RouteId.astype(str) + ' ' + MASTER_MANIFEST.Stop.astype(str)
-MASTER_MANIFEST['AirMilesNextStop'] = MASTER_MANIFEST['AirMilesNextStop'].map(distance_map)
+masterManifest['AirMilesNextStop'] = masterManifest.Date.astype(str) + ' ' + masterManifest.RouteId.astype(str) + ' ' + masterManifest.Stop.astype(str)
+masterManifest['AirMilesNextStop'] = masterManifest['AirMilesNextStop'].map(distance_map)
 
 miles_per_hr = 35
 hrs_per_mile = 1/miles_per_hr
@@ -397,21 +395,21 @@ print('-'*75)
 
 ## Getting route start times from first stop
 print('Getting Route start times from first stop, distance to first stop, and time to travel there')
-RTE_START_TIMES = MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop == '1', ['Date','RouteId','BeginWindow1']]
+RTE_START_TIMES = masterManifest.loc[masterManifest.Stop == '1', ['Date','RouteId','BeginWindow1']]
 RTE_START_TIMES.rename(columns={'BeginWindow1':'RouteStartTime'}, inplace=True)
 
-FIRSTSTOP_LATLON = MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop == '1', ['Date','RouteId','Latitude','Longitude']]
+FIRSTSTOP_LATLON = masterManifest.loc[masterManifest.Stop == '1', ['Date','RouteId','Latitude','Longitude']]
 FIRSTSTOP_LATLON.rename(columns={'Latitude':'Lat_Stop1','Longitude':'Lon_Stop1'}, inplace=True)
 
-MASTER_MANIFEST = MASTER_MANIFEST.merge(RTE_START_TIMES, on=['Date','RouteId'], how='left')
-MASTER_MANIFEST = MASTER_MANIFEST.merge(FIRSTSTOP_LATLON, on=['Date','RouteId'], how='left')
+masterManifest = masterManifest.merge(RTE_START_TIMES, on=['Date','RouteId'], how='left')
+masterManifest = masterManifest.merge(FIRSTSTOP_LATLON, on=['Date','RouteId'], how='left')
 
 ## Calculate time to next stop i+1 from i
-to_minz = lambda x: timedelta(minutes=x)
+toMinutes = lambda x: timedelta(minutes=x)
 to_hrz = lambda x: timedelta(hours=x)
-MASTER_MANIFEST['MinutesNextStop'] = np.multiply(MASTER_MANIFEST.AirMilesNextStop, min_per_mile)
-MASTER_MANIFEST['MinutesNextStop'].fillna(0, inplace=True)
-MASTER_MANIFEST['MinutesNextStop'] = MASTER_MANIFEST['MinutesNextStop'].apply(to_minz) + to_minz(2) #2 min to startup/shutoff
+masterManifest['MinutesNextStop'] = np.multiply(masterManifest.AirMilesNextStop, min_per_mile)
+masterManifest['MinutesNextStop'].fillna(0, inplace=True)
+masterManifest['MinutesNextStop'] = masterManifest['MinutesNextStop'].apply(toMinutes) + toMinutes(2) #2 min to startup/shutoff
 
 
 ## Get heuristic of cases per minute by route
@@ -434,7 +432,7 @@ def duration_at_stop(cases, btls, baseline_minutes=8, min_per_case=curr_minperca
     cases, btls = str(cases).replace(',',''), str(btls).replace(',','')
     fulls = np.float64(cases) + (np.float64(btls)/12)
     duration_estimate = baseline_minutes + fulls*min_per_case
-    duration_estimate = to_minz(duration_estimate)
+    duration_estimate = toMinutes(duration_estimate)
     return duration_estimate
 
 
@@ -444,13 +442,13 @@ def get_minutes_permile(mph):
     return mpm
 
 
-def processStopTimes(MASTER_MANIFEST):
-    MASTER_MANIFEST['MinutesServiceStop'] = [duration_at_stop(cs,btl) for cs,btl in zip(MASTER_MANIFEST.Cases, MASTER_MANIFEST.Bottles)]
-    MASTER_MANIFEST['Splits'] = MASTER_MANIFEST.Cases.astype(np.float64) + MASTER_MANIFEST.Bottles.astype(np.float64)/12
+def processStopTimes(masterManifest):
+    masterManifest['MinutesServiceStop'] = [duration_at_stop(cs,btl) for cs,btl in zip(masterManifest.Cases, masterManifest.Bottles)]
+    masterManifest['Splits'] = masterManifest.Cases.astype(np.float64) + masterManifest.Bottles.astype(np.float64)/12
     
     ## Calculate distance from warehouse for first stops only
-    FIRSTSTOPS = zip(MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'Lon_Stop1'], MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'Lat_Stop1'])
-    MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop=='1', 'DistanceFromWarehouse_Stop1'] = [haversine(stop1_lon, stop1_lat, warehouseLongitude, warehouseLatitude) for stop1_lon, stop1_lat in FIRSTSTOPS]
+    FIRSTSTOPS = zip(masterManifest.loc[masterManifest.Stop=='1', 'Lon_Stop1'], masterManifest.loc[masterManifest.Stop=='1', 'Lat_Stop1'])
+    masterManifest.loc[masterManifest.Stop=='1', 'DistanceFromWarehouse_Stop1'] = [haversine(stop1_lon, stop1_lat, warehouseLongitude, warehouseLatitude) for stop1_lon, stop1_lat in FIRSTSTOPS]
     
     PREROUTE_TIME = 5
     
@@ -461,117 +459,117 @@ def processStopTimes(MASTER_MANIFEST):
     print('-'*75)
     
     print('Getting time to first stop')
-    MASTER_MANIFEST['MinutesToFirstStop'] = np.multiply(MASTER_MANIFEST.DistanceFromWarehouse_Stop1, get_minutes_permile(mph=40)) 
-    MASTER_MANIFEST['MinutesToFirstStop'].fillna(0, inplace=True)
-    MASTER_MANIFEST['MinutesToFirstStop'] = MASTER_MANIFEST['MinutesToFirstStop'].apply(to_minz) + to_minz(PREROUTE_TIME)
+    masterManifest['MinutesToFirstStop'] = np.multiply(masterManifest.DistanceFromWarehouse_Stop1, get_minutes_permile(mph=40)) 
+    masterManifest['MinutesToFirstStop'].fillna(0, inplace=True)
+    masterManifest['MinutesToFirstStop'] = masterManifest['MinutesToFirstStop'].apply(toMinutes) + toMinutes(PREROUTE_TIME)
     
     ## Add up by rows using all times relevant
-    MASTER_MANIFEST['MinutesTotal'] = MASTER_MANIFEST[['MinutesServiceStop','MinutesNextStop','MinutesToFirstStop']].sum(axis=1)
-    MASTER_MANIFEST['MinutesTotalNumeric'] = round(MASTER_MANIFEST['MinutesTotal'].dt.total_seconds() / 60,1)
-    MASTER_MANIFEST['MinutesCumulativeRoute'] = pd.Series(MASTER_MANIFEST.groupby(['Date','RouteId'])['MinutesTotalNumeric'].cumsum())
-    MASTER_MANIFEST['HoursCumulativeRoute'] = round(np.divide(MASTER_MANIFEST['MinutesCumulativeRoute'],60),2)
+    masterManifest['MinutesTotal'] = masterManifest[['MinutesServiceStop','MinutesNextStop','MinutesToFirstStop']].sum(axis=1)
+    masterManifest['MinutesTotalNumeric'] = round(masterManifest['MinutesTotal'].dt.total_seconds() / 60,1)
+    masterManifest['MinutesCumulativeRoute'] = pd.Series(masterManifest.groupby(['Date','RouteId'])['MinutesTotalNumeric'].cumsum())
+    masterManifest['HoursCumulativeRoute'] = round(np.divide(masterManifest['MinutesCumulativeRoute'],60),2)
     
     ## Mark if service window was met or not
-    MASTER_MANIFEST.MinutesToFirstStop.fillna(method='ffill', inplace=True)
-    MASTER_MANIFEST.RouteStartTime = UNADJUSTED_START = np.subtract(MASTER_MANIFEST.RouteStartTime, MASTER_MANIFEST.MinutesToFirstStop)
-    MASTER_MANIFEST.RouteStartTime = [TIME if TIME.hour >= 4 else TIME.replace(hour=4,minute=0) for TIME in UNADJUSTED_START]
+    masterManifest.MinutesToFirstStop.fillna(method='ffill', inplace=True)
+    masterManifest.RouteStartTime = UNADJUSTED_START = np.subtract(masterManifest.RouteStartTime, masterManifest.MinutesToFirstStop)
+    masterManifest.RouteStartTime = [TIME if TIME.hour >= 4 else TIME.replace(hour=4,minute=0) for TIME in UNADJUSTED_START]
     
     #min([TIME if TIME.hour >= 4 else TIME.replace(hour=4,minute=0) for TIME in UNADJUSTED_START])
     
-    MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop!='1', 'RouteStartTime'] = pd.NaT
-    MASTER_MANIFEST.loc[MASTER_MANIFEST.Stop!='1', 'MinutesToFirstStop'] = to_minz(0)
+    masterManifest.loc[masterManifest.Stop!='1', 'RouteStartTime'] = pd.NaT
+    masterManifest.loc[masterManifest.Stop!='1', 'MinutesToFirstStop'] = toMinutes(0)
     
     ## Get estimated arrival time
-    START_FIRSTSTOP = zip(MASTER_MANIFEST.RouteStartTime, MASTER_MANIFEST.MinutesToFirstStop)
-    MASTER_MANIFEST['ExpectedArrival'] = [start+firststop for start,firststop in START_FIRSTSTOP]
+    START_FIRSTSTOP = zip(masterManifest.RouteStartTime, masterManifest.MinutesToFirstStop)
+    masterManifest['ExpectedArrival'] = [start+firststop for start,firststop in START_FIRSTSTOP]
     
     i = int(0)
-    while i < int(MASTER_MANIFEST.shape[0]-1):
-        if MASTER_MANIFEST.loc[i+1, 'Stop'] == '1':
-            MASTER_MANIFEST.loc[i+1, 'ExpectedArrival'] = MASTER_MANIFEST.loc[i+1, 'BeginWindow1']
+    while i < int(masterManifest.shape[0]-1):
+        if masterManifest.loc[i+1, 'Stop'] == '1':
+            masterManifest.loc[i+1, 'ExpectedArrival'] = masterManifest.loc[i+1, 'BeginWindow1']
             i += 1
         else:
-            MASTER_MANIFEST.loc[i+1, 'ExpectedArrival'] = MASTER_MANIFEST.loc[i, 'ExpectedArrival'] + MASTER_MANIFEST.loc[i, 'MinutesTotal']
+            masterManifest.loc[i+1, 'ExpectedArrival'] = masterManifest.loc[i, 'ExpectedArrival'] + masterManifest.loc[i, 'MinutesTotal']
             i += 1
     
-    return MASTER_MANIFEST
+    return masterManifest
 
-MASTER_MANIFEST = processStopTimes(MASTER_MANIFEST)
+masterManifest = processStopTimes(masterManifest)
 
 print('-'*75)
 print('Break Point -- Come back to line 472 to restore without running whole program.')
-PLACEHOLDER = MASTER_MANIFEST.copy()
+PLACEHOLDER = masterManifest.copy()
 print('-'*75)
 
 
-def emptyTravelTime(MASTER_MANIFEST):
+def emptyTravelTime(masterManifest):
     ## Get empty distance (going back to warehouse)
     print('Changing Stop to Integer from String')
-    MASTER_MANIFEST.Stop = MASTER_MANIFEST.Stop.astype(np.int64)
-    LAST = MASTER_MANIFEST.Stop > MASTER_MANIFEST.Stop.shift()
-    NEXT = MASTER_MANIFEST.Stop > MASTER_MANIFEST.Stop.shift(-1)
-    MASTER_MANIFEST['LastStop'] = ISLAST = LAST & NEXT
-    last_lon, last_lat = MASTER_MANIFEST.loc[ISLAST, 'Longitude'], MASTER_MANIFEST.loc[ISLAST, 'Latitude']
+    masterManifest.Stop = masterManifest.Stop.astype(np.int64)
+    LAST = masterManifest.Stop > masterManifest.Stop.shift()
+    NEXT = masterManifest.Stop > masterManifest.Stop.shift(-1)
+    masterManifest['LastStop'] = ISLAST = LAST & NEXT
+    last_lon, last_lat = masterManifest.loc[ISLAST, 'Longitude'], masterManifest.loc[ISLAST, 'Latitude']
     
     
-    MASTER_MANIFEST.loc[ISLAST, 'DistanceToWarehouse_LastStop'] = [haversine(LON,LAT,warehouseLongitude,warehouseLatitude) for LON,LAT in zip(last_lon, last_lat)]
-    MASTER_MANIFEST.loc[ISLAST, 'MinutesReturnToWarehouse'] = np.multiply(MASTER_MANIFEST.loc[ISLAST, 'DistanceToWarehouse_LastStop'], get_minutes_permile(mph=40)) 
-    MASTER_MANIFEST['MinutesReturnToWarehouse'].fillna(0, inplace=True)
-    MASTER_MANIFEST['MinutesReturnToWarehouse'] = MASTER_MANIFEST['MinutesReturnToWarehouse'].apply(to_minz)
+    masterManifest.loc[ISLAST, 'DistanceToWarehouse_LastStop'] = [haversine(LON,LAT,warehouseLongitude,warehouseLatitude) for LON,LAT in zip(last_lon, last_lat)]
+    masterManifest.loc[ISLAST, 'MinutesReturnToWarehouse'] = np.multiply(masterManifest.loc[ISLAST, 'DistanceToWarehouse_LastStop'], get_minutes_permile(mph=40)) 
+    masterManifest['MinutesReturnToWarehouse'].fillna(0, inplace=True)
+    masterManifest['MinutesReturnToWarehouse'] = masterManifest['MinutesReturnToWarehouse'].apply(toMinutes)
     
     ## Get expected arrival back to whse
-    last_stops = MASTER_MANIFEST.loc[ISLAST, ['MinutesTotal','MinutesReturnToWarehouse','ExpectedArrival']]#.sum(axis=1)
-    last_stops.MinutesReturnToWarehouse.fillna(to_minz(0), inplace=True)
-    last_stops.ExpectedArrival.fillna(last_stops.ExpectedArrival.shift(-1)+to_minz(20), inplace=True)
-    last_stops.MinutesTotal = MASTER_MANIFEST.loc[ISLAST, 'MinutesTotal'] = last_stops[['MinutesTotal','MinutesReturnToWarehouse']].sum(axis=1)
+    last_stops = masterManifest.loc[ISLAST, ['MinutesTotal','MinutesReturnToWarehouse','ExpectedArrival']]#.sum(axis=1)
+    last_stops.MinutesReturnToWarehouse.fillna(toMinutes(0), inplace=True)
+    last_stops.ExpectedArrival.fillna(last_stops.ExpectedArrival.shift(-1)+toMinutes(20), inplace=True)
+    last_stops.MinutesTotal = masterManifest.loc[ISLAST, 'MinutesTotal'] = last_stops[['MinutesTotal','MinutesReturnToWarehouse']].sum(axis=1)
     
     ## Empty travel time
-    FINAL_STOP = zip(MASTER_MANIFEST['ExpectedArrival'], MASTER_MANIFEST['MinutesTotal'])
-    MASTER_MANIFEST['ExpectedFinishTime'] = [laststop_arrival+total_min for laststop_arrival,total_min in FINAL_STOP]
-    MASTER_MANIFEST.loc[ISLAST==False, 'ExpectedFinishTime'] = pd.NaT
-    MASTER_MANIFEST.ExpectedFinishTime = MASTER_MANIFEST.groupby(['Date','RouteId']).ExpectedFinishTime.fillna(method='bfill')
+    FINAL_STOP = zip(masterManifest['ExpectedArrival'], masterManifest['MinutesTotal'])
+    masterManifest['ExpectedFinishTime'] = [laststop_arrival+total_min for laststop_arrival,total_min in FINAL_STOP]
+    masterManifest.loc[ISLAST==False, 'ExpectedFinishTime'] = pd.NaT
+    masterManifest.ExpectedFinishTime = masterManifest.groupby(['Date','RouteId']).ExpectedFinishTime.fillna(method='bfill')
     
     ## Tidy up data
     zero_out_microseconds = lambda dtobject: dtobject.replace(microsecond=0, second=0)
-    MASTER_MANIFEST.ExpectedArrival = MASTER_MANIFEST.ExpectedArrival.apply(zero_out_microseconds)
-    MASTER_MANIFEST.RouteStartTime = MASTER_MANIFEST.RouteStartTime.apply(zero_out_microseconds)
-    MASTER_MANIFEST.ExpectedFinishTime = MASTER_MANIFEST.ExpectedFinishTime.apply(zero_out_microseconds)
+    masterManifest.ExpectedArrival = masterManifest.ExpectedArrival.apply(zero_out_microseconds)
+    masterManifest.RouteStartTime = masterManifest.RouteStartTime.apply(zero_out_microseconds)
+    masterManifest.ExpectedFinishTime = masterManifest.ExpectedFinishTime.apply(zero_out_microseconds)
 
-    return MASTER_MANIFEST
+    return masterManifest
 
-MASTER_MANIFEST = emptyTravelTime(MASTER_MANIFEST)
+masterManifest = emptyTravelTime(masterManifest)
 
 
 
-def get_stops(MASTER_MANIFEST):
+def getStops(masterManifest):
     ## Number of stops on route    
-    NSTOPS = pd.DataFrame(MASTER_MANIFEST.groupby(['Date','RouteId'])['Stop'].max()).reset_index(drop=False)
+    NSTOPS = pd.DataFrame(masterManifest.groupby(['Date','RouteId'])['Stop'].max()).reset_index(drop=False)
     NSTOPS['x'] = [str(a) + str(b) for a,b in zip(NSTOPS.Date, NSTOPS.RouteId)]
     NSTOPS.rename(columns={'Stop':'Stops'}, inplace=True)
     NSTOPS = dict(zip(NSTOPS.x, NSTOPS.Stops))
-    MASTER_MANIFEST['Stops'] = [str(a) + str(b) for a,b in zip(MASTER_MANIFEST.Date, MASTER_MANIFEST.RouteId)]
-    MASTER_MANIFEST['Stops'] = MASTER_MANIFEST['Stops'].map(NSTOPS)
-    return MASTER_MANIFEST
+    masterManifest['Stops'] = [str(a) + str(b) for a,b in zip(masterManifest.Date, masterManifest.RouteId)]
+    masterManifest['Stops'] = masterManifest['Stops'].map(NSTOPS)
+    return masterManifest
 
-MASTER_MANIFEST = get_stops(MASTER_MANIFEST)
+masterManifest = getStops(masterManifest)
 
 
 
-def get_splits(MASTER_MANIFEST):
-    NSPLITS = pd.DataFrame(MASTER_MANIFEST.groupby(['Date','RouteId'])['Splits'].sum()).reset_index(drop=False)
+def getSplits(masterManifest):
+    NSPLITS = pd.DataFrame(masterManifest.groupby(['Date','RouteId'])['Splits'].sum()).reset_index(drop=False)
     NSPLITS['x'] = [str(a) + str(b) for a,b in zip(NSPLITS.Date, NSPLITS.RouteId)]
     NSPLITS.rename(columns={'Splits':'TotalSplits'}, inplace=True)
     NSPLITS = dict(zip(NSPLITS.x, NSPLITS.TotalSplits))
-    MASTER_MANIFEST['TotalSplits'] = [str(a) + str(b) for a,b in zip(MASTER_MANIFEST.Date, MASTER_MANIFEST.RouteId)]
-    MASTER_MANIFEST['TotalSplits'] = MASTER_MANIFEST['TotalSplits'].map(NSPLITS)
-    return MASTER_MANIFEST
+    masterManifest['TotalSplits'] = [str(a) + str(b) for a,b in zip(masterManifest.Date, masterManifest.RouteId)]
+    masterManifest['TotalSplits'] = masterManifest['TotalSplits'].map(NSPLITS)
+    return masterManifest
 
-MASTER_MANIFEST = get_splits(MASTER_MANIFEST)
+masterManifest = getSplits(masterManifest)
 
 
 
-def get_time(MASTER_MANIFEST):
-    MM = MASTER_MANIFEST.copy()
+def getTime(masterManifest):
+    MM = masterManifest.copy()
     SERVICE_T = pd.DataFrame(MM.groupby(['Date','RouteId'])['MinutesServiceStop'].sum()).reset_index(drop=False)
     SERVICE_T['x'] = [str(a) + str(b) for a,b in zip(SERVICE_T.Date, SERVICE_T.RouteId)]
     SERVICE_T.rename(columns={'MinutesServiceStop':'TotalServiceTime'}, inplace=True)
@@ -587,14 +585,14 @@ def get_time(MASTER_MANIFEST):
     MM['TotalTravelTime'] = MM['TotalTravelTime'].map(TRAVEL_T)
     return MM
 
-MASTER_MANIFEST = get_time(MASTER_MANIFEST)
+masterManifest = getTime(masterManifest)
 
 
 
 
 ## Mark if a given stop was made on time
-def made_time_windows(MASTER_MANIFEST):
-    MM = MASTER_MANIFEST.copy()
+def madeOrMissedTimeWindows(masterManifest):
+    MM = masterManifest.copy()
     
     made_either_window = []
     made_window1 = []
@@ -613,14 +611,14 @@ def made_time_windows(MASTER_MANIFEST):
 
 
 print('Checking to see if time windows were made')        
-MASTER_MANIFEST['OnTime'] = made_time_windows(MASTER_MANIFEST)
+masterManifest['OnTime'] = madeOrMissedTimeWindows(masterManifest)
 
 
 
 
 ## Derive percent each stop takes of total route by various measures
-def percent_of_route(MASTER_MANIFEST):
-    MM = MASTER_MANIFEST.copy()
+def derivePercentsPerRoute(masterManifest):
+    MM = masterManifest.copy()
     MM['Pct_Splits'] = np.divide(MM.Splits, MM.TotalSplits)
     MM['Pct_Service'] = np.divide(MM.MinutesServiceStop, MM.TotalServiceTime)
     MM['Pct_Stops'] = np.divide(1, MM.Stops.fillna(method='ffill'))
@@ -628,33 +626,33 @@ def percent_of_route(MASTER_MANIFEST):
 
 
 print('Deriving Service Levels')
-MASTER_MANIFEST = percent_of_route(MASTER_MANIFEST)
-MASTER_MANIFEST['OnTime_Weighted'] = np.multiply(MASTER_MANIFEST['OnTime'].astype(np.int64), MASTER_MANIFEST['Pct_Splits'])
+masterManifest = derivePercentsPerRoute(masterManifest)
+masterManifest['OnTime_Weighted'] = np.multiply(masterManifest['OnTime'].astype(np.int64), masterManifest['Pct_Splits'])
 
 
 ## Break out city name from route ID
-first_element = lambda x: str(x).split('-')[0]
+firstElement = lambda x: str(x).split('-')[0]
 
-MASTER_MANIFEST['RouteIdentifier'] = MASTER_MANIFEST.RouteId.apply(first_element)
+masterManifest['RouteIdentifier'] = masterManifest.RouteId.apply(firstElement)
 
 
-def get_service_levels(MASTER_MANIFEST):
-    ontime_weighted = pd.DataFrame(MASTER_MANIFEST.groupby(['Date','RouteId']).OnTime_Weighted.sum())
-    ontime_raw = pd.DataFrame(np.divide(MASTER_MANIFEST.groupby(['Date','RouteId']).OnTime.sum(), MASTER_MANIFEST.groupby(['Date','RouteId']).OnTime.count()))
+def getServiceLevels(masterManifest):
+    ontime_weighted = pd.DataFrame(masterManifest.groupby(['Date','RouteId']).OnTime_Weighted.sum())
+    ontime_raw = pd.DataFrame(np.divide(masterManifest.groupby(['Date','RouteId']).OnTime.sum(), masterManifest.groupby(['Date','RouteId']).OnTime.count()))
     ontime_summary = ontime_weighted.join(ontime_raw)
     ontime_summary.reset_index(drop=False, inplace=True)
     ontime_summary.rename(columns={'OnTime_Weighted':'OnTime_Weighted_RteDate', 'OnTime':'OnTime_RteDate'}, inplace=True)
     
-    MASTER_MANIFEST = MASTER_MANIFEST.merge(ontime_summary, on=['Date','RouteId'])
-    return MASTER_MANIFEST
+    masterManifest = masterManifest.merge(ontime_summary, on=['Date','RouteId'])
+    return masterManifest
 
-MASTER_MANIFEST = get_service_levels(MASTER_MANIFEST)
-
-
+masterManifest = getServiceLevels(masterManifest)
 
 
 
-def generate_calendar(year):
+
+
+def generateCalendar(year):
     from pandas.tseries.offsets import YearEnd
     from pandas.tseries.holiday import USFederalHolidayCalendar
     
@@ -697,10 +695,10 @@ if dt.now().month == 1:
 else:
     report_year = dt.now().year
 
-CALENDAR = generate_calendar(year=report_year)
-MASTER_MANIFEST.Date = MASTER_MANIFEST.Date.apply(pd.to_datetime)
+CALENDAR = generateCalendar(year=report_year)
+masterManifest.Date = masterManifest.Date.apply(pd.to_datetime)
 print('Merging in calendar with dates and holidays, etc.')
-MASTER_MANIFEST = MASTER_MANIFEST.merge(CALENDAR, on='Date', how='left')
+masterManifest = masterManifest.merge(CALENDAR, on='Date', how='left')
 
 
 mpg = 6.6
@@ -723,21 +721,21 @@ NOTE THAT FIXED COSTS, OR THE COST OF TRUCK LEASES, WERE NOT INCLUDED IN THIS CO
 print('-'*75)
 
 
-def laborcost_bystop(cases, costperstop=0.70, paypercase=0.2288):
+def laborCostByStop(cases, costperstop=0.70, paypercase=0.2288):
     stop_cost = costperstop + paypercase * cases
     return stop_cost
     
-def travelcost_bystop(miles_nextstop, mpg=mpg, cpg=cost_per_gallon):
+def travelCostByStop(miles_nextstop, mpg=mpg, cpg=cost_per_gallon):
     cost_per_mile = (1/mpg)*cost_per_gallon
     travel_cost_nextstop = miles_nextstop*cost_per_mile
     return travel_cost_nextstop
 
 
 print('Deriving travel cost based on distance and MPG')
-MASTER_MANIFEST['Stop_TotalDistance'] = MASTER_MANIFEST[['AirMilesNextStop','DistanceFromWarehouse_Stop1','DistanceToWarehouse_LastStop']].sum(axis=1)
-MASTER_MANIFEST['CostStop_Labor'] = MASTER_MANIFEST.Splits.apply(laborcost_bystop)
-MASTER_MANIFEST['CostStop_Travel'] = MASTER_MANIFEST.Stop_TotalDistance.apply(travelcost_bystop)
-MASTER_MANIFEST['CostStop_Total'] = MASTER_MANIFEST[['CostStop_Labor','CostStop_Travel']].sum(axis=1)
+masterManifest['Stop_TotalDistance'] = masterManifest[['AirMilesNextStop','DistanceFromWarehouse_Stop1','DistanceToWarehouse_LastStop']].sum(axis=1)
+masterManifest['CostStop_Labor'] = masterManifest.Splits.apply(laborCostByStop)
+masterManifest['CostStop_Travel'] = masterManifest.Stop_TotalDistance.apply(travelCostByStop)
+masterManifest['CostStop_Total'] = masterManifest[['CostStop_Labor','CostStop_Travel']].sum(axis=1)
 
 
 print('-'*75)
@@ -752,8 +750,8 @@ print('-'*75)
 
 
 
-def get_route_totalcost(MASTER_MANIFEST):
-    MM = MASTER_MANIFEST.copy()
+def routeTotalCost(masterManifest):
+    MM = masterManifest.copy()
     TOT_COST = pd.DataFrame(MM.groupby(['Date','RouteId'])['CostStop_Total'].sum()).reset_index(drop=False)
     TOT_COST['x'] = [str(a) + str(b) for a,b in zip(TOT_COST.Date, TOT_COST.RouteId)]
     TOT_COST.rename(columns={'CostStop_Total':'TotalCostRoute'}, inplace=True)
@@ -764,29 +762,29 @@ def get_route_totalcost(MASTER_MANIFEST):
 
 
 print('Deriving Route total cost')
-MASTER_MANIFEST = get_route_totalcost(MASTER_MANIFEST)
+masterManifest = routeTotalCost(masterManifest)
 
-MASTER_MANIFEST['RouteIdentifierWeekdayAgnostic'] = MASTER_MANIFEST.RouteIdentifier.apply(lambda x: str(x)[-3:])
-MASTER_MANIFEST['ShagRoute'] = MASTER_MANIFEST.RouteIdentifier.apply(lambda x: str(x)[:1] == 'X')
+masterManifest['RouteIdentifierWeekdayAgnostic'] = masterManifest.RouteIdentifier.apply(lambda x: str(x)[-3:])
+masterManifest['ShagRoute'] = masterManifest.RouteIdentifier.apply(lambda x: str(x)[:1] == 'X')
 
 if WHSE in ['STL','COL']:
-    MASTER_MANIFEST['CrossdockRoute'] = MASTER_MANIFEST['RouteIdentifierWeekdayAgnostic'].apply(lambda x: str(x).startswith('4'))
+    masterManifest['CrossdockRoute'] = masterManifest['RouteIdentifierWeekdayAgnostic'].apply(lambda x: str(x).startswith('4'))
 else:
-    MASTER_MANIFEST['CrossdockRoute'] = MASTER_MANIFEST['RouteIdentifierWeekdayAgnostic'].apply(lambda x: str(x).startswith('5'))
+    masterManifest['CrossdockRoute'] = masterManifest['RouteIdentifierWeekdayAgnostic'].apply(lambda x: str(x).startswith('5'))
 
 
 
 ## Write to csv for R report
 print('-'*75)
 print('Data being written to CSV for pick-back-up with R report in RMarkdown')
-MASTER_MANIFEST.to_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Delivery Service Level/Roadnet Driver Manifest - Processed and Enriched.csv', index=False)
+masterManifest.to_csv('C:/Users/pmwash/Desktop/Re-Engineered Reports/Delivery Service Level/Roadnet Driver Manifest - Processed and Enriched.csv', index=False)
 print('-'*75)
 
 
 
 
 
-MASTER_MANIFEST.head(3)
+masterManifest.head(3)
 agg_funcs = {'OnTime_Weighted_RteDate':np.max, 
              'OnTime_RteDate':np.max, 
              'Stops':len,
@@ -796,7 +794,7 @@ agg_funcs = {'OnTime_Weighted_RteDate':np.max,
              'CostStop_Total':np.sum,
              'Stop_TotalDistance':np.sum}
 
-BYDAY_BYRTE = pd.DataFrame(MASTER_MANIFEST.groupby(['Date','RouteIdentifier','RouteId','RouteIdentifierWeekdayAgnostic','ShagRoute','CrossdockRoute']).agg(agg_funcs)).reset_index(drop=False)
+BYDAY_BYRTE = pd.DataFrame(masterManifest.groupby(['Date','RouteIdentifier','RouteId','RouteIdentifierWeekdayAgnostic','ShagRoute','CrossdockRoute']).agg(agg_funcs)).reset_index(drop=False)
 BYDAY_BYRTE.head(50)
 
 
@@ -804,9 +802,9 @@ BYDAY_BYRTE.head(50)
 
 
 ## Get Route start times for next day
-def get_route_starts(MASTER_MANIFEST):
+def getRouteStartTimes(masterManifest):
     colz_for_display = ['Date','RouteId','Customer','ServiceWindows','RouteStartTime','MinutesToFirstStop','TotalSplits','Stops','ExpectedFinishTime']
-    rte_starttimes = MASTER_MANIFEST[colz_for_display].drop_duplicates(subset=['Date','RouteId'])
+    rte_starttimes = masterManifest[colz_for_display].drop_duplicates(subset=['Date','RouteId'])
     rte_starttimes.RouteStartTime = rte_starttimes.RouteStartTime.dt.strftime('%H:%M %p')
     rte_starttimes.ExpectedFinishTime = rte_starttimes.ExpectedFinishTime.dt.strftime('%I:%M %p')    
     rte_starttimes.set_index(['Date','RouteId'], inplace=True, drop=True)
@@ -818,19 +816,35 @@ def get_route_starts(MASTER_MANIFEST):
 
 
 print('Deriving route start times')
-rte_starttimes = get_route_starts(MASTER_MANIFEST)
+rte_starttimes = getRouteStartTimes(masterManifest)
 rte_starttimes.head(20)
 
 print('Writing driver start times to file for distribution')
 import time
-chainReportColumns = ['RouteId','Customer','Stop','Splits','TotalSplits','TotalTravelTime','TotalServiceTime','ServiceWindows']
 today_date = str(time.strftime('%A %B %d-%Y'))
+
+
 rte_starttimes.to_html("N:/Operations Intelligence/Merchandising/Chain Reports/Driver Start Times " + today_date + ' ' + WHSE + ".html")
-MASTER_MANIFEST[chainReportColumns].to_html("N:/Operations Intelligence/Merchandising/Chain Reports/Chain Report" + today_date + ' ' + WHSE + ' ' +  ".html")
+
+chainReportColumns = ['Stop','Customer','ExpectedArrival','Splits','ServiceWindows','TotalSplits']
+chainReport = masterManifest.copy()
+chainReport.TotalSplits = round(chainReport.TotalSplits, 0)
+
+def formatTimeForChainReport(dateTime):
+    try:
+        formattedTime = format(dateTime, '%I:%M %p')
+    except:
+        formattedTime = pd.NaT
+        pass
+    return formattedTime
+
+chainReport.ExpectedArrival = chainReport.ExpectedArrival.apply(formatTimeForChainReport)
+chainReport.set_index(['Warehouse','RouteId'], inplace=True)
+chainReport[chainReportColumns].to_html("N:/Operations Intelligence/Merchandising/Chain Reports/Chain Report" + today_date + ' ' + WHSE + ' ' +  ".html")
 
 
 print('GET MERCHANDISED ACCOUNTS, MERGE IN THEN FILTER OUT OTHERS, CREATE NEW CHAIN REPORT')
-#MASTER_MANIFEST.to_excel("N:/Operations Intelligence/Merchandising/Chain Reports/" + today_date + " Saint Louis Chain Report.xlsx", sheet_name='Routes')
+#masterManifest.to_excel("N:/Operations Intelligence/Merchandising/Chain Reports/" + today_date + " Saint Louis Chain Report.xlsx", sheet_name='Routes')
 
 
 
@@ -919,15 +933,15 @@ print('GET MERCHANDISED ACCOUNTS, MERGE IN THEN FILTER OUT OTHERS, CREATE NEW CH
 
 
 ### Merge accounts with driver manifest
-#MASTER_MANIFEST.CustomerId = MASTER_MANIFEST.CustomerId.astype(int)
-#MASTER_MANIFEST = MASTER_MANIFEST.merge(merch_accts, how='left', left_on='CustomerId', right_on='Store ID')
-##MASTER_MANIFEST['Store ID'] = MASTER_MANIFEST['Store ID'].isnull() == False
-#MASTER_MANIFEST.rename(columns={'Store ID':'Merchandised Account'}, inplace=True)
-#MASTER_MANIFEST.head(10)
+#masterManifest.CustomerId = masterManifest.CustomerId.astype(int)
+#masterManifest = masterManifest.merge(merch_accts, how='left', left_on='CustomerId', right_on='Store ID')
+##masterManifest['Store ID'] = masterManifest['Store ID'].isnull() == False
+#masterManifest.rename(columns={'Store ID':'Merchandised Account'}, inplace=True)
+#masterManifest.head(10)
 #
 #
 #
-##MERCH_MANIFEST = MASTER_MANIFEST[MASTER_MANIFEST['Merchandised Account'] == True]
+##MERCH_MANIFEST = masterManifest[masterManifest['Merchandised Account'] == True]
 #MERCH_MANIFEST.reset_index(drop=False, inplace=True)
 #keep_cols = ['RouteId','CustomerId','Customer','Stop','Cases','Bottles','ServiceWindows','TotalHoursAvailable']
 #MERCH_MANIFEST = MERCH_MANIFEST[keep_cols]
