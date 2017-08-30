@@ -826,9 +826,11 @@ today_date = str(time.strftime('%A %B %d-%Y'))
 
 rte_starttimes.to_html("N:/Operations Intelligence/Merchandising/Chain Reports/Driver Start Times " + today_date + ' ' + WHSE + ".html")
 
-chainReportColumns = ['Stop','Customer','ExpectedArrival','Splits','ServiceWindows','TotalSplits']
+chainReportColumns = ['Customer','ExpectedArrival','Splits','ServiceWindows','TotalSplits']
 chainReport = masterManifest.copy()
 chainReport.TotalSplits = round(chainReport.TotalSplits, 0)
+chainReport.Splits = round(chainReport.Splits, 1)
+chainReport = chainReport[chainReport.ShagRoute == False]
 
 def formatTimeForChainReport(dateTime):
     try:
@@ -839,7 +841,7 @@ def formatTimeForChainReport(dateTime):
     return formattedTime
 
 chainReport.ExpectedArrival = chainReport.ExpectedArrival.apply(formatTimeForChainReport)
-chainReport.set_index(['Warehouse','RouteId'], inplace=True)
+chainReport.set_index(['Date','RouteIdentifier','Stop'], inplace=True)
 chainReport[chainReportColumns].to_html("N:/Operations Intelligence/Merchandising/Chain Reports/Chain Report" + today_date + ' ' + WHSE + ' ' +  ".html")
 
 
