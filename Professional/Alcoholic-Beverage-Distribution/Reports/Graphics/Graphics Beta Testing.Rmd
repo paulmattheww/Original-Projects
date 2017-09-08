@@ -39,7 +39,7 @@ col_names = {'ID':'ID',
             'DVSBRNNM':'Brand',
             'DVMBMENT':'MajorBrandsMentions', #verify with Rachel
             'DVCBRATE':'ChargebackRate',
-            'DVDISTCS':'DVDISTCS',
+            'DVDISTCS':'PosterPrice', #verify with Rachel
             'DVCBAMT':'ChargebackAmount',
             'DVCBTOTL':'ChargebackTotal',
             'DVSPNBR':'SalespersonId',
@@ -88,9 +88,17 @@ source('C:/Users/pmwash/Desktop/R_files/Data Input/Helper.R')
 
 MONTHS = c('January','February','March','April','May','June',
            'July','August','September','October','November','December')
+
+## Get current years
 this_yr = round(as.numeric(format(Sys.Date(), '%Y')),0)
 last_yr = round(as.numeric(format(Sys.Date(), '%Y')) - 1,0)
 tw_yrs_ago = round(as.numeric(format(Sys.Date(), '%Y')) - 2,0)
+
+## Get current months
+this_month = as.character(lubridate::month(Sys.Date(), T, F))
+last_month = as.character(lubridate::month(lubridate::month(Sys.Date())-1, T, F))
+two_months_ago = as.character(lubridate::month(lubridate::month(Sys.Date())-2, T, F))
+last_three_months = c(this_month, last_month, two_months_ago)
 
 thismo_numeric = lubridate::month(Sys.Date())
 month_long = function(mo) lubridate::month(mo, T, F)
@@ -107,6 +115,7 @@ len_unique = function(x) length(unique(x))
 read_raw_graphics_data = function(python_path){
   df = read.csv('N:/Operations Intelligence/Monthly Reports/Graphics/Raw Data/renamed raw data.csv', header=TRUE)
   df$JobItemBrandId = paste0(as.character(df$JobId),'_',as.character(df$ItemId),'_',as.character(df$BrandId))
+  df$JobItemId = paste0(as.character(df$JobId),'_',as.character(df$ItemId))
   df$JobStatus = as.character(df$JobStatus)
   df = df[order(nchar(df$JobStatus), df$JobId, decreasing=TRUE), ]
   df = df[!duplicated(df[,c('JobItemBrandId','CustomerId')]), ]
@@ -116,7 +125,8 @@ read_raw_graphics_data = function(python_path){
   df$InvoiceYear = lubridate::year(dat)
   df$InvoiceWeek = lubridate::week(dat)
   df$InvoiceMonth = lubridate::month(dat, TRUE, FALSE)
-  df = df[df$InvoiceYear %in% c(this_yr, last_yr, tw_yrs_ago), ]
+  df = df[df$InvoiceYear %in% c(this_yr, last_yr, tw_yrs_ago, NA), ] #check NA
+  df$Profit = round(df$PosterPrice - df$ChargebackTotal, 2)
   return(df)
 }
 
@@ -129,21 +139,6 @@ check_raw_pipeline = function(df){
   return(check_df)
 }
 #check_raw_pipeline(df)
-
-# df$Invoice.Date = dat = as.Date(df$Invoice.Date)
-# df$JobId = factor(df$JobId)
-# df$Year = lubridate::year(df$Invoice.Date)
-#df$Invoice.Date = dat = strptime(df$Invoice.Date, '%m/%d/%Y')
-# df$Week = lubridate::week(dat)
-# df$Month = lubridate::month(dat, TRUE, FALSE)
-# df$ProjectID_LineID = paste0(df$JobId, '_', df$POSTER.Item.ID)
-# df$POSTER.REPRINT = df$POSTER.REPRINT == 'Y'
-# df = df %>% filter(Year %in% c(last_yr, this_yr))
-# conquered above
-######################
-
-## GET BRAND ID to PROJECT LINE ID CONCAT FIELD
-
 
 ## Filter for testing ONLY
 # print('If you see this message, take this filter off')
@@ -235,7 +230,7 @@ df = df[,names(df) %in% colsToKeep]
 
 ## Mark Jobs that have reached the maximum character limit of 1032 
 ## In the JobStatus field
-df$JobStatusFieldAtCapacity = nchar(as.character(df$JobStatus)) == 1032
+# df$JobStatusFieldAtCapacity = nchar(as.character(df$JobStatus)) == 1032
 
 
 ###### CHECKING FOR BUGGIES ###### CHECKING FOR BUGGIES
@@ -254,7 +249,6 @@ df$JobStatusFieldAtCapacity = nchar(as.character(df$JobStatus)) == 1032
 # }
 ###### CHECKING FOR BUGGIES ###### CHECKING FOR BUGGIES
 
-df = df
 ## write.csv(df,"c:/users/pmwash/desktop/disposable docs/check for graphics.csv"); rm(df)
 
 countEvents = function(df, columnIdentifier){
@@ -265,60 +259,42 @@ countEvents = function(df, columnIdentifier){
   return(counts)
 }
 
-## Count up incomplete send backs, redesigns, and times brands entered
-df$IncompleteStatusCount = countEvents(df, 'IncompleteStatus')
-df$RedesignCounts = countEvents(df, 'ArtworkRedesign')
-df$TimesBrandsEntered = countEvents(df, 'BrandMentionsEntered')
+process_statuses = function(df){
+  ## Count up incomplete send backs, redesigns, and times brands entered
+  df$IncompleteStatusCount = countEvents(df, 'IncompleteStatus')
+  df$RedesignCounts = countEvents(df, 'ArtworkRedesign')
+  df$TimesBrandsEntered = countEvents(df, 'BrandMentionsEntered')
+  
+  ## Obtain time spent in each category
+  df$JobTurnaround = round(difftime(df$AssembledandShipped, df$Incomplete, units="days"), 1)
+  df$KickoffToArtworkComplete = round(difftime(df$AwaitingArtwork, df$Incomplete, units="days"), 1)
+  
+  ## Get month/year when a given job started
+  df$KickoffMonth = as.character(lubridate::month(df$Incomplete, label=T, abbr=F))
+  df$KickoffWeek = lubridate::week(df$Incomplete)
+  df$KickoffYear = kick_yr = as.character(year(df$Incomplete))
+  
+  return(df)
+}
+  
+df = process_statuses(df)
 
-## Mark limbo jobs
-df$JobInLimbo = (df$IncompleteStatusCount > 0) & (is.na(df$AssembledandShipped))
-#df$JobAbandoned = abandoned = grepl('zj$', df$JobStatus)
-#dfLimboJobs = df[df$JobInLimbo == F, ] 
-#dfAbandonedJobs = df[df$JobAbandoned == T, ]
 
-## Obtain time spent in each category
-df$Turnaround_KickoffToShip = round(difftime(df$AssembledandShipped, df$Incomplete, units="days"), 1)
-df$KickoffToArtworkComplete = round(difftime(df$AwaitingArtwork, df$Incomplete, units="days"), 1)
+pipeline_information = function(df){
+  df$JobStarted = strtd = !is.na(df$Incomplete)
+  df$JobFinished = finsd = !is.na(df$AssembledandShipped)
+  in_pipeline = aggregate(JobFinished ~ JobId, data=df, FUN=max)
+  in_pipeline = unlist(in_pipeline[in_pipeline$JobFinished == 0, 'JobId'])
+  df$InPipeline = df$JobId %in% in_pipeline
+  return(df)
+}  
 
-
-
-
-# df$Stage1_KickoffToAssignment = round(difftime(df$AwaitingGraphicsAssignment, df$Incomplete, units="days"), 1)
-# df$Stage2_AssignmentToBrandMentions = round(difftime(df$AwaitingBrandMentions, df$AwaitingGraphicsAssignment, units="days"), 1)
-# df$Stage3_BrandMentionsToCostApproval = round(difftime(df$AwaitingCostApproval, df$AwaitingBrandMentions, units="days"), 1)
-# df$Stage4_CostApprovalToArtworkComplete = round(difftime(df$AwaitingArtwork, df$AwaitingCostApproval,units="days"), 1)
-# df$Stage4A_RedesignRequestedToResdesignComplete = round(difftime(df$AwaitingArtworkRedesign1, df$AwaitingArtwork, units="days"), 1)
-# df$Stage5_ArtworkCompleteToRequesterApproval = round(difftime(df$AwaitingRequesterApproval, df$AwaitingArtwork, units="days"), 1)
-# df$Stage6_RequesterApprovalToCompletion = round(difftime(df$AssembledandShipped, df$AwaitingRequesterApproval, units="days"), 1)
-# df$Stage7_CompletionToShip = round(difftime(df$AssembledandShipped, df$AssembledandShipped, units="days"), 1)
-
-## Obtain time from Incomplete til each stage
-# df$KickoffToAwaitingGraphicsAssignment = round(difftime(df$AwaitingGraphicsAssignment, df$Incomplete, units="days"), 1)
-# df$KickoffToBrandMentions = round(difftime(df$AwaitingBrandMentions, df$Incomplete, units="days"), 1)
-# df$KickoffToCostApproval = round(difftime(df$AwaitingCostApproval, df$Incomplete, units="days"), 1)
-# df$KickoffToRequesterApproval = round(difftime(df$AwaitingRequesterApproval, df$Incomplete, units="days"), 1)
-# df$KickoffToArtworkComplete = round(difftime(df$AwaitingArtwork, df$Incomplete, units="days"), 1)
-
-## Get month/year when a given job started
-df$KickoffMonth = as.character(lubridate::month(df$Incomplete, label=T, abbr=F))
-df$InvoiceMonth = as.character(lubridate::month(df$Invoice.Date, label=T, abbr=F))
-df$KickoffYear = kick_yr = as.character(year(df$Incomplete))
-df$InvoiceYear = invo_yr = as.character(year(df$Invoice.Date))
-
-## Get profit as specified by Rachel M.
-df$Profit = round(df$POSTER.Price - df$POSTER.CB.Total, 2)
-
-## Manipulate date to identify carrying costs
-df$JobStarted = strtd = !is.na(df$Incomplete)
-df$JobFinished = finsd = !is.na(df$AssembledandShipped)
-inPipeline = aggregate(JobFinished ~ JobId, data=df, FUN=max)
-inPipeline = unlist(inPipeline[inPipeline$JobFinished == 0, 'JobId'])
-df$InPipeline = df$JobId %in% inPipeline
-
-getPipeline = function(df){
-  dfPipe = df[(df$InPipeline == T) & (!duplicated(df$JobId)), ]
+df = pipeline_information(df)
+  
+get_and_check_pipeline = function(df){
+  dfPipe = df[(df$InPipeline == T), ]
   today = as.character(Sys.Date())
-  colsToCheck = c('POSTER.Designer','JobId','JobStatus','Salesperson','Customer','Company','POSTER.Price',
+  colsToCheck = c('Designer','JobId','JobStatus','Salesperson','Customer','Warehouse','PosterPrice',
                   'Incomplete','AwaitingBrandMentions','BrandMentionsEntered1','BrandMentionsEntered2','BrandMentionsEntered3',
                   'AwaitingArtwork','ArtworkRedesign1','ArtworkRedesign2','ArtworkRedesign3','AwaitingRequesterApproval',
                   'AwaitingJobCompletion','AssembledandShipped', 'IncompleteStatusCount')
@@ -329,35 +305,53 @@ getPipeline = function(df){
 }
 
 ## Write current pipe to file for review with graphics team
-pipeX = getPipeline(df)
+pipe_check = get_and_check_pipeline(df)
 
-## Mark redesigns
-df$Redesign = df$RedesignCounts >= 1
-accessories = c('Menu Books','Table Top Wrap','TT A-Frame Holder','TT A-Frame Holder (Holder Only)', 
-                'TT Acrylic Stand','TT Acrylic Stand (Stand Only)','TT Flip Stand','TT Flip Stand (Stand Only)',
-                'Vivid Board - Dry Erase','Vivid Board - Dry Erase','Light Box')
-menus = c('Menu Books','Drink List','Folded Drink List','Tri-Fold Drink List','Folded Menu Cards','Menu Card - Small Format (QTY = Total Pages)')
-df$Menu = df$POSTER.ITEM.CATEGORY %in% menus
-df$Accessory = df$POSTER.ITEM.CATEGORY %in% accessories
+
+# names(df)[names(df)=='DVDISTCS'] = 'PosterPrice'#quick bandaid
+# ## Get profit as specified by Rachel M.
+# df$Profit = round(df$PosterPrice - df$ChargebackTotal, 2)
+
+
+redesigns_menus_accessories = function(df) {
+  ## Mark redesigns, menus & accessories
+  df$Redesign = df$RedesignCounts > 0
+  accessories = c('Menu Books','Table Top Wrap','TT A-Frame Holder','TT A-Frame Holder (Holder Only)', 
+                  'TT Acrylic Stand','TT Acrylic Stand (Stand Only)','TT Flip Stand','TT Flip Stand (Stand Only)',
+                  'Vivid Board - Dry Erase','Vivid Board - Dry Erase','Light Box')
+  menus = c('Menu Books','Drink List','Folded Drink List','Tri-Fold Drink List','Folded Menu Cards','Menu Card - Small Format (QTY = Total Pages)')
+  df$Menu = df$ItemCategory %in% menus
+  df$Accessory = df$ItemCategory %in% accessories
+  return(df)
+}
+
+
+df = redesigns_menus_accessories(df)
+
+
+
+get_common_columns = function(df, string) names(df)[grepl(string, names(df))]
 
 ## Mark last date in record as date of record
-getCommonColumns = function(df, string) names(df)[grepl(string, names(df))]
-brandMentionsColumns = getCommonColumns(df,'BrandMentions')
-df$AllBrandMentionsInput = apply(df[, brandMentionsColumns], 1, function(x) as.POSIXct(max(x, na.rm=T)))
+brand_mention_columns = get_common_columns(df,'BrandMentions')
+df$BrandMentionsFinalized = apply(df[, brand_mention_columns], 1, function(x) as.POSIXct(max(x, na.rm=T)))
+df$BrandMentionsFinalized = as.Date.POSIXct(df$BrandMentionsFinalized)
 
-the_milestones = data.frame(df$Incomplete, df$AssembledandShipped)
-df$DayOfRecord = dat = apply(the_milestones, 1, function(x) max(x, na.rm=T))
-df$MonthOfRecord = lubridate::month(dat, T, F)
-df$WeekOfRecord = lubridate::week(dat)
-df$YearOfRecord = lubridate::year(dat)
-df$DayOfMonthOfRecord = lubridate::mday(dat)
-df$WeekdayOfRecord = lubridate::wday(dat, T, F)
 
-## Filter out cancelled jobs
-# LIMBOCOLZ = c('Invoice.Date','POSTER.Designer','JobId',
-#               'Salesperson','Customer','POSTER.Qty.Ordered','YearOfRecord',
-#               'Incomplete','IncompleteStatus1','IncompleteStatusCount')
-# df_inlimbo = df[(df$JobInLimbo == T), LIMBOCOLZ]
+get_milestones = function(df){
+  the_milestones = data.frame(df$Incomplete, df$AssembledandShipped)
+  df$DayOfRecord = dat = apply(the_milestones, 1, function(x) max(x, na.rm=T))
+  df$MonthOfRecord = lubridate::month(dat, T, F)
+  df$WeekOfRecord = lubridate::week(dat)
+  df$YearOfRecord = lubridate::year(dat)
+  df$DayOfMonthOfRecord = lubridate::mday(dat)
+  df$WeekdayOfRecord = lubridate::wday(dat, T, F)
+  return(df)
+}
+
+df = get_milestones(df)
+
+
 
 
 
@@ -366,76 +360,75 @@ write.csv(df, 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Graphics/intermedia
           row.names=FALSE)
 
 
-## Get current months
-this_month = as.character(lubridate::month(Sys.Date(), T, F))
-last_month = as.character(lubridate::month(lubridate::month(Sys.Date())-1, T, F))
-beforethat = as.character(lubridate::month(lubridate::month(Sys.Date())-2, T, F))
-last_3 = c(this_month, last_month, beforethat)
-
-## Isolate this year and last year data only
-df_thisyr_lastyr = df[(df$YearOfRecord %in% c(this_yr, last_yr)) & 
-                        (df$POSTER.Designer %in% active_designers), ]
-
-
-## Isolate YTD for this year and last year
-invoiced_firstmos = (df_thisyr_lastyr$InvoiceMonth %in% ytd_months)
-kickdoff_firstmos = (df_thisyr_lastyr$KickoffMonth %in% ytd_months)
-
-df_ytd_thislast = df_thisyr_lastyr[invoiced_firstmos | kickdoff_firstmos, ]
-year_of_record = df_ytd_thislast$YearOfRecord
-df_ytd_thislast$DayOfYearOfRecord = doty = lubridate::yday(df_ytd_thislast$DayOfRecord)
-today_doty = lubridate::yday(Sys.Date())
-df_ytd_thislast = df_ytd_thislast[doty <= today_doty, ]
-
-
-## END normal data (ie transactional info)
-
-## Isolate out last 3 mo from thisyr lastyr data
-Incomplete_month = df_thisyr_lastyr$KickoffMonth = as.character(lubridate::month(df_thisyr_lastyr$Incomplete, T, F))
-invoice_month = df_thisyr_lastyr$InvoiceMonth = as.character(lubridate::month(df_thisyr_lastyr$Invoice.Date, T, F))
-
-Incomplete_year = df_thisyr_lastyr$KickoffYear = as.character(year(df_thisyr_lastyr$Incomplete))
-invoice_year = df_thisyr_lastyr$InvoiceYear = as.character(year(df_thisyr_lastyr$Invoice.Date))
-
-
-startmo = Incomplete_month %in% last_3 
-endinmo = invoice_month %in% last_3 
-
-trailing_3 = df_thisyr_lastyr[startmo==T | endinmo==T, ]
-
-df_thisyr = df[(df$KickoffYear == this_yr) | (df$InvoiceYear == this_yr) & (df$POSTER.Designer %in% active_designers), ]
 
 
 
-## For below, way below
-byrequester = aggregate(cbind(JobId, ProjectID_LineID) ~ Salesperson, data=df_thisyr, FUN=len_unique)
-bygraphics = byrequester[byrequester$Salesperson %in% graphics_posterIDs, ]
-byrequester = byrequester[byrequester$Salesperson %!in% graphics_posterIDs, ]
-rownames(byrequester) = byrequester$Salesperson
-rownames(bygraphics) = bygraphics$Salesperson
-bygraphics$Salesperson = NULL
-byrequester$Salesperson = NULL
-bygraphics = bygraphics[order(bygraphics$JobId, decreasing=T),]
-byrequester = byrequester[order(byrequester$JobId, decreasing=T),]
+get_this_and_last_year_data = function(df){
+  ## Isolate this year and last year data only
+  df_thisyr_lastyr = df[(df$YearOfRecord %in% c(this_yr, last_yr)), ] #check why missing (df$Designer %in% active_designers)
+  
+  invoiced_firstmos = (df_thisyr_lastyr$InvoiceMonth %in% ytd_months)
+  kickdoff_firstmos = (df_thisyr_lastyr$KickoffMonth %in% ytd_months)
+  
+  df_ytd_thislast = df_thisyr_lastyr[invoiced_firstmos | kickdoff_firstmos, ]
+  
+  year_of_record = df_ytd_thislast$YearOfRecord
+  df_ytd_thislast$DayOfYearOfRecord = doty = lubridate::yday(df_ytd_thislast$DayOfRecord)
+  today_doty = lubridate::yday(Sys.Date())
+  df_ytd_thislast = df_ytd_thislast[doty <= today_doty, ]
+  return(df)
+}
 
-names(byrequester) = c('Jobs Requested','Job Items Requested')
-names(bygraphics) = c('Jobs Requests Input for Others','Job Items Input for Others')
+df_thisyr_lastyr = get_this_and_last_year_data(df)
+
+
+
+
+get_this_year_data_only = function(df){
+  ## Isolate out last 3 mo from thisyr lastyr data
+  incomplete_month = df_thisyr_lastyr$KickoffMonth 
+  invoice_month = df_thisyr_lastyr$InvoiceMonth
+  Incomplete_year = df_thisyr_lastyr$KickoffYear 
+  invoice_year = df_thisyr_lastyr$InvoiceYear    
+  startmo = incomplete_month %in% last_three_months
+  endinmo = invoice_month %in% last_three_months
+  trailing_3 = df_thisyr_lastyr[startmo==T | endinmo==T, ]
+  df_thisyr = df[(df$KickoffYear == this_yr) | (df$InvoiceYear == this_yr) & (df$Designer %in% active_designers), ]
+  return(df_thisyr)
+}
+
+df_thisyr = get_this_year_data_only(df)
+
+
+# ## For below, way below
+# byrequester = aggregate(cbind(JobId, JobItemId) ~ Salesperson, data=df_thisyr, FUN=len_unique)
+# bygraphics = byrequester[byrequester$Salesperson %in% graphics_posterIDs, ]
+# byrequester = byrequester[byrequester$Salesperson %!in% graphics_posterIDs, ]
+# rownames(byrequester) = byrequester$Salesperson
+# rownames(bygraphics) = bygraphics$Salesperson
+# bygraphics$Salesperson = NULL
+# byrequester$Salesperson = NULL
+# bygraphics = bygraphics[order(bygraphics$JobId, decreasing=T),]
+# byrequester = byrequester[order(byrequester$JobId, decreasing=T),]
+# 
+# names(byrequester) = c('Jobs Requested','Job Items Requested')
+# names(bygraphics) = c('Jobs Requests Input for Others','Job Items Input for Others')
 
 
 ## Redesigns for later on
-redesign_colz = c('ProjectID_LineID', 'JobId', 'Redesign', 'Turnaround_KickoffToShip', 
-                  'POSTER.REPRINT', 'Salesperson', 'POSTER.ITEM.CATEGORY', 'POSTER.Designer',
+redesign_colz = c('JobItemId', 'JobId', 'Redesign', 'JobTurnaround', 
+                  'Reprint', 'Salesperson', 'ItemCategory', 'Designer',
                   'Accessory', 'Menu', 'YearOfRecord')
 redesigns = df_ytd_thislast[, redesign_colz]
-N_JOBZ = len_unique(redesigns$JobId)
+count_jobs = len_unique(redesigns$JobId)
 
 redesigns$JobID_Redesign = paste0(redesigns$JobId, ' ', redesigns$Redesign)
-redesigns$LineID_Redesign = paste0(redesigns$ProjectID_LineID, ' ', redesigns$Redesign)
+redesigns$LineID_Redesign = paste0(redesigns$JobItemId, ' ', redesigns$Redesign)
 
 
 # ## Turnaround later on
-# turn_cols = cbind(df_thisyr$Turnaround_KickoffToShip)
-# turnaround = aggregate(turn_cols ~ df_thisyr$POSTER.Designer, FUN=function(x) round(mean(as.numeric(x), na.rm=T), 1))
+# turn_cols = cbind(df_thisyr$JobTurnaround)
+# turnaround = aggregate(turn_cols ~ df_thisyr$Designer, FUN=function(x) round(mean(as.numeric(x), na.rm=T), 1))
 # names(turnaround) = c('X','Turnaround','Completion','Stage1','Stage2',
 #                       'Stage3','Stage4','Stage4A','Stage5','Stage6')
 # rownames(turnaround) = turnaround$X
@@ -463,9 +456,9 @@ This section was designed to help the Graphics department and management gain in
 
 Below shows jobs that were entered by the Graphics team on behalf of the sales team. 
 
-```{r requests_inputbygraphics}
-bygraphics
-```
+<!-- ```{r requests_inputbygraphics} -->
+<!-- bygraphics -->
+<!-- ``` -->
 
 
 ## Turnaround by Designer
@@ -516,15 +509,15 @@ guide_df
 <!-- Total number of reprints for the current year, by Designer. Percent of Total is shown as a percent; in other words, it has been multiplied by 100 (e.g. 1.2 indicates 1.2%, or 0.012). Reprints are counted at the Job ID level, meaning a job with 10 items marked as reprints will be counted one time. It is possible to add in reprints at the Job Item level if this information is desired. -->
 
 <!-- ```{r reprints} -->
-<!-- reprint_cols = c('JobId','POSTER.Designer') -->
+<!-- reprint_cols = c('JobId','Designer') -->
 <!-- no_dupes = !duplicated(df[,reprint_cols]) -->
 
-<!-- reprints = df[no_dupes, c('JobId','POSTER.Designer','POSTER.REPRINT','Year')] -->
+<!-- reprints = df[no_dupes, c('JobId','Designer','POSTER.REPRINT','Year')] -->
 <!-- reprints = reprints[reprints$Year == this_yr, ] -->
-<!-- reprints = aggregate(POSTER.REPRINT ~ POSTER.Designer, data=reprints, FUN=sum) -->
+<!-- reprints = aggregate(POSTER.REPRINT ~ Designer, data=reprints, FUN=sum) -->
 
-<!-- tot_jobs = aggregate(JobId ~ POSTER.Designer, data=df_thisyr, FUN=len_unique) -->
-<!-- reprints = merge(reprints, tot_jobs, by='POSTER.Designer', how='all') -->
+<!-- tot_jobs = aggregate(JobId ~ Designer, data=df_thisyr, FUN=len_unique) -->
+<!-- reprints = merge(reprints, tot_jobs, by='Designer', how='all') -->
 <!-- reprints = process_df(reprints) -->
 
 <!-- ## Specify column names -->
@@ -559,10 +552,10 @@ All data for Redesigns is filtered to include only records up until today for bo
 Accessory vs. Print jobs. 
 
 ```{r viz_redesigns_accessoryvprint, fig.height=10, fig.width=9}
-turn_acc = mean(redesigns[redesigns$Accessory_or_Print=='Accessory', 'Turnaround_KickoffToShip'], na.rm=T)
-turn_pri = mean(redesigns[redesigns$Accessory_or_Print=='Print', 'Turnaround_KickoffToShip'], na.rm=T)
+turn_acc = mean(redesigns[redesigns$Accessory_or_Print=='Accessory', 'JobTurnaround'], na.rm=T)
+turn_pri = mean(redesigns[redesigns$Accessory_or_Print=='Print', 'JobTurnaround'], na.rm=T)
 
-ggplot(data=redesigns, aes(x=Redesign, y=Turnaround_KickoffToShip, group=Redesign)) +
+ggplot(data=redesigns, aes(x=Redesign, y=JobTurnaround, group=Redesign)) +
   geom_boxplot(aes(fill=Accessory)) +
   geom_jitter(alpha=0.02) +
   theme_minimal() +
@@ -580,10 +573,10 @@ ggplot(data=redesigns, aes(x=Redesign, y=Turnaround_KickoffToShip, group=Redesig
 Menus vs. non-menus. The blue horizontal line represents the avg. turnaround for Menus, the red line for Non-Menus.
 
 ```{r men_non_violin, fig.height=10, fig.width=9}
-turn_menu = mean(redesigns[redesigns$Menu == T, 'Turnaround_KickoffToShip'], na.rm=T)
-turn_nonm = mean(redesigns[redesigns$Menu == F, 'Turnaround_KickoffToShip'], na.rm=T)
+turn_menu = mean(redesigns[redesigns$Menu == T, 'JobTurnaround'], na.rm=T)
+turn_nonm = mean(redesigns[redesigns$Menu == F, 'JobTurnaround'], na.rm=T)
 
-ggplot(data=redesigns, aes(x=Redesign, y=Turnaround_KickoffToShip, group=Redesign)) +
+ggplot(data=redesigns, aes(x=Redesign, y=JobTurnaround, group=Redesign)) +
   geom_boxplot(aes(fill=Menu)) +
   geom_jitter(alpha=0.02) +
   theme_minimal() +
@@ -604,12 +597,12 @@ Percentages, as it is throughout this document, are shown as %. To re-iterate, d
 ```{r redesigns_des}
 redesign_unique = redesigns[!duplicated(redesigns$JobId), ]
 
-redesigns_bydes = aggregate(Redesign~POSTER.Designer+YearOfRecord, data=redesign_unique, FUN=sum)
-redesigns_bydes = redesigns_bydes[redesigns_bydes$POSTER.Designer %in% active_designers, ]
+redesigns_bydes = aggregate(Redesign~Designer+YearOfRecord, data=redesign_unique, FUN=sum)
+redesigns_bydes = redesigns_bydes[redesigns_bydes$Designer %in% active_designers, ]
 redesigns_bydes = spread(redesigns_bydes, 'YearOfRecord', 'Redesign')
 redesigns_bydes$`Percent (%) Change` = pct_chg(new=redesigns_bydes$`2017`, old=redesigns_bydes$`2016`)
-rownames(redesigns_bydes) = redesigns_bydes$POSTER.Designer
-redesigns_bydes$POSTER.Designer = NULL
+rownames(redesigns_bydes) = redesigns_bydes$Designer
+redesigns_bydes$Designer = NULL
 
 redesigns_bydes
 ```
@@ -668,7 +661,7 @@ A job is considered on-hold if it has been sent back to "Incomplete" status at l
 Below shows jobs that were placed on hold more than once, as shown in the "Incomplete" column. The Job ID is shown next to the salesperson's name.
 
 ```{r multiple_onholds}
-onholdcolz = c('YearOfRecord','JobId','Salesperson','Customer','POSTER.ITEM.CATEGORY',
+onholdcolz = c('YearOfRecord','JobId','Salesperson','Customer','ItemCategory',
                'POSTER.Qty.Ordered','IncompleteStatusCount')
 onhold = df_thisyr_lastyr[df_thisyr_lastyr$IncompleteStatusCount > 1, onholdcolz]
 onhold = onhold[order(onhold$IncompleteStatusCount, decreasing = T), ]
@@ -713,7 +706,7 @@ onhold[,c(1:2)]
 Below shows jobs that were placed in "Incomplete" status one or more times, but were eventually finished.
 
 ```{r limbo_sls}
-limbo_colz = c('Salesperson','Company','Year','Customer','IncompleteStatusCount','JobId',
+limbo_colz = c('Salesperson','Warehouse','Year','Customer','IncompleteStatusCount','JobId',
                'Incomplete','AssembledandShipped','IncompleteStatus1','POSTER.Qty.Ordered')
 limbo_sls_thisyr = df_thisyr[order(df_thisyr$IncompleteStatusCount, decreasing=T), limbo_colz]
 limbo_sls_thisyr = limbo_sls_thisyr[limbo_sls_thisyr$IncompleteStatusCount > 0, ]
@@ -734,26 +727,26 @@ head(limbo_slss, 10)
 
 ```{r price_mentions_plot}
 ## melt and isolate data by designer
-val_cols = c('POSTER.Price','POSTER.MB.mentions')
-id_cols = c('POSTER.Designer','Month')
+val_cols = c('PosterPrice','POSTER.MB.mentions')
+id_cols = c('Designer','Month')
 
 bydesigner_melt = melt(df_thisyr, id_cols, val_cols)
 
-bydesigner = aggregate(value ~ variable + POSTER.Designer + Month, data=bydesigner_melt, FUN=sum)
+bydesigner = aggregate(value ~ variable + Designer + Month, data=bydesigner_melt, FUN=sum)
 bydesigner = spread(bydesigner, 'Month', 'value')
 
 l_dfs = split(bydesigner, bydesigner$variable)
-price_df = l_dfs$POSTER.Price
+price_df = l_dfs$PosterPrice
 
 library(scales)
 byd_df = bydesigner
 namz = names(byd_df)
-namz = c(unlist(namz[namz %!in% c('variable','POSTER.Designer')]))
-mentions_df_melt = melt(byd_df, c('variable','POSTER.Designer'), namz)
-names(mentions_df_melt) = c('var','POSTER.Designer','Month','value')
+namz = c(unlist(namz[namz %!in% c('variable','Designer')]))
+mentions_df_melt = melt(byd_df, c('variable','Designer'), namz)
+names(mentions_df_melt) = c('var','Designer','Month','value')
 
-ggplot(mentions_df_melt, aes(x=Month, y=value, group=POSTER.Designer)) +
-  geom_line(aes(colour=POSTER.Designer)) +
+ggplot(mentions_df_melt, aes(x=Month, y=value, group=Designer)) +
+  geom_line(aes(colour=Designer)) +
   geom_point(alpha=0.6) +
   facet_wrap(~var, nrow=2, scales='free_y') +
   theme_minimal() +
@@ -838,7 +831,7 @@ ggplot(mentions_t_melt, aes(x=Name, y=value, group=variable)) +
 Total number of jobs by designer, shown by month. Figures below show a job if it was "touched" at all during the timeframe in question.
 
 ```{r jobspermo_bydesigner}
-jobspermo = aggregate(JobId ~ POSTER.Designer + Month, data=df_thisyr, FUN=len_unique)
+jobspermo = aggregate(JobId ~ Designer + Month, data=df_thisyr, FUN=len_unique)
 jobspermo = spread(jobspermo, 'Month', 'JobId')
 jobspermo = process_df(jobspermo)
 jobspermo
@@ -887,24 +880,24 @@ ggplot(data=t_jobs, aes(x=Month, y=value, group=variable)) +
 <!-- ```{r pipelinex} -->
 <!-- colz = c('DayOfRecord','YearOfRecord','WeekOfRecord','DayOfMonthOfRecord', -->
 <!--          'DayOfMonthOfRecord','WeekdayOfRecord','MonthOfRecord', -->
-<!--          'JobId','ProjectID_LineID', -->
-<!--          'POSTER.Price','POSTER.ITEM.CATEGORY', -->
-<!--          'POSTER.Designer','InPipeline','POSTER.MB.mentions', -->
+<!--          'JobId','JobItemId', -->
+<!--          'PosterPrice','ItemCategory', -->
+<!--          'Designer','in_pipeline','POSTER.MB.mentions', -->
 <!--          'Incomplete','AssembledandShipped','JobStatus', -->
 <!--          'IncompleteStatusCount') -->
 
-<!-- inpipe = df_thisyr[(df_thisyr$InPipeline==T), colz]  -->
+<!-- inpipe = df_thisyr[(df_thisyr$in_pipeline==T), colz]  -->
 
 <!-- ## Check Brittany's pipeline -->
-<!-- britcheck = inpipe[inpipe$POSTER.Designer == 'Riehlman, Brittany', ] -->
+<!-- britcheck = inpipe[inpipe$Designer == 'Riehlman, Brittany', ] -->
 <!-- britcheck = britcheck[!duplicated(britcheck$JobId), ] -->
 <!-- head(britcheck[,c('JobId','JobStatus','Incomplete','AssembledandShipped')], 10) -->
 
-<!-- pipeline_summary = aggregate(cbind(JobId, ProjectID_LineID) ~ POSTER.Designer, -->
+<!-- pipeline_summary = aggregate(cbind(JobId, JobItemId) ~ Designer, -->
 <!--                              data=inpipe, FUN=len_unique) -->
-<!-- price_summary = aggregate(cbind(POSTER.Price, POSTER.MB.mentions) ~ POSTER.Designer, -->
+<!-- price_summary = aggregate(cbind(PosterPrice, POSTER.MB.mentions) ~ Designer, -->
 <!--                              data=inpipe, FUN=function(x) round(sum(x, na.rm=T), 0)) -->
-<!-- pipeline_summary = merge(pipeline_summary, price_summary, on='POSTER.Designer', how='all') -->
+<!-- pipeline_summary = merge(pipeline_summary, price_summary, on='Designer', how='all') -->
 
 
 <!-- pipeline_summary = process_df(pipeline_summary) -->
@@ -920,7 +913,7 @@ Jobs that had a starting date but no ship date that were not jobs from this year
 A Job is considered active in the Graphics pipeline if the Job has been Kicked Off, but has not been Shipped.
 
 ```{r bydes_inpipe, fig.height=5, fig.width=9}
-PIPECOLZ = c('JobId','ProjectID_LineID','Incomplete','AssembledandShipped')
+PIPECOLZ = c('JobId','JobItemId','Incomplete','AssembledandShipped')
 inpipe_history = df_thisyr_lastyr[order(df_thisyr_lastyr$JobId), PIPECOLZ] #df_thisyr_lastyr
 
 inpipe_history = data.frame(
@@ -998,21 +991,21 @@ To highlight the heterogeneity in the types of jobs Graphics produces, this sect
 The data & figures below considers *projects that have been finished this year* only. Price and turnaround are shown as averages, while Jobs and Job Items are generated using a "count unique" function.
 
 ```{r heterogeneity_jobs}
-jobtypes = df_thisyr[ , c('POSTER.ITEM.CATEGORY','POSTER.Price',
-                          'JobId','ProjectID_LineID','Turnaround_KickoffToShip')]
+jobtypes = df_thisyr[ , c('ItemCategory','PosterPrice',
+                          'JobId','JobItemId','JobTurnaround')]
 
 ## define accessories for later
 accessories = c('Menu Books','Table Top Wrap','TT A-Frame Holder','TT A-Frame Holder (Holder Only)', 
                 'TT Acrylic Stand','TT Acrylic Stand (Stand Only)','TT Flip Stand','TT Flip Stand (Stand Only)',
                 'Vivid Board - Dry Erase','Vivid Board - Dry Erase','Light Box')
-jobtypes$AccessoryOrPrint = ifelse(jobtypes$POSTER.ITEM.CATEGORY %in% accessories, 'Accessory', 
+jobtypes$AccessoryOrPrint = ifelse(jobtypes$ItemCategory %in% accessories, 'Accessory', 
                                    'Print')
-jobtypes = jobtypes[is.na(jobtypes$Turnaround_KickoffToShip)==F, ]
+jobtypes = jobtypes[is.na(jobtypes$JobTurnaround)==F, ]
 
 ## Custom categories from Rachel
-jt3 = aggregate(cbind(Turnaround_KickoffToShip, POSTER.Price) ~ AccessoryOrPrint, 
+jt3 = aggregate(cbind(JobTurnaround, PosterPrice) ~ AccessoryOrPrint, 
                 data=jobtypes, FUN=function(x) round(mean(x,na.rm=T), 1))
-jt4 = aggregate(cbind(JobId, ProjectID_LineID) ~ AccessoryOrPrint, 
+jt4 = aggregate(cbind(JobId, JobItemId) ~ AccessoryOrPrint, 
                 data=jobtypes, FUN=len_unique)
 
 acc_or_pri = merge(jt3, jt4, on='AccessoryOrPrint', how='all')
@@ -1024,14 +1017,14 @@ acc_or_pri = acc_or_pri[order(acc_or_pri$Turnaround, decreasing=T), ]
 acc_or_pri
 
 ## Get more granular
-jt1 = aggregate(cbind(Turnaround_KickoffToShip, POSTER.Price) ~ POSTER.ITEM.CATEGORY, 
+jt1 = aggregate(cbind(JobTurnaround, PosterPrice) ~ ItemCategory, 
                 data=jobtypes, FUN=function(x) round(mean(x,na.rm=T), 1))
-jt2 = aggregate(cbind(JobId, ProjectID_LineID) ~ POSTER.ITEM.CATEGORY, 
+jt2 = aggregate(cbind(JobId, JobItemId) ~ ItemCategory, 
                 data=jobtypes, FUN=len_unique)
 
-job_typ = merge(jt1, jt2, on='POSTER.ITEM.CATEGORY', how='all')
-rownames(job_typ) = job_typ$POSTER.ITEM.CATEGORY
-job_typ$POSTER.ITEM.CATEGORY = NULL
+job_typ = merge(jt1, jt2, on='ItemCategory', how='all')
+rownames(job_typ) = job_typ$ItemCategory
+job_typ$ItemCategory = NULL
 names(job_typ) = c('Turnaround','Price','Jobs','Items')
 job_typ = job_typ[order(job_typ$Turnaround, decreasing=T), ]
 
@@ -1052,15 +1045,15 @@ Menus are assumed to have more work associated with them. A job is considered a 
 Prices & Turnaround are shown as averages.
 
 ```{r menus_v_nonmenus}
-menutypes = df_thisyr[ , c('POSTER.ITEM.CATEGORY','POSTER.Price',
-                          'JobId','ProjectID_LineID','Turnaround_KickoffToShip','Menu')]
+menutypes = df_thisyr[ , c('ItemCategory','PosterPrice',
+                          'JobId','JobItemId','JobTurnaround','Menu')]
 
-menutypes = menutypes[is.na(menutypes$Turnaround_KickoffToShip)==F, ]
+menutypes = menutypes[is.na(menutypes$JobTurnaround)==F, ]
 
 ## Custom categories from Rachel
-jt5 = aggregate(cbind(Turnaround_KickoffToShip, POSTER.Price) ~ Menu, 
+jt5 = aggregate(cbind(JobTurnaround, PosterPrice) ~ Menu, 
                 data=menutypes, FUN=function(x) round(mean(x,na.rm=T), 1))
-jt6 = aggregate(cbind(JobId, ProjectID_LineID) ~ Menu, 
+jt6 = aggregate(cbind(JobId, JobItemId) ~ Menu, 
                 data=menutypes, FUN=len_unique)
 
 menuz_df = merge(jt5, jt6, on='Menu', how='all')
@@ -1075,15 +1068,15 @@ menuz_df
 
 
 <!-- ```{r menus_v_nonmenus_bymo} IN PROCESS-->
-<!-- menutypes = df_thisyr[ , c('POSTER.ITEM.CATEGORY','POSTER.Price','KickoffMonth', -->
-<!--                           'JobId','ProjectID_LineID','Turnaround_KickoffToShip','Menu')] -->
+<!-- menutypes = df_thisyr[ , c('ItemCategory','PosterPrice','KickoffMonth', -->
+<!--                           'JobId','JobItemId','JobTurnaround','Menu')] -->
 
-<!-- menutypes = menutypes[is.na(menutypes$Turnaround_KickoffToShip)==F, ] -->
+<!-- menutypes = menutypes[is.na(menutypes$JobTurnaround)==F, ] -->
 
 <!-- ## Custom categories from Rachel -->
-<!-- jt5 = aggregate(cbind(Turnaround_KickoffToShip, POSTER.Price) ~ Menu + KickoffMonth,  -->
+<!-- jt5 = aggregate(cbind(JobTurnaround, PosterPrice) ~ Menu + KickoffMonth,  -->
 <!--                 data=menutypes, FUN=function(x) round(mean(x,na.rm=T), 1)) -->
-<!-- jt6 = aggregate(cbind(JobId, ProjectID_LineID) ~ Menu,  -->
+<!-- jt6 = aggregate(cbind(JobId, JobItemId) ~ Menu,  -->
 <!--                 data=menutypes, FUN=len_unique) -->
 
 <!-- menuz_df = merge(jt5, jt6, on='Menu', how='all') -->
@@ -1125,18 +1118,18 @@ This section was designed to provide Leadership succinct insights on Graphics im
 
 
 
-## By Company
+## By Warehouse
 
-### YTD Number of Jobs by Company
+### YTD Number of Jobs by Warehouse
 
 Month below is defined as the Incomplete month, or the month in which the Job started.
 
 ```{r bylocation_bymo, fig.height=5, fig.width=9}
-kickedoff_byhouse = aggregate(JobId ~ KickoffYear + Company, data=df_ytd_thislast, FUN=len_unique)
+kickedoff_byhouse = aggregate(JobId ~ KickoffYear + Warehouse, data=df_ytd_thislast, FUN=len_unique)
 kickedoff_byhouse = kickedoff_byhouse[kickedoff_byhouse$KickoffYear != twoyrsago, ]
 kickedoff_byhouse = spread(kickedoff_byhouse, 'KickoffYear', 'JobId')
-rownames(kickedoff_byhouse) = kickedoff_byhouse$Company
-kickedoff_byhouse$Company = NULL
+rownames(kickedoff_byhouse) = kickedoff_byhouse$Warehouse
+kickedoff_byhouse$Warehouse = NULL
 
 kickedoff_byhouse$`Percent Change (%)` = pct_chg(kickedoff_byhouse[, as.character(this_yr)], 
                                                  kickedoff_byhouse[, as.character(last_yr)])
@@ -1150,7 +1143,7 @@ ggplot(kickedoff_byhouse, aes(x=Loc, y=value, group=variable)) +
   geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
   theme_minimal() +
   theme(axis.text.x=element_text(angle=90, hjust=1)) +
-  labs(x='Company', y='Projects Kicked Off, Year-over-Year',title='Projects Kicked Off by House')
+  labs(x='Warehouse', y='Projects Kicked Off, Year-over-Year',title='Projects Kicked Off by House')
 ```
 
 ### Number of Jobs & Job Items, Year-over-Year by Month
@@ -1160,7 +1153,7 @@ The data shown below includes records for this year and last year *through today
 It should be noted that jobs that were kicked off yet abandoned are no longer included in the figures below.
 
 ```{r bylocation_ytd_kickedoff}
-kickedoff_byhouse_bymo = aggregate(cbind(JobId,ProjectID_LineID) ~ KickoffYear + KickoffMonth + Company, 
+kickedoff_byhouse_bymo = aggregate(cbind(JobId,JobItemId) ~ KickoffYear + KickoffMonth + Warehouse, 
                               data=df_ytd_thislast, FUN=len_unique)
 kickedoff_byhouse_bymo = kickedoff_byhouse_bymo[kickedoff_byhouse_bymo$KickoffYear != twoyrsago & 
                                         kickedoff_byhouse_bymo$KickoffMonth %in% ytd_months, ]
@@ -1168,15 +1161,15 @@ kickedoff_byhouse_bymo = kickedoff_byhouse_bymo[kickedoff_byhouse_bymo$KickoffYe
 kickedoff_byhouse_bymo = reshape2::melt(kickedoff_byhouse_bymo, names(kickedoff_byhouse_bymo)[1:3])
 kickedoff_byhouse_bymo = spread(kickedoff_byhouse_bymo, 'variable', 'value')
 
-kickedoff_byhouse_bymo = reshape(kickedoff_byhouse_bymo, timevar='KickoffYear', idvar=c('Company','KickoffMonth'), direction='wide')
+kickedoff_byhouse_bymo = reshape(kickedoff_byhouse_bymo, timevar='KickoffYear', idvar=c('Warehouse','KickoffMonth'), direction='wide')
 kickedoff_byhouse_bymo$KickoffMonth = factor(kickedoff_byhouse_bymo$KickoffMonth, 
                                              levels=c('January','February','March','April','May','June',
                                                       'July','August','September','October','November','December'))
-kickedoff_byhouse_bymo$Company = factor(kickedoff_byhouse_bymo$Company, levels=c('ST LOUIS','KANSAS CITY','MID MISSOURI'))
-kickedoff_byhouse_bymo = kickedoff_byhouse_bymo %>% arrange(Company, KickoffMonth)
-kickedoff_byhouse_bymo$CompanyMonth = paste0(kickedoff_byhouse_bymo$Company, ' - ', substr(kickedoff_byhouse_bymo$KickoffMonth,1,3))
-rownames(kickedoff_byhouse_bymo) = kickedoff_byhouse_bymo$CompanyMonth
-kickedoff_byhouse_bymo$KickoffMonth = kickedoff_byhouse_bymo$Company = kickedoff_byhouse_bymo$CompanyMonth = NULL
+kickedoff_byhouse_bymo$Warehouse = factor(kickedoff_byhouse_bymo$Warehouse, levels=c('ST LOUIS','KANSAS CITY','MID MISSOURI'))
+kickedoff_byhouse_bymo = kickedoff_byhouse_bymo %>% arrange(Warehouse, KickoffMonth)
+kickedoff_byhouse_bymo$WarehouseMonth = paste0(kickedoff_byhouse_bymo$Warehouse, ' - ', substr(kickedoff_byhouse_bymo$KickoffMonth,1,3))
+rownames(kickedoff_byhouse_bymo) = kickedoff_byhouse_bymo$WarehouseMonth
+kickedoff_byhouse_bymo$KickoffMonth = kickedoff_byhouse_bymo$Warehouse = kickedoff_byhouse_bymo$WarehouseMonth = NULL
 
 ## Set names
 names(kickedoff_byhouse_bymo) = c(paste0('Jobs ',last_yr),
@@ -1196,16 +1189,16 @@ kickedoff_byhouse_bymo
 
 
 
-### YTD Graphics Profit by Company
+### YTD Graphics Profit by Warehouse
 
 Profit in the months so far this year (i.e. YTD months), year-over-year. Graphics Profit is defined as YTD Poster Price minus YTD Charge Back Price.
 
 ```{r ytd_pctprofit}
-profit_byhouse = aggregate(Profit ~ KickoffYear + Company, data=df_ytd_thislast, FUN=function(x) round(sum(x, na.rm=T), 2))
+profit_byhouse = aggregate(Profit ~ KickoffYear + Warehouse, data=df_ytd_thislast, FUN=function(x) round(sum(x, na.rm=T), 2))
 profit_byhouse = profit_byhouse[profit_byhouse$KickoffYear != twoyrsago, ]
 profit_byhouse = spread(profit_byhouse, 'KickoffYear', 'Profit')
-rownames(profit_byhouse) = profit_byhouse$Company
-profit_byhouse$Company = NULL
+rownames(profit_byhouse) = profit_byhouse$Warehouse
+profit_byhouse$Warehouse = NULL
 
 profit_byhouse$`Percent Change (%)` = pct_chg(profit_byhouse[, as.character(this_yr)], profit_byhouse[, as.character(last_yr)])
 profit_byhouse
@@ -1306,12 +1299,12 @@ head(profit_bysupplier, 35)
 Below displays the top Brands *(sorted in descending order by Number of Jobs)* for this year only. 
 
 ```{r brands_customers}
-brands = df_thisyr[,c('Brand','Supplier','POSTER.CB.Total','POSTER.Price',
-                            'POSTER.ITEM.CATEGORY','JobId','ProjectID_LineID')]
+brands = df_thisyr[,c('Brand','Supplier','ChargebackTotal','PosterPrice',
+                            'ItemCategory','JobId','JobItemId')]
 brands = brands[brands$Brand != '', ]
-b1 = aggregate(cbind(POSTER.CB.Total, POSTER.Price) ~ Supplier + Brand, data=brands, FUN=function(x) round(sum(x, na.rm=T), 0))
-b1$Profit = round(b1$POSTER.Price - b1$POSTER.CB.Total, 0)
-b2 = aggregate(cbind(JobId, ProjectID_LineID) ~ Supplier + Brand, data=brands, FUN=len_unique)
+b1 = aggregate(cbind(ChargebackTotal, PosterPrice) ~ Supplier + Brand, data=brands, FUN=function(x) round(sum(x, na.rm=T), 0))
+b1$Profit = round(b1$PosterPrice - b1$ChargebackTotal, 0)
+b2 = aggregate(cbind(JobId, JobItemId) ~ Supplier + Brand, data=brands, FUN=len_unique)
 
 brands = merge(b1, b2, on=c('Supplier','Brand'), how='all')
 rownames(brands) = brands$Brand
@@ -1336,7 +1329,7 @@ head(brands, 50)
 <!-- library(sna) -->
 <!-- net = data.frame(Brand=df_ytd_thislast$Brand,  -->
 <!--                  Customer=df_ytd_thislast$Customer, -->
-<!--                  weight=df_ytd_thislast$POSTER.Price) -->
+<!--                  weight=df_ytd_thislast$PosterPrice) -->
 <!-- net = net[(net$Brand != '') & (net$Customer != '') &(is.na(net$weight)==F), ] -->
 <!-- net = aggregate(weight ~ Brand + Customer, data=net, FUN=function(x) round(sum(x, na.rm=T), 2)) -->
 <!-- net = network(net) -->
@@ -1354,10 +1347,10 @@ head(brands, 50)
 
 Top Salesperson requesters who input jobs for this year only, sorted by number of jobs. Note that the Graphics department inputs many jobs as proxies for the true requester; these are shown separately. Requests that were entered by the Graphics department on behalf of someone else will show up in the second table below.
 
-```{r byrequester}
-head(byrequester, 35)
-bygraphics
-```
+# ```{r byrequester}
+# head(byrequester, 35)
+# bygraphics
+# ```
 
 
 
