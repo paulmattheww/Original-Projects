@@ -125,7 +125,7 @@ read_raw_graphics_data = function(python_path){
   df$InvoiceYear = lubridate::year(dat)
   df$InvoiceWeek = lubridate::week(dat)
   df$InvoiceMonth = lubridate::month(dat, TRUE, FALSE)
-  df = df[df$InvoiceYear %in% c(this_yr, last_yr, tw_yrs_ago, NA), ] #check NA
+  #df = df[df$InvoiceYear %in% c(this_yr, last_yr, tw_yrs_ago, NA), ] #check NA
   df$Profit = round(df$PosterPrice - df$ChargebackTotal, 2)
   return(df)
 }
@@ -933,7 +933,7 @@ job_history = inpipe_history[DUPE_JOBS, ]
 #job_history = job_history[!is.na(job_history$Incomplete), ]
 
 #############CHANGE IF NEED BE, ALL 3 YEARS IS CONSERVATIVE this_yr 
-last2yrs = (lubridate::year(job_history$Incomplete) %in% c(last_yr,twoyrsago))###this_yr
+last2yrs = (lubridate::year(job_history$Incomplete) %in% c(last_yr,tw_yrs_ago))###this_yr
 stillnotdone = (is.na(job_history$AssembledandShipped))
 begunlongago_butnotfinished = last2yrs & stillnotdone#stillnotdone#
 job_history = job_history[!begunlongago_butnotfinished, ]
@@ -1126,7 +1126,7 @@ Month below is defined as the Incomplete month, or the month in which the Job st
 
 ```{r bylocation_bymo, fig.height=5, fig.width=9}
 kickedoff_byhouse = aggregate(JobId ~ KickoffYear + Warehouse, data=df_ytd_thislast, FUN=len_unique)
-kickedoff_byhouse = kickedoff_byhouse[kickedoff_byhouse$KickoffYear != twoyrsago, ]
+kickedoff_byhouse = kickedoff_byhouse[kickedoff_byhouse$KickoffYear != tw_yrs_ago, ]
 kickedoff_byhouse = spread(kickedoff_byhouse, 'KickoffYear', 'JobId')
 rownames(kickedoff_byhouse) = kickedoff_byhouse$Warehouse
 kickedoff_byhouse$Warehouse = NULL
@@ -1155,7 +1155,7 @@ It should be noted that jobs that were kicked off yet abandoned are no longer in
 ```{r bylocation_ytd_kickedoff}
 kickedoff_byhouse_bymo = aggregate(cbind(JobId,JobItemId) ~ KickoffYear + KickoffMonth + Warehouse, 
                               data=df_ytd_thislast, FUN=len_unique)
-kickedoff_byhouse_bymo = kickedoff_byhouse_bymo[kickedoff_byhouse_bymo$KickoffYear != twoyrsago & 
+kickedoff_byhouse_bymo = kickedoff_byhouse_bymo[kickedoff_byhouse_bymo$KickoffYear != tw_yrs_ago & 
                                         kickedoff_byhouse_bymo$KickoffMonth %in% ytd_months, ]
 
 kickedoff_byhouse_bymo = reshape2::melt(kickedoff_byhouse_bymo, names(kickedoff_byhouse_bymo)[1:3])
@@ -1195,7 +1195,7 @@ Profit in the months so far this year (i.e. YTD months), year-over-year. Graphic
 
 ```{r ytd_pctprofit}
 profit_byhouse = aggregate(Profit ~ KickoffYear + Warehouse, data=df_ytd_thislast, FUN=function(x) round(sum(x, na.rm=T), 2))
-profit_byhouse = profit_byhouse[profit_byhouse$KickoffYear != twoyrsago, ]
+profit_byhouse = profit_byhouse[profit_byhouse$KickoffYear != tw_yrs_ago, ]
 profit_byhouse = spread(profit_byhouse, 'KickoffYear', 'Profit')
 rownames(profit_byhouse) = profit_byhouse$Warehouse
 profit_byhouse$Warehouse = NULL
@@ -1219,7 +1219,7 @@ NOT_REAL_CUSTOMERS = c('GENERAL MARKET ALL-STL','GENERAL MARKET ALL-MMS',
                        'MAJOR BRANDS INTERNAL-KC')
 
 jobs_byaccount = aggregate(JobId ~ KickoffYear + Customer, data=df_ytd_thislast, FUN=len_unique)
-jobs_byaccount = jobs_byaccount[jobs_byaccount$KickoffYear != twoyrsago, ]
+jobs_byaccount = jobs_byaccount[jobs_byaccount$KickoffYear != tw_yrs_ago, ]
 jobs_byaccount = spread(jobs_byaccount, 'KickoffYear', 'JobId')
 jobs_byaccount = jobs_byaccount[jobs_byaccount$Customer %!in% NOT_REAL_CUSTOMERS, ]
 rownames(jobs_byaccount) = jobs_byaccount$Customer
@@ -1235,7 +1235,7 @@ Top customer accounts *(by Graphics Profit)* YTD, compared to the same period la
 
 ```{r profit_byaccount}
 profit_byaccount = aggregate(Profit ~ KickoffYear + Customer, data=df_ytd_thislast, FUN=function(x) round(sum(x, na.rm=T), 2))
-profit_byaccount = profit_byaccount[profit_byaccount$KickoffYear != twoyrsago, ]
+profit_byaccount = profit_byaccount[profit_byaccount$KickoffYear != tw_yrs_ago, ]
 profit_byaccount = spread(profit_byaccount, 'KickoffYear', 'Profit')
 profit_byaccount = profit_byaccount[profit_byaccount$Customer %!in% NOT_REAL_CUSTOMERS, ]
 rownames(profit_byaccount) = profit_byaccount$Customer
@@ -1257,7 +1257,7 @@ Top suppliers *(by number of Graphics Jobs)* YTD, compared to the same period la
 
 ```{r jobs_bysupplier}
 jobs_bysupplier = aggregate(JobId ~ KickoffYear + Supplier, data=df_ytd_thislast, FUN=len_unique)
-jobs_bysupplier = jobs_bysupplier[jobs_bysupplier$KickoffYear != twoyrsago, ]
+jobs_bysupplier = jobs_bysupplier[jobs_bysupplier$KickoffYear != tw_yrs_ago, ]
 jobs_bysupplier = spread(jobs_bysupplier, 'KickoffYear', 'JobId')
 jobs_bysupplier = jobs_bysupplier[jobs_bysupplier$Supplier != '', ]
 rownames(jobs_bysupplier) = jobs_bysupplier$Supplier
@@ -1274,7 +1274,7 @@ Top suppliers *(by Graphics Profit)* YTD, compared to the same period last year.
 
 ```{r profit_bysupplier}
 profit_bysupplier = aggregate(Profit ~ KickoffYear + Supplier, data=df_ytd_thislast, FUN=function(x) round(sum(x, na.rm=T), 2))
-profit_bysupplier = profit_bysupplier[profit_bysupplier$KickoffYear != twoyrsago, ]
+profit_bysupplier = profit_bysupplier[profit_bysupplier$KickoffYear != tw_yrs_ago, ]
 profit_bysupplier = spread(profit_bysupplier, 'KickoffYear', 'Profit')
 profit_bysupplier = profit_bysupplier[profit_bysupplier$Supplier != '', ]
 rownames(profit_bysupplier) = profit_bysupplier$Supplier
