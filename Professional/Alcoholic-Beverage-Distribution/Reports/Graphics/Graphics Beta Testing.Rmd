@@ -10,12 +10,12 @@ output:
 ---
 ```{python pySetup}
 from pandas import read_table
-df = read_table('N:/Operations Intelligence/Monthly Reports/Graphics/Raw Data/paul.txt.txt', engine='python', doublequote=False, header=0)
+df = read_table('N:/Operations Intelligence/Monthly Reports/Graphics/Raw Data/PaulThree.txt', engine='python', doublequote=False, header=0)
 
 col_names = {'ID':'ID',
             'DVMKET':'Warehouse',
             'DVJOBID':'JobId',
-            'DVJOBNAME':'JobStartDate',
+            'DVJOBNAME':'JobName',
             'DVREPRNT':'Reprint',
             'DVJBSTAT':'JobStatus',
             'DVCUSTNUM':'CustomerId',
@@ -53,10 +53,11 @@ col_names = {'ID':'ID',
             'DVGRPHDS':'Designer',
             'DVGRPHDF':'User'}
             
-df.drop(labels=['DVIMAGE','ItemWidth','ItemHeight','DVITMOPT'], axis=1, inplace=True)
 df.rename(columns=col_names, inplace=True)
 df.Warehouse = df.Warehouse.map({'1':'Kansas City', '2':'Saint Louis', '3':'Columbia', '5':'Springfield'})
 df.set_index('ID', inplace=True)
+df.drop(labels=['DVIMAGE','ItemWidth','ItemHeight','DVITMOPT'], axis=1, inplace=True)
+
 df.to_csv('N:/Operations Intelligence/Monthly Reports/Graphics/Raw Data/renamed raw data.csv', index=False)
 ```
 
@@ -64,13 +65,13 @@ df.to_csv('N:/Operations Intelligence/Monthly Reports/Graphics/Raw Data/renamed 
 
 ```{r setup, include=FALSE}
 options(stringsAsFactors = FALSE)
-## VITAL -- MAKE SURE ALL CURRENT DESIGNERS ARE PRESENT BELOW
-active_designers = c('Mueller, Rachel','Riehlman, Brittany','Wilhoit, Katie','Wright, Paige')
-graphics_posterIDs = c('MUELLER, RACHEL (86907)','RIEHLMAN, BRITTANY (86932)','WILHOIT, KATIE (86923)','WRIGHT, PAIGE (86885)')
-
 knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
 knitr::opts_chunk$set(message = FALSE)
+
+## VITAL -- MAKE SURE ALL CURRENT DESIGNERS ARE PRESENT BELOW
+active_designers = c('Mueller, Rachel','Riehlman, Brittany','Wilhoit, Katie','Wright, Paige')
+graphics_posterIDs = c('MUELLER, RACHEL','RIEHLMAN, BRITTANY','WILHOIT, KATIE','WRIGHT, PAIGE')
 
 ## Graphics data dump from Diver
 library(dplyr)
@@ -228,28 +229,7 @@ for(i in 1:length(job_status)) {
 }
 df = df[,names(df) %in% colsToKeep]
 
-## Mark Jobs that have reached the maximum character limit of 1032 
-## In the JobStatus field
-# df$JobStatusFieldAtCapacity = nchar(as.character(df$JobStatus)) == 1032
 
-
-###### CHECKING FOR BUGGIES ###### CHECKING FOR BUGGIES
-# df[!is.na(df$BrandMentionsEntered1),]
-# df[!is.na(df$IncompleteStatus1),]
-# df[!is.na(df$ArtworkRedesign5),]
-# df[is.na(df$AssembledandShipped),]
-
-# checkStatus = pipeX$JobStatus
-# checkOtherStatus = df$JobStatus
-# for(i in 1:length(checkStatus)){
-#     print(nchar(as.character(checkStatus[i])))
-# }
-# for(i in 1:length(checkOtherStatus)){
-#     print(1032 >= nchar(as.character(checkOtherStatus[i])))
-# }
-###### CHECKING FOR BUGGIES ###### CHECKING FOR BUGGIES
-
-## write.csv(df,"c:/users/pmwash/desktop/disposable docs/check for graphics.csv"); rm(df)
 
 countEvents = function(df, columnIdentifier){
   columns = names(df)
@@ -308,10 +288,6 @@ get_and_check_pipeline = function(df){
 pipe_check = get_and_check_pipeline(df)
 
 
-# names(df)[names(df)=='DVDISTCS'] = 'PosterPrice'#quick bandaid
-# ## Get profit as specified by Rachel M.
-# df$Profit = round(df$PosterPrice - df$ChargebackTotal, 2)
-
 
 redesigns_menus_accessories = function(df) {
   ## Mark redesigns, menus & accessories
@@ -346,12 +322,24 @@ get_milestones = function(df){
   df$YearOfRecord = lubridate::year(dat)
   df$DayOfMonthOfRecord = lubridate::mday(dat)
   df$WeekdayOfRecord = lubridate::wday(dat, T, F)
+  df$DOTY = lubridate::yday(df$DayOfRecord)
   return(df)
 }
 
 df = get_milestones(df)
 
 
+## Push this merge to python when time permits
+slsLookup = 'C:/Users/pmwash/Desktop/Re-Engineered Reports/Generalized Lookup Data/pw_slp2.csv'
+read_pwslp2 = function(path){
+  pw_slp2 = read.csv(path, header=TRUE)
+  names(pw_slp2) = c('SalespersonId','Salesperson','DirectorId')
+  pw_slp2$DirectorId = NULL
+  return(pw_slp2)
+}
+
+df$Salesperson = NULL
+df = merge(df, read_pwslp2(slsLookup), on='SalespersonId', how='outer')
 
 
 
@@ -400,40 +388,76 @@ get_this_year_data_only = function(df){
 df_thisyr = get_this_year_data_only(df)
 
 
-# ## For below, way below
-# byrequester = aggregate(cbind(JobId, JobItemId) ~ Salesperson, data=df_thisyr, FUN=len_unique)
-# bygraphics = byrequester[byrequester$Salesperson %in% graphics_posterIDs, ]
-# byrequester = byrequester[byrequester$Salesperson %!in% graphics_posterIDs, ]
-# rownames(byrequester) = byrequester$Salesperson
-# rownames(bygraphics) = bygraphics$Salesperson
-# bygraphics$Salesperson = NULL
-# byrequester$Salesperson = NULL
-# bygraphics = bygraphics[order(bygraphics$JobId, decreasing=T),]
-# byrequester = byrequester[order(byrequester$JobId, decreasing=T),]
-# 
-# names(byrequester) = c('Jobs Requested','Job Items Requested')
-# names(bygraphics) = c('Jobs Requests Input for Others','Job Items Input for Others')
+
+get_ytd_this_and_last_year = function(last_yr){
+  doy = lubridate::yday(Sys.Date())
+  day_seq = seq(1, doy, 1)
+  return(day_seq)
+}
+
+days_so_far = get_ytd_this_and_last_year(last_yr)
+df_ytd_thislast = df_thisyr_lastyr[df_thisyr_lastyr$DOTY %in% days_so_far, ]
 
 
-## Redesigns for later on
-redesign_colz = c('JobItemId', 'JobId', 'Redesign', 'JobTurnaround', 
-                  'Reprint', 'Salesperson', 'ItemCategory', 'Designer',
-                  'Accessory', 'Menu', 'YearOfRecord')
-redesigns = df_ytd_thislast[, redesign_colz]
-count_jobs = len_unique(redesigns$JobId)
-
-redesigns$JobID_Redesign = paste0(redesigns$JobId, ' ', redesigns$Redesign)
-redesigns$LineID_Redesign = paste0(redesigns$JobItemId, ' ', redesigns$Redesign)
 
 
-# ## Turnaround later on
-# turn_cols = cbind(df_thisyr$JobTurnaround)
-# turnaround = aggregate(turn_cols ~ df_thisyr$Designer, FUN=function(x) round(mean(as.numeric(x), na.rm=T), 1))
-# names(turnaround) = c('X','Turnaround','Completion','Stage1','Stage2',
-#                       'Stage3','Stage4','Stage4A','Stage5','Stage6')
-# rownames(turnaround) = turnaround$X
-# turnaround$X = NULL
-# guide_df = data.frame(row.names=c('Stage 1','Stage 2','Stage 3','Stage 4','Stage 4A','Stage 5',
+
+## Get number of jobs and items by salespeople
+countJobsBySalesperson = function(df_thisyr){
+  uniqueJobs = aggregate(cbind(JobId, JobItemId) ~ Salesperson, data=df_thisyr, FUN=len_unique)
+  return(uniqueJobs)
+}
+
+getSalesJobs = function(uniqueJobs, graphics_as_salespeople, sales_only){
+  if(sales_only==TRUE){
+    uniqueJobs = uniqueJobs[uniqueJobs$Salesperson %in% graphics_as_salespeople, ]  
+  }else{
+    uniqueJobs = uniqueJobs[uniqueJobs$Salesperson %!in% graphics_as_salespeople, ]
+  }
+  rownames(uniqueJobs) = uniqueJobs$Salesperson
+  uniqueJobs$Salesperson = NULL
+  uniqueJobs = uniqueJobs[order(uniqueJobs$JobId, decreasing=T),]
+  names(uniqueJobs) = c('Jobs Requests Input','Job Items Input')
+  return(uniqueJobs)
+}
+
+uniqueJobs = countJobsBySalesperson(df_thisyr)
+bygraphics = getSalesJobs(uniqueJobs, graphics_posterIDs, sales_only=FALSE)
+byrequester = getSalesJobs(uniqueJobs, graphics_posterIDs, sales_only=TRUE)
+
+
+
+
+# ## Redesigns for later on
+getRedesigns = function(df_ytd_thislast){
+  redesign_colz = c('JobItemId', 'JobId', 'Redesign', 'JobTurnaround',
+                    'Reprint', 'Salesperson', 'ItemCategory', 'Designer',
+                    'Accessory', 'Menu', 'YearOfRecord')
+  redesigns = df_ytd_thislast[, redesign_colz]
+  count_jobs = len_unique(redesigns$JobId)
+  
+  redesigns$JobID_Redesign = paste0(redesigns$JobId, ' ', redesigns$Redesign)
+  redesigns$LineID_Redesign = paste0(redesigns$JobItemId, ' ', redesigns$Redesign)
+  return(redesigns)
+}
+
+redesigns = getRedesigns(df_ytd_thislast)
+
+
+
+
+
+## Turnaround later on
+getTurnaround = function(df_thisyr){
+  turnaround = aggregate(df_thisyr$JobTurnaround ~ df_thisyr$Designer, FUN=function(x) round(mean(as.numeric(x), na.rm=T), 1))
+  names(turnaround) = c('X','Turnaround')
+  rownames(turnaround) = turnaround$X
+  turnaround$X = NULL
+  return(turnaround)
+}
+
+turnaround = getTurnaround(df_thisyr)
+  # guide_df = data.frame(row.names=c('Stage 1','Stage 2','Stage 3','Stage 4','Stage 4A','Stage 5',
 #                                   'Stage 6','Stage 7','Completion','Turnaround'),
 #                       Description=c('Job Incomplete til artist assignment (days)',
 #                                     'Artist assignment til brand mentions obtained (days)',
@@ -914,7 +938,7 @@ A Job is considered active in the Graphics pipeline if the Job has been Kicked O
 
 ```{r bydes_inpipe, fig.height=5, fig.width=9}
 PIPECOLZ = c('JobId','JobItemId','Incomplete','AssembledandShipped')
-inpipe_history = df_thisyr_lastyr[order(df_thisyr_lastyr$JobId), PIPECOLZ] #df_thisyr_lastyr
+inpipe_history = df[order(df$JobId), PIPECOLZ] #df_thisyr_lastyr
 
 inpipe_history = data.frame(
   inpipe_history %>% 
@@ -926,13 +950,16 @@ inpipe_history = data.frame(
     arrange(AssembledandShipped, Incomplete)
 )
 
+#inpipe_history[is.na(inpipe_history$Incomplete), 'Incomplete'] = format(as.POSIXct(paste0(two_yrs_ago,'-01-01')), '%Y-%m-%d %H:%M')
+
 ## Filter & process data for jobs
 DUPE_JOBS = !duplicated(inpipe_history$JobId)
+
 job_history = inpipe_history[DUPE_JOBS, ]
 rownames(job_history) = NULL
 
 janlast_decthis = seq.Date(from=as.Date(paste0(two_yrs_ago,'-01-01')), #last_year
-                           to=as.Date(Sys.Date()-7), by='week') #'day'
+                           to=as.Date(Sys.Date()), by='week') #'day'
 STARTS = as.Date(job_history$Incomplete)
 ENDS = as.Date(job_history$AssembledandShipped) 
 
@@ -959,7 +986,8 @@ ggplot(PIPE, aes(x=as.Date(Date), y=Pipeline, group=Year)) +
   geom_smooth(aes(colour=factor(Year)), size=1.25, se=F) +
   scale_x_date(date_breaks='4 weeks', date_labels='%b %d, %y') +
   theme_minimal() +
-  theme(axis.text.x=element_text(angle=90, hjust=1)) 
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  ylim(0, 205)
 ```
 
 
