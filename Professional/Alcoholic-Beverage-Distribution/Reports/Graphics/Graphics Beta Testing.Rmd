@@ -585,13 +585,13 @@ All data for Redesigns is filtered to include only records up until today for bo
 Accessory vs. Print jobs. 
 
 ```{r redesign_plt, fig.height=10, fig.width=9}
-get_turnaround_summary = function(df, col, active_designers){
+get_turnaround_summary = function(df, col, active_designers, FUN, agg_col='JobTurnaround'){
   colz = c('JobItemId', 'JobId', 'Redesign', 'JobTurnaround',
                   'Reprint', 'Salesperson', 'ItemCategory', 'Designer',
                   'Accessory', 'Menu', 'YearOfRecord', 'Warehouse')
   df = df[df$Designer %in% active_designers, colz]
-  turnaround_summary = aggregate(df[,'JobTurnaround'] ~ df[,'Designer'] + df[,col], FUN=function(x) mean(x, na.rm=T))
-  turnaround_summary = data.frame(setNames(turnaround_summary, c('Designer', as.character(col), 'JobTurnaround')))
+  turnaround_summary = aggregate(df[,agg_col] ~ df[,'Designer'] + df[,col], FUN=FUN)
+  turnaround_summary = data.frame(setNames(turnaround_summary, c('Designer', as.character(col), as.character(agg_col))))
   return(turnaround_summary)
 }
 
@@ -609,37 +609,16 @@ plot_redesigns = function(TurnaroundData, col, title) {
   return(plt)
 }
 
-plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Menu', active_designers), 
+plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Menu', active_designers, function(x) mean(x, na.rm=T)), 
                'Menu', title='Turnaround: Menu vs. Non-Menus')
-plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Redesign', active_designers), 
+plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Redesign', active_designers, function(x) mean(x, na.rm=T)), 
                'Redesign', title='Turnaround: Redesigns vs. Non-Redesigns')
-plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Reprint', active_designers), 
+plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Reprint', active_designers, function(x) mean(x, na.rm=T)), 
                'Reprint', title='Turnaround: Reprints vs. Non-Reprints')
-plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Warehouse', active_designers), 
+plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Warehouse', active_designers, function(x) mean(x, na.rm=T)), 
                'Warehouse', title='Turnaround: by Warehouse')
 ```
 
-### Redesigns for Menu v. Non-Menu Jobs
-
-Menus vs. non-menus. The blue horizontal line represents the avg. turnaround for Menus, the red line for Non-Menus.
-
-```{r men_non_violin, fig.height=10, fig.width=9}
-turn_menu = mean(df_thisyr_lastyr[df_thisyr_lastyr$Menu == T, 'JobTurnaround'], na.rm=T)
-turn_nonm = mean(df_thisyr_lastyr[df_thisyr_lastyr$Menu == F, 'JobTurnaround'], na.rm=T)
-
-#AccessoryPrintBanner
-
-ggplot(data=df_thisyr_lastyr[df_thisyr_lastyr$Designer %in% active_designers, ], aes(x=Menu, y=JobTurnaround, group=Designer)) +
-  geom_bar(stat='identity', position='dodge', aes(fill=Designer)) +
-  geom_jitter(alpha=0.02) +
-  theme_minimal() +
-  theme(axis.text.x=element_text(angle=90, hjust=1)) +
-  labs(x='TRUE if Job Redesigned', 
-       y='Turnaround in Days', title='Menus v. Non-Menus: Comparing Difference in Turnaround b/n Menu & Non-Menu Jobs') +
-  geom_hline(yintercept=turn_menu, colour='blue') +
-  geom_hline(yintercept=turn_nonm, colour='red') +
-  scale_y_continuous(labels=comma, limits=c(0, 40)) 
-```
 
 
 ### Redesigns by Designer
@@ -647,6 +626,8 @@ ggplot(data=df_thisyr_lastyr[df_thisyr_lastyr$Designer %in% active_designers, ],
 Percentages, as it is throughout this document, are shown as %. To re-iterate, data for Redesigns shows information through today (i.e. June 20th's day of the year is 171) for both this year and last.
 
 ```{r redesigns_des}
+get_turnaround_summary(df_thisyr_lastyr, 'YearOfRecord', active_designers, function(x) sum(x, na.rm=T), agg_col='Redesign')
+
 redesign_unique = redesigns[!duplicated(redesigns$JobId), ]
 
 redesigns_bydes = aggregate(Redesign~Designer+YearOfRecord, data=redesign_unique, FUN=sum)
