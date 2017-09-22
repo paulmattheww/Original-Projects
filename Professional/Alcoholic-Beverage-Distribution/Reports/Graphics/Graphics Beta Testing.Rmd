@@ -324,7 +324,7 @@ get_milestones = function(df){
   df$DayOfMonthOfRecord = lubridate::mday(dat)
   df$WeekdayOfRecord = lubridate::wday(dat, T, F)
   df$DOTY = lubridate::yday(dat)
-  df = df[order(df$YearOfRecord, df$JobId, df$DayOfRecord, decreasing=T)]
+  df = df[order(df$YearOfRecord, df$JobId, df$DayOfRecord, decreasing=T), ]
   return(df)
 }
 
@@ -431,28 +431,26 @@ byrequester = getSalesJobs(uniqueJobs, graphics_posterIDs, sales_only=TRUE)
 
 
 # ## Redesigns for later on
-getRedesigns = function(df_ytd_thislast){
-  redesign_colz = c('JobItemId', 'JobId', 'Redesign', 'JobTurnaround',
-                    'Reprint', 'Salesperson', 'ItemCategory', 'Designer',
-                    'Accessory', 'Menu', 'YearOfRecord')
-  redesigns = df_ytd_thislast[, redesign_colz]
-  count_jobs = len_unique(redesigns$JobId)
-  
-  redesigns$JobID_Redesign = paste0(redesigns$JobId, ' ', redesigns$Redesign)
-  redesigns$LineID_Redesign = paste0(redesigns$JobItemId, ' ', redesigns$Redesign)
-  return(redesigns)
-}
-
-redesigns = getRedesigns(df_ytd_thislast)
+# getRedesigns = function(df_thisyr_lastyr){
+  # redesign_colz = c('JobItemId', 'JobId', 'Redesign', 'JobTurnaround',
+  #                   'Reprint', 'Salesperson', 'ItemCategory', 'Designer',
+  #                   'Accessory', 'Menu', 'YearOfRecord')
+#   redesigns = df_thisyr_lastyr[, redesign_colz]
+#   redesigns$JobID_Redesign = paste0(redesigns$JobId, ' ', redesigns$Redesign)
+#   redesigns$LineID_Redesign = paste0(redesigns$JobItemId, ' ', redesigns$Redesign)
+#   return(redesigns)
+# }
+# 
+# redesigns = getRedesigns(df_thisyr_lastyr)
 
 
 
 
 
 ## Turnaround later on
-getTurnaround = function(df_ytd_thislast, col_group){
-  df_ytd_thislast = df_ytd_thislast[df_ytd_thislast$Designer %in% active_designers, ]
-  turnaround = aggregate(df_ytd_thislast$JobTurnaround ~ df_ytd_thislast[, col_group], FUN=function(x) round(mean(as.numeric(x), na.rm=T), 1))
+getTurnaround = function(df, col_group){
+  df = df[df$Designer %in% active_designers & df$YearOfRecord %in% c(this_yr, last_yr), ]
+  turnaround = aggregate(df$JobTurnaround ~ df[, col_group], FUN=function(x) round(mean(as.numeric(x), na.rm=T), 1))
   names(turnaround) = c('X','Turnaround')
   turnaround = turnaround[order(turnaround$Turnaround, decreasing=T),]
   rownames(turnaround) = turnaround$X
@@ -460,11 +458,11 @@ getTurnaround = function(df_ytd_thislast, col_group){
   return(turnaround)
 }
 
-turnaround = getTurnaround(df_ytd_thislast, 'Designer')
-turnaround_sls = head(getTurnaround(df_ytd_thislast, 'Salesperson'), 25)
-turnaround_cus = head(getTurnaround(df_ytd_thislast, 'Customer'), 25)
-turnaround_hse = head(getTurnaround(df_ytd_thislast, 'Warehouse'), 25)
-turnaround_acc = head(getTurnaround(df_ytd_thislast, 'AccessoryPrintBanner'), 25)
+turnaround = getTurnaround(df, 'Designer')
+turnaround_sls = head(getTurnaround(df, 'Salesperson'), 25)
+turnaround_cus = head(getTurnaround(df, 'Customer'), 25)
+turnaround_hse = head(getTurnaround(df, 'Warehouse'), 25)
+turnaround_acc = head(getTurnaround(df, 'AccessoryPrintBanner'), 25)
 
 #turn_dfs = list(turnaround, turnaround_sls, turnaround_cus, turnaround_hse, turnaround_acc)
 ```
@@ -509,14 +507,20 @@ plot_turnaround(turnaround)
 ## Turnaround by Salesperson, Customer & House
 Data considered is from this year and last year. All other caveats above hold for the plots below.
 
+By Salesperson.
+
 ```{r turnaround_plot_sls, fig.height=5, fig.width=9}
 print('By Salesperson')
 plot_turnaround(turnaround_sls)
 ```
+
+By Customer.
 ```{r turnaround_plot_cus, fig.height=5, fig.width=9}
 print('By Customer')
 plot_turnaround(turnaround_cus)
 ```
+
+By House.
 ```{r turnaround_plot_hse, fig.height=5, fig.width=9}
 print('By House')
 plot_turnaround(turnaround_hse)
@@ -567,7 +571,8 @@ ggplot(reprints_t_melt, aes(x=variable, y=value, group=Name)) +
   theme_minimal() +
   theme(axis.text.x=element_text(angle=90, hjust=1)) +
   labs(x='', y='', title='Reprint Summary')
-```-->
+```
+-->
 
 ## Redesigns
 
@@ -579,21 +584,39 @@ All data for Redesigns is filtered to include only records up until today for bo
 
 Accessory vs. Print jobs. 
 
-```{r viz_redesigns_accessoryvprint, fig.height=10, fig.width=9}
-turn_acc = mean(redesigns[redesigns$Accessory_or_Print=='Accessory', 'JobTurnaround'], na.rm=T)
-turn_pri = mean(redesigns[redesigns$Accessory_or_Print=='Print', 'JobTurnaround'], na.rm=T)
+```{r redesign_plt, fig.height=10, fig.width=9}
+get_turnaround_summary = function(df, col, active_designers){
+  colz = c('JobItemId', 'JobId', 'Redesign', 'JobTurnaround',
+                  'Reprint', 'Salesperson', 'ItemCategory', 'Designer',
+                  'Accessory', 'Menu', 'YearOfRecord', 'Warehouse')
+  df = df[df$Designer %in% active_designers, colz]
+  turnaround_summary = aggregate(df[,'JobTurnaround'] ~ df[,'Designer'] + df[,col], FUN=function(x) mean(x, na.rm=T))
+  turnaround_summary = data.frame(setNames(turnaround_summary, c('Designer', as.character(col), 'JobTurnaround')))
+  return(turnaround_summary)
+}
 
-ggplot(data=redesigns, aes(x=Redesign, y=JobTurnaround, group=Redesign)) +
-  geom_boxplot(aes(fill=Accessory)) +
-  geom_jitter(alpha=0.02) +
-  theme_minimal() +
-  theme(axis.text.x=element_text(angle=90, hjust=1)) +
-  labs(x='TRUE if Job Redesigned', 
-       y='Turnaround in Days', title='Accessory v. Print: Comparing Difference in Turnaround b/n Redesign & Non-Redesign Jobs') +
-  geom_hline(yintercept=turn_acc, colour='red') +
-  geom_hline(yintercept=turn_pri, colour='blue') +
-  scale_y_continuous(labels=comma) +
-  facet_grid(Accessory~YearOfRecord)
+plot_redesigns = function(TurnaroundData, col, title) {
+  plt = ggplot(data=TurnaroundData, 
+               aes(x=Designer, y=JobTurnaround, group=TurnaroundData[,col])) +
+    geom_bar(stat='identity', position='dodge', aes(fill=TurnaroundData[,col])) +
+    geom_jitter(alpha=0.02) +
+    theme_minimal() +
+    theme(axis.text.x=element_text(angle=90, hjust=1)) +
+    labs(x='', y='Avg Turnaround in Days', 
+         title=title) +
+    scale_y_continuous(labels=comma) +
+    guides(fill=guide_legend(as.character(col)))
+  return(plt)
+}
+
+plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Menu', active_designers), 
+               'Menu', title='Turnaround: Menu vs. Non-Menus')
+plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Redesign', active_designers), 
+               'Redesign', title='Turnaround: Redesigns vs. Non-Redesigns')
+plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Reprint', active_designers), 
+               'Reprint', title='Turnaround: Reprints vs. Non-Reprints')
+plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Warehouse', active_designers), 
+               'Warehouse', title='Turnaround: by Warehouse')
 ```
 
 ### Redesigns for Menu v. Non-Menu Jobs
