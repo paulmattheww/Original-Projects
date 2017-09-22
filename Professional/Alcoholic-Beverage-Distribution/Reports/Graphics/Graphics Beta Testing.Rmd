@@ -142,8 +142,8 @@ check_raw_pipeline = function(df){
 #check_raw_pipeline(df)
 
 ## Filter for testing ONLY
-# print('If you see this message, take this filter off')
-# df = tail(df,3000)
+#print('If you see this message, take this filter off')
+#df = head(df,10000)
 
 
 ## Specify functions 
@@ -290,7 +290,8 @@ pipe_check = get_and_check_pipeline(df)
 
 
 redesigns_menus_accessories = function(df) {
-  ## Mark redesigns, menus & accessories
+  ## Mark redesigns, reprints, menus & accessories
+  df$Reprint = sapply(toupper(df$Reprint), FUN=function(s) gsub('"', '', s) == 'TRUE')
   df$Redesign = df$RedesignCounts > 0
   accessories = c('Menu Books','Table Top Wrap','TT A-Frame Holder','TT A-Frame Holder (Holder Only)', 
                   'TT Acrylic Stand','TT Acrylic Stand (Stand Only)','TT Flip Stand','TT Flip Stand (Stand Only)',
@@ -322,7 +323,8 @@ get_milestones = function(df){
   df$YearOfRecord = lubridate::year(dat)
   df$DayOfMonthOfRecord = lubridate::mday(dat)
   df$WeekdayOfRecord = lubridate::wday(dat, T, F)
-  df$DOTY = lubridate::yday(df$DayOfRecord)
+  df$DOTY = lubridate::yday(dat)
+  df = df[order(df$YearOfRecord, df$JobId, df$DayOfRecord, decreasing=T)]
   return(df)
 }
 
@@ -409,7 +411,7 @@ countJobsBySalesperson = function(df_thisyr){
 }
 
 getSalesJobs = function(uniqueJobs, graphics_as_salespeople, sales_only){
-  if(sales_only==TRUE){
+  if(sales_only==F){
     uniqueJobs = uniqueJobs[uniqueJobs$Salesperson %in% graphics_as_salespeople, ]  
   }else{
     uniqueJobs = uniqueJobs[uniqueJobs$Salesperson %!in% graphics_as_salespeople, ]
@@ -448,27 +450,23 @@ redesigns = getRedesigns(df_ytd_thislast)
 
 
 ## Turnaround later on
-getTurnaround = function(df_thisyr){
-  turnaround = aggregate(df_thisyr$JobTurnaround ~ df_thisyr$Designer, FUN=function(x) round(mean(as.numeric(x), na.rm=T), 1))
+getTurnaround = function(df_ytd_thislast, col_group){
+  df_ytd_thislast = df_ytd_thislast[df_ytd_thislast$Designer %in% active_designers, ]
+  turnaround = aggregate(df_ytd_thislast$JobTurnaround ~ df_ytd_thislast[, col_group], FUN=function(x) round(mean(as.numeric(x), na.rm=T), 1))
   names(turnaround) = c('X','Turnaround')
+  turnaround = turnaround[order(turnaround$Turnaround, decreasing=T),]
   rownames(turnaround) = turnaround$X
   turnaround$X = NULL
   return(turnaround)
 }
 
-turnaround = getTurnaround(df_thisyr)
-  # guide_df = data.frame(row.names=c('Stage 1','Stage 2','Stage 3','Stage 4','Stage 4A','Stage 5',
-#                                   'Stage 6','Stage 7','Completion','Turnaround'),
-#                       Description=c('Job Incomplete til artist assignment (days)',
-#                                     'Artist assignment til brand mentions obtained (days)',
-#                                     'Mentions obtained til cost approved (days)',
-#                                     'Cost approved til artwork complete (days)',
-#                                     'If Applicable, Redesign til approval (days)',
-#                                     'Artwork complete til requester approval (days)',
-#                                     'Requester approval til job completion (days)',
-#                                     '[NOT SHOWN] Job completion til ship (days)',
-#                                     'Job Incomplete til job marked as complete (days)',
-#                                     'Job Incomplete til job shipment (days)'))
+turnaround = getTurnaround(df_ytd_thislast, 'Designer')
+turnaround_sls = head(getTurnaround(df_ytd_thislast, 'Salesperson'), 25)
+turnaround_cus = head(getTurnaround(df_ytd_thislast, 'Customer'), 25)
+turnaround_hse = head(getTurnaround(df_ytd_thislast, 'Warehouse'), 25)
+turnaround_acc = head(getTurnaround(df_ytd_thislast, 'AccessoryPrintBanner'), 25)
+
+#turn_dfs = list(turnaround, turnaround_sls, turnaround_cus, turnaround_hse, turnaround_acc)
 ```
 
 
@@ -480,51 +478,48 @@ This section was designed to help the Graphics department and management gain in
 
 Below shows jobs that were entered by the Graphics team on behalf of the sales team. 
 
-<!-- ```{r requests_inputbygraphics} -->
-<!-- bygraphics -->
-<!-- ``` -->
+```{r requests_inputbygraphics}
+bygraphics
+```
 
 
 ## Turnaround by Designer
-Figures below include weekends and holidays (i.e. holidays and weekends are not backed out of the duration calculations), and durations are measured in days. Active designers include Rachel, Brittany, Katie and Paige; all others are filtered out of the dataset. If this should not be the case please email Paul Washburn to change the filter criteria.
-
+Figures below include weekends and holidays (i.e. holidays and weekends are not backed out of the duration calculations), and durations are measured in days. Active designers include Rachel, Brittany, Katie and Paige; all others are filtered out of the dataset. If this should not be the case please email Paul Washburn to change the filter criteria. Data considered is from this year and last year.
 
 ```{r turnaround}
 turnaround
 ```
 
+```{r turnaround_plot, fig.height=5, fig.width=9}
+plot_turnaround = function(turnaround){
+  plt = ggplot(turnaround, aes(x=rownames(turnaround), y=Turnaround, group=rownames(turnaround))) +
+    geom_bar(stat='identity', position='dodge', aes(fill=rownames(turnaround)), colour='black') +
+    theme_minimal() +
+    theme(axis.text.x=element_text(angle=90, hjust=1)) +
+    labs(x='', y='Days', title='Top 25 Longest Average Turnaround (Days)') +
+    theme(legend.position='none') + coord_flip()
+  print(plt)
+  return(plt)
+}
 
-```{r descriptions}
-guide_df
+print('By Designer')
+plot_turnaround(turnaround)
 ```
 
+## Turnaround by Salesperson, Customer & House
+Data considered is from this year and last year. All other caveats above hold for the plots below.
 
-```{r turnaround_plot, fig.height=5, fig.width=9}
-# turnaround_x = data.frame(t(turnaround))
-# turnaround_x$Item = rownames(turnaround_x)
-# rownames(turnaround_x) = NULL
-# turnaround_x = melt(turnaround_x, 'Item')
-# turnaround_x$variable = gsub('\\..', ', ', turnaround_x$variable)
-# 
-# turns_df = turnaround_x[turnaround_x$Item %in% c('Completion','Turnaround'), ]
-# stage_df = turnaround_x[turnaround_x$Item %!in% c('Completion','Turnaround'), ]
-# stage_df$Item = factor(stage_df$Item, levels=c('Stage1','Stage2','Stage3','Stage4',
-#                                                'Stage4A','Stage5','Stage6')) 
-# 
-# 
-# ggplot(turns_df, aes(x=variable, y=value, group=Item)) +
-#   geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
-#   facet_wrap(~Item, ncol=3, scales='free_y') +
-#   theme_minimal() +
-#   theme(axis.text.x=element_text(angle=90, hjust=1)) +
-#   labs(x='', y='Days', title='Average Turnaround & Completion (Days) by Designer')
-# 
-# ggplot(stage_df, aes(x=Item, y=value, group=variable)) +
-#   geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
-#   #facet_wrap(~variable, ncol=3, scales='free_y') +
-#   theme_minimal() +
-#   theme(axis.text.x=element_text(angle=90, hjust=1)) +
-#   labs(x='', y='Days', title='Average Days in Each Stage by Designer')
+```{r turnaround_plot_sls, fig.height=5, fig.width=9}
+print('By Salesperson')
+plot_turnaround(turnaround_sls)
+```
+```{r turnaround_plot_cus, fig.height=5, fig.width=9}
+print('By Customer')
+plot_turnaround(turnaround_cus)
+```
+```{r turnaround_plot_hse, fig.height=5, fig.width=9}
+print('By House')
+plot_turnaround(turnaround_hse)
 ```
 
 
@@ -532,38 +527,47 @@ guide_df
 
 <!-- Total number of reprints for the current year, by Designer. Percent of Total is shown as a percent; in other words, it has been multiplied by 100 (e.g. 1.2 indicates 1.2%, or 0.012). Reprints are counted at the Job ID level, meaning a job with 10 items marked as reprints will be counted one time. It is possible to add in reprints at the Job Item level if this information is desired. -->
 
-<!-- ```{r reprints} -->
-<!-- reprint_cols = c('JobId','Designer') -->
-<!-- no_dupes = !duplicated(df[,reprint_cols]) -->
+<!--
+# ```{r reprints}
+# process_df = function(df) {
+#   rownames(df) = df$Designer
+#   df$Designer = df$variable = NULL
+#   return(df)
+# }
+# 
+# reprints = df[(df$Reprint==T) & (df$YearOfRecord %in% c(this_yr, last_yr)), ]
+# reprints = reprints[order(reprints$YearOfRecord, reprints$JobId, reprints$DayOfRecord, decreasing=T), ]
+# 
+# reprint_cols = c('JobId','Designer')
+# no_dupes = !duplicated(reprints[, reprint_cols])
+# reprints = reprints[no_dupes, c('JobId','Designer','Reprint','YearOfRecord')]
+# reprints = aggregate(Reprint ~ Designer, data=reprints, FUN=sum)
+# 
+# tot_jobs = aggregate(JobId ~ Designer, data=df_thisyr, FUN=len_unique)
+# reprints = merge(reprints, tot_jobs, by='Designer', how='all')
+# reprints = process_df(reprints)
+# 
+# ## Specify column names
+# names(reprints) = c('Number of Reprints', 'Total Jobs')
+# reprints$`Reprints as % of Total Jobs` = round((reprints$`Number of Reprints` / reprints$`Total Jobs`)*100, 1)
+# # reprints
+# ```
 
-<!-- reprints = df[no_dupes, c('JobId','Designer','POSTER.REPRINT','Year')] -->
-<!-- reprints = reprints[reprints$Year == this_yr, ] -->
-<!-- reprints = aggregate(POSTER.REPRINT ~ Designer, data=reprints, FUN=sum) -->
 
-<!-- tot_jobs = aggregate(JobId ~ Designer, data=df_thisyr, FUN=len_unique) -->
-<!-- reprints = merge(reprints, tot_jobs, by='Designer', how='all') -->
-<!-- reprints = process_df(reprints) -->
+```{r reprint_plot, fig.height=5, fig.width=9}
+reprints_t = data.frame(t(reprints))
+names(reprints_t) = gsub('\\..', ', ', names(reprints_t))
+reprints_t$Name = rownames(reprints_t)
+rownames(reprints_t) = NULL
+reprints_t_melt = melt(reprints_t, 'Name', active_designers)
 
-<!-- ## Specify column names -->
-<!-- names(reprints) = c('Number of Reprints', 'Total Jobs') -->
-<!-- reprints$`Reprints as % of Total Jobs` = round((reprints$`Number of Reprints` / reprints$`Total Jobs`)*100, 1) -->
-<!-- reprints -->
-<!-- ``` -->
-
-<!-- ```{r reprint_plot, fig.height=5, fig.width=9} -->
-<!-- reprints_t = data.frame(t(reprints)) -->
-<!-- names(reprints_t) = gsub('\\..', ', ', names(reprints_t)) -->
-<!-- reprints_t$Name = rownames(reprints_t) -->
-<!-- rownames(reprints_t) = NULL -->
-<!-- reprints_t_melt = melt(reprints_t, 'Name', active_designers) -->
-
-<!-- ggplot(reprints_t_melt, aes(x=variable, y=value, group=Name)) + -->
-<!--   geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') + -->
-<!--   facet_wrap(~Name, ncol=4, scales='free_y') + -->
-<!--   theme_minimal() + -->
-<!--   theme(axis.text.x=element_text(angle=90, hjust=1)) + -->
-<!--   labs(x='', y='', title='Reprint Summary') -->
-<!-- ``` -->
+ggplot(reprints_t_melt, aes(x=variable, y=value, group=Name)) +
+  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
+  facet_wrap(~Name, ncol=4, scales='free_y') +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='', y='', title='Reprint Summary')
+```-->
 
 ## Redesigns
 
@@ -597,11 +601,13 @@ ggplot(data=redesigns, aes(x=Redesign, y=JobTurnaround, group=Redesign)) +
 Menus vs. non-menus. The blue horizontal line represents the avg. turnaround for Menus, the red line for Non-Menus.
 
 ```{r men_non_violin, fig.height=10, fig.width=9}
-turn_menu = mean(redesigns[redesigns$Menu == T, 'JobTurnaround'], na.rm=T)
-turn_nonm = mean(redesigns[redesigns$Menu == F, 'JobTurnaround'], na.rm=T)
+turn_menu = mean(df_thisyr_lastyr[df_thisyr_lastyr$Menu == T, 'JobTurnaround'], na.rm=T)
+turn_nonm = mean(df_thisyr_lastyr[df_thisyr_lastyr$Menu == F, 'JobTurnaround'], na.rm=T)
 
-ggplot(data=redesigns, aes(x=Redesign, y=JobTurnaround, group=Redesign)) +
-  geom_boxplot(aes(fill=Menu)) +
+#AccessoryPrintBanner
+
+ggplot(data=df_thisyr_lastyr[df_thisyr_lastyr$Designer %in% active_designers, ], aes(x=Menu, y=JobTurnaround, group=Designer)) +
+  geom_bar(stat='identity', position='dodge', aes(fill=Designer)) +
   geom_jitter(alpha=0.02) +
   theme_minimal() +
   theme(axis.text.x=element_text(angle=90, hjust=1)) +
@@ -609,8 +615,7 @@ ggplot(data=redesigns, aes(x=Redesign, y=JobTurnaround, group=Redesign)) +
        y='Turnaround in Days', title='Menus v. Non-Menus: Comparing Difference in Turnaround b/n Menu & Non-Menu Jobs') +
   geom_hline(yintercept=turn_menu, colour='blue') +
   geom_hline(yintercept=turn_nonm, colour='red') +
-  scale_y_continuous(labels=comma) +
-  facet_grid(Menu~YearOfRecord)
+  scale_y_continuous(labels=comma, limits=c(0, 40)) 
 ```
 
 
