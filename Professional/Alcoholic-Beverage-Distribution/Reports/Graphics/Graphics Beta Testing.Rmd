@@ -374,20 +374,13 @@ df_thisyr_lastyr = get_this_and_last_year_data(df)
 
 
 
-get_this_year_data_only = function(df){
-  ## Isolate out last 3 mo from thisyr lastyr data
-  incomplete_month = df_thisyr_lastyr$KickoffMonth 
-  invoice_month = df_thisyr_lastyr$InvoiceMonth
-  Incomplete_year = df_thisyr_lastyr$KickoffYear 
-  invoice_year = df_thisyr_lastyr$InvoiceYear    
-  startmo = incomplete_month %in% last_three_months
-  endinmo = invoice_month %in% last_three_months
-  trailing_3 = df_thisyr_lastyr[startmo==T | endinmo==T, ]
-  df_thisyr = df[(df$KickoffYear == this_yr) | (df$InvoiceYear == this_yr) & (df$Designer %in% active_designers), ]
+get_this_year_data_only = function(df, this_yr, active_designers){
+  df_thisyr = df[df$KickoffYear == this_yr | df$InvoiceYear == this_yr, ]
+  df_thisyr <- df_thisyr[df_thisyr$Designer %in% active_designers, ]
   return(df_thisyr)
 }
 
-df_thisyr = get_this_year_data_only(df)
+df_thisyr = get_this_year_data_only(df, this_yr, active_designers)
 
 
 
@@ -398,7 +391,7 @@ get_ytd_this_and_last_year = function(last_yr){
 }
 
 days_so_far = get_ytd_this_and_last_year(last_yr)
-df_ytd_thislast = df_thisyr_lastyr[df_thisyr_lastyr$DOTY %in% days_so_far, ]
+df_ytd_thislast = df[df$DOTY %in% days_so_far & df$YearOfRecord %in% c(this_yr, last_yr), ]
 
 
 
@@ -426,24 +419,6 @@ getSalesJobs = function(uniqueJobs, graphics_as_salespeople, sales_only){
 uniqueJobs = countJobsBySalesperson(df_thisyr)
 bygraphics = getSalesJobs(uniqueJobs, graphics_posterIDs, sales_only=FALSE)
 byrequester = getSalesJobs(uniqueJobs, graphics_posterIDs, sales_only=TRUE)
-
-
-
-
-# ## Redesigns for later on
-# getRedesigns = function(df_thisyr_lastyr){
-  # redesign_colz = c('JobItemId', 'JobId', 'Redesign', 'JobTurnaround',
-  #                   'Reprint', 'Salesperson', 'ItemCategory', 'Designer',
-  #                   'Accessory', 'Menu', 'YearOfRecord')
-#   redesigns = df_thisyr_lastyr[, redesign_colz]
-#   redesigns$JobID_Redesign = paste0(redesigns$JobId, ' ', redesigns$Redesign)
-#   redesigns$LineID_Redesign = paste0(redesigns$JobItemId, ' ', redesigns$Redesign)
-#   return(redesigns)
-# }
-# 
-# redesigns = getRedesigns(df_thisyr_lastyr)
-
-
 
 
 
@@ -585,12 +560,12 @@ All data for Redesigns is filtered to include only records up until today for bo
 Accessory vs. Print jobs. 
 
 ```{r redesign_plt, fig.height=10, fig.width=9}
-get_turnaround_summary = function(df, col, active_designers, FUN, agg_col='JobTurnaround'){
+designer_summary = function(df, col, active_designers, FUN, agg_col='JobTurnaround'){
   colz = c('JobItemId', 'JobId', 'Redesign', 'JobTurnaround',
                   'Reprint', 'Salesperson', 'ItemCategory', 'Designer',
                   'Accessory', 'Menu', 'YearOfRecord', 'Warehouse')
   df = df[df$Designer %in% active_designers, colz]
-  turnaround_summary = aggregate(df[,agg_col] ~ df[,'Designer'] + df[,col], FUN=FUN)
+  turnaround_summary = aggregate(df[,agg_col] ~ df[,'Designer'] + df[, col], FUN=FUN)
   turnaround_summary = data.frame(setNames(turnaround_summary, c('Designer', as.character(col), as.character(agg_col))))
   return(turnaround_summary)
 }
@@ -609,13 +584,13 @@ plot_redesigns = function(TurnaroundData, col, title) {
   return(plt)
 }
 
-plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Menu', active_designers, function(x) mean(x, na.rm=T)), 
+plot_redesigns(designer_summary(df_thisyr_lastyr, 'Menu', active_designers, function(x) mean(x, na.rm=T)), 
                'Menu', title='Turnaround: Menu vs. Non-Menus')
-plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Redesign', active_designers, function(x) mean(x, na.rm=T)), 
+plot_redesigns(designer_summary(df_thisyr_lastyr, 'Redesign', active_designers, function(x) mean(x, na.rm=T)), 
                'Redesign', title='Turnaround: Redesigns vs. Non-Redesigns')
-plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Reprint', active_designers, function(x) mean(x, na.rm=T)), 
+plot_redesigns(designer_summary(df_thisyr_lastyr, 'Reprint', active_designers, function(x) mean(x, na.rm=T)), 
                'Reprint', title='Turnaround: Reprints vs. Non-Reprints')
-plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Warehouse', active_designers, function(x) mean(x, na.rm=T)), 
+plot_redesigns(designer_summary(df_thisyr_lastyr, 'Warehouse', active_designers, function(x) mean(x, na.rm=T)), 
                'Warehouse', title='Turnaround: by Warehouse')
 ```
 
@@ -623,21 +598,34 @@ plot_redesigns(get_turnaround_summary(df_thisyr_lastyr, 'Warehouse', active_desi
 
 ### Redesigns by Designer
 
+Below shows the number of Jobs marked as "redesign" in PostER. Please note that if a job was redesigned and then assigned to another designer, then the new designer will be associated with the redesign (e.g. Designer A started a project, then it was sent back for redesign and assigned to Designer B, then Designer B will be attributed with the redesign since there is no way to tie the two jobs together in the data).
+
+Data considered is YTD for both this year and last year (e.g. 1/1/LASTYR - 8/5/LASTYR AND 1/1/THISYR - 8/5/THISYR).
+
 Percentages, as it is throughout this document, are shown as %. To re-iterate, data for Redesigns shows information through today (i.e. June 20th's day of the year is 171) for both this year and last.
 
 ```{r redesigns_des}
-get_turnaround_summary(df_thisyr_lastyr, 'YearOfRecord', active_designers, function(x) sum(x, na.rm=T), agg_col='Redesign')
+unique_jobs_thislast = df_ytd_thislast[!duplicated(df_ytd_thislast$JobId), ]
 
-redesign_unique = redesigns[!duplicated(redesigns$JobId), ]
+redesigns_bydesigner = designer_summary(unique_jobs_thislast, 'YearOfRecord', active_designers, function(x) sum(x, na.rm=T), agg_col='Redesign')
 
-redesigns_bydes = aggregate(Redesign~Designer+YearOfRecord, data=redesign_unique, FUN=sum)
-redesigns_bydes = redesigns_bydes[redesigns_bydes$Designer %in% active_designers, ]
-redesigns_bydes = spread(redesigns_bydes, 'YearOfRecord', 'Redesign')
-redesigns_bydes$`Percent (%) Change` = pct_chg(new=redesigns_bydes$`2017`, old=redesigns_bydes$`2016`)
-rownames(redesigns_bydes) = redesigns_bydes$Designer
-redesigns_bydes$Designer = NULL
+display_yoy <- function(df, agg_col, subject_col) {
+  df = df[df$YearOfRecord %in% c(this_yr, last_yr), ]
+  df = tidyr::spread_(df, 'YearOfRecord', agg_col)
+  df$`Percent (%) Change` = pct_chg(new=df[, as.character(this_yr)], old=df[, as.character(last_yr)])
+  return(df)
+} 
 
-redesigns_bydes
+set_rownames <- function(df, rowname_col, sort_col) {
+  rownames(df) = df[, as.character(rowname_col)]
+  df[, as.character(rowname_col)] = NULL
+  df = df[order(df[, as.character(sort_col)], decreasing=TRUE), ]
+  return(df)
+}
+
+redesigns_designer_summary = display_yoy(redesigns_bydesigner, agg_col='Redesign', subject_col='Designer')
+redesigns_designer_summary = set_rownames(redesigns_designer_summary, 'Designer', as.character(this_yr))
+redesigns_designer_summary
 ```
 
 
@@ -646,113 +634,57 @@ redesigns_bydes
 Below displays the top 15 salespeople as measured by the number of times they sent jobs back to Graphics for Redesigns.
 
 ```{r redesigns_sls}
-redesigns_bysls_s = aggregate(Redesign~Salesperson+YearOfRecord, data=redesign_unique, FUN=sum)
-redesigns_bysls = spread(redesigns_bysls_s, 'YearOfRecord', 'Redesign')
-redesigns_bysls$`Percent (%) Change` = pct_chg(redesigns_bysls$`2017`, redesigns_bysls$`2016`)
-rownames(redesigns_bysls) = redesigns_bysls$Salesperson
-redesigns_bysls$Salesperson = NULL
-redesigns_bysls = redesigns_bysls[order(redesigns_bysls$`2017`, decreasing=T), ]
+salesperson_summary <- function(df, col, active_designers, FUN, agg_col='JobTurnaround'){
+  colz = c('JobItemId', 'JobId', 'Redesign', 'JobTurnaround',
+                  'Reprint', 'Salesperson', 'ItemCategory', 'Designer',
+                  'Accessory', 'Menu', 'YearOfRecord', 'Warehouse')
+  df = df[df$Salesperson %!in% active_designers, colz]
+  turnaround_summary = aggregate(df[, agg_col] ~ df[, 'Salesperson'] + df[, col], FUN=FUN)
+  turnaround_summary = data.frame(setNames(turnaround_summary, c('Salesperson', as.character(col), as.character(agg_col))))
+  return(turnaround_summary)
+}
 
-head(redesigns_bysls, 15)
+redesigns_bysalesperson <- salesperson_summary(unique_jobs_thislast, 'YearOfRecord', graphics_posterIDs, function(x) sum(x, na.rm=T), agg_col='Redesign')
+redesigns_bysalesperson_summary <- display_yoy(redesigns_bysalesperson, agg_col='Redesign', subject_col='Salesperson')
+redesigns_bysalesperson_summary <- set_rownames(redesigns_bysalesperson_summary, 'Salesperson', as.character(this_yr))
+
+head(redesigns_bysalesperson_summary, 15)
 ```
 
-Figures below adjust for a given Salesperson's utilization rate of the Graphics team's resources. Both axes are shown as logs of the value to show the names more clearly. Individuals well above the line are committing re-designs more often than is normal for their given level of Graphics utilization. Note that there are many salespeople that are not shown because they had no Redesigns at all (i.e. they are on the X axis below and hard to see), yet still did many Jobs. This indicates it is possible to do a lot of jobs without having many Redesigns.
+Figures below adjust for a given Salesperson's utilization rate of the Graphics team's resources. Both axes are shown as logs of the value to show the names more clearly -- for visual purposes only. Individuals well above the line are committing re-designs more often than is normal for their given level of Graphics utilization. Note that there are many salespeople that are not shown because they had no Redesigns at all (i.e. they are on the X axis below and hard to see), yet still did many Jobs. This indicates it is possible to do a lot of jobs without having many Redesigns. 
+
+Salespersons with both more than 10 jobs and 2 redesigns are considered below; all others are filtered out. Data is YTD for both this year and last year (i.e. "through today" for both this and last year).
 
 ```{r sls_plot_reds, fig.height=5, fig.width=9}
-ttl_sls = aggregate(JobId~Salesperson+YearOfRecord, data=redesign_unique, FUN=len_unique)
-ttl_sls = merge(ttl_sls, redesigns_bysls_s, on=c('Salesperson','YearOfRecord'), how='outer')
-ttl_sls = ttl_sls[order(ttl_sls$JobId, decreasing=T), ]
-ttl_sls = ttl_sls[ttl_sls$Salesperson %!in% graphics_posterIDs, ]
+sls_x = salesperson_summary(unique_jobs_thislast, 'Warehouse', graphics_posterIDs, function(x) sum(x, na.rm=T), agg_col='Redesign')
+sls_redesigns_context <- salesperson_summary(unique_jobs_thislast, 'Warehouse', graphics_posterIDs, len_unique, agg_col='JobId')
+sls_redesigns_context <- merge(sls_redesigns_context, sls_x, by=c('Salesperson', 'Warehouse'), how='outer')
+sls_redesigns_context <- sls_redesigns_context[sls_redesigns_context$Salesperson %!in% graphics_posterIDs, ]
+sls_redesigns_context$PctRedesigns <- sls_redesigns_context$Redesign / sls_redesigns_context$JobId
+sls_redesigns_context <- sls_redesigns_context[order(sls_redesigns_context$PctRedesigns, decreasing=T), ]
+names(sls_redesigns_context) = c('Salesperson','Warehouse','Jobs','Redesigns','PercentRedesigns')
+sls_redesigns_context <- sls_redesigns_context[sls_redesigns_context$Jobs >= 10 & sls_redesigns_context$Redesigns > 2, ]
+head(sls_redesigns_context)
 
-names(ttl_sls) = c('Salesperson','Year','Jobs','Redesigns')
-redesigns_bysls$Salesperson = rownames(redesigns_bysls)
-rownames(redesigns_bysls) = NULL
-
-ggplot(ttl_sls, aes(x=Jobs, y=Redesigns, group=Year)) +
-  geom_point() + 
+plt_redesigns_sls = ggplot(sls_redesigns_context, 
+                           aes(x=Jobs, y=Redesigns, group=Warehouse)) +
+  geom_point(alpha=.7) + 
   geom_text(position='jitter', 
-             aes(x=Jobs, y=Redesigns, 
-                label=Salesperson, size=scale((Redesigns))),
+             aes(x=Jobs, y=Redesigns, vjust='inward', hjust='inward',
+                label=Salesperson, size=scale(PercentRedesigns - mean(PercentRedesigns))+2, colour=Warehouse),
             colour='blue', alpha=.9, check_overlap=T) +
-  geom_smooth(se=F, method='lm', aes(group=Year, colour=factor(Year))) +
+  geom_smooth(se=T, alpha=0.3, fill='gray', method='lm', aes(group=Warehouse, colour=factor(Warehouse))) +
   theme_minimal() +
   theme(legend.position='none') +
   scale_x_log10() + scale_y_log10() +
-  labs(title='Year-over-Year, Jan 1-Today:  Redesigns as a function of Number of Jobs Submitted', x='Log Jobs', y='Log Redesigns') +
-  facet_wrap(~Year, ncol=2)
+  labs(title='Redesigns vs. Number of Jobs Submitted\nBy Warehouse', x='Log Jobs', y='Log Redesigns') +
+  facet_wrap(~Warehouse, ncol=2, scales='free')
+plt_redesigns_sls
 ```
 
 
 
-## On-Hold & Abandoned Jobs
 
-A job is considered on-hold if it has been sent back to "Incomplete" status at least once, and the project has not been "Assembled & Shipped". 
-
-
-### Jobs Placed On-Hold Multiple Times
-
-Below shows jobs that were placed on hold more than once, as shown in the "Incomplete" column. The Job ID is shown next to the salesperson's name.
-
-```{r multiple_onholds}
-onholdcolz = c('YearOfRecord','JobId','Salesperson','Customer','ItemCategory',
-               'POSTER.Qty.Ordered','IncompleteStatusCount')
-onhold = df_thisyr_lastyr[df_thisyr_lastyr$IncompleteStatusCount > 1, onholdcolz]
-onhold = onhold[order(onhold$IncompleteStatusCount, decreasing = T), ]
-onhold = onhold[!duplicated(onhold$JobId), ]
-YR = onhold$YearOfRecord
-SLS = onhold$Salesperson
-JID = onhold$JobId
-rownames(onhold) = onhold$JobId = onhold$YearOfRecord = onhold$Salesperson = NULL
-rownames(onhold) = paste0(SLS, '-', JID)
-names(onhold) = c('Customer','Category','Qty Ordered','Incomplete')
-onhold$Category = substrLeft(onhold$Category, 15)
-
-onhold[,c(1:2)]
-#split(onhold, YR)[1]
-```
-
-
-<!-- ### YTD Jobs Abandoned By Salesperson -->
-
-<!-- All jobs that are currently in "Incomplete" status and do not have a date for "Assembled & Shipped" are considered to be Abandoned. This does not include projects that have just started. -->
-
-<!-- ```{r limbo_abandoned_sls} -->
-<!-- df_inlimbo = df_inlimbo[order(df_inlimbo$IncompleteStatusCount, decreasing=T), ] -->
-<!-- df_inlimbo_x = df_inlimbo[!duplicated(df_inlimbo$JobId), ] -->
-
-<!-- abandon_sls = aggregate(cbind(IncompleteStatusCount,POSTER.Qty.Ordered) ~ Salesperson, data=df_inlimbo_x, FUN=sum) -->
-<!-- abandon_sls = abandon_sls[order(abandon_sls$IncompleteStatusCount, decreasing=T), ] -->
-<!-- rownames(abandon_sls) = abandon_sls$Salesperson -->
-<!-- abandon_sls$Salesperson = NULL -->
-<!-- names(abandon_sls) = c(paste0('Jobs Abandoned ', as.character(this_yr)),  -->
-<!--                       paste0('Qty Ordered Abandoned ', as.character(this_yr))) -->
-<!-- if(NROW(abandon_sls) == 0){ -->
-<!--   print('No abandoned jobs')   -->
-<!-- } else { -->
-<!--   head(abandon_sls, 10) -->
-<!-- } -->
-
-<!-- ``` -->
-
-### Jobs Placed On-Hold By Salesperson, This Year v. Last Year (YTD)
-
-Below shows jobs that were placed in "Incomplete" status one or more times, but were eventually finished.
-
-```{r limbo_sls}
-limbo_colz = c('Salesperson','Warehouse','Year','Customer','IncompleteStatusCount','JobId',
-               'Incomplete','AssembledandShipped','IncompleteStatus1','POSTER.Qty.Ordered')
-limbo_sls_thisyr = df_thisyr[order(df_thisyr$IncompleteStatusCount, decreasing=T), limbo_colz]
-limbo_sls_thisyr = limbo_sls_thisyr[limbo_sls_thisyr$IncompleteStatusCount > 0, ]
-limbo_sls_thisyr = limbo_sls_thisyr[!duplicated(limbo_sls_thisyr$JobId), ]
-
-limbo_slss = aggregate(cbind(IncompleteStatusCount,POSTER.Qty.Ordered) ~ Salesperson, data=limbo_sls_thisyr, FUN=sum)
-limbo_slss = limbo_slss[order(limbo_slss$IncompleteStatusCount, decreasing=T), ]
-rownames(limbo_slss) = limbo_slss$Salesperson
-limbo_slss$Salesperson = NULL
-names(limbo_slss) = c(paste0('Jobs In/Out of Limbo ', as.character(this_yr)), 
-                      paste0('Qty Ordered In/Out of Limbo ', as.character(this_yr)))
-head(limbo_slss, 10)
-```
 
 
 
@@ -760,25 +692,28 @@ head(limbo_slss, 10)
 
 ```{r price_mentions_plot}
 ## melt and isolate data by designer
-val_cols = c('PosterPrice','POSTER.MB.mentions')
-id_cols = c('Designer','Month')
+val_cols = c('PosterPrice','MajorBrandsMentions')
+id_cols = c('Designer','MonthOfRecord')
 
-bydesigner_melt = melt(df_thisyr, id_cols, val_cols)
+extract_price_mentions <- function(df_thisyr, active_designers) {
+  bydesigner_melt = df_thisyr[, c('PosterPrice', 'MajorBrandsMentions', 'MonthOfRecord', 'Designer')]
+  bydesigner_melt = melt(df_thisyr[df_thisyr$Designer %in% active_designers, ], id_cols, val_cols)
+  bydesigner = aggregate(value ~ variable + Designer + MonthOfRecord, data=bydesigner_melt, FUN=sum)
+  bydesigner = spread(bydesigner, 'MonthOfRecord', 'value')
+  return(bydesigner)
+}
 
-bydesigner = aggregate(value ~ variable + Designer + Month, data=bydesigner_melt, FUN=sum)
-bydesigner = spread(bydesigner, 'Month', 'value')
-
-l_dfs = split(bydesigner, bydesigner$variable)
-price_df = l_dfs$PosterPrice
+bydesigner = extract_price_mentions(df_thisyr, active_designers)
+price_mentions_dfs = split(bydesigner, bydesigner$variable)
+price_df = price_mentions_dfs$PosterPrice
 
 library(scales)
-byd_df = bydesigner
-namz = names(byd_df)
+namz = names(bydesigner)
 namz = c(unlist(namz[namz %!in% c('variable','Designer')]))
-mentions_df_melt = melt(byd_df, c('variable','Designer'), namz)
-names(mentions_df_melt) = c('var','Designer','Month','value')
+mentions_df_melt = melt(bydesigner, c('variable','Designer'), namz)
+names(mentions_df_melt) = c('var','Designer','MonthOfRecord','value')
 
-ggplot(mentions_df_melt, aes(x=Month, y=value, group=Designer)) +
+ggplot(mentions_df_melt, aes(x=MonthOfRecord, y=value, group=Designer)) +
   geom_line(aes(colour=Designer)) +
   geom_point(alpha=0.6) +
   facet_wrap(~var, nrow=2, scales='free_y') +
@@ -818,7 +753,7 @@ ggplot(price_t_melt, aes(x=Name, y=value, group=variable)) +
 Sum of all MB mentions by Designer for the current year, shown by month. 
 
 ```{r mentions_bydesigner}
-mentions_df = l_dfs$POSTER.MB.mentions
+mentions_df = price_mentions_dfs$MajorBrandsMentions
 process_df(mentions_df)
 ```
 
@@ -861,11 +796,11 @@ ggplot(mentions_t_melt, aes(x=Name, y=value, group=variable)) +
 
 ## Number of Jobs per Month by Designer
 
-Total number of jobs by designer, shown by month. Figures below show a job if it was "touched" at all during the timeframe in question.
+Total number of jobs "WORKED ON" per month by designer. Figures below show a job if it was "touched" at all during the timeframe in question.
 
 ```{r jobspermo_bydesigner}
-jobspermo = aggregate(JobId ~ Designer + Month, data=df_thisyr, FUN=len_unique)
-jobspermo = spread(jobspermo, 'Month', 'JobId')
+jobspermo = aggregate(JobId ~ Designer + MonthOfRecord, data=df_thisyr, FUN=len_unique)
+jobspermo = spread(jobspermo, 'MonthOfRecord', 'JobId')
 jobspermo = process_df(jobspermo)
 jobspermo
 ```
@@ -901,7 +836,7 @@ t_jobs$Month = factor(t_jobs$Month, levels=MONTHS)
 ggplot(data=t_jobs, aes(x=Month, y=value, group=variable)) +
   geom_line(aes(colour=variable)) +
   geom_point(alpha=.6, size=1.5) +
-  labs(x='Month', y='Number of Jobs', title='Number of Jobs by Designer') +
+  labs(x='Month', y='Number of Jobs', title='Number of Jobs Worked On per Month\nBy Designer') +
   theme_minimal()
 ```
 
@@ -915,20 +850,20 @@ ggplot(data=t_jobs, aes(x=Month, y=value, group=variable)) +
 <!--          'DayOfMonthOfRecord','WeekdayOfRecord','MonthOfRecord', -->
 <!--          'JobId','JobItemId', -->
 <!--          'PosterPrice','ItemCategory', -->
-<!--          'Designer','in_pipeline','POSTER.MB.mentions', -->
+<!--          'Designer','InPipeline','MajorBrandsMentions', -->
 <!--          'Incomplete','AssembledandShipped','JobStatus', -->
 <!--          'IncompleteStatusCount') -->
 
-<!-- inpipe = df_thisyr[(df_thisyr$in_pipeline==T), colz]  -->
+<!-- inpipe = df_thisyr[df_thisyr$InPipeline==T, colz] -->
 
 <!-- ## Check Brittany's pipeline -->
-<!-- britcheck = inpipe[inpipe$Designer == 'Riehlman, Brittany', ] -->
-<!-- britcheck = britcheck[!duplicated(britcheck$JobId), ] -->
-<!-- head(britcheck[,c('JobId','JobStatus','Incomplete','AssembledandShipped')], 10) -->
+<!-- # britcheck = inpipe[inpipe$Designer == 'Riehlman, Brittany', ] -->
+<!-- # britcheck = britcheck[!duplicated(britcheck$JobId), ] -->
+<!-- # head(britcheck[,c('JobId','JobStatus','Incomplete','AssembledandShipped')], 10) -->
 
 <!-- pipeline_summary = aggregate(cbind(JobId, JobItemId) ~ Designer, -->
 <!--                              data=inpipe, FUN=len_unique) -->
-<!-- price_summary = aggregate(cbind(PosterPrice, POSTER.MB.mentions) ~ Designer, -->
+<!-- price_summary = aggregate(cbind(PosterPrice, MajorBrandsMentions) ~ Designer, -->
 <!--                              data=inpipe, FUN=function(x) round(sum(x, na.rm=T), 0)) -->
 <!-- pipeline_summary = merge(pipeline_summary, price_summary, on='Designer', how='all') -->
 
