@@ -284,8 +284,6 @@ get_and_check_pipeline = function(df){
   return(dfPipe)
 }
 
-## Write current pipe to file for review with graphics team
-pipe_check = get_and_check_pipeline(df)
 
 
 
@@ -920,7 +918,11 @@ date_history_df = t(job_history[,-c(1:4)])
 PIPE = rowSums(date_history_df, na.rm=T)
 PIPE = data.frame(Date=names(PIPE), Pipeline=PIPE)
 PIPE$Year = lubridate::year(PIPE$Date)
+
 ### AT LATER DATE, DO JOB ITEMS TOO
+## Write current pipe to file for review with graphics team
+pipe_check = get_and_check_pipeline(df)
+write.csv(job_history, 'C:/Users/pmwash/Desktop/Disposable Docs/Pipe Check.csv')
 
 ## Plot pipeline over time
 ggplot(PIPE, aes(x=as.Date(Date), y=Pipeline, group=Year)) +
@@ -934,6 +936,71 @@ ggplot(PIPE, aes(x=as.Date(Date), y=Pipeline, group=Year)) +
   ylim(0, 205)
 ```
 
+
+## Throughput of Graphics Department
+
+```{r throughput, fig.height=5, fig.width=9}
+throughput = job_history[, c('JobId', 'JobItemId', 'Incomplete', 'AssembledandShipped')]
+throughput$MonthCompleted = lubridate::month(throughput$AssembledandShipped, T, F)
+throughput$YearCompleted = lubridate::year(throughput$AssembledandShipped)
+throughput = throughput[throughput$YearCompleted %in% c(this_yr, last_yr), ]
+throughput = aggregate(JobId ~ MonthCompleted + YearCompleted, data=throughput, FUN=len_unique)
+throughput_out = tidyr::spread(throughput, 'YearCompleted', 'JobId')
+
+rownames(throughput_out) = throughput_out$MonthCompleted; throughput_out$MonthCompleted = NULL
+throughput_out
+```
+
+
+## New Jobs to Graphics Department
+
+```{r new_jobs, fig.height=5, fig.width=9}
+newjobs = job_history[, c('JobId', 'JobItemId', 'Incomplete', 'AssembledandShipped')]
+newjobs$MonthStarted = lubridate::month(newjobs$Incomplete, T, F)
+newjobs$YearStarted = lubridate::year(newjobs$Incomplete)
+newjobs = newjobs[newjobs$YearStarted %in% c(this_yr, last_yr), ]
+newjobs = aggregate(JobId ~ MonthStarted + YearStarted, data=newjobs, FUN=len_unique)
+
+newjobs_out = tidyr::spread(newjobs, 'YearStarted', 'JobId')
+rownames(newjobs_out) = newjobs_out$MonthStarted; newjobs_out$MonthStarted = NULL
+newjobs_out
+```
+
+## Jobs In vs. Jobs Out
+
+```{r jobsin_jobsout}
+PIPE$Month = lubridate::month(PIPE$Date, T, F)
+PIPE$Year = lubridate::year(PIPE$Date)
+start_pipe = PIPE[!duplicated(PIPE[, c('Month', 'Year')]), ]
+start_pipe = start_pipe[start_pipe$Year %in% c(this_yr, last_yr), ]
+starting_pipeline <- start_pipe[1, 'Pipeline']
+
+names(throughput) = c('Month', 'Year', 'Throughput')
+names(newjobs) = c('Month', 'Year', 'NewJobs')
+inout_df = merge(throughput, newjobs, on=c('Year', 'Month'), how='outer')
+inout_df$NetNewJobs = inout_df$NewJobs - inout_df$Throughput
+inout_df = inout_df[order(inout_df$Year, inout_df$Month), ]
+inout_df$StartingPipeline = inout_df$EndingPipeline = NULL
+inout_df[1, 'StartingPipeline'] = starting_pipeline
+inout_df[1, 'EndingPipeline'] = inout_df[1, 'NetNewJobs'] + starting_pipeline
+
+for (i in 1:nrow(inout_df)) {
+  if (i != nrow(inout_df)) {
+    inout_df[i+1, 'StartingPipeline'] = inout_df[i, 'EndingPipeline']
+    inout_df[i+1, 'EndingPipeline'] = inout_df[i+1, 'StartingPipeline'] + inout_df[i+1, 'NetNewJobs']
+  } else {
+    inout_df[i+1, 'StartingPipeline'] = inout_df[i, 'EndingPipeline']
+    inout_df[i, 'EndingPipeline'] = NA #inout_df[i+1, 'StartingPipeline'] + inout_df[i+1, 'NetNewJobs']
+  }
+}
+
+rownames(inout_df) = NULL
+inout_df = inout_df[!is.na(inout_df$Year), ]
+
+
+
+inout_df
+```
 
 
 
@@ -1029,16 +1096,16 @@ menuz_df
 ```
 
 
-<!-- ```{r menus_v_nonmenus_bymo} IN PROCESS-->
+<!-- ```{r menus_v_nonmenus_bymo}  -->
 <!-- menutypes = df_thisyr[ , c('ItemCategory','PosterPrice','KickoffMonth', -->
 <!--                           'JobId','JobItemId','JobTurnaround','Menu')] -->
 
 <!-- menutypes = menutypes[is.na(menutypes$JobTurnaround)==F, ] -->
 
 <!-- ## Custom categories from Rachel -->
-<!-- jt5 = aggregate(cbind(JobTurnaround, PosterPrice) ~ Menu + KickoffMonth,  -->
+<!-- jt5 = aggregate(cbind(JobTurnaround, PosterPrice) ~ Menu + KickoffMonth, -->
 <!--                 data=menutypes, FUN=function(x) round(mean(x,na.rm=T), 1)) -->
-<!-- jt6 = aggregate(cbind(JobId, JobItemId) ~ Menu,  -->
+<!-- jt6 = aggregate(cbind(JobId, JobItemId) ~ Menu, -->
 <!--                 data=menutypes, FUN=len_unique) -->
 
 <!-- menuz_df = merge(jt5, jt6, on='Menu', how='all') -->
@@ -1114,40 +1181,40 @@ The data shown below includes records for this year and last year *through today
 
 It should be noted that jobs that were kicked off yet abandoned are no longer included in the figures below.
 
-```{r bylocation_ytd_kickedoff}
-kickedoff_byhouse_bymo = aggregate(cbind(JobId,JobItemId) ~ KickoffYear + KickoffMonth + Warehouse, 
-                              data=df_ytd_thislast, FUN=len_unique)
-kickedoff_byhouse_bymo = kickedoff_byhouse_bymo[kickedoff_byhouse_bymo$KickoffYear != two_yrs_ago & 
-                                        kickedoff_byhouse_bymo$KickoffMonth %in% ytd_months, ]
+<!-- ```{r bylocation_ytd_kickedoff} -->
+<!-- kickedoff_byhouse_bymo = aggregate(cbind(JobId,JobItemId) ~ KickoffYear + KickoffMonth + Warehouse,  -->
+<!--                               data=df_ytd_thislast, FUN=len_unique) -->
+<!-- kickedoff_byhouse_bymo = kickedoff_byhouse_bymo[kickedoff_byhouse_bymo$KickoffYear != two_yrs_ago &  -->
+<!--                                         kickedoff_byhouse_bymo$KickoffMonth %in% ytd_months, ] -->
 
-kickedoff_byhouse_bymo = reshape2::melt(kickedoff_byhouse_bymo, names(kickedoff_byhouse_bymo)[1:3])
-kickedoff_byhouse_bymo = spread(kickedoff_byhouse_bymo, 'variable', 'value')
+<!-- kickedoff_byhouse_bymo = reshape2::melt(kickedoff_byhouse_bymo, names(kickedoff_byhouse_bymo)[1:3]) -->
+<!-- kickedoff_byhouse_bymo = spread(kickedoff_byhouse_bymo, 'variable', 'value') -->
 
-kickedoff_byhouse_bymo = reshape(kickedoff_byhouse_bymo, timevar='KickoffYear', idvar=c('Warehouse','KickoffMonth'), direction='wide')
-kickedoff_byhouse_bymo$KickoffMonth = factor(kickedoff_byhouse_bymo$KickoffMonth, 
-                                             levels=c('January','February','March','April','May','June',
-                                                      'July','August','September','October','November','December'))
-kickedoff_byhouse_bymo$Warehouse = factor(kickedoff_byhouse_bymo$Warehouse, levels=c('ST LOUIS','KANSAS CITY','MID MISSOURI'))
-kickedoff_byhouse_bymo = kickedoff_byhouse_bymo %>% arrange(Warehouse, KickoffMonth)
-kickedoff_byhouse_bymo$WarehouseMonth = paste0(kickedoff_byhouse_bymo$Warehouse, ' - ', substr(kickedoff_byhouse_bymo$KickoffMonth,1,3))
-rownames(kickedoff_byhouse_bymo) = kickedoff_byhouse_bymo$WarehouseMonth
-kickedoff_byhouse_bymo$KickoffMonth = kickedoff_byhouse_bymo$Warehouse = kickedoff_byhouse_bymo$WarehouseMonth = NULL
+<!-- kickedoff_byhouse_bymo = reshape(kickedoff_byhouse_bymo, timevar='KickoffYear', idvar=c('Warehouse','KickoffMonth'), direction='wide') -->
+<!-- kickedoff_byhouse_bymo$KickoffMonth = factor(kickedoff_byhouse_bymo$KickoffMonth,  -->
+<!--                                              levels=c('January','February','March','April','May','June', -->
+<!--                                                       'July','August','September','October','November','December')) -->
+<!-- kickedoff_byhouse_bymo$Warehouse = factor(kickedoff_byhouse_bymo$Warehouse, levels=c('ST LOUIS','KANSAS CITY','MID MISSOURI')) -->
+<!-- kickedoff_byhouse_bymo = kickedoff_byhouse_bymo %>% arrange(Warehouse, KickoffMonth) -->
+<!-- kickedoff_byhouse_bymo$WarehouseMonth = paste0(kickedoff_byhouse_bymo$Warehouse, ' - ', substr(kickedoff_byhouse_bymo$KickoffMonth,1,3)) -->
+<!-- rownames(kickedoff_byhouse_bymo) = kickedoff_byhouse_bymo$WarehouseMonth -->
+<!-- kickedoff_byhouse_bymo$KickoffMonth = kickedoff_byhouse_bymo$Warehouse = kickedoff_byhouse_bymo$WarehouseMonth = NULL -->
 
-## Set names
-names(kickedoff_byhouse_bymo) = c(paste0('Jobs ',last_yr),
-                                  paste0('Items ', last_yr), 
-                                  paste0('Jobs ',this_yr),
-                                  paste0('Items ', this_yr))
-kickedoff_byhouse_bymo$`Jobs Chg. (%)` = pct_chg(kickedoff_byhouse_bymo[,paste0('Jobs ',this_yr)], 
-                                                      kickedoff_byhouse_bymo[,paste0('Jobs ',last_yr)])
-kickedoff_byhouse_bymo$`Items Chg. (%)` = pct_chg(kickedoff_byhouse_bymo[,paste0('Items ',this_yr)], 
-                                                      kickedoff_byhouse_bymo[,paste0('Items ',last_yr)])
+<!-- ## Set names -->
+<!-- names(kickedoff_byhouse_bymo) = c(paste0('Jobs ',last_yr), -->
+<!--                                   paste0('Items ', last_yr),  -->
+<!--                                   paste0('Jobs ',this_yr), -->
+<!--                                   paste0('Items ', this_yr)) -->
+<!-- kickedoff_byhouse_bymo$`Jobs Chg. (%)` = pct_chg(kickedoff_byhouse_bymo[,paste0('Jobs ',this_yr)],  -->
+<!--                                                       kickedoff_byhouse_bymo[,paste0('Jobs ',last_yr)]) -->
+<!-- kickedoff_byhouse_bymo$`Items Chg. (%)` = pct_chg(kickedoff_byhouse_bymo[,paste0('Items ',this_yr)],  -->
+<!--                                                       kickedoff_byhouse_bymo[,paste0('Items ',last_yr)]) -->
 
-## Rearrange for readability
-kickedoff_byhouse_bymo = kickedoff_byhouse_bymo[, c(paste0('Jobs ',last_yr), paste0('Jobs ',this_yr), 'Jobs Chg. (%)',
-                                                   paste0('Items ', last_yr),paste0('Items ', this_yr), 'Items Chg. (%)')]
-kickedoff_byhouse_bymo
-```
+<!-- ## Rearrange for readability -->
+<!-- kickedoff_byhouse_bymo = kickedoff_byhouse_bymo[, c(paste0('Jobs ',last_yr), paste0('Jobs ',this_yr), 'Jobs Chg. (%)', -->
+<!--                                                    paste0('Items ', last_yr),paste0('Items ', this_yr), 'Items Chg. (%)')] -->
+<!-- kickedoff_byhouse_bymo -->
+<!-- ``` -->
 
 
 
