@@ -10,7 +10,7 @@ output:
 ---
 ```{python pySetup}
 from pandas import read_table
-df = read_table('N:/Operations Intelligence/Monthly Reports/Graphics/Raw Data/PaulThree.txt', engine='python', doublequote=False, header=0)
+df = read_table('N:/Operations Intelligence/Monthly Reports/Graphics/Raw Data/POSTER Detail_dump.txt', engine='python', doublequote=False, header=0)
 
 col_names = {'ID':'ID',
             'DVMKET':'Warehouse',
@@ -968,6 +968,8 @@ newjobs_out
 
 ## Jobs In vs. Jobs Out
 
+[[EXPERIMENTAL & DERIVED FROM THROUGHPUT & NEW JOBS DATA]]
+
 ```{r jobsin_jobsout}
 PIPE$Month = lubridate::month(PIPE$Date, T, F)
 PIPE$Year = lubridate::year(PIPE$Date)
@@ -996,8 +998,39 @@ for (i in 1:nrow(inout_df)) {
 
 rownames(inout_df) = NULL
 inout_df = inout_df[!is.na(inout_df$Year), ]
+inout_df$AvgPipeline = rowMeans(inout_df[, c('StartingPipeline', 'EndingPipeline')])
 
+#gvisCandlestickChart(inout_df[, c('StartingPipeline','EndingPipeline')])
+plt_data <- inout_df[1:nrow(inout_df)-1, ]
+plt_data1 <- melt(plt_data[, 1:4], c('Year', 'Month'))
 
+ggplot(plt_data1, aes(x=Month, y=value, group=variable)) + 
+  geom_line(aes(colour=variable), size=1, alpha=0.8) +
+  geom_point(aes(colour=variable)) + 
+  facet_wrap(~Year) +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='', y='Number of Jobs', title='Throughput vs. New Jobs')
+
+plt_data2 <- melt(plt_data[, c('Month', 'Year', 'StartingPipeline', 'EndingPipeline')], c('Year', 'Month'))
+#plt_data2$grp = ifelse(plt_data2$variable=='NetNewJobs', 'Net New Jobs', 'Pipeline')
+
+ggplot(plt_data2, aes(x=Month, y=value, group=Month)) + 
+  geom_line(alpha=0.5, size=3) +
+  #geom_line(aes(x=Month, y=value, group=variable, colour=variable), 
+  #          alpha=0.8, size=1.5) +
+  #scale_colour_gradient(low='red', high='green') +
+  geom_point(aes(colour=variable), size=3.5) + 
+  facet_grid(~ Year) +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x='', y='Number of Jobs', title='Starting Pipeline vs. Ending Pipeline\nBy Month')
+
+rownames(inout_df) = paste0(as.character(inout_df$Month), ' ', as.character(inout_df$Year))
+inout_df[, c('Month', 'Year')] = NULL
+
+annualized_turnover = round(mean(inout_df$Throughput, na.rm=T) / mean(inout_df$AvgPipeline, na.rm=T) * 12, 2)
+print(paste0('Turnover Rate per year = ', annualized_turnover, '\n'))
 
 inout_df
 ```
@@ -1256,7 +1289,7 @@ jobs_byaccount$Customer = NULL
 
 jobs_byaccount$`Percent Change (%)` = pct_chg(jobs_byaccount[, as.character(this_yr)], 
                                                  jobs_byaccount[, as.character(last_yr)])
-jobs_byaccount = jobs_byaccount[order(jobs_byaccount$`2017`, decreasing=T), ]
+jobs_byaccount = jobs_byaccount[order(jobs_byaccount[, as.character(this_yr)], decreasing=T), ]
 head(jobs_byaccount, 50)
 ```
 
@@ -1272,7 +1305,7 @@ profit_byaccount$Customer = NULL
 
 profit_byaccount$`Percent Change (%)` = pct_chg(profit_byaccount[, as.character(this_yr)], 
                                                  profit_byaccount[, as.character(last_yr)])
-profit_byaccount = profit_byaccount[order(profit_byaccount$`2017`, decreasing=T), ]
+profit_byaccount = profit_byaccount[order(profit_byaccount[, as.character(this_yr)], decreasing=T), ]
 head(profit_byaccount, 50)
 ```
 
@@ -1295,7 +1328,7 @@ jobs_bysupplier$Supplier = NULL
 jobs_bysupplier$`Percent Change (%)` = pct_chg(jobs_bysupplier[, as.character(this_yr)], 
                                                  jobs_bysupplier[, as.character(last_yr)])
 # jobs_bysupplier = jobs_bysupplier[jobs_bysupplier$`2017` != 0]
-jobs_bysupplier = jobs_bysupplier[order(jobs_bysupplier$`2017`, decreasing=T), ]
+jobs_bysupplier = jobs_bysupplier[order(jobs_bysupplier[, as.character(this_yr)], decreasing=T), ]
 head(jobs_bysupplier, 35)
 ```
 
@@ -1312,7 +1345,7 @@ profit_bysupplier$Supplier = NULL
 profit_bysupplier$`Percent Change (%)` = pct_chg(profit_bysupplier[, as.character(this_yr)], 
                                                  profit_bysupplier[, as.character(last_yr)])
 # profit_bysupplier = profit_bysupplier[profit_bysupplier$`2017` != 0]
-profit_bysupplier = profit_bysupplier[order(profit_bysupplier$`2017`, decreasing=T), ]
+profit_bysupplier = profit_bysupplier[order(profit_bysupplier[, as.character(this_yr)], decreasing=T), ]
 head(profit_bysupplier, 35)
 ```
 
@@ -1328,16 +1361,16 @@ head(profit_bysupplier, 35)
 Below displays the top Brands *(sorted in descending order by Number of Jobs)* for this year only. 
 
 ```{r brands_customers}
-brands = df_thisyr[,c('Brand','Supplier','ChargebackTotal','PosterPrice',
+brands = df_thisyr[,c('Product','Supplier','ChargebackTotal','PosterPrice',
                             'ItemCategory','JobId','JobItemId')]
-brands = brands[brands$Brand != '', ]
-b1 = aggregate(cbind(ChargebackTotal, PosterPrice) ~ Supplier + Brand, data=brands, FUN=function(x) round(sum(x, na.rm=T), 0))
+brands = brands[brands$Product != '', ]
+b1 = aggregate(cbind(ChargebackTotal, PosterPrice) ~ Supplier + Product, data=brands, FUN=function(x) round(sum(x, na.rm=T), 0))
 b1$Profit = round(b1$PosterPrice - b1$ChargebackTotal, 0)
-b2 = aggregate(cbind(JobId, JobItemId) ~ Supplier + Brand, data=brands, FUN=len_unique)
+b2 = aggregate(cbind(JobId, JobItemId) ~ Supplier + Product, data=brands, FUN=len_unique)
 
-brands = merge(b1, b2, on=c('Supplier','Brand'), how='all')
-rownames(brands) = brands$Brand
-brands$Brand = NULL
+brands = merge(b1, b2, on=c('Supplier','Product'), how='all')
+rownames(brands) = paste0(brands$Product, '-', brands$Supplier)
+brands$Product = NULL
 names(brands) = c('Supplier','Chargeback','Price','Profit','Jobs','Job Items')
 brands = brands[order(brands$Jobs, decreasing=T), ]
 brands$Supplier = NULL
@@ -1372,14 +1405,14 @@ head(brands, 50)
 
 
 
-## By Requester
+<!-- ## By Requester -->
 
-Top Salesperson requesters who input jobs for this year only, sorted by number of jobs. Note that the Graphics department inputs many jobs as proxies for the true requester; these are shown separately. Requests that were entered by the Graphics department on behalf of someone else will show up in the second table below.
+<!-- Top Salesperson requesters who input jobs for this year only, sorted by number of jobs. Note that the Graphics department inputs many jobs as proxies for the true requester; these are shown separately. Requests that were entered by the Graphics department on behalf of someone else will show up in the second table below. -->
 
-# ```{r byrequester}
-# head(byrequester, 35)
-# bygraphics
-# ```
+<!-- # ```{r byrequester} -->
+<!-- # head(byrequester, 35) -->
+<!-- # bygraphics -->
+<!-- # ``` -->
 
 
 
@@ -1388,6 +1421,7 @@ Top Salesperson requesters who input jobs for this year only, sorted by number o
 
 # What's Working? What's Not?
 
+Please provide feedback to paul.washburn@majorbrands.com.
 
 
 
