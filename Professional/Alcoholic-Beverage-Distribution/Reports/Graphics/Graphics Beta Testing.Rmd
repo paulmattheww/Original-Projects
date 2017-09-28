@@ -1,16 +1,18 @@
 ---
 title: "<b>MB Graphics Report</b>"
 author: "Paul M. Washburn"
-date: "Through Wednesday July 5, 2017"
+date: "Monday September 25, 2017"
 output: 
   pdf_document:
       df_print: "kable" 
       fig_width: 10
       fig_height: 9
 ---
-```{python pySetup}
+
+```{python pySetup, include=FALSE}
 from pandas import read_table
-df = read_table('N:/Operations Intelligence/Monthly Reports/Graphics/Raw Data/POSTER Detail_dump.txt', engine='python', doublequote=False, header=0)
+import time
+df = read_table('N:/Operations Intelligence/Monthly Reports/Graphics/Raw Data/POSTER Detail_dump.txt', engine='python', doublequote=False, header=0, sep=',')
 
 col_names = {'ID':'ID',
             'DVMKET':'Warehouse',
@@ -52,22 +54,24 @@ col_names = {'ID':'ID',
             'DVCBOVRD':'BrandMentionOverride',
             'DVGRPHDS':'Designer',
             'DVGRPHDF':'User'}
-            
+
 df.rename(columns=col_names, inplace=True)
+df.Warehouse = df.Warehouse.astype(str)
 df.Warehouse = df.Warehouse.map({'1':'Kansas City', '2':'Saint Louis', '3':'Columbia', '5':'Springfield'})
 df.set_index('ID', inplace=True)
 df.drop(labels=['DVIMAGE','ItemWidth','ItemHeight','DVITMOPT'], axis=1, inplace=True)
 
 df.to_csv('N:/Operations Intelligence/Monthly Reports/Graphics/Raw Data/renamed raw data.csv', index=False)
+time.sleep(20)
 ```
 
 
 
 ```{r setup, include=FALSE}
-options(stringsAsFactors = FALSE)
 knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
 knitr::opts_chunk$set(message = FALSE)
+options(stringsAsFactors = FALSE)
 
 ## VITAL -- MAKE SURE ALL CURRENT DESIGNERS ARE PRESENT BELOW
 active_designers = c('Mueller, Rachel','Riehlman, Brittany','Wilhoit, Katie','Wright, Paige')
@@ -108,13 +112,20 @@ ytd_months = unlist(lapply(seq(1, thismo_numeric, by=1), month_long))
 pct_chg = function(new, old) {
   round(((new-old)/abs(old))*100, 1)
 }
+
 len_unique = function(x) length(unique(x))
+
+process_df = function(df) {
+  rownames(df) = df$POSTER.Designer
+  df$POSTER.Designer = df$variable = NULL
+  return(df)
+}
 
 
 ## Read in and clean up the data
 
 read_raw_graphics_data = function(python_path){
-  df = read.csv('N:/Operations Intelligence/Monthly Reports/Graphics/Raw Data/renamed raw data.csv', header=TRUE)
+  df = read.csv(python_path, header=TRUE)
   df$JobItemBrandId = paste0(as.character(df$JobId),'_',as.character(df$ItemId),'_',as.character(df$BrandId))
   df$JobItemId = paste0(as.character(df$JobId),'_',as.character(df$ItemId))
   df$JobStatus = as.character(df$JobStatus)
@@ -143,7 +154,7 @@ check_raw_pipeline = function(df){
 
 ## Filter for testing ONLY
 #print('If you see this message, take this filter off')
-#df = head(df,10000)
+#df = head(df,5000)
 
 
 ## Specify functions 
@@ -436,8 +447,6 @@ turnaround_sls = head(getTurnaround(df, 'Salesperson'), 25)
 turnaround_cus = head(getTurnaround(df, 'Customer'), 25)
 turnaround_hse = head(getTurnaround(df, 'Warehouse'), 25)
 turnaround_acc = head(getTurnaround(df, 'AccessoryPrintBanner'), 25)
-
-#turn_dfs = list(turnaround, turnaround_sls, turnaround_cus, turnaround_hse, turnaround_acc)
 ```
 
 
@@ -473,7 +482,7 @@ plot_turnaround = function(turnaround){
   return(plt)
 }
 
-print('By Designer')
+
 plot_turnaround(turnaround)
 ```
 
@@ -483,69 +492,20 @@ Data considered is from this year and last year. All other caveats above hold fo
 By Salesperson.
 
 ```{r turnaround_plot_sls, fig.height=5, fig.width=9}
-print('By Salesperson')
 plot_turnaround(turnaround_sls)
 ```
 
 By Customer.
 ```{r turnaround_plot_cus, fig.height=5, fig.width=9}
-print('By Customer')
 plot_turnaround(turnaround_cus)
 ```
 
 By House.
 ```{r turnaround_plot_hse, fig.height=5, fig.width=9}
-print('By House')
 plot_turnaround(turnaround_hse)
 ```
 
 
-<!-- ## Reprints by Designer -->
-
-<!-- Total number of reprints for the current year, by Designer. Percent of Total is shown as a percent; in other words, it has been multiplied by 100 (e.g. 1.2 indicates 1.2%, or 0.012). Reprints are counted at the Job ID level, meaning a job with 10 items marked as reprints will be counted one time. It is possible to add in reprints at the Job Item level if this information is desired. -->
-
-<!--
-# ```{r reprints}
-# process_df = function(df) {
-#   rownames(df) = df$Designer
-#   df$Designer = df$variable = NULL
-#   return(df)
-# }
-# 
-# reprints = df[(df$Reprint==T) & (df$YearOfRecord %in% c(this_yr, last_yr)), ]
-# reprints = reprints[order(reprints$YearOfRecord, reprints$JobId, reprints$DayOfRecord, decreasing=T), ]
-# 
-# reprint_cols = c('JobId','Designer')
-# no_dupes = !duplicated(reprints[, reprint_cols])
-# reprints = reprints[no_dupes, c('JobId','Designer','Reprint','YearOfRecord')]
-# reprints = aggregate(Reprint ~ Designer, data=reprints, FUN=sum)
-# 
-# tot_jobs = aggregate(JobId ~ Designer, data=df_thisyr, FUN=len_unique)
-# reprints = merge(reprints, tot_jobs, by='Designer', how='all')
-# reprints = process_df(reprints)
-# 
-# ## Specify column names
-# names(reprints) = c('Number of Reprints', 'Total Jobs')
-# reprints$`Reprints as % of Total Jobs` = round((reprints$`Number of Reprints` / reprints$`Total Jobs`)*100, 1)
-# # reprints
-# ```
-
-
-```{r reprint_plot, fig.height=5, fig.width=9}
-reprints_t = data.frame(t(reprints))
-names(reprints_t) = gsub('\\..', ', ', names(reprints_t))
-reprints_t$Name = rownames(reprints_t)
-rownames(reprints_t) = NULL
-reprints_t_melt = melt(reprints_t, 'Name', active_designers)
-
-ggplot(reprints_t_melt, aes(x=variable, y=value, group=Name)) +
-  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
-  facet_wrap(~Name, ncol=4, scales='free_y') +
-  theme_minimal() +
-  theme(axis.text.x=element_text(angle=90, hjust=1)) +
-  labs(x='', y='', title='Reprint Summary')
-```
--->
 
 ## Redesigns
 
@@ -571,7 +531,7 @@ designer_summary = function(df, col, active_designers, FUN, agg_col='JobTurnarou
 plot_redesigns = function(TurnaroundData, col, title) {
   plt = ggplot(data=TurnaroundData, 
                aes(x=Designer, y=JobTurnaround, group=TurnaroundData[,col])) +
-    geom_bar(stat='identity', position='dodge', aes(fill=TurnaroundData[,col])) +
+    geom_bar(stat='identity', position='dodge', aes(fill=TurnaroundData[,col]), colour='black') +
     geom_jitter(alpha=0.02) +
     theme_minimal() +
     theme(axis.text.x=element_text(angle=90, hjust=1)) +
@@ -721,122 +681,122 @@ ggplot(mentions_df_melt, aes(x=MonthOfRecord, y=value, group=Designer)) +
 ```
 
 
-## Cost by Designer
+<!-- ## Cost by Designer -->
 
-A monthly sum of Poster Price, shown by month.
+<!-- A monthly sum of Poster Price, shown by month. -->
 
-```{r price_bydesigner, fig.height=7, fig.width=9}
-process_df(price_df)
-```
+<!-- ```{r price_bydesigner, fig.height=7, fig.width=9} -->
+<!-- process_df(price_df) -->
+<!-- ``` -->
 
-```{r costs_bydesigner_plot, fig.height=5, fig.width=9}
-price_t = data.frame(t(process_df(price_df)))
-names(price_t) = gsub('\\..', ', ', names(price_t))
-price_t$Name = rownames(price_t)
-rownames(price_t) = NULL
-price_t_melt = melt(price_t, 'Name', active_designers)
-price_t_melt$Name = factor(price_t_melt$Name, levels=MONTHS) 
+<!-- ```{r costs_bydesigner_plot, fig.height=5, fig.width=9} -->
+<!-- price_t = data.frame(t(process_df(price_df))) -->
+<!-- names(price_t) = gsub('\\..', ', ', names(price_t)) -->
+<!-- price_t$Name = rownames(price_t) -->
+<!-- rownames(price_t) = NULL -->
+<!-- price_t_melt = melt(price_t, 'Name', active_designers) -->
+<!-- price_t_melt$Name = factor(price_t_melt$Name, levels=MONTHS)  -->
 
-ggplot(price_t_melt, aes(x=Name, y=value, group=variable)) +
-  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
-  facet_wrap(~variable, ncol=4) +
-  theme_minimal() +
-  theme(axis.text.x=element_text(angle=90, hjust=1)) +
-  labs(x='', y='Dollars', title='Sum of Poster Price per Month by Designer') +
-  scale_y_continuous(labels=dollar)
-```
-
-
-## Brand Mentions by Designer
-Sum of all MB mentions by Designer for the current year, shown by month. 
-
-```{r mentions_bydesigner}
-mentions_df = price_mentions_dfs$MajorBrandsMentions
-process_df(mentions_df)
-```
-
-Total number of brand mentions by Designer YTD.
-```{r rowsums}
-ttments = data.frame(t(rowSums(process_df(mentions_df), na.rm=T)))
-rownames(ttments) = 'Tot Brand Mentions YTD'
-names(ttments) = gsub('\\..',', ',names(ttments))
-ttments
-```
-
-Average number of brand mentions per month by Designer YTD.
-
-```{r rowmns}
-avgments = data.frame(t(rowMeans(process_df(mentions_df), na.rm=T)))
-rownames(avgments) = 'Avg Brand Mentions per Month'
-names(avgments) = gsub('\\..',', ',names(avgments))
-avgments
-```
+<!-- ggplot(price_t_melt, aes(x=Name, y=value, group=variable)) + -->
+<!--   geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') + -->
+<!--   facet_wrap(~variable, ncol=4) + -->
+<!--   theme_minimal() + -->
+<!--   theme(axis.text.x=element_text(angle=90, hjust=1)) + -->
+<!--   labs(x='', y='Dollars', title='Sum of Poster Price per Month by Designer') + -->
+<!--   scale_y_continuous(labels=dollar) -->
+<!-- ``` -->
 
 
+<!-- ## Brand Mentions by Designer -->
+<!-- Sum of all MB mentions by Designer for the current year, shown by month.  -->
 
-```{r mentions_plot, fig.height=5, fig.width=9}
-mentions_t = data.frame(t(process_df(mentions_df)))
-names(mentions_t) = gsub('\\..', ', ', names(mentions_t))
-mentions_t$Name = rownames(mentions_t)
-rownames(mentions_t) = NULL
-mentions_t_melt = melt(mentions_t, 'Name', active_designers)
-mentions_t_melt$Name = factor(mentions_t_melt$Name, levels=MONTHS) 
+<!-- ```{r mentions_bydesigner} -->
+<!-- mentions_df = price_mentions_dfs$MajorBrandsMentions -->
+<!-- process_df(mentions_df) -->
+<!-- ``` -->
 
-ggplot(mentions_t_melt, aes(x=Name, y=value, group=variable)) +
-  geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') +
-  facet_wrap(~variable, ncol=4) +
-  theme_minimal() +
-  theme(axis.text.x=element_text(angle=90, hjust=1)) +
-  labs(x='', y='Number of Brand Mentions', title='Brand Mentions per Month by Designer')
-```
+<!-- Total number of brand mentions by Designer YTD. -->
+<!-- ```{r rowsums} -->
+<!-- ttments = data.frame(t(rowSums(process_df(mentions_df), na.rm=T))) -->
+<!-- rownames(ttments) = 'Tot Brand Mentions YTD' -->
+<!-- names(ttments) = gsub('\\..',', ',names(ttments)) -->
+<!-- ttments -->
+<!-- ``` -->
+
+<!-- Average number of brand mentions per month by Designer YTD. -->
+
+<!-- ```{r rowmns} -->
+<!-- avgments = data.frame(t(rowMeans(process_df(mentions_df), na.rm=T))) -->
+<!-- rownames(avgments) = 'Avg Brand Mentions per Month' -->
+<!-- names(avgments) = gsub('\\..',', ',names(avgments)) -->
+<!-- avgments -->
+<!-- ``` -->
 
 
 
-## Number of Jobs per Month by Designer
+<!-- ```{r mentions_plot, fig.height=5, fig.width=9} -->
+<!-- mentions_t = data.frame(t(process_df(mentions_df))) -->
+<!-- names(mentions_t) = gsub('\\..', ', ', names(mentions_t)) -->
+<!-- mentions_t$Name = rownames(mentions_t) -->
+<!-- rownames(mentions_t) = NULL -->
+<!-- mentions_t_melt = melt(mentions_t, 'Name', active_designers) -->
+<!-- mentions_t_melt$Name = factor(mentions_t_melt$Name, levels=MONTHS)  -->
 
-Total number of jobs "WORKED ON" per month by designer. Figures below show a job if it was "touched" at all during the timeframe in question.
-
-```{r jobspermo_bydesigner}
-jobspermo = aggregate(JobId ~ Designer + MonthOfRecord, data=df_thisyr, FUN=len_unique)
-jobspermo = spread(jobspermo, 'MonthOfRecord', 'JobId')
-jobspermo = process_df(jobspermo)
-jobspermo
-```
-
-YTD total number of jobs by designer.
-
-```{r totjobrowsums}
-tottjobs = data.frame(t(rowSums(jobspermo, na.rm=T)))
-rownames(tottjobs) = 'Tot Jobs  YTD'
-names(tottjobs) = gsub('\\..',', ',names(tottjobs)) 
-tottjobs
-```
-
-YTD average number of jobs per month by designer.
-
-```{r meanjobrowmeans}
-avgjobs = data.frame(t(rowMeans(jobspermo, na.rm=T)))
-rownames(avgjobs) = 'Avg Jobs per Month'
-names(avgjobs) = gsub('\\..',', ',names(avgjobs)) 
-avgjobs
-```
+<!-- ggplot(mentions_t_melt, aes(x=Name, y=value, group=variable)) + -->
+<!--   geom_bar(stat='identity', position='dodge', aes(fill=variable), colour='black') + -->
+<!--   facet_wrap(~variable, ncol=4) + -->
+<!--   theme_minimal() + -->
+<!--   theme(axis.text.x=element_text(angle=90, hjust=1)) + -->
+<!--   labs(x='', y='Number of Brand Mentions', title='Brand Mentions per Month by Designer') -->
+<!-- ``` -->
 
 
 
-```{r, fig.height=5, fig.width=9}
-t_jobs = data.frame(t(jobspermo))
-t_jobs$Month = row.names(t_jobs)
-rownames(t_jobs) = NULL
-t_jobs = melt(t_jobs, 'Month', gsub(', ','..',active_designers))
-t_jobs$variable = gsub('\\..', ', ', t_jobs$variable)
-t_jobs$Month = factor(t_jobs$Month, levels=MONTHS)
+<!-- ## Number of Jobs per Month by Designer -->
 
-ggplot(data=t_jobs, aes(x=Month, y=value, group=variable)) +
-  geom_line(aes(colour=variable)) +
-  geom_point(alpha=.6, size=1.5) +
-  labs(x='Month', y='Number of Jobs', title='Number of Jobs Worked On per Month\nBy Designer') +
-  theme_minimal()
-```
+<!-- Total number of jobs "WORKED ON" per month by designer. Figures below show a job if it was "touched" at all during the timeframe in question. -->
+
+<!-- ```{r jobspermo_bydesigner} -->
+<!-- jobspermo = aggregate(JobId ~ Designer + MonthOfRecord, data=df_thisyr, FUN=len_unique) -->
+<!-- jobspermo = spread(jobspermo, 'MonthOfRecord', 'JobId') -->
+<!-- jobspermo = process_df(jobspermo) -->
+<!-- jobspermo -->
+<!-- ``` -->
+
+<!-- YTD total number of jobs by designer. -->
+
+<!-- ```{r totjobrowsums} -->
+<!-- tottjobs = data.frame(t(rowSums(jobspermo, na.rm=T))) -->
+<!-- rownames(tottjobs) = 'Tot Jobs  YTD' -->
+<!-- names(tottjobs) = gsub('\\..',', ',names(tottjobs))  -->
+<!-- tottjobs -->
+<!-- ``` -->
+
+<!-- YTD average number of jobs per month by designer. -->
+
+<!-- ```{r meanjobrowmeans} -->
+<!-- avgjobs = data.frame(t(rowMeans(jobspermo, na.rm=T))) -->
+<!-- rownames(avgjobs) = 'Avg Jobs per Month' -->
+<!-- names(avgjobs) = gsub('\\..',', ',names(avgjobs))  -->
+<!-- avgjobs -->
+<!-- ``` -->
+
+
+
+<!-- ```{r, fig.height=5, fig.width=9} -->
+<!-- t_jobs = data.frame(t(jobspermo)) -->
+<!-- t_jobs$Month = row.names(t_jobs) -->
+<!-- rownames(t_jobs) = NULL -->
+<!-- t_jobs = melt(t_jobs, 'Month', gsub(', ','..',active_designers)) -->
+<!-- t_jobs$variable = gsub('\\..', ', ', t_jobs$variable) -->
+<!-- t_jobs$Month = factor(t_jobs$Month, levels=MONTHS) -->
+
+<!-- ggplot(data=t_jobs, aes(x=Month, y=value, group=variable)) + -->
+<!--   geom_line(aes(colour=variable)) + -->
+<!--   geom_point(alpha=.6, size=1.5) + -->
+<!--   labs(x='Month', y='Number of Jobs', title='Number of Jobs Worked On per Month\nBy Designer') + -->
+<!--   theme_minimal() -->
+<!-- ``` -->
 
 
 <!-- ## Pipeline & Carrying Costs by Designer -->
@@ -968,7 +928,11 @@ newjobs_out
 
 ## Jobs In vs. Jobs Out
 
-[[EXPERIMENTAL & DERIVED FROM THROUGHPUT & NEW JOBS DATA]]
+Below is the first a new addition to the report.
+
+Firstly, it serves as a sanity check of the pipeline numbers above. The pipeline is inferred from "jobs in" and "jobs out", and starts far back in time with the initial number of jobs in the pipeline (and cascades from there). 
+
+Secondly, we may derive important ratios and figures from this data. Throughput is the total number of jobs completed over a given time period. Pipeline is the "inventory" of jobs that have been started but have yet to be finished. Dividing throughput over a given time period over the average "inventory" over that same periood will supply what is termed the "turnover" ratio. This indicates how many times the graphics team has turned its inventory over.
 
 ```{r jobsin_jobsout}
 PIPE$Month = lubridate::month(PIPE$Date, T, F)
@@ -1017,9 +981,6 @@ plt_data2 <- melt(plt_data[, c('Month', 'Year', 'StartingPipeline', 'EndingPipel
 
 ggplot(plt_data2, aes(x=Month, y=value, group=Month)) + 
   geom_line(alpha=0.5, size=3) +
-  #geom_line(aes(x=Month, y=value, group=variable, colour=variable), 
-  #          alpha=0.8, size=1.5) +
-  #scale_colour_gradient(low='red', high='green') +
   geom_point(aes(colour=variable), size=3.5) + 
   facet_grid(~ Year) +
   theme_minimal() +
@@ -1360,6 +1321,7 @@ head(profit_bysupplier, 35)
 
 Below displays the top Brands *(sorted in descending order by Number of Jobs)* for this year only. 
 
+<div class="verysmall">
 ```{r brands_customers}
 brands = df_thisyr[,c('Product','Supplier','ChargebackTotal','PosterPrice',
                             'ItemCategory','JobId','JobItemId')]
@@ -1377,7 +1339,7 @@ brands$Supplier = NULL
 
 head(brands, 50)
 ```
-
+</div>
 
 
 
