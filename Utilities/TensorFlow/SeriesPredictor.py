@@ -1,14 +1,15 @@
 import tensorflow as tf
+from tensorflow.contrib import rnn
 import numpy as np
 
 class SeriesPredictor:
-    ## Inspired from Machine Learning with TensorFlow by Nishant Shukla
     def __init__(self, input_dim, seq_size, hidden_dim=10):
+        ## Inspired from Machine Learning with TensorFlow by Nishant Shukla
         self.input_dim = input_dim
         self.seq_size = seq_size
         self.hidden_dim = hidden_dim
         # weight and variable placeholders
-        self.W_out = tf.Variable(tf.random_normal([hiddne_dim, 1]), name='W_out')
+        self.W_out = tf.Variable(tf.random_normal([hidden_dim, 1]), name='W_out')
         self.b_out = tf.Variable(tf.random_normal([1]), name='b_out')
         self.x = tf.placeholder(tf.float32, [None, seq_size, input_dim])
         self.y = tf.placeholder(tf.float32, [None, seq_size])
