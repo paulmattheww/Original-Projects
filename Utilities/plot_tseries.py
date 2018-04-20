@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 %matplotlib inline
 
-def plot_tseries(df, xcol, ycol, grpcol, title_prepend='{}', labs=None, x_angle=0):
+def plot_tseries_over_group(df, xcol, ycol, grpcol, title_prepend='{}', labs=None, x_angle=0):
     '''
     Function for plotting time series df[ycol] over datetime range df[xcol]
     using the unique_grp_vals contained in df[grpcol].unique().  
@@ -28,14 +28,13 @@ def plot_tseries(df, xcol, ycol, grpcol, title_prepend='{}', labs=None, x_angle=
                 tick.set_rotation(x_angle)
     plt.show()
     
-unique_grp_vals = ['STL', 'COL']
 title_prepend = 'Routes per Day for {}'
 xcol = 'date'
 ycol = 'rte'
 grpcol = 'loc'
 labs = dict(xlab='Date', ylab='Number of Market Routes')
     
-plot_tseries(stl_daily, xcol, ycol, grpcol, title_prepend, labs, x_angle=90)
+plot_tseries_over_group(stl_daily, xcol, ycol, grpcol, title_prepend, labs, x_angle=90)
 
 
 def plot_tseries_histograms_over_group(df, xcol, grpcol, labs=None, title_prepend='{}'):
