@@ -22,7 +22,7 @@ def plot_tseries_over_group(df, xcol, ycol, grpcol, title_prepend='{}', labs=Non
         ax.plot(_df[xcol], _df[ycol])
         ax.set_title(title_prepend.format(grp))
         if labs is not None:
-            ax.set_xlabel(labs['xlab'])
+            ax.set_xlabel(labs['xlab'], labelpad=60)
             ax.set_ylabel(labs['ylab'])
         ax.grid(alpha=.1)
         if x_angle != 0:
@@ -32,7 +32,7 @@ def plot_tseries_over_group(df, xcol, ycol, grpcol, title_prepend='{}', labs=Non
     sns.despine()
     plt.show()
     
-title_prepend = 'Daily Value of {}'
+title_prepend = 'Daily Value of {} $USD'
 xcol = 'date'
 ycol = 'value'
 grpcol = 'variable'
@@ -75,6 +75,6 @@ def plot_tseries_histograms_over_group(df, xcol, grpcol, labs=None, title_prepen
     plt.show()
 
 xcol = 'value'
-title_prepend = 'Histogram of Daily Value Observations of {}'
+title_prepend = 'Histogram of Daily Value $USD of Cryptocurrency:  {}'
 labs = dict(xlab='Bins', ylab='Count of Observations')
 plot_tseries_histograms_over_group(df_eda_melt, xcol, grpcol, labs, title_prepend)
