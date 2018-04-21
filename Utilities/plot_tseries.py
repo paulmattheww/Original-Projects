@@ -1,6 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 %matplotlib inline
 
 def plot_tseries_over_group(df, xcol, ycol, grpcol, title_prepend='{}', labs=None, x_angle=0):
@@ -25,11 +24,12 @@ def plot_tseries_over_group(df, xcol, ycol, grpcol, title_prepend='{}', labs=Non
         if labs is not None:
             ax.set_xlabel(labs['xlab'])
             ax.set_ylabel(labs['ylab'])
-        ax.grid(alpha=.4)
+        ax.grid(alpha=.1)
         if x_angle != 0:
             for tick in ax.get_xticklabels():
                 tick.set_rotation(x_angle)
-        sns.set_style("whitegrid")
+    sns.set_style("whitegrid")
+    sns.despine()
     plt.show()
     
 title_prepend = 'Daily Value of {}'
@@ -61,15 +61,17 @@ def plot_tseries_histograms_over_group(df, xcol, grpcol, labs=None, title_prepen
             ax.hist(_df[xcol], bins=int(_df[xcol].max()-_df[xcol].min()))
         else:
             ax.hist(_df[xcol])
-        ax.axvline(_df[xcol].mean(), linestyle='--', color='r')
-        ax.axvline(_df[xcol].mean()-_df[xcol].std(), linestyle='-.', color='y')
-        ax.axvline(_df[xcol].mean()+_df[xcol].std(), linestyle='-.', color='y')
+        mu, sigma = _df[xcol].mean(), _df[xcol].std()
+        ax.axvline(mu, linestyle='--', color='r')
+        ax.axvline(mu - sigma, linestyle='-.', color='y')
+        ax.axvline(mu + sigma, linestyle='-.', color='y')
         ax.set_title(title_prepend.format(grp))
         if labs is not None:
             ax.set_xlabel(labs['xlab'])
             ax.set_ylabel(labs['ylab'])
-        ax.grid(alpha=.4)
-        sns.set_style("whitegrid")
+        ax.grid(alpha=.1)
+    sns.set_style("whitegrid")
+    sns.despine()
     plt.show()
 
 xcol = 'value'
