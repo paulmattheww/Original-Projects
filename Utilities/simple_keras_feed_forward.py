@@ -1,5 +1,5 @@
-from keras import models, layers
 from sklearn.metrics import r2_score
+from keras import models, layers
 
 dropout_rate = .8
 epochs = 5000
@@ -16,7 +16,16 @@ model.add(layers.Dense(16, activation='relu'))
 model.add(layers.Dropout(dropout_rate))
 model.add(layers.Dense(16, activation='relu'))
 model.add(layers.Dropout(dropout_rate))
-model.add(layers.Dense(16, activation='relu'))
+model.add(layers.Dense(8, activation='relu'))
+model.add(layers.Dropout(dropout_rate))
+model.add(layers.Dense(8, activation='relu'))
+model.add(layers.Dropout(dropout_rate))
+model.add(layers.Dense(8, activation='relu'))
+model.add(layers.Dropout(dropout_rate))
+model.add(layers.Dense(8, activation='relu'))
+model.add(layers.Dropout(dropout_rate))
+
+model.add(layers.Dense(8, activation='relu'))
 model.add(layers.Dense(1))
 
 model.summary()
