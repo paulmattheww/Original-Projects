@@ -10,11 +10,14 @@ def boxplot_columns_over_groups(df, cols_to_boxplot, unique_groups, grpcol_name,
     for i, col in enumerate(cols_to_boxplot):
         for j, grp in enumerate(unique_groups):
             in_group = df[grpcol_name] == grp
-            _df = df.loc[in_group, [grpcol_name, col]]
+            _df = df.loc[in_group, [treatment_col, grpcol_name, col]]
             ax = axes[i, j]
-            ax.boxplot(_df.loc[_df[treatment_col]==0, col], label='treatment = 0')
-            ax.boxplot(_df.loc[_df[treatment_col]==1, col], label='treatment = 1')
+            ax.boxplot(_df.loc[_df[treatment_col]==0, col], position=np.zeros(_df.shape[0]))
+            ax.boxplot(_df.loc[_df[treatment_col]==1, col], position=np.ones(_df.shape[0]))
             ax.set_title(str(col) + ' for ' + grp)
+            ax.grid(alpha=.3)
+            ax.set_xtitle(treatment_col)
+            ax.set_ytitle(col)
     plt.show()
     
 boxplot_columns_over_groups(stl_daily_prdday, cols_to_boxplot, unique_groups, grpcol_name, treatment_col)
