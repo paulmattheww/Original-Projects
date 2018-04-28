@@ -1,0 +1,17 @@
+pip install virtualenv;
+virtualenv intro_dl;
+source intro_dl/bin/activate;
+pip install --upgrade pip;
+source intro_dl/bin/activate
+pip install tensorflow;
+pip install pandas;
+pip install jupyter;
+pip install selenium
+pip install tqdm
+pip install numpy matplotlib scipy sklearn hmmlearn simplejson eyed3 pydub seaborn plotly
+sudo pip install librosa
+sudo apt-get install p7zip-full
+sudo apt-get install p7zip-rar
+sudo apt-get install texlive-xetex
+pip install keras
+echo 'done'
