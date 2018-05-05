@@ -1,4 +1,9 @@
+from keras.models import *
+from keras.layers import *
 from keras.regularizers import *
+from sklearn.metrics import r2_score
+
+# def construct_feedforward:
 
 epochs = 5
 num_neurons = 4
@@ -6,8 +11,8 @@ num_dense_layers = 10
 reg = .000001
 batch_size = 32
 
-model = models.Sequential()
-model.add(layers.Dense(num_neurons, activation='relu', 
+model = Sequential()
+model.add(Dense(num_neurons, activation='relu', 
                       input_shape=(X_train.shape[1], ),
                       kernel_regularizer=l2(reg),
                       activity_regularizer=l1(reg)))
