@@ -11,24 +11,32 @@ num_dense_layers = 10
 reg = .000001
 batch_size = 32
 
-model = Sequential()
-model.add(Dense(num_neurons, activation='relu', 
-                      input_shape=(X_train.shape[1], ),
-                      kernel_regularizer=l2(reg),
-                      activity_regularizer=l1(reg)))
-
-for lyr in range(num_dense_layers):
-    model.add(layers.Dense(num_neurons, activation='relu',
+def simple_feedforward_model(num_neurons, num_dense_layers, reg,
+                            loss='mean_absolute_percentage_error',
+                            activation='relu', optimizer='rmsprop',
+                            metrics=['accuracy']):
+    model = Sequential()
+    model.add(Dense(num_neurons, activation='relu', 
+                          input_shape=(X_train.shape[1], ),
                           kernel_regularizer=l2(reg),
                           activity_regularizer=l1(reg)))
 
-model.add(layers.Dense(1))
+    for lyr in range(num_dense_layers):
+        model.add(Dense(num_neurons, activation,
+                        kernel_regularizer=l2(reg),
+                        activity_regularizer=l1(reg)))
 
-model.summary()
+    model.add(Dense(1))
 
-model.compile(optimizer='rmsprop', 
-             loss='mean_absolute_percentage_error',
-             metrics=['accuracy'])
+    model.summary()
+
+    model.compile(optimizer=optimizer, 
+                 loss=loss,
+                 metrics=metrics)
+    
+    return model
+
+model = simple_feedforward_model(num_neurons, num_dense_layers, reg)
 
 history = model.fit(X_train, y_train,
                    epochs=epochs,
