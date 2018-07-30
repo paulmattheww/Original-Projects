@@ -1,7 +1,6 @@
 ################################################################################
 # FILE: custom_classes.py
-# DESCR: hold custom imports and cleaners used in nathans svm code
-# AUTHOR: Robert via Nathan code clean up
+# DESCR: text cleaner
 ################################################################################
 
 # IMPORT STATEMENTS
@@ -51,10 +50,11 @@ class TextCleaner(TransformerMixin):
         self.trans_table = str.maketrans({key: None for key in self.removals})
 
         #Load nlp model for parsing usage later
-        self.parser = spacy.load('en_core_web_sm', disable=['parser','ner','textcat'])
-        from spacy.lang.en import English
+        self.parser = spacy.load('en_core_web_sm', 
+                                 disable=['parser','ner','textcat'])
+        #from spacy.lang.en import English
         if parser == 'small':
-            self.parser = English()
+            self.parser = spacy.load('en')#English()
 
         #Add custom stop words to nlp
         for word in self.custom_stopwords:
@@ -144,9 +144,12 @@ class TextCleaner(TransformerMixin):
 
         # Get tld of first match
         match = matches[0][0]
-        tld = get_tld(match, fail_silently=True, fix_protocol=True)
+        try:
+            tld = get_tld(match, fail_silently=True, fix_protocol=True)
+        except ValueError:
+            tld = None
 
-        # failures return none so change to empy
+        # failures return none so change to empty
         if tld is None:
             tld = ""
 
