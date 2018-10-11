@@ -1,4 +1,8 @@
-# paul washburn st louis mo
+# paul washburn
+import pandas_datareader.data as web
+from datetime import datetime
+import pandas as pd
+
 series_list = ['SP500', 'NASDAQCOM', 'DJIA', 'RU2000PR',
               'BOGMBASEW', 'DEXJPUS', 'DEXUSEU', 'DEXCHUS', 'DEXUSAL',
               'VIXCLS',
